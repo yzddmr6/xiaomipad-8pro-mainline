@@ -49,6 +49,7 @@ struct v4l2_event_client_usage {
 #define NUM_BUFS	4
 #define AE_TARGET	112.0	/* mean luma, gamma encoded */
 #define AE_PERIOD	3	/* frames between control updates */
+#define AE_STARTUP_UPDATES 10	/* bounded acquisition, then steady tracking */
 #define DGAIN_UNITY	1024
 #define DGAIN_MAX	(8 * DGAIN_UNITY)
 #define WB_UNITY	1024
@@ -128,6 +129,10 @@ struct cam {
 	int exposure, again, dgain;
 	double rgain, bgain;
 	bool have_state;
+	/* exposure statistics are fresh for each stream */
+	double ae_mean, ae_bright;
+	unsigned int ae_updates, ae_stable;
+	bool ae_acquiring, ae_ready;
 	/* autofocus: lens position range, scan state */
 	int af_min, af_max, af_pos;
 	enum { AF_OFF, AF_WAIT, AF_SCAN, AF_FINE, AF_VERIFY, AF_LOCKED } af_state;
@@ -647,10 +652,13 @@ static int cam_start(struct cam *c)
 			};
 
 			/* the climb starts where the lens rests */
-			if (xioctl(c->vcm_fd, VIDIOC_G_CTRL, &ctl) == 0)
+			if (xioctl(c->vcm_fd, VIDIOC_G_CTRL, &ctl) == 0) {
 				c->af_pos = ctl.value;
-			c->af_settle = 0;
-			c->af_state = AF_WAIT;
+				c->af_settle = 0;
+				c->af_state = AF_WAIT;
+			} else {
+				logmsg(c, "focus position: %s", strerror(errno));
+			}
 		}
 	}
 
@@ -795,6 +803,9 @@ static int cam_start(struct cam *c)
 
 	c->streaming = true;
 	c->frames = 0;
+	c->ae_updates = c->ae_stable = 0;
+	c->ae_acquiring = true;
+	c->ae_ready = false;
 	logmsg(c, "streaming %ux%u -> %ux%u NV12 (bayer 0x%04x)", cfg->in_w,
 	       cfg->in_h, cfg->out_w, cfg->out_h, code);
 	ret = 0;
@@ -876,16 +887,31 @@ static double clampd(double v, double lo, double hi)
 static void control_update(struct cam *c, const struct stats *s)
 {
 	const struct cam_cfg *cfg = c->cfg;
-	double k, total, rem;
+	double k, total, rem, target, error, lo, hi;
 	int exp, ag;
+	bool acquire = c->ae_acquiring;
+	int old_exp = c->exposure, old_ag = c->again, old_dg = c->dgain;
 
-	/* exposure: luma is gamma encoded, so ~2.2 power for linear light */
-	k = pow(AE_TARGET / (s->mean < 1 ? 1 : s->mean), 2.2);
-	if (s->bright > 0.04)
-		k = fmin(k, 0.7);
-	k = clampd(pow(k, 0.6), 0.5, 2.0);
-
-	if (fabs(log(k)) > 0.04) {
+	/* Acquisition uses the current valid frame, not stale filtered luma. */
+	if (!c->ae_updates || acquire) {
+		c->ae_mean = s->mean;
+		c->ae_bright = s->bright;
+	} else {
+		c->ae_mean += 0.25 * (s->mean - c->ae_mean);
+		c->ae_bright += 0.25 * (s->bright - c->ae_bright);
+	}
+	/* A hard clipping cutoff alternated between gain-up and gain-down.
+	 * Reduce the luma target continuously instead of reversing the step.
+	 */
+	target = fmax(AE_TARGET * 0.65, AE_TARGET / (1.0 + 2.0 * c->ae_bright));
+	error = log(target / fmax(c->ae_mean, 1.0));
+	if (fabs(error) > 0.05) {
+		/* Only startup may take a larger step. The existing highlight target
+		 * remains, and the startup upper bound falls with clipped pixels.
+		 */
+		lo = acquire ? 0.75 : 0.94;
+		hi = acquire ? clampd(1.5 / (1.0 + 4.0 * s->bright), 1.06, 1.5) : 1.06;
+		k = clampd(pow(target / fmax(c->ae_mean, 1.0), 2.2 * 0.3), lo, hi);
 		total = (double)c->exposure * c->again / cfg->again_unit *
 			c->dgain / DGAIN_UNITY * k;
 
@@ -905,6 +931,22 @@ static void control_update(struct cam *c, const struct stats *s)
 		apply_exposure(c);
 	}
 
+	/* A bounded acquisition cannot declare readiness merely on timeout.
+	 * A target match, or unchanged controls at their limits, must persist
+	 * for two observations before the rear lens scan is allowed.
+	 */
+	if (fabs(error) <= 0.10 ||
+	    (c->ae_mean > 1.0 && old_exp == c->exposure &&
+	     old_ag == c->again && old_dg == c->dgain))
+		c->ae_stable++;
+	else
+		c->ae_stable = 0;
+	c->ae_ready = c->ae_stable >= 2;
+	if (c->ae_updates < AE_STARTUP_UPDATES)
+		c->ae_updates++;
+	if (c->ae_ready || c->ae_updates >= AE_STARTUP_UPDATES)
+		c->ae_acquiring = false;
+
 	/* gray world white balance on mid tones */
 	if (s->n_rgb > 200 && s->r > 0 && s->b > 0) {
 		double rr = s->g / s->r, bb = s->g / s->b;
@@ -917,8 +959,8 @@ static void control_update(struct cam *c, const struct stats *s)
 	}
 
 	if (c->frames % (AE_PERIOD * 30) == 0)
-		logmsg(c, "mean %.0f bright %.2f exp %d again %d dgain %d wb r %.2f b %.2f",
-		       s->mean, s->bright, c->exposure, c->again, c->dgain,
+		logmsg(c, "mean %.0f bright %.2f ae %.0f target %.0f exp %d again %d dgain %d wb r %.2f b %.2f",
+		       s->mean, s->bright, c->ae_mean, target, c->exposure, c->again, c->dgain,
 		       c->rgain, c->bgain);
 }
 
@@ -967,14 +1009,19 @@ static int af_clamp(const struct cam *c, int pos)
 	return pos < c->af_min ? c->af_min : pos > c->af_max ? c->af_max : pos;
 }
 
-static void af_move(struct cam *c, int pos)
+static int af_move(struct cam *c, int pos)
 {
 	pos = af_clamp(c, pos);
 	if (pos != c->af_pos) {
+		if (ctrl_set(c->vcm_fd, V4L2_CID_FOCUS_ABSOLUTE, pos) < 0) {
+			logmsg(c, "focus control %d: %s", pos, strerror(errno));
+			c->af_state = AF_OFF;
+			return -1;
+		}
 		c->af_pos = pos;
-		ctrl_set(c->vcm_fd, V4L2_CID_FOCUS_ABSOLUTE, pos);
 		c->af_settle = af_settle_frames;
 	}
+	return 0;
 }
 
 static void af_scan(struct cam *c)
@@ -1088,12 +1135,14 @@ static void af_feed(struct cam *c, double sh)
 				continue;
 			next = c->af_fine[i];
 			c->af_fine[i] = -1;
-			af_move(c, next);
+			if (af_move(c, next) < 0)
+				return;
 			if (c->af_pos != next || c->af_settle)
 				return;
 			/* already there (clamped): sampled */
 		}
-		af_move(c, af_peak(c));
+		if (af_move(c, af_peak(c)) < 0)
+			return;
 		c->af_state = AF_VERIFY;
 		return;
 	}
@@ -1134,7 +1183,7 @@ static void af_update(struct cam *c, const uint8_t *y, unsigned int stride)
 	if (c->af_state == AF_OFF)
 		return;
 	if (c->af_state == AF_WAIT) {
-		if (c->frames >= AF_START)
+		if (c->frames >= AF_START && c->ae_ready)
 			af_scan(c);
 		return;
 	}
@@ -1142,6 +1191,8 @@ static void af_update(struct cam *c, const uint8_t *y, unsigned int stride)
 		c->af_settle--;
 		return;
 	}
+	if (!c->ae_ready)
+		return;
 	af_feed(c, af_sharpness(c, y, stride));
 }
 
