@@ -121,7 +121,8 @@ struct cam {
 	bool streaming;
 	int vid_fd, sensor_fd, vfe_fd, vcm_fd;
 	struct buf bufs[NUM_BUFS];
-	unsigned int bpl;
+	unsigned int bpl, sizeimage, nbufs;
+	size_t uv_offset, frame_span;
 	uint8_t *stage;		/* converted BGRx or repacked NV12 output */
 	unsigned long frames;
 	/* sensor control ranges */
@@ -467,6 +468,21 @@ static size_t frame_size(const struct cam_cfg *cfg)
 	return output_bgrx ? pixels * 4 : pixels * 3 / 2;
 }
 
+static int loopback_write_frame(struct cam *c, const uint8_t *frame)
+{
+	size_t size = frame_size(c->cfg);
+	ssize_t written = write(c->loop_fd, frame, size);
+
+	if (written < 0)
+		return -1;
+	if ((size_t)written != size) {
+		logmsg(c, "short loopback frame: wrote %zd of %zu bytes", written, size);
+		errno = EIO;
+		return -1;
+	}
+	return 0;
+}
+
 static int loopback_black(struct cam *c)
 {
 	const struct cam_cfg *cfg = c->cfg;
@@ -479,7 +495,7 @@ static int loopback_black(struct cam *c)
 	memset(black, 0, size);
 	if (!output_bgrx)
 		memset(black + luma, 128, size - luma);
-	ret = write(c->loop_fd, black, size) < 0 ? -1 : 0;
+	ret = loopback_write_frame(c, black);
 	free(black);
 
 	return ret;
@@ -509,8 +525,17 @@ static int loopback_init(struct cam *c)
 	f.fmt.pix.sizeimage = size;
 	/* full range BT.601 YCbCr, sRGB transfer */
 	f.fmt.pix.colorspace = output_bgrx ? V4L2_COLORSPACE_SRGB : V4L2_COLORSPACE_JPEG;
-	if (xioctl(c->loop_fd, VIDIOC_S_FMT, &f) < 0) {
-		logmsg(c, "loopback S_FMT: %s", strerror(errno));
+	if (xioctl(c->loop_fd, VIDIOC_S_FMT, &f) < 0 ||
+	    xioctl(c->loop_fd, VIDIOC_G_FMT, &f) < 0) {
+		logmsg(c, "loopback format: %s", strerror(errno));
+		return -1;
+	}
+	if (f.fmt.pix.pixelformat != (output_bgrx ? V4L2_PIX_FMT_XBGR32 : V4L2_PIX_FMT_NV12) ||
+	    f.fmt.pix.width != cfg->out_w || f.fmt.pix.height != cfg->out_h ||
+	    f.fmt.pix.bytesperline != cfg->out_w * (output_bgrx ? 4 : 1) ||
+	    f.fmt.pix.sizeimage != size) {
+		logmsg(c, "loopback did not accept tightly packed %s %ux%u",
+		       output_bgrx ? "BGRx" : "NV12", cfg->out_w, cfg->out_h);
 		return -1;
 	}
 
@@ -576,6 +601,8 @@ static void cam_stop(struct cam *c)
 
 	memset(c->bufs, 0, sizeof(c->bufs));
 	c->stage = NULL;
+	c->nbufs = c->bpl = c->sizeimage = 0;
+	c->uv_offset = c->frame_span = 0;
 	c->vid_fd = c->sensor_fd = c->vfe_fd = c->vcm_fd = -1;
 	if (c->streaming)
 		logmsg(c, "stopped after %lu frames", c->frames);
@@ -700,23 +727,42 @@ static int cam_start(struct cam *c)
 	f.fmt.pix_mp.field = V4L2_FIELD_NONE;
 	f.fmt.pix_mp.num_planes = 1;
 	if (xioctl(c->vid_fd, VIDIOC_S_FMT, &f) < 0 ||
-	    f.fmt.pix_mp.width != cfg->out_w ||
-	    f.fmt.pix_mp.height != cfg->out_h) {
+	    xioctl(c->vid_fd, VIDIOC_G_FMT, &f) < 0) {
 		logmsg(c, "video format: %s", strerror(errno));
 		goto out;
 	}
+	if (f.fmt.pix_mp.pixelformat != V4L2_PIX_FMT_NV12 ||
+	    f.fmt.pix_mp.num_planes != 1 ||
+	    f.fmt.pix_mp.width != cfg->out_w ||
+	    f.fmt.pix_mp.height != cfg->out_h ||
+	    (cfg->out_w & 1) || (cfg->out_h & 1)) {
+		logmsg(c, "capture did not accept single-plane NV12 %ux%u", cfg->out_w,
+		       cfg->out_h);
+		goto out;
+	}
 	c->bpl = f.fmt.pix_mp.plane_fmt[0].bytesperline;
+	c->sizeimage = f.fmt.pix_mp.plane_fmt[0].sizeimage;
+	c->uv_offset = (size_t)c->bpl * cfg->out_h;
+	c->frame_span = c->uv_offset + (size_t)(cfg->out_h / 2 - 1) * c->bpl +
+			cfg->out_w;
+	if (c->bpl < cfg->out_w || c->sizeimage < c->frame_span) {
+		logmsg(c, "invalid NV12 layout: stride %u sizeimage %u span %zu", c->bpl,
+		       c->sizeimage, c->frame_span);
+		goto out;
+	}
 	if (output_bgrx || c->bpl != cfg->out_w) {
 		c->stage = malloc(frame_size(cfg));
 		if (!c->stage)
 			goto out;
 	}
 
-	if (xioctl(c->vid_fd, VIDIOC_REQBUFS, &rb) < 0 || rb.count < 2) {
-		logmsg(c, "REQBUFS: %s", strerror(errno));
+	if (xioctl(c->vid_fd, VIDIOC_REQBUFS, &rb) < 0 || rb.count < 2 ||
+	    rb.count > NUM_BUFS) {
+		logmsg(c, "REQBUFS: count %u, %s", rb.count, strerror(errno));
 		goto out;
 	}
-	for (unsigned int i = 0; i < rb.count && i < NUM_BUFS; i++) {
+	c->nbufs = rb.count;
+	for (unsigned int i = 0; i < c->nbufs; i++) {
 		struct v4l2_plane pl[VIDEO_MAX_PLANES] = { 0 };
 		struct v4l2_buffer b = {
 			.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
@@ -728,6 +774,11 @@ static int cam_start(struct cam *c)
 
 		if (xioctl(c->vid_fd, VIDIOC_QUERYBUF, &b) < 0)
 			goto out;
+		if (b.length != 1 || pl[0].length < c->sizeimage) {
+			logmsg(c, "invalid capture buffer %u: planes %u length %u", i,
+			       b.length, pl[0].length);
+			goto out;
+		}
 		c->bufs[i].len = pl[0].length;
 		c->bufs[i].ptr = mmap(NULL, pl[0].length, PROT_READ,
 				      MAP_SHARED, c->vid_fd,
@@ -1231,10 +1282,27 @@ static void cam_frame(struct cam *c)
 		return;
 	}
 
-	y = c->bufs[b.index].ptr;
-	uv = y + (size_t)c->bpl * cfg->out_h;
-
 	if (!(b.flags & V4L2_BUF_FLAG_ERROR)) {
+		const struct buf *mapped;
+		size_t offset = pl[0].data_offset, used = pl[0].bytesused;
+
+		if (b.index >= c->nbufs || b.length != 1) {
+			logmsg(c, "invalid capture frame: index %u planes %u", b.index,
+			       b.length);
+			goto requeue;
+		}
+		mapped = &c->bufs[b.index];
+		if (!mapped->ptr || pl[0].length > mapped->len ||
+		    pl[0].length < c->sizeimage || used > pl[0].length ||
+		    offset > used || c->frame_span > used - offset) {
+			logmsg(c, "incomplete capture frame: sequence %u index %u used %zu "
+			       "offset %zu length %u mapped %zu span %zu", b.sequence,
+			       b.index, used, offset, pl[0].length, mapped->len, c->frame_span);
+			goto requeue;
+		}
+		y = (const uint8_t *)mapped->ptr + offset;
+		uv = y + c->uv_offset;
+
 		if (++c->frames % AE_PERIOD == 0) {
 			struct stats s;
 
@@ -1255,11 +1323,13 @@ static void cam_frame(struct cam *c)
 				       y + (size_t)r * c->bpl, cfg->out_w);
 			out = c->stage;
 		}
-		if (write(c->loop_fd, out, frame_size(cfg)) < 0)
+		if (loopback_write_frame(c, out) < 0)
 			logmsg(c, "loopback write: %s", strerror(errno));
 	}
 
-	xioctl(c->vid_fd, VIDIOC_QBUF, &b);
+requeue:
+	if (xioctl(c->vid_fd, VIDIOC_QBUF, &b) < 0)
+		logmsg(c, "QBUF after frame %u: %s", b.sequence, strerror(errno));
 }
 
 static void loopback_event(struct cam *c)
