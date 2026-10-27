@@ -954,6 +954,16 @@ echo "INTF1 $a $($bb devmem 0x0ae360ac 32)  INTF2 $b $($bb devmem 0x0ae370ac 32)
 这些寄存器是固件扫描输出的 INTF1、INTF2 `FRAME_COUNT` 与 MDP TOP0 中断状态；读取不改变任何状态。TOP0 中早期启动
 锁存的欠载位是历史记录而不是频率；只有两次读数之间的变化才算。该检查只覆盖刷新率，不覆盖画面内容。
 
+### 8.6 闪光灯 torch 检查（在平板上以 root 运行）
+
+```bash
+python3 tools/check-piano-flash.py            # 读出每路闪光灯的限值与当前 torch
+python3 tools/check-piano-flash.py --torch 64 # 写入 torch 值并读回
+```
+
+相机的闪光灯是标准 LED class 设备，发行版里的程序可以直接使用，运行时不依赖本仓库的助手脚本。
+脚本读的是控制器状态；是否真的发光只能在平板上目视确认。
+
 ## 9. 证据与文档
 
 - 状态等级：*待调研*、*源码线索*、*离线通过*、*真机通过*、*真机失败*。未测试不等于失败。源码存在、probe 或服务处于
