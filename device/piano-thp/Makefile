@@ -21,7 +21,7 @@ $(OUT):
 $(OUT)/%.o: src/%.cpp | $(OUT)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
-$(OUT)/piano-thp-replay: $(CORE_OBJECTS) $(OUT)/calibration.o $(OUT)/stream.o $(OUT)/replay.o
+$(OUT)/piano-thp-replay: $(CORE_OBJECTS) $(addprefix $(OUT)/,$(addsuffix .o,$(STYLUS))) $(OUT)/calibration.o $(OUT)/stream.o $(OUT)/replay.o
 	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 $(OUT)/piano-thp-live: $(CORE_OBJECTS) $(OUT)/calibration.o $(OUT)/panel.o $(OUT)/stream.o $(OUT)/live_pipeline.o $(OUT)/input.o $(OUT)/live.o

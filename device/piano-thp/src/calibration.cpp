@@ -13,11 +13,15 @@ int integer(const nlohmann::json &value) {
 }
 }
 
-CalibrationFile readCalibrationFile(const std::filesystem::path &path) {
+nlohmann::json readCalibrationDocument(const std::filesystem::path &path) {
     std::ifstream stream(path);
     if (!stream)
         throw std::runtime_error("cannot open calibration file");
-    const auto document = nlohmann::json::parse(stream);
+    return nlohmann::json::parse(stream);
+}
+
+CalibrationFile readCalibrationFile(const std::filesystem::path &path) {
+    const auto document = readCalibrationDocument(path);
     if (integer(document.at("schema")) != 1 ||
         integer(document.at("rows")) != kRows || integer(document.at("columns")) != kColumns ||
         integer(document.at("units_per_pixel")) != kSuperResolution)

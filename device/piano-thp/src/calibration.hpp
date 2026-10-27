@@ -13,6 +13,7 @@ struct CalibrationFile {
     std::optional<int> project_vendor_id;
 };
 
+nlohmann::json readCalibrationDocument(const std::filesystem::path &path);
 CalibrationFile readCalibrationFile(const std::filesystem::path &path);
 Calibration loadCalibration(const std::filesystem::path &path);
 
