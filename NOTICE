@@ -632,3 +632,11 @@ Resources telemetry patches
   original configuration file, and the geometry checks of that file moved
   to the extraction tool; the frame layout, the pressure handling and the
   validity bits are unchanged.
+- tools/extract-thp-calibration.py: the pen facts of the same vendor
+  configuration, adapted from https://github.com/slwyts/Project-SunUEFI, commit
+  5084588f85884abc52bb675bb7e4c5541cd6cb0c, source path
+  tools/extract_piano_pen_calibration.py. Licence: MIT.
+  Changes: the section parser and the numeric extraction of the pen facts
+  joined the existing tool, which reads the same vendor file; the facts are
+  written as the fields of the pen core instead of the vendor key names, and
+  the geometry checks of the vendor file are applied before the output.

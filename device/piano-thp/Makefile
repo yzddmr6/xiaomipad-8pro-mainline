@@ -27,7 +27,7 @@ $(OUT)/piano-thp-replay: $(CORE_OBJECTS) $(OUT)/calibration.o $(OUT)/stream.o $(
 $(OUT)/piano-thp-live: $(CORE_OBJECTS) $(OUT)/calibration.o $(OUT)/panel.o $(OUT)/stream.o $(OUT)/live_pipeline.o $(OUT)/input.o $(OUT)/live.o
 	$(CXX) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
-$(OUT)/test-calibration: tests/calibration.cpp $(CORE_OBJECTS)
+$(OUT)/test-calibration: tests/calibration.cpp $(CORE_OBJECTS) $(OUT)/calibration.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 $(OUT)/test-live: tests/live.cpp $(CORE_OBJECTS) $(OUT)/calibration.o $(OUT)/panel.o $(OUT)/stream.o $(OUT)/live_pipeline.o
