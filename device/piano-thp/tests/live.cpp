@@ -99,9 +99,14 @@ nvt::Calibration calibration() {
 struct Fixture {
     std::vector<nvt::Slot> visible;
     size_t reports = 0;
+    size_t pen_frames = 0;
+    uint64_t pen_timestamp = 0;
     nvt::LivePipeline pipeline{calibration(), [&](auto slots) {
         visible.assign(slots.begin(), slots.end());
         ++reports;
+    }, [&](const nvt::PenFrame &, uint64_t timestamp_ns) {
+        ++pen_frames;
+        pen_timestamp = timestamp_ns;
     }};
     nvt::StreamReader reader;
     uint64_t sequence = 0, timestamp = 1000000000;
@@ -219,10 +224,14 @@ void lifecycle() {
     check(f.visible.empty() && f.pipeline.stats.stalls == 1, "stall did not release touch");
     f.activate();
     f.feed(packet(5, false, 29));
-    check(f.pipeline.stats.other_types == 1 && !f.visible.empty(), "pen packet was treated as a finger");
+    check(f.pipeline.stats.pen_frames == 1 && f.pen_frames == 1, "pen frame did not reach the pen path");
+    check(f.pipeline.stats.other_types == 0, "pen frame was counted as another type");
+    check(f.visible.empty(), "a valid pen frame did not release the fingers");
+    check(f.pen_timestamp == f.timestamp, "the pen frame lost the timestamp of the stream");
     f.timestamp += nvt::LivePipeline::kStallNs;
     f.feed(packet(6, false, 29));
     check(f.visible.empty(), "pen traffic kept stale finger alive");
+    check(f.pen_frames == 2, "the second pen frame did not reach the pen path");
     f.activate();
     f.feed(packet(7), 0);
     check(f.visible.empty() && f.pipeline.stats.invalid == 1, "invalid flag did not release touch");
