@@ -7,7 +7,8 @@ CXXFLAGS += -Wall -Wextra -Werror -MMD -MP
 # Header paths end up in assertion strings; keep the build host's JSON_INCLUDE location out of the binary.
 CXXFLAGS += $(if $(JSON_INCLUDE),-ffile-prefix-map=$(JSON_INCLUDE)=/usr/include)
 CORE := nvt_touch_core nvt_finger_filter frame processor
-SOURCES := $(CORE) calibration panel replay stream live_pipeline input live
+STYLUS := nvt_stylus nvt_stylus_frame nvt_stylus_core
+SOURCES := $(CORE) $(STYLUS) calibration panel replay stream live_pipeline input live
 OBJECTS := $(addprefix $(OUT)/,$(addsuffix .o,$(SOURCES)))
 CORE_OBJECTS := $(addprefix $(OUT)/,$(addsuffix .o,$(CORE)))
 
@@ -35,8 +36,12 @@ $(OUT)/test-live: tests/live.cpp $(CORE_OBJECTS) $(OUT)/calibration.o $(OUT)/pan
 $(OUT)/test-uinput: tests/uinput.cpp $(OUT)/input.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
-test: $(OUT)/test-calibration $(OUT)/test-live
+$(OUT)/test-stylus: tests/stylus.cpp $(addprefix $(OUT)/,$(addsuffix .o,$(STYLUS)))
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+test: $(OUT)/test-calibration $(OUT)/test-live $(OUT)/test-stylus
 	$(RUNNER) $(OUT)/test-calibration
 	$(RUNNER) $(OUT)/test-live
+	$(RUNNER) $(OUT)/test-stylus
 
 -include $(OBJECTS:.o=.d)

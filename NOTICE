@@ -599,3 +599,36 @@ Resources telemetry patches
   Local changes: 2026 yzddmr6. License texts: apps/resources/COPYING and ubuntu/resources/COPYING.
 - Adreno chip ID/name mapping follows nvtop's extract_gpuinfo_msm_utils.c,
   https://github.com/Syllo/nvtop/commit/71094a9f7dfbfe7cbe9faebfdf055e580a034283 (GPL-3.0-or-later).
+
+- device/piano-thp/src/nvt_stylus.hpp and device/piano-thp/src/nvt_stylus.cpp:
+  the pen solver, adapted from ianchb/xiaomi-sheng-thp, commit
+  34046210932d654a4c0df0121ecc31c008f8148c, source paths src/nvt_stylus.hpp
+  and src/nvt_stylus.cpp. Licence: Apache-2.0; full original notice in
+  LICENSES/Apache-2.0.txt.
+  Changes: the board calibration arrives from the caller, the output is in
+  portrait units, and the transport reader, the GPIO and the Bluetooth
+  control, the uinput device and the calibration defaults of the original
+  project are not part of this file.
+- device/piano-thp/src/nvt_stylus_frame.hpp and
+  device/piano-thp/src/nvt_stylus_frame.cpp: the two original additive
+  checksums, the geometry checks and the four part bitmap of the pen frame,
+  adapted from https://github.com/slwyts/Project-SunUEFI, commit
+  626c84a2ef633c1fa743a8235a5efb33971652ed, source paths
+  linux/userspace/pen/piano-pen-frame.c and piano-pen-frame.h, based on the
+  pinned Novatek HAL. Licence: BSD-2-Clause-Patent; full original notice in
+  LICENSES/BSD-2-Clause-Patent.txt.
+  Changes: the C structure and its init and destroy calls became a C++
+  class with vectors for the buffers; the checks, the layout and the
+  accumulator are unchanged.
+- device/piano-thp/src/nvt_stylus_core.hpp and
+  device/piano-thp/src/nvt_stylus_core.cpp: the pen core, adapted from
+  https://github.com/slwyts/Project-SunUEFI, commit
+  5084588f85884abc52bb675bb7e4c5541cd6cb0c, source paths
+  linux/userspace/pen/piano-pen-core.h and piano-pen-core.cpp, based on
+  ianchb/xiaomi-sheng-thp commit 34046210932d654a4c0df0121ecc31c008f8148c.
+  Licence: Apache-2.0; full original notice in LICENSES/Apache-2.0.txt.
+  Changes: the C interface became a C++ class; the board calibration is
+  passed as the numeric facts of the panel instead of being read from the
+  original configuration file, and the geometry checks of that file moved
+  to the extraction tool; the frame layout, the pressure handling and the
+  validity bits are unchanged.
