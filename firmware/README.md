@@ -21,11 +21,27 @@ Per-unit data is excluded (see below).
 | `novatek/piano/` | `novatek_nt36532_piano_fw_csot.bin`, `novatek_nt36532_piano_fw_boe.bin` (CSOT and BOE panels; the driver picks one by panel ID) | `nt36532e-thp` (touch) | `odm_a`, `firmware/` | `piano-input.json` |
 | `nanosic/piano/` | `MCU_Upgrade.bin` | `hid-nanosic` (keyboard bridge) | `odm_a`, `firmware/` | `piano-input.json` |
 | `foursemi/piano/` | `fs19xx.fsm` (register preset of the four amplifiers) | `snd-soc-fs19xx` (speaker amplifiers) | `odm_a`, `firmware/` | `piano-audio.json` |
+| `fingerprint/` | `gfpia.elf` (the signed secure program of the sensor), `piano-goodix-cap-s.bin`, `piano-goodix-cap-t.bin`, `piano-goodix-dubai-u4.bin` (the algorithm data of the sensor) | `piano-goodix` (fingerprint) | `modem_a` FAT `image/` and `odm_a` `lib64/libgf_hal.so` | `fingerprint/source.json` |
 
 Each lock pins the name, size and SHA-256 of its files. `piano-os3.0.303.0.json` also pins the CDSP
 images and service maps of the same build. They are not shipped because the current kernel does not
 load them. `board.bin` is the stock board file for the China region (`bd_p81.elf`). Units sold for
 other regions use a different stock board file.
+
+The files of `fingerprint/` ship in their own package, like the files of `sensors/`. The lock of that
+directory is `fingerprint/source.json`, which is not named `piano-*.json` and therefore stays out of
+the stock build check of the firmware package; it names the same stock build as every other lock.
+
+**Owner decision 2026-10-28, fingerprint files.** The four files of `fingerprint/` are distributed
+under the firmware policy of this repository. `gfpia.elf` is the signed secure program of the
+factory, reassembled from the segments of the stock partition at the offsets of its program
+headers; the program and the interface that loads it are neither modified nor bypassed. The three
+`piano-goodix-*.bin` files are the algorithm data of the sensor, taken out of the vendor library.
+
+The scope of the decision is these four files only. It does not include the vendor library itself,
+any per-unit data, the persist registry, the factory calibration, any fingerprint template or
+enrolled biometric data, and no product of a signature bypass. The files hold static data of the
+sensor and no key, so they carry no data of a single unit.
 
 **Not included:**
 - touch calibration, which `tools/extract-thp-calibration.py` generates per device;

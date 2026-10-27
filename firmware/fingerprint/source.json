@@ -1,0 +1,32 @@
+{
+  "stock_build": "OS3.0.303.0.WPYCNXM",
+  "source": "piano stock modem FAT image and ODM library, extracted 2026-10-27 from the stock OTA package",
+  "license": "Proprietary; redistribution permission not established. Distributed by owner decision 2026-10-28 under the firmware policy; remove upon rightsholder request.",
+  "scope": "Static ROM data only. No per-unit data, no biometric data, no keys and no signed bypass product.",
+  "files": [
+    {
+      "path": "gfpia.elf",
+      "source": "modem_a FAT image/, gfpia.mdt and gfpia.b00 to gfpia.b08, reassembled at the offsets of the ELF program headers",
+      "note": "The signed secure program of the fingerprint sensor, byte-identical to the stock file.",
+      "sha256": "fd070682591bfb8793c0b3b60099d09abba217534e2545288599b6b090a40e5a"
+    },
+    {
+      "path": "piano-goodix-cap-s.bin",
+      "source": "odm_a lib64/libgf_hal.so at 0x39C3E0, symbol __asp_CAP_S_2_bin",
+      "note": "The algorithm data of the sensor, taken out of the vendor library.",
+      "sha256": "01829194c8a1e00b7bf1cc0440043bc5ee45057791f1f1ab410f8119bc10ae4e"
+    },
+    {
+      "path": "piano-goodix-cap-t.bin",
+      "source": "odm_a lib64/libgf_hal.so at 0x3E7924, symbol __asp_CAP_T_2_bin",
+      "note": "The algorithm data of the sensor, taken out of the vendor library.",
+      "sha256": "b43b6c3890943436d5c863ab3915a538fd2e2f008deb22915c3bc003c42525ee"
+    },
+    {
+      "path": "piano-goodix-dubai-u4.bin",
+      "source": "odm_a lib64/libgf_hal.so at 0x94DA0, symbol DLWeightLightDubaiU4_12_10_14MisTouch",
+      "note": "The algorithm data of the sensor, taken out of the vendor library.",
+      "sha256": "422741920cb2a0e508241e9d1b7c824f7304f15e638b1576423c6fb99f99ec71"
+    }
+  ]
+}
