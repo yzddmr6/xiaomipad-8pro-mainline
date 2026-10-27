@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Synthetic pen frame fixtures only, never hardware touch evidence.
+#include "frame.hpp"
 #include "nvt_stylus_core.hpp"
 #include "nvt_stylus_frame.hpp"
 
@@ -73,6 +74,7 @@ std::vector<uint8_t> penPacket(unsigned part)
 
     std::vector<uint8_t> packet(kBytes, 0);
     check(kBytes >= kRequired, "the synthetic packet is shorter than the decoder expects");
+    packet[0] = 0xa5; /* the packet magic of the touch stream */
     packet[48] = 60;
     packet[49] = 40;
     packet[56] = 29; /* the pen data type */
@@ -144,6 +146,18 @@ int main()
         }
         check(frame.mutualComplete(), "the fourth quarter did not complete the main touch");
         check(frame.frequencyRequest() == 0, "the frame rate request was not decoded");
+
+        // The pen frame is a packet of the same layout, and the touch
+        // process can tell it apart from the finger frame.
+        const auto parsed = nvt::parsePenFrame(packet);
+        check(parsed.payload.size() == packet.size(), "the pen frame lost its payload");
+        bool rejected = false;
+        try {
+            auto finger = packet;
+            finger[56] = 3;
+            nvt::parsePenFrame(finger);
+        } catch (const std::exception &) { rejected = true; }
+        check(rejected, "a finger frame was taken for a pen frame");
 
         // The pen adapter does not convert the other data type.
         auto type17 = penPacket(1);

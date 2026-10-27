@@ -36,7 +36,7 @@ $(OUT)/test-live: tests/live.cpp $(CORE_OBJECTS) $(OUT)/calibration.o $(OUT)/pan
 $(OUT)/test-uinput: tests/uinput.cpp $(OUT)/input.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
-$(OUT)/test-stylus: tests/stylus.cpp $(addprefix $(OUT)/,$(addsuffix .o,$(STYLUS)))
+$(OUT)/test-stylus: tests/stylus.cpp $(CORE_OBJECTS) $(addprefix $(OUT)/,$(addsuffix .o,$(STYLUS)))
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 test: $(OUT)/test-calibration $(OUT)/test-live $(OUT)/test-stylus
