@@ -653,3 +653,18 @@ Resources telemetry patches
   mirrored into the landscape of the panel; the pressure freshness limit
   is the choice of the caller and an expired pressure releases the contact
   instead of writing a pressure of zero.
+- device/bluetooth/piano-pen-radio.py: the wireless initialisation of the
+  Focus Pen Pro, imported from slwyts/Project-SunUEFI, commit
+  6a8763d010adb00b18911d6d12e6dd02869f98b9 (2026-10-10),
+  linux/userspace/pen/piano-pen-bluetooth.py, author slwyts,
+  BSD-2-Clause-Patent; full original notice in
+  LICENSES/BSD-2-Clause-Patent.txt.
+  Source: https://github.com/slwyts/Project-SunUEFI
+  Changes: the agent of the pairing path is registered under the piano bus
+  name, and the description names the pen and the magnetic link. The dock
+  switch, the Bluetooth address of the pen and the screen state are read
+  from the interfaces of this repository and of the kernel, so no private
+  THP node is used.
+  device/bluetooth/p81c-radio.json is the radio parameter profile of the
+  pen, collected from the original firmware service, and holds radio
+  parameters only, never pairing keys or device identities.
