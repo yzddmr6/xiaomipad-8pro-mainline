@@ -7,7 +7,7 @@ CXXFLAGS += -Wall -Wextra -Werror -MMD -MP
 # Header paths end up in assertion strings; keep the build host's JSON_INCLUDE location out of the binary.
 CXXFLAGS += $(if $(JSON_INCLUDE),-ffile-prefix-map=$(JSON_INCLUDE)=/usr/include)
 CORE := nvt_touch_core nvt_finger_filter frame processor
-STYLUS := nvt_stylus nvt_stylus_frame nvt_stylus_core
+STYLUS := nvt_stylus nvt_stylus_frame nvt_stylus_core pen
 SOURCES := $(CORE) $(STYLUS) calibration panel replay stream live_pipeline input live
 OBJECTS := $(addprefix $(OUT)/,$(addsuffix .o,$(SOURCES)))
 CORE_OBJECTS := $(addprefix $(OUT)/,$(addsuffix .o,$(CORE)))

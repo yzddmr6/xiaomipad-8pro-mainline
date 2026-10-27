@@ -640,3 +640,16 @@ Resources telemetry patches
   joined the existing tool, which reads the same vendor file; the facts are
   written as the fields of the pen core instead of the vendor key names, and
   the geometry checks of the vendor file are applied before the output.
+- device/piano-thp/src/input.hpp, device/piano-thp/src/input.cpp and
+  device/piano-thp/src/pen.hpp, device/piano-thp/src/pen.cpp: the tablet
+  tool of the pen and the pipeline which feeds it, adapted from
+  https://github.com/slwyts/Project-SunUEFI, commit
+  626c84a2ef633c1fa743a8235a5efb33971652ed, source paths
+  linux/userspace/pen/piano-pen-owner.c and piano-pen-owner.h, based on
+  ianchb/xiaomi-sheng-thp commit 34046210932d654a4c0df0121ecc31c008f8148c.
+  Licence: Apache-2.0; full original notice in LICENSES/Apache-2.0.txt.
+  Changes: the C owner became a C++ pipeline with a pressure source and a
+  separate uinput device; the portrait native units are exchanged and
+  mirrored into the landscape of the panel; the pressure freshness limit
+  is the choice of the caller and an expired pressure releases the contact
+  instead of writing a pressure of zero.

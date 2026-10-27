@@ -3,6 +3,7 @@
 #include "frame.hpp"
 #include "nvt_stylus_core.hpp"
 #include "nvt_stylus_frame.hpp"
+#include "pen.hpp"
 
 #include <cstdint>
 #include <cstring>
@@ -200,6 +201,33 @@ int main()
                               &message) != 0,
               "a payload with another geometry was accepted");
         check(output.valid == 0, "a rejected payload published values");
+
+        // The pen pipeline accepts the frames of the stream and the reports
+        // of the Bluetooth device.
+        nvt::PenPipeline pipeline(calibration(), 100000000);
+        for (unsigned part = 1; part <= 4; ++part) {
+            const auto quarter = penPacket(part);
+            const auto parsed = nvt::parsePenFrame(quarter);
+            pipeline.feed(parsed, 1000000 + part * 8333333);
+        }
+        // The synthetic matrices carry no tip, so the solver reports no
+        // proximity. That is the honest result of the fixture.
+        check(!pipeline.state().proximity, "the synthetic frames claimed a pen in proximity");
+
+        nvt::PenPressureSource source;
+        uint8_t pressure[15] = { 5, 0x10, 0x27, 0 };
+        check(source.feed(pressure, sizeof(pressure), 1000, &message), "the pressure was not read");
+        check(source.havePressure() && source.pressureTime() == 1000, "the pressure time was not kept");
+        check(!source.squeeze(), "the pressure claimed a squeeze");
+        uint8_t short_report[14] = { 5 };
+        check(!source.feed(short_report, sizeof(short_report), 2000, &message),
+              "a short pressure report was accepted");
+        uint8_t squeeze[2] = { 2, 0x6e };
+        check(source.feed(squeeze, sizeof(squeeze), 3000, &message), "the squeeze was not read");
+        check(source.squeeze(), "the squeeze was not kept");
+        uint8_t released[2] = { 2, 0x00 };
+        check(source.feed(released, sizeof(released), 4000, &message), "the release was not read");
+        check(!source.squeeze(), "the squeeze was not released");
 
         std::cout << "stylus frame and core checks passed\n";
         return 0;
