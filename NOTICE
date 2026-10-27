@@ -668,3 +668,14 @@ Resources telemetry patches
   device/bluetooth/p81c-radio.json is the radio parameter profile of the
   pen, collected from the original firmware service, and holds radio
   parameters only, never pairing keys or device identities.
+- device/fingerprint/piano-goodix.c: the control client of the Goodix
+  fingerprint sensor, imported from slwyts/Project-SunUEFI, commit
+  6a8763d010adb00b18911d6d12e6dd02869f98b9 (2026-10-10),
+  linux/userspace/fingerprint/piano-goodix.c, author slwyts, BSD-3-Clause.
+  Source: https://github.com/slwyts/Project-SunUEFI
+  Changes: none in the client; the files it reads are the ones of
+  firmware/fingerprint/.
+- The fingerprint package builds three upstream projects at the commits
+  pinned in device/fingerprint/source.json: quic-teec (quic/quic-teec),
+  MinkIPC (qualcomm/minkipc) and QCBOR (laurencelundblade/QCBOR). Their
+  licence files are installed with the package.

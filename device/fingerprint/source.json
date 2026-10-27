@@ -1,0 +1,44 @@
+{
+  "sources": {
+    "quic-teec": {
+      "url": "https://github.com/quic/quic-teec.git",
+      "commit": "736419e25a2036aac3292a10a93e394a90750ca3",
+      "license": "LICENSE.txt"
+    },
+    "minkipc": {
+      "url": "https://github.com/qualcomm/minkipc.git",
+      "commit": "ce145804d9e994e0a7913f8d224d52e84bce6608",
+      "license": "LICENSE.txt"
+    },
+    "qcbor": {
+      "url": "https://github.com/laurencelundblade/QCBOR.git",
+      "commit": "590a23daf65af068cee81555c597063150e23539",
+      "license": "LICENSE"
+    }
+  },
+  "client": "piano-goodix.c",
+  "objects": {
+    "quic-teec": [
+      "libqcomtee/src/qcomtee_object.c",
+      "libqcomtee/src/objects/credentials_obj.c",
+      "libqcomtee/src/objects/mem_obj.c"
+    ],
+    "minkipc": [
+      "libminkadaptor/src/mink_adaptor.c",
+      "libminkadaptor/src/supplicant.c",
+      "libminkadaptor/src/syscall.S"
+    ],
+    "qcbor": [
+      "src/UsefulBuf.c",
+      "src/qcbor_encode.c",
+      "src/qcbor_decode.c",
+      "src/qcbor_err_to_str.c",
+      "src/ieee754.c"
+    ]
+  },
+  "includes": {
+    "quic-teec": ["libqcomtee/include", "libqcomtee/src"],
+    "minkipc": ["libminkadaptor/include", "libminkadaptor/src"],
+    "qcbor": ["inc"]
+  }
+}
