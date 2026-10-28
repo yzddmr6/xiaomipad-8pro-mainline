@@ -1,0 +1,16 @@
+[Unit]
+Description=Initialise the wireless link of the Focus Pen Pro
+# The pen radio needs the Bluetooth controller and the pen in its dock. The
+# client identifies the pen over the magnetic charging link, so it starts
+# with the system and waits for the pen itself.
+After=bluetooth.service
+Wants=bluetooth.service
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/piano/piano-pen-radio --follow --profile /usr/share/piano/pen/p81c-radio.json
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

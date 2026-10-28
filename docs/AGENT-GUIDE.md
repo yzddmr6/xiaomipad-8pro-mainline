@@ -1051,6 +1051,17 @@ scanout; reading them changes nothing. A latched underrun bit in TOP0 from early
 not a rate; only a change between the two reads counts. This covers the refresh rate only, not the
 image content.
 
+### 8.6 Flash torch check (as root on the tablet)
+
+```bash
+python3 tools/check-piano-flash.py            # the limits and the current torch of every flash device
+python3 tools/check-piano-flash.py --torch 64 # write a torch value and read it back
+```
+
+The flash of the camera is a standard LED class device, so a program of the distribution can use it
+and no helper of this repository is needed at runtime. The script reads the state of the controller;
+the light itself is only visible on the tablet.
+
 ## 9. Evidence and documentation
 
 - Status levels: *to be researched*, *source lead*, *offline pass*, *device pass*, *device fail*.

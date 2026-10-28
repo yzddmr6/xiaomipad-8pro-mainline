@@ -36,6 +36,11 @@ def copyright_file(repo, paragraphs):
     mit = (repo / 'LICENSE').read_text().split('Permission is hereby granted', 1)[1].split('\n\nFiles carrying', 1)[0]
     bsd = (repo / 'LICENSES/alsa-ucm-conf-BSD-3-Clause.txt').read_text().split('All rights reserved.', 1)[1]
     full = {'MIT': 'Permission is hereby granted' + mit, 'BSD-3-Clause': bsd}
+    # A licence text in LICENSES/ whose name is the SPDX identifier itself is the
+    # text of that identifier. The other names there belong to a single import.
+    for path in sorted((repo / 'LICENSES').glob('*.txt')):
+        if re.fullmatch(r'[A-Za-z0-9.+-]+', path.stem) and path.stem not in full:
+            full[path.stem] = path.read_text()
     out = 'Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\n'
     used = []
     for files, holders, licence, comment in paragraphs:
@@ -78,9 +83,15 @@ def main():
     if a.mesa_only and not a.mesa_build:
         ap.error('--mesa-only requires --mesa-build')
     if not (a.desktop_only or a.snap_graphics_only or a.mipps_auth_only or a.mesa_only):
-        for name in ('thp_live', 'mesa_build', 'busybox', 'avbtool'):
+        # The support package carries the device integration only; the desktop
+        # package needs the verified Mesa build, so --support-only does not.
+        required = ('thp_live', 'busybox', 'avbtool')
+        if not a.support_only:
+            required += ('mesa_build',)
+        for name in required:
             if getattr(a, name) is None:
-                ap.error('--' + name.replace('_', '-') + ' is required unless --desktop-only, --snap-graphics-only or --mipps-auth-only')
+                ap.error('--' + name.replace('_', '-') + ' is required unless --desktop-only, '
+                         '--snap-graphics-only or --mipps-auth-only')
     repo = Path(__file__).resolve().parents[1]
     a.output.mkdir(parents=True, exist_ok=False)
     stages = a.output / 'stages'
@@ -230,6 +241,8 @@ def main():
         copy(a.busybox, support, 'usr/libexec/piano/busybox', 0o755)
         copy(repo / 'device/platform/piano-physical-platform', support, 'usr/libexec/piano/piano-physical-platform', 0o755)
         copy(repo / 'device/bluetooth/bluetooth-address.py', support, 'usr/libexec/piano/bluetooth-address', 0o755)
+        copy(repo / 'device/bluetooth/piano-pen-radio.py', support, 'usr/libexec/piano/piano-pen-radio', 0o755)
+        copy(repo / 'device/bluetooth/p81c-radio.json', support, 'usr/share/piano/pen/p81c-radio.json', 0o644)
         copy(repo / 'initramfs/usb-diag', support, 'usr/libexec/piano/usb-diag', 0o755)
         network = json.loads((repo / 'initramfs/network.json').read_text())
         (support / 'etc/piano-network').write_text(''.join(f'PIANO_{k.upper()}={v}\n' for k, v in network.items()))
@@ -247,6 +260,10 @@ def main():
         busybox = re.search(r'^package=busybox-static_(\S+)_arm64\.deb$',
                             (repo / 'tools/fetch-busybox-arm64.sh').read_text(), re.M).group(1)
         support_third_party = [
+            (('usr/libexec/piano/piano-pen-radio',), 'slwyts and piano mainline contributors',
+             'BSD-2-Clause-Patent',
+             'Adapted from slwyts/Project-SunUEFI 6a8763d010adb00b18911d6d12e6dd02869f98b9;\n'
+             'linux/userspace/pen/piano-pen-bluetooth.py (see NOTICE).'),
             (('usr/libexec/piano/bluetooth-address',), 'slwyts and piano mainline contributors', 'MIT',
              'Adapted from slwyts/Project-SunUEFI 6a8763d010adb00b18911d6d12e6dd02869f98b9;\n'
              'linux/bsp/common/usr/lib/piano/bluetooth-address.py (see NOTICE).'),

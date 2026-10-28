@@ -599,3 +599,72 @@ Resources telemetry patches
   Local changes: 2026 yzddmr6. License texts: apps/resources/COPYING and ubuntu/resources/COPYING.
 - Adreno chip ID/name mapping follows nvtop's extract_gpuinfo_msm_utils.c,
   https://github.com/Syllo/nvtop/commit/71094a9f7dfbfe7cbe9faebfdf055e580a034283 (GPL-3.0-or-later).
+
+- device/piano-thp/src/nvt_stylus.hpp and device/piano-thp/src/nvt_stylus.cpp:
+  the pen solver, adapted from ianchb/xiaomi-sheng-thp, commit
+  34046210932d654a4c0df0121ecc31c008f8148c, source paths src/nvt_stylus.hpp
+  and src/nvt_stylus.cpp. Licence: Apache-2.0; full original notice in
+  LICENSES/Apache-2.0.txt.
+  Changes: the board calibration arrives from the caller, the output is in
+  portrait units, and the transport reader, the GPIO and the Bluetooth
+  control, the uinput device and the calibration defaults of the original
+  project are not part of this file.
+- device/piano-thp/src/nvt_stylus_frame.hpp and
+  device/piano-thp/src/nvt_stylus_frame.cpp: the two original additive
+  checksums, the geometry checks and the four part bitmap of the pen frame,
+  adapted from https://github.com/slwyts/Project-SunUEFI, commit
+  626c84a2ef633c1fa743a8235a5efb33971652ed, source paths
+  linux/userspace/pen/piano-pen-frame.c and piano-pen-frame.h, based on the
+  pinned Novatek HAL. Licence: BSD-2-Clause-Patent; full original notice in
+  LICENSES/BSD-2-Clause-Patent.txt.
+  Changes: the C structure and its init and destroy calls became a C++
+  class with vectors for the buffers; the checks, the layout and the
+  accumulator are unchanged.
+- device/piano-thp/src/nvt_stylus_core.hpp and
+  device/piano-thp/src/nvt_stylus_core.cpp: the pen core, adapted from
+  https://github.com/slwyts/Project-SunUEFI, commit
+  5084588f85884abc52bb675bb7e4c5541cd6cb0c, source paths
+  linux/userspace/pen/piano-pen-core.h and piano-pen-core.cpp, based on
+  ianchb/xiaomi-sheng-thp commit 34046210932d654a4c0df0121ecc31c008f8148c.
+  Licence: Apache-2.0; full original notice in LICENSES/Apache-2.0.txt.
+  Changes: the C interface became a C++ class; the board calibration is
+  passed as the numeric facts of the panel instead of being read from the
+  original configuration file, and the geometry checks of that file moved
+  to the extraction tool; the frame layout, the pressure handling and the
+  validity bits are unchanged.
+- tools/extract-thp-calibration.py: the pen facts of the same vendor
+  configuration, adapted from https://github.com/slwyts/Project-SunUEFI, commit
+  5084588f85884abc52bb675bb7e4c5541cd6cb0c, source path
+  tools/extract_piano_pen_calibration.py. Licence: MIT.
+  Changes: the section parser and the numeric extraction of the pen facts
+  joined the existing tool, which reads the same vendor file; the facts are
+  written as the fields of the pen core instead of the vendor key names, and
+  the geometry checks of the vendor file are applied before the output.
+- device/piano-thp/src/input.hpp, device/piano-thp/src/input.cpp and
+  device/piano-thp/src/pen.hpp, device/piano-thp/src/pen.cpp: the tablet
+  tool of the pen and the pipeline which feeds it, adapted from
+  https://github.com/slwyts/Project-SunUEFI, commit
+  626c84a2ef633c1fa743a8235a5efb33971652ed, source paths
+  linux/userspace/pen/piano-pen-owner.c and piano-pen-owner.h, based on
+  ianchb/xiaomi-sheng-thp commit 34046210932d654a4c0df0121ecc31c008f8148c.
+  Licence: Apache-2.0; full original notice in LICENSES/Apache-2.0.txt.
+  Changes: the C owner became a C++ pipeline with a pressure source and a
+  separate uinput device; the portrait native units are exchanged and
+  mirrored into the landscape of the panel; the pressure freshness limit
+  is the choice of the caller and an expired pressure releases the contact
+  instead of writing a pressure of zero.
+- device/bluetooth/piano-pen-radio.py: the wireless initialisation of the
+  Focus Pen Pro, imported from slwyts/Project-SunUEFI, commit
+  6a8763d010adb00b18911d6d12e6dd02869f98b9 (2026-10-10),
+  linux/userspace/pen/piano-pen-bluetooth.py, author slwyts,
+  BSD-2-Clause-Patent; full original notice in
+  LICENSES/BSD-2-Clause-Patent.txt.
+  Source: https://github.com/slwyts/Project-SunUEFI
+  Changes: the agent of the pairing path is registered under the piano bus
+  name, and the description names the pen and the magnetic link. The dock
+  switch, the Bluetooth address of the pen and the screen state are read
+  from the interfaces of this repository and of the kernel, so no private
+  THP node is used.
+  device/bluetooth/p81c-radio.json is the radio parameter profile of the
+  pen, collected from the original firmware service, and holds radio
+  parameters only, never pairing keys or device identities.
