@@ -36,6 +36,11 @@ def copyright_file(repo, paragraphs):
     mit = (repo / 'LICENSE').read_text().split('Permission is hereby granted', 1)[1].split('\n\nFiles carrying', 1)[0]
     bsd = (repo / 'LICENSES/alsa-ucm-conf-BSD-3-Clause.txt').read_text().split('All rights reserved.', 1)[1]
     full = {'MIT': 'Permission is hereby granted' + mit, 'BSD-3-Clause': bsd}
+    # A licence text in LICENSES/ whose name is the SPDX identifier itself is the
+    # text of that identifier. The other names there belong to a single import.
+    for path in sorted((repo / 'LICENSES').glob('*.txt')):
+        if re.fullmatch(r'[A-Za-z0-9.+-]+', path.stem) and path.stem not in full:
+            full[path.stem] = path.read_text()
     out = 'Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\n'
     used = []
     for files, holders, licence, comment in paragraphs:
@@ -78,9 +83,15 @@ def main():
     if a.mesa_only and not a.mesa_build:
         ap.error('--mesa-only requires --mesa-build')
     if not (a.desktop_only or a.snap_graphics_only or a.mipps_auth_only or a.mesa_only):
-        for name in ('thp_live', 'mesa_build', 'busybox', 'avbtool'):
+        # The support package carries the device integration only; the desktop
+        # package needs the verified Mesa build, so --support-only does not.
+        required = ('thp_live', 'busybox', 'avbtool')
+        if not a.support_only:
+            required += ('mesa_build',)
+        for name in required:
             if getattr(a, name) is None:
-                ap.error('--' + name.replace('_', '-') + ' is required unless --desktop-only, --snap-graphics-only or --mipps-auth-only')
+                ap.error('--' + name.replace('_', '-') + ' is required unless --desktop-only, '
+                         '--snap-graphics-only or --mipps-auth-only')
     repo = Path(__file__).resolve().parents[1]
     a.output.mkdir(parents=True, exist_ok=False)
     stages = a.output / 'stages'
