@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "purpose": "v0.8.0: deep sleep, persistent hardware timekeeping and power management updates",
+  "purpose": "v0.9.0: stock-aligned display links, Linux 7.2.14 and keyboard touchpad detection",
   "upstream_url": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-  "upstream_tag": "v7.2.10",
-  "upstream_commit": "7b20d05fd38de8e0be168956f6fd241d750c7d69",
+  "upstream_tag": "v7.2.14",
+  "upstream_commit": "e09610b541f2725a6382137c168e4efe208917c3",
   "url": "https://github.com/yzddmr6/linux-sm8750-piano",
-  "commit": "57592f423dce206c59c83029b5a5e94239770112",
+  "commit": "9f0727f5b232946293406f2cded86f8d32a46c19",
   "branch": "piano/dev",
   "config": "arch/arm64/configs/piano-diagnostic.config",
   "release_config_fragments": [
@@ -15,5 +15,5 @@
     "arch/arm64/configs/piano-release.config"
   ],
   "note": "The kernel release fragments remain in the kernel source and are merged in order. tools/build-kernel.sh then applies kernel_release to CONFIG_LOCALVERSION for package ABI allocation without a kernel-only release commit; all other configuration remains unchanged. kernel/abi.json binds the final commit and .config.",
-  "kernel_release": "7.2.10-piano43"
+  "kernel_release": "7.2.14-piano44"
 }
