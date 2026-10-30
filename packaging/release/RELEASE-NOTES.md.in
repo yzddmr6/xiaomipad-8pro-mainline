@@ -16,7 +16,7 @@ $updates_zh
 
 $limits_zh
 
-内核包：`$kernel_package`；原厂基线：`$stock_build`（A 槽）。完整功能见 [README 硬件支持表]($repo_url/blob/$release_name/README.zh-CN.md#硬件支持)。
+内核：Linux $kernel_version；原厂基线：`$stock_build`（A 槽）。完整功能见 [README 硬件支持表]($repo_url/blob/$release_name/README.zh-CN.md#硬件支持)。
 
 来源与许可：见 [README 致谢与许可证]($repo_url/blob/$release_name/README.zh-CN.md#致谢与许可证)；维护镜像内 BusyBox $busybox_version 的对应源码见 [Ubuntu 源码包](https://launchpad.net/ubuntu/+source/busybox/$busybox_version)。
 
@@ -40,6 +40,6 @@ Attachments include `$prefix-boot.zip` boot images, `$prefix-tools.zip` switchin
 
 $limits_en
 
-Kernel package: `$kernel_package`; stock baseline: `$stock_build` (slot A). Full hardware support is listed in the [README hardware support table]($repo_url/blob/$release_name/README.md#hardware-support).
+Kernel: Linux $kernel_version; stock baseline: `$stock_build` (slot A). Full hardware support is listed in the [README hardware support table]($repo_url/blob/$release_name/README.md#hardware-support).
 
 Sources and licensing: see [README acknowledgments and licensing]($repo_url/blob/$release_name/README.md#acknowledgments-and-licensing); the maintenance image's BusyBox $busybox_version source is available as an [Ubuntu source package](https://launchpad.net/ubuntu/+source/busybox/$busybox_version).

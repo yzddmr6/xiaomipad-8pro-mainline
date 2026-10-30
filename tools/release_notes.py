@@ -78,12 +78,13 @@ def validate_notes(notes, version):
 def render_notes(rootfs, stock_build, integration_commit, kernel_source, changes):
     version = rootfs['release_name']
     kernel_name = 'linux-image-' + rootfs['kernel_release']
-    kernel = next(e for e in rootfs['packages'] if e['package'] == kernel_name)
+    # The packaged kernel must exist; the notes name the upstream version only.
+    next(e for e in rootfs['packages'] if e['package'] == kernel_name)
     busybox = re.search(r'^package=busybox-static_(\S+)_arm64\.deb$',
                        (REPO / 'tools/fetch-busybox-arm64.sh').read_text(), re.M).group(1)
     notes = string.Template((REPO / 'packaging/release/RELEASE-NOTES.md.in').read_text()).substitute(
         release_name=version, prefix=asset_prefix(version), **change_sections(changes),
-        kernel_package=f'{kernel_name} {kernel["version"]}', stock_build=stock_build,
+        kernel_version=rootfs['kernel_release'].split('-', 1)[0], stock_build=stock_build,
         repo_url=REPO_URL, kernel_url=kernel_source['url'].removesuffix('.git'),
         busybox_version=busybox)
     validate_notes(notes, version)
