@@ -1,6 +1,6 @@
 # Release history and current support
 
-Current release: **v0.8.0**. See the [README](../README.md#hardware-support) or
+Current release: **v0.9.0**. See the [README](../README.md#hardware-support) or
 [中文 README](../README.zh-CN.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
@@ -36,6 +36,12 @@ verified on this unit; later versions were tested on the installed system. These
 results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
+
+### v0.9.0
+
+- The second display link, which drives the right half of the screen, is brought up as the stock software does; the right-half corruption seen on some tablets after a fresh install is related to this link.
+- The kernel is updated to Linux 7.2.14 with 619 upstream stable fixes.
+- The Xiaomi keyboard with a touchpad has its touchpad detected automatically; keyboards without a touchpad are unaffected.
 
 ### v0.8.0
 
