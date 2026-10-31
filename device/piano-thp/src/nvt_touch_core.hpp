@@ -20,6 +20,11 @@ constexpr int kFingerSlots = 12;
 using Matrix = std::array<int, kNodes>;
 using NodeSet = std::bitset<kNodes>;
 
+struct PanelTransform {
+    bool enabled = false;
+    std::array<double, 9> h{1, 0, 0, 0, 1, 0, 0, 0, 1};
+};
+
 struct Calibration {
     std::array<int, kRows> row_map;
     std::array<int, kColumns> column_map;
@@ -28,6 +33,7 @@ struct Calibration {
     int edge_base;
     int edge_size;
     int edge_gain;
+    PanelTransform transform;
 
     void validate() const;
 };

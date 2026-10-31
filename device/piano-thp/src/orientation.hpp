@@ -3,6 +3,7 @@
 #include "nvt_touch_core.hpp"
 #include "panel.hpp"
 #include <algorithm>
+#include <cmath>
 #include <span>
 #include <vector>
 
@@ -32,6 +33,16 @@ inline Contact panelContact(Contact contact, const Calibration &calibration, Pan
     const int y = std::clamp(contact.y, 0, calibration.row_maximum - 1);
     contact.x = x;
     contact.y = vendor == PanelVendor::Boe ? y : calibration.row_maximum - 1 - y;
+    if (calibration.transform.enabled) {
+        const auto &h = calibration.transform.h;
+        const double denominator = h[6] * contact.x + h[7] * contact.y + h[8];
+        const double mapped_x = (h[0] * contact.x + h[1] * contact.y + h[2]) / denominator;
+        const double mapped_y = (h[3] * contact.x + h[4] * contact.y + h[5]) / denominator;
+        contact.x = std::clamp(static_cast<int>(std::lround(mapped_x)), 0,
+                               calibration.column_maximum - 1);
+        contact.y = std::clamp(static_cast<int>(std::lround(mapped_y)), 0,
+                               calibration.row_maximum - 1);
+    }
     return contact;
 }
 
