@@ -11,6 +11,10 @@ The release asset `piano-ubuntu-<version>-packages.zip` is the upgrade package: 
 directory holds every project package installed in that release's image. Always install the
 whole set together, never a single package.
 
+## Upgrading from v0.9.0 to v0.9.1
+
+Use `piano-ubuntu-v0.9.1-packages.zip` and install the complete package set with the same steps below. It includes the new kernel (Linux 7.2.14 with the display link clock kept running) and its matching camera loopback package; the other packages are the same as in v0.9.0. Reboot to use the new kernel. The previous kernel and rollback boot set are retained; no repartitioning or root image rewrite is needed.
+
 ## Upgrading from v0.8.0 to v0.9.0
 
 Use `piano-ubuntu-v0.9.0-packages.zip` and install the complete package set with the same steps below. It includes the new kernel (Linux 7.2.14) and its matching camera loopback package; the other packages are the same as in v0.8.0. Reboot to use the new kernel. The previous kernel and rollback boot set are retained; no repartitioning or root image rewrite is needed.

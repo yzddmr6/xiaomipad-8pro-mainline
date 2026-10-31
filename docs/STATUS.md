@@ -1,6 +1,6 @@
 # Release history and current support
 
-Current release: **v0.9.0**. See the [README](../README.md#hardware-support) or
+Current release: **v0.9.1**. See the [README](../README.md#hardware-support) or
 [中文 README](../README.zh-CN.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
@@ -36,6 +36,10 @@ verified on this unit; later versions were tested on the installed system. These
 results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
+
+### v0.9.1
+
+- Both display links keep their clock running while the screen is on, instead of stopping and restarting it about 174 times per frame during blanking; the right-half corruption seen on some tablets after a fresh install is related to the second link.
 
 ### v0.9.0
 
