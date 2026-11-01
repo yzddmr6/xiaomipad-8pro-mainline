@@ -1,6 +1,6 @@
 # Release history and current support
 
-Current release: **v0.9.1**. See the [README](../README.md#hardware-support) or
+Current release: **v0.9.2**. See the [README](../README.md#hardware-support) or
 [中文 README](../README.zh-CN.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
@@ -36,6 +36,12 @@ verified on this unit; later versions were tested on the installed system. These
 results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
+
+### v0.9.2
+
+- Completes initialization of the second display link to reduce right-half horizontal lines, tearing and corruption on affected BOE panels.
+- Fixes a duplicate resource release during display driver initialization and improves cleanup when power or clock operations fail.
+- Settings → System → About includes the author and a link to the project homepage.
 
 ### v0.9.1
 
