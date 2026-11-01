@@ -242,6 +242,30 @@
       "kernel_commit": "5ab22dc1564dd3b5989bf42917b0c68bb532cf5e",
       "config_sha256": "393619bf86031eff88d17da43f7b62949f680e955947dbc9221be06a44ff7ce0",
       "upload": 1
+    },
+    {
+      "kernel_release": "7.2.14-piano47",
+      "kernel_commit": "1cad9016bc7b47ded4e661eb2b6bca08d360956b",
+      "config_sha256": "485f3c29311da38fe52a64ee17be7d459266cdff505013e78e42962e2bb492a2",
+      "upload": 1
+    },
+    {
+      "kernel_release": "7.2.14-piano48",
+      "kernel_commit": "1ff4f02d9e4304c4e0cfda2356ee01b38078c037",
+      "config_sha256": "932e157bdab07bfe2d56cbf5ef2ff74922c81814b3cb34b4ebcd26dabec5fabb",
+      "upload": 1
+    },
+    {
+      "kernel_release": "7.2.14-piano49",
+      "kernel_commit": "81349c1e7c9cb4cf5553d9d5dd0fba0b21b273cd",
+      "config_sha256": "f805fffdecfec52a58275d7f331dbe8b441365824d0d818c30327a3a2bbad780",
+      "upload": 1
+    },
+    {
+      "kernel_release": "7.2.14-piano50",
+      "kernel_commit": "b097f51215b224d5dfcf2eb274a33772cc54cea9",
+      "config_sha256": "247080bb0d32a77b763699cefda03294509eaa2dd5b8f2e24149a3f8f7b0fd8f",
+      "upload": 1
     }
   ]
 }
