@@ -92,7 +92,7 @@ def main():
                               'LicenseRef-Proprietary-Firmware',
                               (repo / 'LICENSES/LicenseRef-Proprietary-Firmware.txt').read_text()) + '\n' +
             license_paragraph(' '.join(f'usr/lib/firmware/{t["path"]}' for _, t in topologies),
-                              '2021-2024 Linaro Ltd.; the piano mainline project contributors', 'BSD-3-Clause',
+                              '2021-2024 Linaro Ltd.; yzddmr6', 'BSD-3-Clause',
                               (repo / 'LICENSES/audioreach-BSD-3-Clause.txt').read_text()))
         # Debian's KiB estimate for this regular-file/directory-only payload.
         installed_kib = sum((p.stat().st_size + 1023) // 1024 if p.is_file() else 1

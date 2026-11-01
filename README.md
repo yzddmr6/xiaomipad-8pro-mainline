@@ -2,7 +2,7 @@
 
 Native Ubuntu 26.04 LTS with the GNOME desktop on the Xiaomi Pad 8 Pro (codename `piano`, Snapdragon 8 Elite), dual-booting with Android, on a device-adapted kernel based on upstream Linux 7.2. Not a container, not a remote desktop. [中文](README.zh-CN.md)
 
-**Latest release: see [Releases](https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/latest).** What works is in [Hardware Support](#hardware-support).
+**Latest release: see [Releases](https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/latest). Official builds are published only in this repository's Releases, free of charge.** What works is in [Hardware Support](#hardware-support).
 
 ## 🧭 Our Approach
 

@@ -97,7 +97,7 @@ def package(root, output, name, version, depends, relations, description, epoch,
         'Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\n'
         'Upstream-Name: Piano sensor integration\n'
         'Source: https://github.com/yzddmr6/xiaomipad-8pro-mainline\n\n'
-        'Files: *\nCopyright: 2026 The piano mainline project contributors\nLicense: MIT\n\n'
+        'Files: *\nCopyright: 2026 yzddmr6\nLicense: MIT\n\n'
         'Files: usr/bin/hexagonrpcd usr/share/man/man1/hexagonrpcd.1.gz usr/lib/*/piano-sensors/libhexagonrpc*\n'
         'Copyright: 2023-2026 The Sensor Shell Contributors and hexagonrpc contributors\nLicense: GPL-3+\n\n'
         'Files: usr/lib/*/piano-iio-sensor-proxy/libssc*\nCopyright: 2022-2026 Dylan Van Assche\nLicense: GPL-3+\n\n'

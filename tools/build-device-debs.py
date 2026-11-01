@@ -13,7 +13,7 @@ import re
 import shutil
 import subprocess
 
-PROJECT = '2026 The piano mainline project contributors (adapted sources: NOTICE in this directory)'
+PROJECT = '2026 yzddmr6 (adapted sources: NOTICE in this directory)'
 # Licences whose full text Debian ships in /usr/share/common-licenses; the others are included.
 COMMON_LICENSES = {'GPL-2.0-only': 'GPL-2', 'GPL-2.0-or-later': 'GPL-2', 'Apache-2.0': 'Apache-2.0'}
 
