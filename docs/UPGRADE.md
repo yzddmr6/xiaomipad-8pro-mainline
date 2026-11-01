@@ -15,6 +15,12 @@ whole set together, never a single package.
 
 Use `piano-ubuntu-v0.9.2-packages.zip` and install the complete package set with the same steps below. This release includes display initialization and resource-management fixes, the new kernel's matching camera loopback package, and System Settings with author information. Reboot to apply the update. The previous kernel and rollback boot set are retained; no repartitioning or root image rewrite is needed.
 
+### Touch orientation
+
+Set `invert_y` at the top level of your tablet's `/etc/piano/thp-calibration.json`, then run `sudo systemctl restart piano-thp`. `true` reverses the Y coordinate produced by touch processing; `false` uses it directly. Omitting the field keeps the panel default (`false` for BOE, `true` for CSOT). For example, a BOE tablet with mirrored input under the default setting can use `"invert_y": true`; a CSOT tablet can use `false` to cancel its default reversal. No kernel, device-tree or boot image change is needed.
+
+An existing libinput calibration that already works can be retained. When switching to this option, remove the Y reversal from that rule to avoid applying both corrections. Tablets with the correct orientation need no changes.
+
 ## Upgrading from v0.9.0 to v0.9.1
 
 Use `piano-ubuntu-v0.9.1-packages.zip` and install the complete package set with the same steps below. It includes the new kernel (Linux 7.2.14 with the display link clock kept running) and its matching camera loopback package; the other packages are the same as in v0.9.0. Reboot to use the new kernel. The previous kernel and rollback boot set are retained; no repartitioning or root image rewrite is needed.

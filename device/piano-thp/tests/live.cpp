@@ -333,6 +333,16 @@ void orientation() {
     std::vector<nvt::Slot> boe_panel;
     nvt::panelSlots(slots, value, nvt::PanelVendor::Boe, boe_panel);
     check(boe_panel[0].contact.x == 520 && boe_panel[0].contact.y == 21291, "BOE slots are flipped");
+    // The same panel vendor can require a different physical Y mapping.
+    for (auto vendor : {nvt::PanelVendor::Csot, nvt::PanelVendor::Boe}) {
+        nvt::panelSlots(slots, value, vendor, panel, true);
+        check(panel[0].contact.y < panel[1].contact.y &&
+              panel[0].contact.x == slots[0].contact.x &&
+              panel[0].tracking_id == slots[0].tracking_id, "inverted override changed contact identity or direction");
+        nvt::panelSlots(slots, value, vendor, panel, false);
+        check(panel[0].contact.y == slots[0].contact.y &&
+              panel[1].contact.y == slots[1].contact.y, "direct override still uses the vendor reversal");
+    }
 }
 
 struct TemporaryTree {
@@ -405,6 +415,19 @@ void panel() {
     const auto file = nvt::readCalibrationFile(tree.root / "boe.json");
     check(file.project_vendor_id == 26 && file.calibration.row_maximum == value.row_maximum,
           "calibration project_vendor_id not read");
+    check(!file.invert_y.has_value(), "older calibration gained a direction override");
+    for (bool inverted : {false, true}) {
+        document["invert_y"] = inverted;
+        tree.write("direction.json", document.dump());
+        check(nvt::readCalibrationFile(tree.root / "direction.json").invert_y == inverted,
+              "explicit Y direction was not preserved");
+    }
+    document["invert_y"] = "true";
+    tree.write("direction.json", document.dump());
+    bool rejected = false;
+    try { nvt::readCalibrationFile(tree.root / "direction.json"); }
+    catch (const std::runtime_error &) { rejected = true; }
+    check(rejected, "string Y direction silently changed the mapping");
 }
 
 void stock(const char *configuration, const char *path) {

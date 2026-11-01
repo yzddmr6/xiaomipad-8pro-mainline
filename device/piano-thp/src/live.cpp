@@ -52,6 +52,9 @@ int main(int argc, char **argv) {
         const auto panel_identity = nvt::readPanelVendor(argv[2]);
         const auto vendor = panel_identity.vendor;
         std::cerr << nvt::describePanel(panel_identity) << '\n';
+        if (file.invert_y.has_value())
+            std::cerr << "THP Y mapping: " << (*file.invert_y ? "inverted" : "direct")
+                      << " (device calibration)\n";
         if (const auto mismatch = nvt::calibrationMismatch(vendor, file.project_vendor_id))
             std::cerr << "THP calibration error: " << *mismatch << '\n';
         if (argc == 5) {
@@ -63,7 +66,7 @@ int main(int argc, char **argv) {
         nvt::UInputTouch touch(panel.width, panel.height);
         std::vector<nvt::Slot> panel_slots;
         nvt::LivePipeline pipeline(calibration, [&](auto slots) {
-            nvt::panelSlots(slots, calibration, vendor, panel_slots);
+            nvt::panelSlots(slots, calibration, vendor, panel_slots, file.invert_y);
             touch.report(panel_slots);
         });
         nvt::StreamReader reader;

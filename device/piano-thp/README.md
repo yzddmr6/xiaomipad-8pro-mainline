@@ -119,6 +119,12 @@ single place to change. Tracking IDs are allocated within 0..65535 without colli
 algorithm slots are supported in software; this is not a physical finger-count
 claim. Pressure is only a binary contact indicator, not measured force.
 
+The private calibration file can override the panel default with a top-level
+`"invert_y": true` (reverse processor Y) or `"invert_y": false` (report processor Y
+directly). Omitting the field keeps the existing CSOT/BOE default. X, tracking and
+electrode calibration are unchanged. Restart `piano-thp` after changing the file.
+Use this override or a libinput Y correction, not both.
+
 SIGINT/SIGTERM stop the process, release contacts and close the stream. Framing
 or I/O failure terminates it and removes the virtual input device. No retry
 loop conceals a failed controller. Kernel shared-power/suspend limitations

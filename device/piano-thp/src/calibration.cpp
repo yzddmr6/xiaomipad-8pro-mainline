@@ -41,7 +41,13 @@ CalibrationFile readCalibrationFile(const std::filesystem::path &path) {
     std::optional<int> project_vendor_id;
     if (document.contains("project_vendor_id"))
         project_vendor_id = integer(document.at("project_vendor_id"));
-    return {calibration, project_vendor_id};
+    std::optional<bool> invert_y;
+    if (document.contains("invert_y")) {
+        if (!document.at("invert_y").is_boolean())
+            throw std::runtime_error("invert_y must be a boolean");
+        invert_y = document.at("invert_y").get<bool>();
+    }
+    return {calibration, project_vendor_id, invert_y};
 }
 
 Calibration loadCalibration(const std::filesystem::path &path) {

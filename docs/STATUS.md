@@ -41,6 +41,7 @@ results do not establish support for other models, capacities or accessories.
 
 - Completes initialization of the second display link to reduce right-half horizontal lines, tearing and corruption on affected BOE panels.
 - Fixes a duplicate resource release during display driver initialization and improves cleanup when power or clock operations fail.
+- Touchscreen Y orientation can be configured per device without changing the defaults on other tablets.
 - Settings → System → About includes the author and a link to the project homepage.
 
 ### v0.9.1
