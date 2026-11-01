@@ -88,7 +88,7 @@ fi
 	exit 1
 }
 export ARCH=arm64 CROSS_COMPILE="$cross"
-export KBUILD_BUILD_USER=piano KBUILD_BUILD_HOST=builder KBUILD_BUILD_VERSION=1
+export KBUILD_BUILD_USER=yzddmr6 KBUILD_BUILD_HOST=xiaomipad-8pro-mainline KBUILD_BUILD_VERSION=1
 export KBUILD_BUILD_TIMESTAMP
 KBUILD_BUILD_TIMESTAMP=$(git -C "$src" show -s --format=%cI HEAD)
 export KCFLAGS="-ffile-prefix-map=$src=/linux -ffile-prefix-map=$out=/kbuild"

@@ -85,7 +85,7 @@ def main():
         run('make', '-C', kout, 'M=' + str(module), 'ARCH=arm64',
             'CROSS_COMPILE=' + a.cross_compile, 'CC=' + a.cross_compile + 'gcc',
             'KCPPFLAGS=' + prefix_map,
-            'LOCALVERSION=', 'KBUILD_BUILD_USER=piano', 'KBUILD_BUILD_HOST=builder',
+            'LOCALVERSION=', 'KBUILD_BUILD_USER=yzddmr6', 'KBUILD_BUILD_HOST=xiaomipad-8pro-mainline',
             'KBUILD_BUILD_TIMESTAMP=@' + epoch, 'modules')
     ko = module / 'v4l2loopback.ko'
     run(a.cross_compile + 'strip', '--strip-debug', ko)

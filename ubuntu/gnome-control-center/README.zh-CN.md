@@ -1,6 +1,6 @@
-# gnome-control-center：电源键锁屏动作源包补丁
+# gnome-control-center：电源键锁屏动作与关于页作者行源包补丁
 
-固定 Ubuntu 26.04 源包 `1:50.0-0ubuntu6`，本地版本 `1:50.0-0ubuntu6+piano1`。
+固定 Ubuntu 26.04 源包 `1:50.0-0ubuntu6`，本地版本 `1:50.0-0ubuntu6+piano2`。
 已完成源包认证与 ARM64 原生构建；配套运行时包的固定摘要与发布接入见 [Ubuntu 集成](../README.md)。
 补丁按原文件 GPL-2.0-or-later 分发，许可见 [COPYING](COPYING)，不适用集成仓的 MIT 许可。
 
@@ -26,6 +26,12 @@ Shell 的 `org.gnome.ScreenSaver.Lock`，成功返回后调用 `SetActive(true)`
 后者仅作设计参考，不导入其 500 ms 限流或旧显示 API。补丁头保留作者和来源。
 控制中心复用已有 “Lock Screen” / “锁定屏幕” 翻译，允许 tablet/handset 显示该行；
 VM 仍隐藏。控制中心构建及运行时均要求含新 enum/schema 的 GSD 本地版本。
+
+## 关于页作者行
+
+`about-author.patch` 在“设置 → 系统 → 关于”底部加一个“作者”分组：一行显示 yzddmr6 与项目地址，
+点击用默认浏览器打开项目主页。Ubuntu 语言包不含这段文字，分组标题按当前语言在中文“作者”与英文
+“Author”之间选择。
 
 ## 认证并准备源包
 
@@ -64,7 +70,8 @@ assert digest(pathlib.Path(sys.argv[1]).parent / 'changelog-entry') == lock['cha
 VERIFY
 dpkg-source -x gnome-control-center_50.0-0ubuntu6.dsc source
 cp "$assets/power-button-lock.patch" source/debian/patches/piano-power-button-lock.patch
-printf '\n%s\n' piano-power-button-lock.patch >>source/debian/patches/series
+cp "$assets/about-author.patch" source/debian/patches/piano-about-author.patch
+printf '\n%s\n%s\n' piano-power-button-lock.patch piano-about-author.patch >>source/debian/patches/series
 patch -d source -p1 <"$assets/packaging-dependencies.patch"
 { cat "$assets/changelog-entry"; printf '\n'; cat source/debian/changelog; } >source/debian/changelog.new
 mv source/debian/changelog.new source/debian/changelog
@@ -81,4 +88,4 @@ mv source/debian/changelog.new source/debian/changelog
 恢复官方 GSD 前先把此设置恢复为 `suspend`，避免旧 schema 不认识 `lock`。
 
 退出条件：上游合并或所选 Ubuntu 源包提供等价实现，且本机短按、长按、已灭屏唤屏、睡眠恢复、
-失败安全行为及卸载回退通过后，撤去本地补丁和依赖版本覆盖。自动睡眠仍是独立策略。
+失败安全行为及卸载回退通过后，撤去电源键补丁和依赖版本覆盖。自动睡眠仍是独立策略。作者行补丁随本地控制中心包保留。
