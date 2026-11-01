@@ -1,3 +1,9 @@
+gnome-control-center (1:50.0-0ubuntu6+piano2) UNRELEASED; urgency=medium
+
+  * Show the port author and project link on the About page.
+
+ -- yzddmr6 <46088090+yzddmr6@users.noreply.github.com>  Sun, 01 Nov 2026 12:00:00 +0800
+
 gnome-control-center (1:50.0-0ubuntu6+piano1) UNRELEASED; urgency=medium
 
   * Add a power-button lock action using the GNOME screen saver.

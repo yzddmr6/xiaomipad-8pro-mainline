@@ -8,7 +8,7 @@ The lock action uses the two Ubuntu source packages documented in
 Ubuntu's `dpkg-buildpackage`, GSD first, preserving the source locks, patch
 licences and corresponding source for binary redistribution. The four runtime
 binaries are pinned by [power-button-lock.SHA256SUMS](power-button-lock.SHA256SUMS):
-GSD/common `50.0-1ubuntu1+piano1`, control-center/data `1:50.0-0ubuntu6+piano1`.
+GSD/common `50.0-1ubuntu1+piano1`, control-center/data `1:50.0-0ubuntu6+piano2`.
 Development, debug and build-environment files are not release payloads.
 
 Before constructing an image, verify the supplied binaries, with `REPO` pointing

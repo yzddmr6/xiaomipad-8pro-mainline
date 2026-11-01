@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "base_version": "1:50.0-0ubuntu6",
-  "local_version": "1:50.0-0ubuntu6+piano1",
+  "local_version": "1:50.0-0ubuntu6+piano2",
   "files": [
     {
       "file": "gnome-control-center_50.0.orig.tar.xz",
@@ -43,8 +43,13 @@
       "file": "power-button-lock.patch",
       "sha256": "0b107f0a1855361f1551df3bd50fbbce4b8d9b4072d9510bba6c34b6333a8135",
       "license": "GPL-2.0-or-later"
+    },
+    {
+      "file": "about-author.patch",
+      "sha256": "09ada539175ca84adf05f4395ca06729c1ae33ece15d902e6d088cbafac62eca",
+      "license": "GPL-2.0-or-later"
     }
   ],
-  "changelog_entry_sha256": "323e8d2892c3df86b9d3772de57997f3d6af9c283a855801d553d901cbd33c0b",
+  "changelog_entry_sha256": "f3e7fb8a9250369fa1c8a8711ad71fd269fc469ae545e9fc2d5553cfd6ec6360",
   "exit_condition": "Drop when upstream or Ubuntu supplies equivalent functionality and native regression passes."
 }

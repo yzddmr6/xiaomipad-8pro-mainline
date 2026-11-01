@@ -1,0 +1,87 @@
+Description: Show the port author and project link on the About page
+Author: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
+Forwarded: not-needed
+Last-Update: 2026-11-01
+License: GPL-2.0-or-later
+ .
+ One activatable row at the bottom of Settings > System > About opens the
+ project page in the default browser. The group label is chosen from the
+ current language because Ubuntu's language packs do not carry it.
+
+--- a/panels/system/about/cc-about-page.blp
++++ b/panels/system/about/cc-about-page.blp
+@@ -106,6 +106,21 @@
+           activated => $cc_about_page_open_system_details(template);
+         }
+       }
++
++      Adw.PreferencesGroup author_group {
++        Adw.ActionRow {
++          activatable: true;
++          title: "yzddmr6";
++          subtitle: "github.com/yzddmr6/xiaomipad-8pro-mainline";
++          activated => $on_author_row_activated_cb(template);
++
++          [suffix]
++          Image {
++            valign: center;
++            icon-name: "adw-external-link-symbolic";
++          }
++        }
++      }
+     };
+   };
+ }
+--- a/panels/system/about/cc-about-page.c
++++ b/panels/system/about/cc-about-page.c
+@@ -38,6 +38,7 @@
+   GtkPicture      *os_logo;
+   AdwActionRow    *os_name_row;
+   AdwActionRow    *processor_row;
++  AdwPreferencesGroup *author_group;
+ 
+   AdwDialog       *system_details_window;
+   guint            create_system_details_id;
+@@ -160,6 +161,22 @@
+ }
+ 
+ static void
++on_author_row_activated_cb (CcAboutPage *self)
++{
++  g_app_info_launch_default_for_uri ("https://github.com/yzddmr6/xiaomipad-8pro-mainline", NULL, NULL);
++}
++
++static void
++setup_author_group (CcAboutPage *self)
++{
++  const char * const *languages = g_get_language_names ();
++
++  /* Not in Ubuntu's language packs, so choose the label here */
++  adw_preferences_group_set_title (self->author_group,
++                                   g_str_has_prefix (languages[0], "zh") ? "作者" : "Author");
++}
++
++static void
+ cc_about_page_dispose (GObject *object)
+ {
+   CcAboutPage *self = CC_ABOUT_PAGE (object);
+@@ -191,9 +208,11 @@
+   gtk_widget_class_bind_template_child (widget_class, CcAboutPage, os_logo);
+   gtk_widget_class_bind_template_child (widget_class, CcAboutPage, os_name_row);
+   gtk_widget_class_bind_template_child (widget_class, CcAboutPage, processor_row);
++  gtk_widget_class_bind_template_child (widget_class, CcAboutPage, author_group);
+ 
+   gtk_widget_class_bind_template_callback (widget_class, cc_about_page_open_system_details);
+   gtk_widget_class_bind_template_callback (widget_class, on_donate_button_clicked_cb);
++  gtk_widget_class_bind_template_callback (widget_class, on_author_row_activated_cb);
+ }
+ 
+ static void
+@@ -204,6 +223,7 @@
+   gtk_widget_init_template (GTK_WIDGET (self));
+ 
+   about_page_setup_overview (self);
++  setup_author_group (self);
+ 
+   style_manager = adw_style_manager_get_default ();
+   g_signal_connect_object (style_manager, "notify::dark", G_CALLBACK (setup_os_logo), self, G_CONNECT_SWAPPED);
