@@ -8,7 +8,7 @@ Type=oneshot
 RemainAfterExit=yes
 ExecStart=/sbin/modprobe pmic_glink_altmode
 # The consumer already probed; enable policy last, after every opt-in is set.
-ExecStart=/bin/sh -ec 'for p in hv_charge charge_current mipps_auth cp_charge; do echo 1 > /sys/module/xiaomi_mca/parameters/$$p; done; echo 1 > /sys/module/pmic_glink_altmode/parameters/pan_ack; echo 1 > /sys/module/xiaomi_mca/parameters/charge_policy'
+ExecStart=/bin/sh -ec 'for p in hv_charge charge_current full_charge mipps_auth cp_charge; do echo 1 > /sys/module/xiaomi_mca/parameters/$$p; done; echo 1 > /sys/module/pmic_glink_altmode/parameters/pan_ack; echo 1 > /sys/module/xiaomi_mca/parameters/charge_policy'
 # The policy poll stops the stage and restores the buck path after this edge.
 ExecStop=/bin/sh -ec 'echo 0 > /sys/module/xiaomi_mca/parameters/charge_policy'
 TimeoutStartSec=10
