@@ -48,8 +48,9 @@ fi
 export SOURCE_DATE_EPOCH
 SOURCE_DATE_EPOCH=$(git -C "$src" show -s --format=%ct "${lock[0]}")
 if [[ ! -f $out/build/build.ninja ]]; then
+	# -O2 as in tools/build-mesa.py: GCC 13 -O3 miscompiles the GLSL compiler on ARM64.
 	meson setup "$out/build" "$out/source" --cross-file "$cross" \
-		--prefix="${lock[2]}" --libdir=lib --buildtype=release --wrap-mode=nofallback \
+		--prefix="${lock[2]}" --libdir=lib --buildtype=release -Doptimization=2 --wrap-mode=nofallback \
 		-Dplatforms=x11,wayland -Dgallium-drivers=freedreno,softpipe \
 		-Dvulkan-drivers=freedreno -Dfreedreno-kmds=msm -Dllvm=disabled \
 		-Dglx=dri -Degl=enabled -Dgbm=enabled -Dgles1=disabled -Dgles2=enabled \

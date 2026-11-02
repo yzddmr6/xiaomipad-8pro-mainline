@@ -286,7 +286,10 @@ provider 使用与桌面相同的 `mesa/source.json` 提交及补丁，针对
 ARM64 provider 上。消费者可能省略由 provider 提供的非 Mesa X11/XML 库，因此必须保留完整内容约定。
 打包器拒绝缺失的原始文件及 Mesa overlay、snap 元数据之外的修改；保留上游 wrapper、hook、
 组件元数据、运行时文件与许可声明。slot 仅导出 `$SNAP`。
-Mesa 使用 release、`-O3`、`b_ndebug=true`、关闭 LTO；来源与 GPL-2.0-only 许可见 `mesa/snap/provenance.json`。
+Mesa 使用 release、`-O2`（与 Debian、Ubuntu 相同）、`b_ndebug=true`、关闭 LTO；来源与 GPL-2.0-only 许可见 `mesa/snap/provenance.json`。
+GCC 13 以 `-O3` 编译 ARM64 时会误编译 GLSL 编译器的常量处理（`src/compiler/glsl/ir.cpp`）：早先开启断言的
+provider 在 `ir_constant::is_value` 中止；关闭断言后 mediump 常量出错而不报错，使用 Impeller 渲染的
+Flutter 应用（应用中心）因此不显示文字。
 
 ```bash
 python3 tools/build-mesa-root.py --target gpu-2404 --native-nir \
@@ -324,7 +327,8 @@ PyYAML、Ninja、原生 wayland-scanner 和 glslangValidator；构建器复用�
 `--resume` 沿用原构建配方和输入。离线像素检查要求 softpipe；验证器检查实际 core24 运行时、
 provider ELF，以及可选的 Thunderbird/App Center 和 GNOME 运行库，不替代 GUI、GPU 或沙箱验证。
 
-对最终 snap 执行 GLSL 回归，检查含整数常量及嵌套 min/max 的 shader 能编译、链接并绘制正确像素。
+对最终 snap 执行 GLSL 回归，检查含整数常量及嵌套 min/max 的 shader，以及常量比较须正确折叠的 mediump
+shader，能编译、链接并绘制正确像素。
 `--old-provider` 可选，用于复现断言失败；检查关闭 shader 缓存，只构建小型 probe，不重建 Mesa 或 snap：
 
 ```bash
@@ -334,7 +338,7 @@ python3 tools/test-snap-graphics-glsl.py \
   --output out/gpu-snap-glsl
 ```
 
-这是 softpipe/qemu-user 回归，不代表 A830 或应用验收；构建参数也不等于修复了 Mesa 的底层断言逻辑。
+这是 softpipe/qemu-user 回归，不代表 A830 或应用验收；GCC 13 以 `-O3` 构建的 provider 会在 mediump 用例失败。
 Mesa 构建器的 `--keep-build` 可保留未 strip 的对象供排查。
 
 将所得 deb 作为额外的 `--deb` 传给 `build-rootfs-image.py`。包的 postinst 仅启用服务；

@@ -314,9 +314,12 @@ broke Thunderbird and App Center on the device. The packager now
 rejects missing stock files or changes outside the Mesa overlay and snap metadata.
 All stock wrapper/hooks, component metadata, runtime files and notices are retained.
 The slot exports only `$SNAP`; the optional kernel-content directory is not a
-second export on piano. Mesa uses release / `-O3` / `b_ndebug=true` / LTO off.
-The earlier assertion-enabled provider aborted while compiling application GLSL
-(`ir_constant::is_value`); a clear-only pixel test did not exercise that path.
+second export on piano. Mesa uses release / `-O2` / `b_ndebug=true` / LTO off,
+the optimization level Debian and Ubuntu use. GCC 13 at `-O3` miscompiles the
+GLSL compiler's constant handling (`src/compiler/glsl/ir.cpp`) on ARM64: the
+earlier assertion-enabled provider aborted in `ir_constant::is_value`, and with
+assertions disabled mediump constants were silently wrong, so Flutter apps that
+render with Impeller (App Center) drew no text.
 Imported tooling provenance and its GPL-2.0-only licence are recorded in `mesa/snap/provenance.json`.
 
 ```bash
@@ -369,8 +372,9 @@ libraries with the GNOME runtime. `--old-provider <previous.snap>` first reprodu
 the missing-library failure. These checks do not launch the GUI or prove confinement.
 
 Also run the GLSL regression against the final snap. It compiles a shader with
-integer constants and nested min/max through the provider's mapped libgallium,
-then checks the rendered pixel. `--old-provider` is optional; when supplied it
+integer constants and nested min/max, and a mediump shader whose constant
+comparison must fold correctly, through the provider's mapped libgallium, then
+checks the rendered pixels. `--old-provider` is optional; when supplied it
 must reproduce exit 134 at `ir.cpp:1603`, while the new provider must compile,
 link and draw without an assertion. Shader caching is disabled. Only the small
 probe is built; neither Mesa nor the provider snap is rebuilt:
@@ -383,8 +387,8 @@ python3 tools/test-snap-graphics-glsl.py \
 ```
 
 This is a softpipe/qemu-user regression, not application, confinement or A830
-acceptance. Matching release flags avoids the observed assertion; it does not
-claim to fix the underlying Mesa assertion logic. `--keep-build` on the Mesa
+acceptance. A provider built at `-O3` with GCC 13 fails the mediump case.
+`--keep-build` on the Mesa
 builder retains unstripped objects for later crash analysis.
 
 Pass the resulting deb as one additional `--deb` to `build-rootfs-image.py` along

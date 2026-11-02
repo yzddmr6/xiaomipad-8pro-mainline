@@ -65,9 +65,14 @@ def main():
         prefix = '/usr' if content else '/usr/lib/piano/mesa'
         libdir = 'lib/aarch64-linux-gnu' if content else 'lib'
         drivers = 'freedreno,softpipe' if content else 'freedreno'
+        # -O2, as Debian and Ubuntu build Mesa. GCC 13's -O3 loop unswitching
+        # on switch statements miscompiles the GLSL compiler on ARM64:
+        # ir_constant (src/compiler/glsl/ir.cpp) takes the default case for
+        # float16 values, so mediump constants are lost and Flutter's
+        # Impeller renderer draws no text. GCC 14 is not affected.
         flags = [f'--prefix={prefix}', f'--libdir={libdir}', '--buildtype=release',
                  '--wrap-mode=nofallback', '-Db_ndebug=true' if content else '-Db_ndebug=false',
-                 '-Doptimization=3', '-Db_lto=false',
+                 '-Doptimization=2', '-Db_lto=false',
                  f'-Dgallium-drivers={drivers}', '-Degl=enabled',
                  '-Dgbm=enabled', '-Dgles1=disabled', '-Dgles2=enabled',
                  '-Dllvm=disabled', '-Dgallium-va=disabled', '-Dvideo-codecs=[]',

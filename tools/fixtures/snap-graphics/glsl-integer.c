@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
-/* Integer arithmetic plus min/max regression for ir_constant::is_value.
+/* GLSL constant regressions for ir_constant (src/compiler/glsl/ir.cpp).
  * Run with the provider wrapper and softpipe, with the shader cache disabled.
  * The old assertion-enabled provider aborts in min/max optimization. Integer
- * arithmetic alone does not reproduce it. This is not a hardware GPU test.
+ * arithmetic alone does not reproduce it. The mediump case is the shape of
+ * Flutter Impeller's text shader: ir.cpp built by GCC 13 at -O3 on ARM64
+ * loses float16 constants, so the folded comparison takes the else branch.
+ * This is not a hardware GPU test.
  */
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -27,6 +30,43 @@ static GLuint shader(GLenum type, const char *source)
 	return object;
 }
 
+static GLuint link(GLuint vert, const char *source)
+{
+	GLuint program = glCreateProgram();
+	GLint ok;
+	glAttachShader(program, vert);
+	glAttachShader(program, shader(GL_FRAGMENT_SHADER, source));
+	glBindAttribLocation(program, 0, "p");
+	glLinkProgram(program);
+	glGetProgramiv(program, GL_LINK_STATUS, &ok);
+	if (!ok) {
+		fprintf(stderr, "shader link failed\n");
+		exit(1);
+	}
+	return program;
+}
+
+static void draw(GLuint program, const char *name, const unsigned char expected[4])
+{
+	unsigned char pixel[4];
+	glUseProgram(program);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glReadPixels(8, 8, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+	if (glGetError() != GL_NO_ERROR) {
+		fprintf(stderr, "GL draw/readback failed\n");
+		exit(1);
+	}
+	for (unsigned i = 0; i < 4; i++) {
+		if (abs((int)pixel[i] - expected[i]) > 1) {
+			fprintf(stderr, "%s pixel component %u: expected %u, got %u\n",
+				name, i, expected[i], pixel[i]);
+			exit(1);
+		}
+	}
+	printf("%s pixel=%u,%u,%u,%u\n", name, pixel[0], pixel[1], pixel[2], pixel[3]);
+}
+
 int main(void)
 {
 	EGLDisplay display;
@@ -34,9 +74,8 @@ int main(void)
 	EGLSurface surface;
 	EGLContext context;
 	EGLint count;
-	GLint ok;
-	unsigned char pixel[4];
 	const unsigned char expected[4] = { 51, 153, 230, 255 };
+	const unsigned char expected_mediump[4] = { 204, 204, 204, 204 };
 	const GLfloat vertices[] = { -1, -1, 3, -1, -1, 3 };
 	const EGLint attributes[] = {
 		EGL_SURFACE_TYPE, EGL_PBUFFER_BIT, EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
@@ -80,45 +119,31 @@ int main(void)
 	if (!found) { fprintf(stderr, "Provider Gallium mapping missing\n"); return 1; }
 	GLuint vert = shader(GL_VERTEX_SHADER,
 		"#version 300 es\nin vec2 p; void main(){gl_Position=vec4(p,0.,1.);}");
-	GLuint frag = shader(GL_FRAGMENT_SHADER,
+	GLuint integer = link(vert,
 		"#version 300 es\nprecision highp float; precision highp int;\n"
 		"uniform int selector; uniform float value; out vec4 color;\n"
 		"void main(){int k=(selector+1)*2-1;"
 		"float s=min(max(value,0.0),1.0);"
 		"color=vec4(.2,.6,.9,1.)*s*float(k);}");
-	GLuint program = glCreateProgram();
-	glAttachShader(program, vert);
-	glAttachShader(program, frag);
-	glBindAttribLocation(program, 0, "p");
-	glLinkProgram(program);
-	glGetProgramiv(program, GL_LINK_STATUS, &ok);
-	if (!ok) {
-		fprintf(stderr, "shader link failed\n");
-		return 1;
-	}
+	GLuint mediump = link(vert,
+		"#version 300 es\nprecision mediump float;\n"
+		"const float k=1.0; uniform float value; out vec4 color;\n"
+		"void main(){float c=0.0; if(k==1.0) c=value; else c=0.25; color=vec4(c);}");
 	puts("shader_compile_link=PASS");
-	glUseProgram(program);
-	glUniform1i(glGetUniformLocation(program, "selector"), 0);
-	glUniform1f(glGetUniformLocation(program, "value"), 1.0f);
 	glViewport(0, 0, 16, 16);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, vertices);
 	glEnableVertexAttribArray(0);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
-	glReadPixels(8, 8, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
-	if (glGetError() != GL_NO_ERROR) {
-		fprintf(stderr, "GL draw/readback failed\n");
-		return 1;
-	}
-	for (unsigned i = 0; i < 4; i++) {
-		if (abs((int)pixel[i] - expected[i]) > 1) {
-			fprintf(stderr, "pixel component %u: expected %u, got %u\n", i, expected[i], pixel[i]);
-			return 1;
-		}
-	}
-	printf("pixel=%u,%u,%u,%u\nrender_readback=PASS\n", pixel[0], pixel[1], pixel[2], pixel[3]);
-	glDeleteProgram(program);
+	glUseProgram(integer);
+	glUniform1i(glGetUniformLocation(integer, "selector"), 0);
+	glUniform1f(glGetUniformLocation(integer, "value"), 1.0f);
+	draw(integer, "integer", expected);
+	glUseProgram(mediump);
+	glUniform1f(glGetUniformLocation(mediump, "value"), 0.8f);
+	draw(mediump, "mediump", expected_mediump);
+	puts("render_readback=PASS");
+	glDeleteProgram(integer);
+	glDeleteProgram(mediump);
 	glDeleteShader(vert);
-	glDeleteShader(frag);
 	eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 	eglDestroyContext(display, context);
 	eglDestroySurface(display, surface);
