@@ -167,6 +167,12 @@ Some HEVC videos may drop a small number of frames in Firefox. Chromium snap is 
 
 Not yet supported: disk hibernation, hardware clock writes (time is set from the network after boot).
 
+### Virtualization
+
+| Feature | Implementation | Status | Notes |
+|---|---|---|---|
+| Command-line VMs | Gunyah / crosvm | 🧪 optional | Ubuntu guests, SSH, NAT and persistent disks; [user guide](docs/VIRTUALIZATION.md) |
+
 ## Usage and Maintenance
 
 Host commands use the REPO, RELEASE and WORK variables from [INSTALL.md "What you need"](docs/INSTALL.md#what-you-need) and run in WORK. Details are in [docs/FLASHING.md](docs/FLASHING.md).

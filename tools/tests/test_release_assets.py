@@ -48,6 +48,8 @@ def release(tmp_path):
     files = {
         'boot/boot.img': b'boot data' * 100, 'boot/SHA256SUMS': b'boot-local checksums\n',
         'boot/subdir/file with spaces.txt': b'nested metadata',
+        'optional/virtualization/piano-vm.deb': b'optional VM package',
+        'optional/virtualization/piano-virtualization-source.tar.zst': b'corresponding source',
         'debs/package.deb': b'deb data', 'tools/switch.py': b'#!/usr/bin/python3\n',
         'rootfs/root.sparse.img': os.urandom(24_000), 'rootfs/manifest.json': b'{}\n',
         'rootfs/verification.json': b'{"passed": true}\n',
@@ -86,6 +88,9 @@ def test_roundtrip_and_documented_shell_commands(release, tmp_path, part_bytes):
         assert entry['bytes'] == result['sizes'][entry['name']]
         assert entry['sha256'] == tool.sha(assets / entry['name'])
         assert entry['contents'] and entry['restore_command']
+    package_zip = next(x for x in manifest['assets'] if x['name'].endswith('-packages.zip'))
+    assert 'optional/virtualization/piano-vm.deb' in package_zip['contents']
+    assert 'optional/virtualization/piano-virtualization-source.tar.zst' in package_zip['contents']
     parts = manifest['rootfs_parts']
     assert all((assets / n).stat().st_size == part_bytes for n in parts[:-1])
     # Exercise exactly the user-facing shell recipe as well as the Python CLI.

@@ -110,6 +110,42 @@ def scan(path, patterns, chunk=64 << 20):
     return False
 
 
+
+def stage_virtualization(packages, source, out, root_packages):
+    """Add opt-in packages and corresponding source without changing the installed set."""
+    if packages is None and source is None:
+        return []
+    if packages is None or source is None or not source.is_file():
+        raise ValueError('virtualization packages and corresponding source are required together')
+    found = {}
+    for path in sorted(packages.glob('*.deb')):
+        control = subprocess.check_output(['dpkg-deb', '--field', str(path)], text=True)
+        fields = dict(line.split(': ', 1) for line in control.splitlines()
+                      if ': ' in line and not line.startswith(' '))
+        name = fields['Package']
+        if name not in ('piano-vm', 'piano-crosvm') or name in found:
+            raise ValueError('unexpected or duplicate optional VM package')
+        if fields['Architecture'] != 'arm64':
+            raise ValueError('VM packages must be arm64')
+        found[name] = (path, fields['Version'])
+    if set(found) != {'piano-vm', 'piano-crosvm'}:
+        raise ValueError('both VM packages are required')
+    version = found['piano-vm'][1]
+    support = next((x for x in root_packages if x['package'] == 'piano-device-support'), None)
+    if found['piano-crosvm'][1] != version or support is None:
+        raise ValueError('VM package versions or device support do not match')
+    subprocess.run(['dpkg', '--compare-versions', support['version'], 'ge', version], check=True)
+    dest = out / 'optional/virtualization'
+    dest.mkdir(parents=True)
+    result = []
+    for name, (path, ver) in found.items():
+        shutil.copyfile(path, dest / path.name)
+        result.append({'package': name, 'version': ver, 'file': 'optional/virtualization/' + path.name,
+                       'sha256': sha(dest / path.name)})
+    shutil.copyfile(source, dest / 'piano-virtualization-source.tar.zst')
+    return result
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--rootfs-build', type=Path, required=True, help='Output directory of build-rootfs-image.py')
@@ -124,6 +160,8 @@ def main():
     ap.add_argument('--output', type=Path, required=True, help='New release directory')
     ap.add_argument('--changes', type=Path, required=True,
                     help='Bilingual summary, updates and known limitations (UTF-8)')
+    ap.add_argument('--virtualization-packages', type=Path, help='Optional piano-vm and piano-crosvm deb directory')
+    ap.add_argument('--virtualization-source', type=Path, help='Matching corresponding-source archive')
     a = ap.parse_args()
     changes = a.changes.read_text(encoding='utf-8')
     build = a.rootfs_build.resolve()
@@ -235,6 +273,7 @@ def main():
     subprocess.run(['sh', str(REPO / 'device/android/piano-switch-ksu/build.sh'), str(out / 'tools')],
                    check=True, stdout=subprocess.DEVNULL)
 
+    optional_packages = stage_virtualization(a.virtualization_packages, a.virtualization_source, out, rootfs['packages'])
     files = sorted(p for p in out.rglob('*') if p.is_file())
     identity = {'files_scanned': len(files), 'identifiers': len(a.forbid_file), 'matches': 0,
                 'scope': 'Raw byte scan; content inside compressed files (debs, initrd) is not covered'}
@@ -254,7 +293,7 @@ def main():
     release_manifest = {
         'release_name': release_name, 'kernel_release': release, 'kernel_commit': kernel_commit,
         'integration_commit': head, 'integration_tree_dirty': bool(dirty), 'tools_committed': tools_committed,
-        'packages': rootfs['packages'],
+        'packages': rootfs['packages'], 'optional_packages': optional_packages,
         'rootfs_manifest_sha256': sha(build / 'manifest.json'), 'boot_set_checks': checks,
         'maintenance_image_checks': maint_checks,
         'dtb_property_count': len(properties), 'identity_scan': identity,

@@ -165,6 +165,12 @@ Firefox 播放部分 HEVC 视频可能有轻微丢帧。Chromium snap 不支持�
 
 暂不支持：休眠到磁盘、硬件时钟写入（启动后联网校时）。
 
+### 虚拟化
+
+| 功能 | 实现 | 状态 | 说明 |
+|---|---|---|---|
+| 命令行虚拟机 | Gunyah / crosvm | 🧪 可选功能 | Ubuntu 客体、SSH、NAT 和持久磁盘；[使用指南](docs/VIRTUALIZATION.zh-CN.md) |
+
 ## 使用与维护
 
 主机命令按 [INSTALL.zh-CN.md 的「准备」](docs/INSTALL.zh-CN.md#准备)设置 REPO、RELEASE 和 WORK，在 WORK 中执行。详细说明见 [docs/FLASHING.zh-CN.md](docs/FLASHING.zh-CN.md)。
