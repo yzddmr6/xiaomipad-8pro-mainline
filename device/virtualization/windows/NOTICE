@@ -1,0 +1,17 @@
+Windows media preparation and winpe-helper: Piano mainline contributors, MIT.
+The owner supplies their Microsoft Windows ISO and licence. No Windows ISO,
+installed operating system, account, password or activation key is distributed.
+
+Firmware: Droid-VM/edk2-gunyah 90c4d52c7d11485318bbb4fb9291a15ea1550ab2,
+BSD-2-Clause-Patent, with the separately tracked 0005 VirtioBlk DMA patch.
+The edk2/submodule pins and toolchain inputs are in tools/windows.lock.json.
+Licence texts for firmware components accompany the package.
+
+Guest drivers: Droid-VM/gunyah-guest-drivers-windows
+9922545ee7c65927e720c3c12b39cd8ae144e90b, release asset 558946077.
+Only rdmapool, pvmpower, viostor, NetKVM and vioinput are included, without
+altering their INF files, signed binaries, catalogs or public test certificate.
+The root/virtio drivers retain BSD-3-Clause notices; rdmapool, pvmpower and
+restricted-DMA integration carry BSD-2-Clause-Patent notices. See the packaged
+per-file driver-files.json, source-lock.json and licence texts for attribution.
+Installed asset licences are under /usr/share/piano/vm/windows/licenses/.

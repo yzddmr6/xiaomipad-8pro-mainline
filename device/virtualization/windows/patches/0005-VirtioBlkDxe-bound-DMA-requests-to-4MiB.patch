@@ -1,0 +1,88 @@
+From: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
+Subject: [PATCH] OvmfPkg/VirtioBlkDxe: bound read/write DMA mappings to 4 MiB
+
+Keep the BlockIo request synchronous and return the first failing chunk.
+Do not alter flush, full-request validation, or IOMMU map semantics.
+This avoids requiring a restricted DMA pool to map an entire WinPE WIM
+read contiguously. No fallback to unshared guest memory is introduced.
+
+SPDX-License-Identifier: BSD-2-Clause-Patent
+
+--- a/OvmfPkg/VirtioBlkDxe/VirtioBlk.c
++++ b/OvmfPkg/VirtioBlkDxe/VirtioBlk.c
+@@ -468,6 +468,57 @@
+ }
+ 
+ /**
++  Split a validated read/write request into block-aligned DMA mappings.
++
++  Restricted DMA pools need a contiguous bounce allocation for each request.
++  Bound each mapping to 4 MiB and finish/unmap it before submitting the next.
++  Flush requests continue to use SynchronousRequest() directly.
++**/
++STATIC
++EFI_STATUS
++EFIAPI
++SplitReadWriteRequest (
++  IN              VBLK_DEV  *Dev,
++  IN              EFI_LBA   Lba,
++  IN              UINTN     BufferSize,
++  IN OUT          VOID      *Buffer,
++  IN              BOOLEAN   RequestIsWrite
++  )
++{
++  UINTN       BlockSize;
++  UINTN       MaxChunk;
++  UINTN       Chunk;
++  UINT8       *Position;
++  EFI_STATUS  Status;
++
++  BlockSize = Dev->BlockIoMedia.BlockSize;
++  MaxChunk  = (SIZE_4MB / BlockSize) * BlockSize;
++  if (MaxChunk == 0) {
++    return EFI_DEVICE_ERROR;
++  }
++
++  if (BufferSize > MaxChunk) {
++    DEBUG ((DEBUG_INFO, "%a: split %Lu bytes into <= %Lu-byte requests\n",
++      __func__, (UINT64)BufferSize, (UINT64)MaxChunk));
++  }
++
++  Position = Buffer;
++  while (BufferSize > 0) {
++    Chunk  = MIN (BufferSize, MaxChunk);
++    Status = SynchronousRequest (Dev, Lba, Chunk, Position, RequestIsWrite);
++    if (EFI_ERROR (Status)) {
++      return Status;
++    }
++
++    Lba        += Chunk / BlockSize;
++    Position   += Chunk;
++    BufferSize -= Chunk;
++  }
++
++  return EFI_SUCCESS;
++}
++
++/**
+ 
+   ReadBlocks() operation for virtio-blk.
+ 
+@@ -512,7 +563,7 @@
+     return Status;
+   }
+ 
+-  return SynchronousRequest (
++  return SplitReadWriteRequest (
+            Dev,
+            Lba,
+            BufferSize,
+@@ -566,7 +617,7 @@
+     return Status;
+   }
+ 
+-  return SynchronousRequest (
++  return SplitReadWriteRequest (
+            Dev,
+            Lba,
+            BufferSize,

@@ -1,0 +1,163 @@
+{
+  "schema": 1,
+  "source_date_epoch": 1791617089,
+  "firmware_version": "0.1.90c4d52.piano1",
+  "firmware_repositories": [
+    {
+      "path": ".",
+      "url": "https://github.com/Droid-VM/edk2-gunyah.git",
+      "commit": "90c4d52c7d11485318bbb4fb9291a15ea1550ab2"
+    },
+    {
+      "path": "edk2",
+      "url": "https://github.com/tianocore/edk2.git",
+      "commit": "b7a715f7c03c45c6b4575bf88596bfd79658b8ce"
+    },
+    {
+      "path": "edk2/CryptoPkg/Library/OpensslLib/openssl",
+      "url": "https://github.com/openssl/openssl",
+      "commit": "aea7aaf2abb04789f5868cbabec406ea43aa84bf"
+    },
+    {
+      "path": "edk2/UnitTestFrameworkPkg/Library/CmockaLib/cmocka",
+      "url": "https://github.com/tianocore/edk2-cmocka.git",
+      "commit": "1cc9cde3448cdd2e000886a26acf1caac2db7cf1"
+    },
+    {
+      "path": "edk2/MdeModulePkg/Universal/RegularExpressionDxe/oniguruma",
+      "url": "https://github.com/kkos/oniguruma",
+      "commit": "4ef89209a239c1aea328cf13c05a2807e5c146d1"
+    },
+    {
+      "path": "edk2/MdeModulePkg/Library/BrotliCustomDecompressLib/brotli",
+      "url": "https://github.com/google/brotli",
+      "commit": "e230f474b87134e8c6c85b630084c612057f253e"
+    },
+    {
+      "path": "edk2/BaseTools/Source/C/BrotliCompress/brotli",
+      "url": "https://github.com/google/brotli",
+      "commit": "e230f474b87134e8c6c85b630084c612057f253e"
+    },
+    {
+      "path": "edk2/RedfishPkg/Library/JsonLib/jansson",
+      "url": "https://github.com/akheron/jansson",
+      "commit": "e9ebfa7e77a6bee77df44e096b100e7131044059"
+    },
+    {
+      "path": "edk2/UnitTestFrameworkPkg/Library/GoogleTestLib/googletest",
+      "url": "https://github.com/google/googletest.git",
+      "commit": "86add13493e5c881d7e4ba77fb91c1f57752b3a4"
+    },
+    {
+      "path": "edk2/UnitTestFrameworkPkg/Library/SubhookLib/subhook",
+      "url": "https://github.com/tianocore/edk2-subhook.git",
+      "commit": "83d4e1ebef3588fae48b69a7352cc21801cb70bc"
+    },
+    {
+      "path": "edk2/MdePkg/Library/BaseFdtLib/libfdt",
+      "url": "https://github.com/devicetree-org/pylibfdt.git",
+      "commit": "cfff805481bdea27f900c32698171286542b8d3c"
+    },
+    {
+      "path": "edk2/MdePkg/Library/MipiSysTLib/mipisyst",
+      "url": "https://github.com/MIPI-Alliance/public-mipi-sys-t.git",
+      "commit": "370b5944c046bab043dd8b133727b2135af7747a"
+    },
+    {
+      "path": "edk2/CryptoPkg/Library/MbedTlsLib/mbedtls",
+      "url": "https://github.com/ARMmbed/mbedtls",
+      "commit": "e185d7fd85499c8ce5ca2a54f5cf8fe7dbe3f8df"
+    },
+    {
+      "path": "edk2/SecurityPkg/DeviceSecurity/SpdmLib/libspdm",
+      "url": "https://github.com/DMTF/libspdm.git",
+      "commit": "1be116c7b7713fa9003e1bd53b53a34758549eb9"
+    }
+  ],
+  "firmware_patch": {
+    "path": "device/virtualization/windows/patches/0005-VirtioBlkDxe-bound-DMA-requests-to-4MiB.patch",
+    "sha256": "bac181f2d7d160b46c8c2becaf7a40d555d5a8defde656cd34ec45c639a6ea7d"
+  },
+  "drivers": {
+    "url": "https://github.com/Droid-VM/gunyah-guest-drivers-windows/releases/download/dev/gunyah-arm64-drivers.zip",
+    "asset_url": "https://api.github.com/repos/Droid-VM/gunyah-guest-drivers-windows/releases/assets/558946077",
+    "sha256": "207d566ca39894eee7a811a1ff92e6e8826260a810e337c3bb88b1bec908d716",
+    "filename": "gunyah-arm64-drivers.zip",
+    "source_url": "https://github.com/Droid-VM/gunyah-guest-drivers-windows",
+    "source_commit": "9922545ee7c65927e720c3c12b39cd8ae144e90b"
+  },
+  "host_packages": {
+    "gcc": "4:13.2.0-7ubuntu1",
+    "g++": "4:13.2.0-7ubuntu1",
+    "gcc-aarch64-linux-gnu": "4:13.2.0-7ubuntu1",
+    "binutils-aarch64-linux-gnu": "2.42-4ubuntu2.10",
+    "make": "4.3-4.1build2",
+    "python3": "3.12.3-0ubuntu2.1",
+    "bison": "2:3.8.2+dfsg-1build2",
+    "flex": "2.6.4-8.2build1",
+    "git": "1:2.43.0-1ubuntu7.3",
+    "bubblewrap": "0.9.0-1ubuntu0.1",
+    "gcc-13": "13.3.0-6ubuntu2~24.04.1",
+    "g++-13": "13.3.0-6ubuntu2~24.04.1",
+    "cpp-13": "13.3.0-6ubuntu2~24.04.1",
+    "gcc-13-aarch64-linux-gnu": "13.3.0-6ubuntu2~24.04.1cross1",
+    "cpp-13-aarch64-linux-gnu": "13.3.0-6ubuntu2~24.04.1cross1",
+    "binutils": "2.42-4ubuntu2.10",
+    "libc6-dev": "2.39-0ubuntu8.7",
+    "libc6-dev-arm64-cross": "2.39-0ubuntu8cross1",
+    "libgcc-13-dev": "13.3.0-6ubuntu2~24.04.1",
+    "libstdc++-13-dev": "13.3.0-6ubuntu2~24.04.1",
+    "libgcc-13-dev-arm64-cross": "13.3.0-6ubuntu2~24.04.1cross1"
+  },
+  "host_debs": [
+    {
+      "filename": "libclang-common-18-dev_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/l/llvm-toolchain-18/libclang-common-18-dev_18.1.3-1ubuntu1_amd64.deb",
+      "sha256": "d41631bb752815a8196261d1030c096591c59678c8adfbf2e6a740a691b49e80"
+    },
+    {
+      "filename": "libclang1-18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/main/l/llvm-toolchain-18/libclang1-18_18.1.3-1ubuntu1_amd64.deb",
+      "sha256": "1ed67106d743ab4f12db2726c5fc11c436c5e1fba613e9f1006bf3fa05cc69bd"
+    },
+    {
+      "filename": "libllvm18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/main/l/llvm-toolchain-18/libllvm18_18.1.3-1ubuntu1_amd64.deb",
+      "sha256": "af6197096ce3b89aab86de59f01c1b5feb008b2ae1514a03906c0664edb8b0b1"
+    },
+    {
+      "filename": "acpica-tools_20230628-1_amd64.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/a/acpica-unix/acpica-tools_20230628-1_amd64.deb",
+      "sha256": "1282c3e0f5f3e53759350e98e68b96bf31d1f381aaf1e0abdbd750f7a131841c"
+    },
+    {
+      "filename": "uuid-dev_2.39.3-9ubuntu6.6_amd64.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/main/u/util-linux/uuid-dev_2.39.3-9ubuntu6.6_amd64.deb",
+      "sha256": "266115cc3bcecef70b9f75c0cf8ca4daccd40958bf7872f8ccebec50502d2a13"
+    },
+    {
+      "filename": "clang-18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/l/llvm-toolchain-18/clang-18_18.1.3-1ubuntu1_amd64.deb",
+      "sha256": "628b16701014ef7ad648380b20ea74b90dd543857f933b3e34d2fc042783de25"
+    },
+    {
+      "filename": "llvm-18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/l/llvm-toolchain-18/llvm-18_18.1.3-1ubuntu1_amd64.deb",
+      "sha256": "139cb82e16e75fcdd4a56562804ff9bfb482b65d0929580d621d28088075a27e"
+    },
+    {
+      "filename": "lld-18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/universe/l/llvm-toolchain-18/lld-18_18.1.3-1ubuntu1_amd64.deb",
+      "sha256": "c574594d714bf445f4c2323fa99374c05b79be09a3899edbf9d4b7265c9ccc57"
+    },
+    {
+      "filename": "libclang-cpp18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "url": "https://archive.ubuntu.com/ubuntu/pool/main/l/llvm-toolchain-18/libclang-cpp18_18.1.3-1ubuntu1_amd64.deb",
+      "sha256": "e91eda104813ee0468d145d010a4a4e142401f3f17f9a65596c66d416298d018"
+    }
+  ],
+  "artifacts": {
+    "firmware.fd": "16cbb380d6d5f5a0c7c5620714c8a40a7fa51b96722685dd87be5da7694a41bb",
+    "winpe-helper.exe": "46d6b268c8870a452f10095046fc5c1196905a0fbd9c094639ed523d52a2eead"
+  }
+}
