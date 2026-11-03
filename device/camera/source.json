@@ -8,7 +8,7 @@
       "25babfe3ff5d8ddee98b1e0ea88152d69a0c01b1",
       "197c907c4faacfb825450bbed27eb2890bc34caa"
     ],
-    "sha256": "1536fde9945bac1fb1e94f9c91b72ddec13888d6068bdcb1dd908115c702f14a",
+    "sha256": "536e150ecc46a130f8dc29cb55b860041ce1481a235cdd69347d56436e4c2b5c",
     "license": "MIT",
     "author": "bluseliu50",
     "modifications": [
@@ -17,7 +17,8 @@
       "Publish NV12 by default with the Mesa Turnip gen8 texture line-offset fix; retain PIANO_CAMERA_OUTPUT=bgrx as an optional compatibility conversion.",
       "Use an AArch64 NEON NV12-to-BGRx path with exact Q8 scalar equivalence, scalar tails and a non-AArch64 scalar fallback.",
       "Rear analogue gain unit 32 (1x), matching the S5KJN1 driver's raw gain code with 1/32x steps.",
-      "Stable auto exposure from Project-SunUEFI tools/patches/piano-camerad-stable-ae.patch (9b4e382, slwyts): continuous highlight target, bounded startup acquisition, filtered slow tracking, checked focus moves."
+      "Stable auto exposure from Project-SunUEFI tools/patches/piano-camerad-stable-ae.patch (9b4e382, slwyts): continuous highlight target, bounded startup acquisition, filtered slow tracking, checked focus moves.",
+      "Acquire exposure again after a lasting large luma error (scene change) instead of closing it at the 6%-per-update steady rate."
     ],
     "upstream_sha256": "c2ab6391fa41d21d1c3e4359dc0adf671261417dbda180724faf8b2758932d47",
     "local_files": {

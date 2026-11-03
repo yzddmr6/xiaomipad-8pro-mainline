@@ -50,6 +50,7 @@ struct v4l2_event_client_usage {
 #define AE_TARGET	112.0	/* mean luma, gamma encoded */
 #define AE_PERIOD	3	/* frames between control updates */
 #define AE_STARTUP_UPDATES 10	/* bounded acquisition, then steady tracking */
+#define AE_REACQUIRE	0.35	/* lasting luma error (log) to acquire again */
 #define DGAIN_UNITY	1024
 #define DGAIN_MAX	(8 * DGAIN_UNITY)
 #define WB_UNITY	1024
@@ -131,7 +132,7 @@ struct cam {
 	bool have_state;
 	/* exposure statistics are fresh for each stream */
 	double ae_mean, ae_bright;
-	unsigned int ae_updates, ae_stable;
+	unsigned int ae_updates, ae_stable, ae_far;
 	bool ae_acquiring, ae_ready;
 	/* autofocus: lens position range, scan state */
 	int af_min, af_max, af_pos;
@@ -803,7 +804,7 @@ static int cam_start(struct cam *c)
 
 	c->streaming = true;
 	c->frames = 0;
-	c->ae_updates = c->ae_stable = 0;
+	c->ae_updates = c->ae_stable = c->ae_far = 0;
 	c->ae_acquiring = true;
 	c->ae_ready = false;
 	logmsg(c, "streaming %ux%u -> %ux%u NV12 (bayer 0x%04x)", cfg->in_w,
@@ -946,6 +947,22 @@ static void control_update(struct cam *c, const struct stats *s)
 		c->ae_updates++;
 	if (c->ae_ready || c->ae_updates >= AE_STARTUP_UPDATES)
 		c->ae_acquiring = false;
+
+	/* A scene change leaves a large error that the steady rate needs
+	 * seconds to close: acquire again once the filtered error stays large
+	 * for two updates. Controls held at their limits cannot do better.
+	 */
+	if (!c->ae_acquiring && fabs(error) > AE_REACQUIRE &&
+	    (old_exp != c->exposure || old_ag != c->again ||
+	     old_dg != c->dgain)) {
+		if (++c->ae_far >= 2) {
+			c->ae_acquiring = true;
+			c->ae_ready = false;
+			c->ae_updates = c->ae_stable = c->ae_far = 0;
+		}
+	} else {
+		c->ae_far = 0;
+	}
 
 	/* gray world white balance on mid tones */
 	if (s->n_rgb > 200 && s->r > 0 && s->b > 0) {
