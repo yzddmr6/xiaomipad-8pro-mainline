@@ -107,7 +107,6 @@ def main():
             'usr/lib/modprobe.d/piano-camera-loopback.conf': (source / 'v4l2loopback.conf', 0o644),
             'usr/share/doc/piano-camerad/copyright': (source / 'LICENSE', 0o644),
             'usr/share/doc/piano-camerad/source.json': (source / 'source.json', 0o644),
-            'usr/share/doc/piano-camerad/README.md': (source / 'README.md', 0o644),
         }),
         (module_name, 'linux-image-' + release + ', kmod', {
             'usr/lib/modules/' + release + '/extra/v4l2loopback.ko': (ko, 0o644),
@@ -117,7 +116,7 @@ def main():
     ]:
         if a.loopback_only and name == 'piano-camerad':
             continue
-        version = '0.1+20261015.4' if name == 'piano-camerad' else '0.1+20261014.3'
+        version = '0.1+20261103.1' if name == 'piano-camerad' else '0.1+20261014.3'
         stage = out / (name + '.stage')
         stage.mkdir()
         for target, (path, mode) in files.items():
