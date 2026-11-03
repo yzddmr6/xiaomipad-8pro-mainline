@@ -68,6 +68,18 @@ def main():
     if sha(patch) != lock["firmware_patch"]["sha256"]:
         raise ValueError("Firmware patch differs")
     run(["git", "-C", tree / "edk2", "apply", patch])
+    # BaseTools only generates cookies when these files are absent. Seed the
+    # locked build inputs without patching EDK2 or changing runtime protection.
+    build_dir = tree / "build/Build/GunyahKernel-AARCH64/RELEASE_GCC"
+    build_dir.mkdir(parents=True)
+    for bits in (32, 64):
+        values = lock["stack_cookies"]["values" + str(bits)]
+        if len(values) != 100 or any(
+            type(value) is not int or not 0 <= value < (1 << bits) - 1
+            for value in values
+        ):
+            raise ValueError("Invalid locked stack cookie table: " + str(bits))
+        (build_dir / f"StackCookieValues{bits}.json").write_text(json.dumps(values) + "\n")
     # A private mount/user namespace gives compiler paths one neutral spelling.
     build_script = out / "firmware-build.sh"
     build_script.write_text(
@@ -140,6 +152,7 @@ build -t GCC -a AARCH64 -b RELEASE -D DISABLE_NEW_DEPRECATED_INTERFACES=TRUE \\
         "env",
         "LC_ALL=C",
         "TZ=UTC",
+        "PYTHONHASHSEED=0",
         "SOURCE_DATE_EPOCH=" + str(lock["source_date_epoch"]),
         "bash",
         "/build-firmware.sh",
