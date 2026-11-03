@@ -962,7 +962,7 @@ static void control_update(struct cam *c, const struct stats *s)
 		 * remains, and the startup upper bound falls with clipped pixels.
 		 */
 		lo = acquire ? 0.75 : 0.94;
-		hi = acquire ? clampd(1.5 / (1.0 + 4.0 * s->bright), 1.06, 1.5) : 1.06;
+		hi = acquire ? clampd(2.0 / (1.0 + 4.0 * s->bright), 1.06, 2.0) : 1.06;
 		k = clampd(pow(target / fmax(c->ae_mean, 1.0), 2.2 * 0.3), lo, hi);
 		total = (double)c->exposure * c->again / cfg->again_unit *
 			c->dgain / DGAIN_UNITY * k;
