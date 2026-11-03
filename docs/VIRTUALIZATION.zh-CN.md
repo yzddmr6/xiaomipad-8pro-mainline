@@ -43,7 +43,7 @@ stop 等待客体正常关机后回收网络。客体自行关机后，也执行
 
 ## 限制
 
-- 当前提供命令行客体；不提供图形桌面、GPU、声音或 USB 直通。
+- Ubuntu 客体提供命令行；不提供 Ubuntu 图形桌面、GPU、声音或 USB 直通。
 - 每个用户同时运行一台。建议客体内存不超过 3 GiB；运行期间客体占用的内存不能由宿主使用。额度或可用内存不足会明确拒绝启动。
 - 从平板本地桌面终端管理网络认证。运行虚拟机期间保持宿主唤醒，关机或重启宿主前先停止客体。
 - 默认使用用户态 virtio-net。vhost 加速需要管理员另行配置设备权限，不是默认路径。
@@ -64,3 +64,43 @@ sudo gpasswd -d "$USER" gunyah
 ```
 
 不要移除仍供平板使用的设备支持包。卸载包不会删除家目录中的虚拟机数据。重启宿主后，本次启用的模块和大页内存策略退出；不需要手工卸载运行中的驱动。
+
+## Windows 11 ARM
+
+Windows 模式需要自备微软官方 ARM64 ISO（含 `sources/install.wim`）及适用的 Windows 许可证。工具不提供 Windows 镜像、产品密钥或预设账户。建议在家目录所在的 ext4 或 XFS 文件系统保留至少 40 GiB 可用空间；系统盘是 64 GiB 稀疏文件，安装和更新会增加实际占用。
+
+进入同批升级附件的 `optional/virtualization/`，额外安装 Windows 包：
+
+```sh
+sudo apt install --no-install-recommends ./piano-crosvm_*_arm64.deb ./piano-vm_*_arm64.deb ./piano-vm-windows_*_arm64.deb
+```
+
+Windows 准备工具、固件、驱动和 Remmina VNC 客户端由这个可选包提供。Linux 用户无需安装它。更新设备支持包后退出桌面并重新登录，取得 gunyah 组的 6 GiB 内存锁定额度；仍不足时重启宿主再登录。
+
+```sh
+piano-vm load
+piano-vm create windows --os windows11 --iso ~/Downloads/Windows11_ARM64.iso --start
+piano-vm view windows
+```
+
+创建时会从 WIM 列出版本，由你选择。也可以明确加上 `--edition 'Windows 11 Pro'`，名称必须来自该 ISO。默认 4 个 vCPU、4608 MiB 内存和 256 MiB DMA 池；内存最多 5120 MiB。额度或宿主可用内存不足时，工具会拒绝启动。Linux 的默认资源保持不变。
+
+准备介质全程使用你的账户，不挂载 ISO 或虚拟磁盘。首次启动在客体 WinPE 中运行 DISM，窗口显示部署进度；成功并正常关机后，工具自动摘除、删除安装介质，并从系统盘进入 OOBE。部署失败时保留介质和日志，请先检查窗口与 VM 目录。不要把强停当作部署完成。
+
+在 Remmina 窗口中完成普通 OOBE。首次 OOBE 会联网更新；Windows 请求的正常重启会重新启动 VM，窗口断开后可再次运行 `piano-vm view windows`。VNC 固定只监听 `127.0.0.1`，不向局域网开放。需要使用不同本地端口时，在 create 时加 `--vnc-port 5901`。
+
+默认不创建本地账户，不启用自动登录或 RDP。若需要显式创建本地账户，可在 create 命令中加 `--local-user vmuser`，并在终端交互输入密码。应答文件使用 Windows 的隐藏密码编码，**这不是加密**；部署后宿主介质被删除，首次登录后客体应答文件被删除。需要 RDP 时，由你在支持该功能的 Windows 版本中开启，并在客户端确认服务器证书。
+
+关机请使用 Windows 开始菜单中的“关机”，然后清理网络；下次正常启动：
+
+```sh
+piano-vm stop windows
+piano-vm start windows
+piano-vm view windows
+```
+
+Windows 尚在运行时，普通 stop 会要求先在客体内关机；`stop --force` 是可能丢失未落盘数据的强停。关机或重启宿主前先关闭客体，运行期间保持宿主唤醒。
+
+限制：显示为 1280×720 软件帧缓冲，没有 GPU 加速；没有 vTPM，客体安全启动关闭，TPM 等安装检查被绕过。驱动使用测试签名，Windows 会显示测试模式水印；不要关闭驱动依赖的测试签名设置。休眠和快速启动已关闭，不提供音频或 USB 直通。
+
+不再需要时，先关机，再执行 `piano-vm delete windows` 删除这台 VM。可单独 `sudo apt purge piano-vm-windows` 移除 Windows 工具，继续保留 Linux VM 工具；包卸载不会代替 VM 数据删除。

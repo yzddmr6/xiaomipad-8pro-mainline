@@ -9,6 +9,8 @@
 
 ## 虚拟化版（版本待确认）
 
+Windows 用户同时安装同批 `piano-vm-windows` 可选包。设备支持包将 gunyah 组的有限 memlock 调整为 6 GiB；更新后重新登录，必要时重启再创建 Windows VM。Linux 默认配置不变。
+
 按下方步骤整组升级内核和设备支持包并重启，保留旧内核与回退镜像组。不需要虚拟机的用户无需安装可选包。需要时进入升级包的 `optional/virtualization/`，安装同版 `piano-vm` 和 `piano-crosvm`，再按[虚拟机指南](VIRTUALIZATION.zh-CN.md)授权用户并重新登录。已有虚拟机在升级前正常关闭；家目录中的客体磁盘保留，不需要重新创建。
 
 ## 从 v0.9.2 升级到 v0.10.0

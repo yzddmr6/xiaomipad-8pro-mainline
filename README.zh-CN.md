@@ -169,7 +169,7 @@ Firefox 播放部分 HEVC 视频可能有轻微丢帧。Chromium snap 不支持�
 
 | 功能 | 实现 | 状态 | 说明 |
 |---|---|---|---|
-| 命令行虚拟机 | Gunyah / crosvm | 🧪 可选功能 | Ubuntu 客体、SSH、NAT 和持久磁盘；[使用指南](docs/VIRTUALIZATION.zh-CN.md) |
+| 命令行虚拟机 | Gunyah / crosvm | 🧪 可选功能 | Ubuntu/Windows ARM 客体、SSH/VNC、NAT 和持久磁盘；[使用指南](docs/VIRTUALIZATION.zh-CN.md) |
 
 ## 使用与维护
 

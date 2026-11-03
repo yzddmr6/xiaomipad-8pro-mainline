@@ -171,7 +171,7 @@ Not yet supported: disk hibernation, hardware clock writes (time is set from the
 
 | Feature | Implementation | Status | Notes |
 |---|---|---|---|
-| Command-line VMs | Gunyah / crosvm | 🧪 optional | Ubuntu guests, SSH, NAT and persistent disks; [user guide](docs/VIRTUALIZATION.md) |
+| Command-line VMs | Gunyah / crosvm | 🧪 optional | Ubuntu and Windows ARM guests, SSH/VNC, NAT and persistent disks; [user guide](docs/VIRTUALIZATION.md) |
 
 ## Usage and Maintenance
 

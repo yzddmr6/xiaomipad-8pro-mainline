@@ -13,6 +13,8 @@ whole set together, never a single package.
 
 ## Virtualization release (version pending)
 
+Windows users also install the matching optional `piano-vm-windows` package. Device support raises the finite gunyah-group memlock limit to 6 GiB; log in again after upgrading, rebooting if needed before creating Windows VMs. Linux defaults remain unchanged.
+
 Upgrade the complete kernel and device-support set below, reboot, and retain the previous kernel and rollback boot set. VM packages are optional. To enable them, open `optional/virtualization/` in the upgrade archive, install the matching piano-vm and piano-crosvm packages, and follow the [VM guide](VIRTUALIZATION.md) to authorize a user and log in again. Shut down existing guests before upgrading; their disks remain in your home directory and do not need recreation.
 
 ## Upgrading from v0.9.2 to v0.10.0
