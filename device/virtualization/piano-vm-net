@@ -1,47 +1,154 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: GPL-2.0-only
 """Restricted NM TAP/shared action. No user paths, arbitrary commands or VMM execution."""
-import argparse, ipaddress, json, os, pwd, subprocess, sys, uuid
+import argparse
+import ipaddress
+import json
+import os
+import pwd
+import subprocess
+import sys
+import uuid
 from pathlib import Path
-os.environ['PATH']='/usr/sbin:/usr/bin:/sbin:/bin'
-def run(a,check=True):return subprocess.run(a,check=check,capture_output=True,text=True)
-def main():
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('action',choices=['up','down']);p.add_argument('--vm-id',required=True);p.add_argument('--subnet',required=True);p.add_argument('--vhost-net',action='store_true');p.add_argument('--dry-run',action='store_true');a=p.parse_args()
- caller=str(os.getuid()) if a.dry_run else (os.environ.get('SUDO_UID') or os.environ.get('PKEXEC_UID'))
- if caller is None or int(caller)<=0:raise RuntimeError('requires an identified ordinary caller')
- uid=int(caller);user=pwd.getpwuid(uid).pw_name;ident=str(uuid.UUID(a.vm_id));tap='pvm'+ident.replace('-','')[:10];name=f'piano-vm-{uid}-{ident[:8]}'
- connection=str(uuid.uuid5(uuid.UUID(ident),'network-'+str(uid)))
- subnet=ipaddress.ip_network(a.subnet)
- allowed=[ipaddress.ip_network(x) for x in ['10.0.0.0/8','172.16.0.0/12','192.168.0.0/16']]
- if subnet.version!=4 or subnet.prefixlen!=24 or not any(subnet.subnet_of(x) for x in allowed):raise RuntimeError('requires RFC1918 IPv4 /24')
- argv=['nmcli','connection','add','save','no','type','tun','con-name',name,'ifname',tap,'mode','tap','owner',str(uid),'tun.vnet-hdr','yes','connection.uuid',connection,'connection.permissions','user:'+user,'ipv4.method','shared','ipv4.addresses',str(subnet.network_address+1)+'/24','ipv6.method','disabled','connection.autoconnect','no']
- if a.dry_run:
-  print(json.dumps(argv));return 0
- if os.geteuid()!=0:raise RuntimeError('requires administrator authorization')
- if os.readlink('/proc/self/ns/net')!=os.readlink('/proc/1/ns/net'):raise RuntimeError('requires the host network namespace')
- os.environ.pop('DBUS_SYSTEM_BUS_ADDRESS',None)
- query=run(['nmcli','-g','connection.id,connection.interface-name,tun.owner','connection','show','uuid',connection],check=False)
- if query.returncode==0:
-  if query.stdout.strip().splitlines()!=[name,tap,str(uid)]:raise RuntimeError('existing NM connection does not belong to this caller/VM')
-  run(['nmcli','--wait','15','connection','down','uuid',connection],check=False)
-  run(['nmcli','connection','delete','uuid',connection])
-  if Path('/sys/class/net',tap).exists():run(['nmcli','device','delete',tap])
- elif query.returncode!=10:raise RuntimeError('cannot query NetworkManager: '+query.stderr.strip())
- elif Path('/sys/class/net',tap).exists():raise RuntimeError('TAP exists without matching owned NM profile; refusing to change it')
- if a.action=='down':return 0
- for route in json.loads(run(['ip','-j','-4','route','show','table','all']).stdout):
-  dst=route.get('dst','default')
-  if dst!='default' and ipaddress.ip_network(dst,strict=False).overlaps(subnet):raise RuntimeError('VM subnet overlaps host route '+dst)
- if a.vhost_net:run(['/usr/bin/env','-i','PATH=/usr/sbin:/usr/bin:/sbin:/bin','/usr/sbin/modprobe','vhost_net']) # fixed, explicit optional branch; never chmod
 
- run(argv)
- try:run(['nmcli','--wait','30','connection','up','uuid',connection])
- except BaseException:
-  run(['nmcli','connection','delete','uuid',connection],check=False)
-  if Path('/sys/class/net',tap).exists():run(['nmcli','device','delete',tap],check=False)
-  raise
- return 0
-if __name__=='__main__':
- try:sys.exit(main())
- except (RuntimeError,ValueError,OSError,subprocess.CalledProcessError) as e:
-  print('piano-vm-net: '+str(e)+('\n'+e.stderr.strip() if isinstance(e,subprocess.CalledProcessError) and e.stderr else ''),file=sys.stderr);sys.exit(1)
+os.environ["PATH"] = "/usr/sbin:/usr/bin:/sbin:/bin"
+
+
+def run(a, check=True):
+    return subprocess.run(a, check=check, capture_output=True, text=True)
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("action", choices=["up", "down"])
+    p.add_argument("--vm-id", required=True)
+    p.add_argument("--subnet", required=True)
+    p.add_argument("--vhost-net", action="store_true")
+    p.add_argument("--dry-run", action="store_true")
+    a = p.parse_args()
+    caller = (
+        str(os.getuid())
+        if a.dry_run
+        else (os.environ.get("SUDO_UID") or os.environ.get("PKEXEC_UID"))
+    )
+    if caller is None or int(caller) <= 0:
+        raise RuntimeError("requires an identified ordinary caller")
+    uid = int(caller)
+    user = pwd.getpwuid(uid).pw_name
+    ident = str(uuid.UUID(a.vm_id))
+    tap = "pvm" + ident.replace("-", "")[:10]
+    name = f"piano-vm-{uid}-{ident[:8]}"
+    connection = str(uuid.uuid5(uuid.UUID(ident), "network-" + str(uid)))
+    subnet = ipaddress.ip_network(a.subnet)
+    allowed = [ipaddress.ip_network(x) for x in ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]]
+    if (
+        subnet.version != 4
+        or subnet.prefixlen != 24
+        or not any(subnet.subnet_of(x) for x in allowed)
+    ):
+        raise RuntimeError("requires RFC1918 IPv4 /24")
+    argv = [
+        "nmcli",
+        "connection",
+        "add",
+        "save",
+        "no",
+        "type",
+        "tun",
+        "con-name",
+        name,
+        "ifname",
+        tap,
+        "mode",
+        "tap",
+        "owner",
+        str(uid),
+        "tun.vnet-hdr",
+        "yes",
+        "connection.uuid",
+        connection,
+        "connection.permissions",
+        "user:" + user,
+        "ipv4.method",
+        "shared",
+        "ipv4.addresses",
+        str(subnet.network_address + 1) + "/24",
+        "ipv6.method",
+        "disabled",
+        "connection.autoconnect",
+        "no",
+    ]
+    if a.dry_run:
+        print(json.dumps(argv))
+        return 0
+    if os.geteuid() != 0:
+        raise RuntimeError("requires administrator authorization")
+    if os.readlink("/proc/self/ns/net") != os.readlink("/proc/1/ns/net"):
+        raise RuntimeError("requires the host network namespace")
+    os.environ.pop("DBUS_SYSTEM_BUS_ADDRESS", None)
+    query = run(
+        [
+            "nmcli",
+            "-g",
+            "connection.id,connection.interface-name,tun.owner",
+            "connection",
+            "show",
+            "uuid",
+            connection,
+        ],
+        check=False,
+    )
+    if query.returncode == 0:
+        if query.stdout.strip().splitlines() != [name, tap, str(uid)]:
+            raise RuntimeError("existing NM connection does not belong to this caller/VM")
+        run(["nmcli", "--wait", "15", "connection", "down", "uuid", connection], check=False)
+        run(["nmcli", "connection", "delete", "uuid", connection])
+        if Path("/sys/class/net", tap).exists():
+            run(["nmcli", "device", "delete", tap])
+    elif query.returncode != 10:
+        raise RuntimeError("cannot query NetworkManager: " + query.stderr.strip())
+    elif Path("/sys/class/net", tap).exists():
+        raise RuntimeError("TAP exists without matching owned NM profile; refusing to change it")
+    if a.action == "down":
+        return 0
+    for route in json.loads(run(["ip", "-j", "-4", "route", "show", "table", "all"]).stdout):
+        dst = route.get("dst", "default")
+        if dst != "default" and ipaddress.ip_network(dst, strict=False).overlaps(subnet):
+            raise RuntimeError("VM subnet overlaps host route " + dst)
+    if a.vhost_net:
+        run(
+            [
+                "/usr/bin/env",
+                "-i",
+                "PATH=/usr/sbin:/usr/bin:/sbin:/bin",
+                "/usr/sbin/modprobe",
+                "vhost_net",
+            ]
+        )  # fixed, explicit optional branch; never chmod
+
+    run(argv)
+    try:
+        run(["nmcli", "--wait", "30", "connection", "up", "uuid", connection])
+    except BaseException:
+        run(["nmcli", "connection", "delete", "uuid", connection], check=False)
+        if Path("/sys/class/net", tap).exists():
+            run(["nmcli", "device", "delete", tap], check=False)
+        raise
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except (RuntimeError, ValueError, OSError, subprocess.CalledProcessError) as e:
+        print(
+            "piano-vm-net: "
+            + str(e)
+            + (
+                "\n" + e.stderr.strip()
+                if isinstance(e, subprocess.CalledProcessError) and e.stderr
+                else ""
+            ),
+            file=sys.stderr,
+        )
+        sys.exit(1)
