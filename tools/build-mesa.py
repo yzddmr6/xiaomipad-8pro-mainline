@@ -69,10 +69,12 @@ def main():
         # on switch statements miscompiles the GLSL compiler on ARM64:
         # ir_constant (src/compiler/glsl/ir.cpp) takes the default case for
         # float16 values, so mediump constants are lost and Flutter's
-        # Impeller renderer draws no text. GCC 14 is not affected.
+        # Impeller renderer draws no text. GCC 14 is not affected. Meson keeps
+        # --buildtype's -O3 if the level is given as -Doptimization, so pass
+        # --optimization and check the configured value below.
         flags = [f'--prefix={prefix}', f'--libdir={libdir}', '--buildtype=release',
-                 '--wrap-mode=nofallback', '-Db_ndebug=true' if content else '-Db_ndebug=false',
-                 '-Doptimization=2', '-Db_lto=false',
+                 '--optimization=2', '--wrap-mode=nofallback',
+                 '-Db_ndebug=true' if content else '-Db_ndebug=false', '-Db_lto=false',
                  f'-Dgallium-drivers={drivers}', '-Degl=enabled',
                  '-Dgbm=enabled', '-Dgles1=disabled', '-Dgles2=enabled',
                  '-Dllvm=disabled', '-Dgallium-va=disabled', '-Dvideo-codecs=[]',
@@ -131,6 +133,10 @@ def main():
             ['meson', 'introspect', '--machines', str(build)], text=True))
         if machines['host']['cpu_family'] != 'aarch64':
             parser.error('the configured Mesa target must be ARM64')
+        options = {option['name']: option['value'] for option in json.loads(subprocess.check_output(
+            ['meson', 'introspect', '--buildoptions', str(build)], text=True))}
+        if options['optimization'] != '2':
+            parser.error(f"Mesa is configured at -O{options['optimization']}, not -O2")
         if args.configure_only:
             return
         run(['meson', 'compile', '-C', build, '-j', args.jobs], env=env)
