@@ -11,6 +11,10 @@ The release asset `piano-ubuntu-<version>-packages.zip` is the upgrade package: 
 directory holds every project package installed in that release's image. Always install the
 whole set together, never a single package.
 
+## Upgrading from v0.9.2 to v0.10.0
+
+Use `piano-ubuntu-v0.10.0-packages.zip` and install the complete package set with the same steps below. This release includes the new kernel (camera, video, external display and charging fixes) and its matching camera loopback package, the updated camera service, the rebuilt desktop Mesa and gpu-2404 snap provider, the updated device integration package, and `piano-ubuntu-desktop` 0.10.0. Reboot to apply the update. The previous kernel and rollback boot set are retained; no repartitioning or root image rewrite is needed.
+
 ## Upgrading from v0.9.1 to v0.9.2
 
 Use `piano-ubuntu-v0.9.2-packages.zip` and install the complete package set with the same steps below. This release includes display initialization and resource-management fixes, the new kernel's matching camera loopback package, and System Settings with author information. Reboot to apply the update. The previous kernel and rollback boot set are retained; no repartitioning or root image rewrite is needed.

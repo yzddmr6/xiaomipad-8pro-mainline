@@ -1,6 +1,6 @@
 # Release history and current support
 
-Current release: **v0.9.2**. See the [README](../README.md#hardware-support) or
+Current release: **v0.10.0**. See the [README](../README.md#hardware-support) or
 [中文 README](../README.zh-CN.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
@@ -36,6 +36,16 @@ verified on this unit; later versions were tested on the installed system. These
 results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
+
+### v0.10.0
+
+- Camera auto exposure no longer flickers around bright areas and returns to normal brightness within about 1–3 seconds after the lens is covered or pointed at a light; the rear camera gain has finer steps.
+- Both cameras report their real frame size and frame rate to applications, and incomplete frames are no longer passed on.
+- Hardware video decoding finishes the old picture sequence correctly when the resolution changes; H.264/H.265 hardware encoding produces key frames on request.
+- Error handling and resource cleanup are corrected when the USB-C display link fails to start.
+- Charging reaches 100% at normal temperatures, with a lower termination voltage from 48 °C.
+- The app center and other apps using Flutter's new renderer display text again.
+- Wireless statistics no longer time out repeatedly after the router changes its channel or bandwidth.
 
 ### v0.9.2
 
