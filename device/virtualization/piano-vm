@@ -16,7 +16,6 @@ import shlex
 import shutil
 import signal
 import stat
-import struct
 import subprocess
 import sys
 import tempfile
@@ -484,33 +483,25 @@ def host_mem():
 def send_poweroff(rd):
     fd = os.open(rd / "agent.in", os.O_WRONLY | os.O_NONBLOCK)
     try:
+        # Record intent before the guest can acknowledge and exit.
+        (rd / "poweroff.requested").touch(mode=0o600)
         os.write(fd, b"poweroff\n")
     finally:
         os.close(fd)
 
 
-def exit_reason(log):
-    found = None
-    for line in log.splitlines():
-        if "GH-IOCTL " not in line or "vcpu-return" not in line:
-            continue
-        match = re.search(r"bytes=([0-9a-f]+)", line)
-        if not match:
-            continue
-        blob = bytes.fromhex(match[1])
-        if len(blob) < 40:
-            continue
-        reason = struct.unpack_from("<I", blob, 8)[0]
-        if reason == 2:
-            status, kind, _, size = struct.unpack_from("<IHHI", blob, 16)
-            found = {
-                "vcpu_exit": reason,
-                "status": status,
-                "type": kind,
-                "reason_size": size,
-                "reason_hex": blob[28 : 28 + min(size, 8)].hex(),
-            }
-    return found
+def exit_reason(returncode):
+    # crosvm src/main.rs CommandStatus, with --extended-status enabled.
+    if returncode < 0:
+        return "signal:" + signal.Signals(-returncode).name
+    return {
+        0: "stop",
+        32: "reset",
+        33: "crash",
+        34: "guest_panic",
+        35: "invalid_args",
+        36: "watchdog_reset",
+    }.get(returncode, "error")
 
 
 def supervise(vm, cfg, lock_fd):
@@ -529,6 +520,9 @@ def supervise(vm, cfg, lock_fd):
         "exit_code": None,
         "exit_reason": None,
         "clean_shutdown": False,
+        "stop_requested": False,
+        "poweroff_acknowledged": False,
+        "forced_stop": False,
         "ipv4": None,
     }
     proc = None
@@ -588,7 +582,7 @@ def supervise(vm, cfg, lock_fd):
         env = dict(os.environ)
         env.pop("LD_LIBRARY_PATH", None)
         env.pop("CROSVM_GVM_ACCEPT", None)
-        env["LD_PRELOAD"] = str(CROSVM.parent / "libghtrace.so")
+        env.pop("LD_PRELOAD", None)
         with (rd / "crosvm.stdout").open("w") as out, (rd / "crosvm.stderr").open("w") as err:
             proc = subprocess.Popen(argv, stdout=out, stderr=err, env=env, close_fds=True)
             state.update(state="running", pid=proc.pid, vmm_ticks=process_ticks(proc.pid))
@@ -596,12 +590,9 @@ def supervise(vm, cfg, lock_fd):
             requested = False
             agent_offset = 0
             agent_buffer = ""
-            while proc.poll() is None:
-                if stopping and not requested and state.get("guest_ready"):
-                    send_poweroff(rd)
-                    requested = True
-                    state["stop_requested"] = True
-                    record()
+
+            def read_agent():
+                nonlocal agent_offset, agent_buffer
                 with (rd / "agent.log").open() as agent:
                     agent.seek(agent_offset)
                     new = agent.read(65536)
@@ -630,18 +621,31 @@ def supervise(vm, cfg, lock_fd):
                         )
                         state.update(guest_ready=True, guest_boot_id=guest["boot_id"], ipv4=ip)
                         record()
+                    if line.strip() == "PIANO_VM_POWEROFF_REQUEST":
+                        state["poweroff_acknowledged"] = True
+                        record()
+
+            while proc.poll() is None:
+                if stopping and not requested and state.get("guest_ready"):
+                    send_poweroff(rd)
+                    requested = True
+                    state["stop_requested"] = True
+                    record()
+                read_agent()
                 try:
                     proc.wait(timeout=0.25)
                 except subprocess.TimeoutExpired:
                     pass
-        reason = exit_reason((rd / "crosvm.stderr").read_text(errors="replace"))
-        clean = proc.returncode == 0 and reason == {
-            "vcpu_exit": 2,
-            "status": 2,
-            "type": 1,
-            "reason_size": 4,
-            "reason_hex": "00000000",
-        }
+            # The VMM may exit between polls, after its last guest message was written.
+            read_agent()
+        reason = exit_reason(proc.returncode)
+        state["stop_requested"] = (rd / "poweroff.requested").exists()
+        state["forced_stop"] = (rd / "force.requested").exists()
+        clean = (
+            proc.returncode == 0
+            and not state["forced_stop"]
+            and (not state["stop_requested"] or state["poweroff_acknowledged"])
+        )
         state.update(
             state="stopped" if clean else "failed",
             exit_code=proc.returncode,
@@ -669,8 +673,10 @@ def supervise(vm, cfg, lock_fd):
             except OSError as shutdown_error:
                 errors.append("poweroff request: " + str(shutdown_error))
             proc.wait()
+        if proc is not None:
             state["exit_code"] = proc.returncode
-            state["exit_reason"] = exit_reason((rd / "crosvm.stderr").read_text(errors="replace"))
+            state["exit_reason"] = exit_reason(proc.returncode)
+        state["clean_shutdown"] = False
     finally:
         for fd in fifo_fds:
             os.close(fd)
@@ -801,6 +807,8 @@ def stop_vm(vm, cfg, force=False):
         if not rd.resolve().is_relative_to(vm / "runs"):
             raise Failure("invalid run directory")
         if force:
+            # Stop also returns zero: preserve this intent independently of supervisor writes.
+            (rd / "force.requested").touch(mode=0o600)
             run([CROSVM, "stop", rd / "control.sock"])
         else:
             send_poweroff(rd)

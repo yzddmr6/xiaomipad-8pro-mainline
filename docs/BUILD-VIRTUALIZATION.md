@@ -17,7 +17,7 @@ nice -n 10 python3 tools/build-crosvm.py \
   --output build
 ```
 
-The script applies patches in locked order without fuzz, extracts a private arm64 sysroot and host libclang, copies the registry into its own Cargo home, and builds gunyah,net with no default features. It uses --frozen --offline, SOURCE_DATE_EPOCH, stable path remapping and all available CPU threads at nice 10. GPU/VNC and dynamic GuestAccept are not enabled. No system Cargo configuration or shared target directory is modified. Build output includes crosvm and libghtrace.so; a mismatch against the lock fails.
+The script applies patches in locked order without fuzz, extracts a private arm64 sysroot and host libclang, copies the registry into its own Cargo home, and builds gunyah,net with no default features. It uses --frozen --offline, SOURCE_DATE_EPOCH, stable path remapping and all available CPU threads at nice 10. GPU/VNC and dynamic GuestAccept are not enabled. No system Cargo configuration or shared target directory is modified. Build output includes crosvm; a mismatch against the lock fails.
 
 Package using the existing device-package entry point:
 

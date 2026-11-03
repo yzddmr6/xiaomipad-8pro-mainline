@@ -10,7 +10,7 @@ def main():
  repo=Path(__file__).resolve().parents[1];src=repo/'device/virtualization';build=a.crosvm_build.resolve();lock=json.loads((repo/'tools/crosvm.lock.json').read_text())
  os.environ['SOURCE_DATE_EPOCH']=str(lock['source_date_epoch'])
  sha=lambda f:hashlib.sha256(f.read_bytes()).hexdigest()
- for name in ['crosvm','libghtrace.so']:
+ for name in ['crosvm']:
   if sha(build/name)!=lock['artifacts'][name]:raise ValueError('unverified build artifact: '+name)
  out=a.output.resolve();out.mkdir(parents=True,exist_ok=False);stages=out/'stages';stages.mkdir()
  def copy(origin,root,target,mode=0o644):
@@ -33,7 +33,7 @@ def main():
  vmm=stages/'piano-crosvm';vm=stages/'piano-vm'
  # Git does not store empty directories; create the sandbox root during packaging.
  (vmm/'usr/share/piano/crosvm/empty').mkdir(parents=True,exist_ok=True)
- for name in ['crosvm','libghtrace.so']:copy(build/name,vmm,'usr/lib/piano/crosvm/'+name,0o755 if name=='crosvm' else 0o644)
+ copy(build/'crosvm',vmm,'usr/lib/piano/crosvm/crosvm',0o755)
  copy(repo/'tools/crosvm.lock.json',vmm,'usr/share/doc/piano-crosvm/source-lock.json')
  for folder,label in [(build/'src','crosvm'),(build/'src/third_party/minijail','minijail')]:copy(folder/'LICENSE',vmm,'usr/share/doc/piano-crosvm/licenses/'+label+'/LICENSE')
  for crate in sorted((build/'cargo-home/registry/src').glob('*/*')):

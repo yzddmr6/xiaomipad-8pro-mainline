@@ -206,8 +206,7 @@
     "libc6:amd64": "2.39-0ubuntu8.7"
   },
   "artifacts": {
-    "crosvm": "bd5e396542dbe5aebf4a17450ada8e0fa467221cd463f658c456fa0f18b9aae9",
-    "libghtrace.so": "50bfcee7aa3de27b2e30c75f91c4df88a8e8d5752102e3c75d541df8ded44bc4"
+    "crosvm": "bd5e396542dbe5aebf4a17450ada8e0fa467221cd463f658c456fa0f18b9aae9"
   },
   "input_urls": {
     "crosvm-96e84c3.tar.gz": "https://github.com/google/crosvm/archive/96e84c3f680e34e82e932ef911ae97d734121758.tar.gz",
