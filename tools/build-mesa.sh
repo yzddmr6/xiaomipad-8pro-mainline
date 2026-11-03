@@ -49,14 +49,17 @@ export SOURCE_DATE_EPOCH
 SOURCE_DATE_EPOCH=$(git -C "$src" show -s --format=%ct "${lock[0]}")
 if [[ ! -f $out/build/build.ninja ]]; then
 	# -O2 as in tools/build-mesa.py: GCC 13 -O3 miscompiles the GLSL compiler on ARM64.
+	# Meson keeps --buildtype's -O3 if the level is given as -Doptimization.
 	meson setup "$out/build" "$out/source" --cross-file "$cross" \
-		--prefix="${lock[2]}" --libdir=lib --buildtype=release -Doptimization=2 --wrap-mode=nofallback \
+		--prefix="${lock[2]}" --libdir=lib --buildtype=release --optimization=2 --wrap-mode=nofallback \
 		-Dplatforms=x11,wayland -Dgallium-drivers=freedreno,softpipe \
 		-Dvulkan-drivers=freedreno -Dfreedreno-kmds=msm -Dllvm=disabled \
 		-Dglx=dri -Degl=enabled -Dgbm=enabled -Dgles1=disabled -Dgles2=enabled \
 		-Dglvnd=disabled -Dgallium-va=disabled -Dvideo-codecs= \
 		-Dlibunwind=disabled -Dlmsensors=disabled -Dbuild-tests=false
 fi
+[[ $(meson introspect --buildoptions "$out/build" | python3 -c 'import json, sys; print({o["name"]: o["value"] for o in json.load(sys.stdin)}["optimization"])') == 2 ]] ||
+	{ echo 'Mesa is not configured at -O2' >&2; exit 1; }
 ninja -C "$out/build" -j"${JOBS:-4}"
 DESTDIR="$out/stage" meson install -C "$out/build" --no-rebuild
 python3 - "$repo" "$out" "$cross" <<'PY'
