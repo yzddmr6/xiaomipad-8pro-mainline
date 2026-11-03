@@ -1,0 +1,12 @@
+piano-vm: Ubuntu CLI adaptation of mzakamin-hub/iceland-gvm gvm/gvm.sh,
+commit 7ae498c24e61a8860740d003572455a7443eecd3, GPL-2.0-only.
+The CLI and guest/network control programs retain their GPL-2.0-only headers.
+vm-image.py and exit-trace.c: Piano mainline contributors; MIT.
+crosvm: ChromiumOS Authors, BSD-3-Clause; upstream commit
+96e84c3f680e34e82e932ef911ae97d734121758 plus the original iceland-gvm
+patch queue and the separately numbered Piano patch in patches/.
+minijail: ChromiumOS Authors, BSD-3-Clause, commit
+7845d89927a82dbdcdee6276837cd0978f69ba19.
+Rust dependencies retain their individual source licences and notices.
+The corresponding-source archive contains source archives, Cargo.lock,
+registry source packages, patches and the build/packaging scripts.

@@ -1,0 +1,834 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mzak <mzak.amin@gmail.com>
+Date: Sun, 25 Oct 2026 18:24:24 +0300
+Subject: [PATCH 21/30] gunyah + aarch64: iceland gvm:
+ --protected-vm-pseudo-unprotected, the opt-in shared memory mode (after
+ DroidVM)
+
+Ported from DroidVM dvm-crosvm 849e05f (GPL-2.0-or-later + ADDITIONAL-PERMISSIONS, headers kept; CREDITS lists it),
+re-plumbed onto our host kernel's patch 0008 instead of DroidVM's out-of-tree share module:
+- ProtectionType::ProtectedPseudoUnprotected (isolates_memory, shares_guest_ram), cmdline flag, Gunyah only, no
+  default swiotlb.
+- Layout: a 4 MiB lent boot region (the compiled-in boot shim at its base, the device tree at +2 MiB), a 2 MiB shared
+  handoff page (MemoryRegionPurpose::ShimHandoff, shm vdevice), the rest of --mem as the window
+  (MemoryRegionPurpose::SharedGuestRam: not registered at VM creation, not in /memory, no shm vdevice). The payload
+  goes to the window's base; the hypervisor starts the shim.
+- After GH_VM_START the window is shared with GH_VM_PROTECTED_SHARE (guest R/W/X; ICELAND_SHIM_PARCEL_MB splits it),
+  the handles go into the handoff page and `ready` is set last; a watcher thread turns the shim's status into
+  GH-SHIM log lines. ICELAND_SHIM_PROBE_EXEC / ICELAND_SHIM_NO_EXEC are diagnostics.
+The host can read and write all of such a VM's RAM: the app offers it only as an explicit per-VM opt-in.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Signed-off-by: mzak <mzak.amin@gmail.com>
+---
+ Cargo.lock                       |  16 +++
+ aarch64/src/lib.rs               | 200 +++++++++++++++++++++++++--
+ arch/src/fdt.rs                  |   7 +
+ hypervisor/src/geniezone/mod.rs  |   2 +
+ hypervisor/src/gunyah/aarch64.rs |   5 +
+ hypervisor/src/gunyah/mod.rs     | 228 +++++++++++++++++++++++++++++++
+ hypervisor/src/halla/mod.rs      |   2 +
+ hypervisor/src/lib.rs            |  22 ++-
+ src/crosvm/cmdline.rs            |   9 ++
+ src/crosvm/sys/linux.rs          |   7 +-
+ src/crosvm/sys/linux/config.rs   |  14 +-
+ vm_memory/src/guest_memory.rs    |  11 ++
+ 12 files changed, 508 insertions(+), 15 deletions(-)
+
+diff --git a/Cargo.lock b/Cargo.lock
+index 2a8fe7f..d9340ce 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -858,6 +858,7 @@ dependencies = [
+  "device_virtio_block",
+  "device_virtio_console",
+  "device_virtio_fs",
++ "device_virtio_gvm_accept",
+  "device_virtio_net",
+  "device_virtio_pmem",
+  "device_virtio_rng",
+@@ -1147,6 +1148,21 @@ dependencies = [
+  "zerocopy 0.8.14",
+ ]
+ 
++[[package]]
++name = "device_virtio_gvm_accept"
++version = "0.1.0"
++dependencies = [
++ "anyhow",
++ "base",
++ "devices",
++ "hypervisor",
++ "jail",
++ "minijail",
++ "serde",
++ "snapshot",
++ "vm_memory",
++]
++
+ [[package]]
+ name = "device_virtio_net"
+ version = "0.1.0"
+diff --git a/aarch64/src/lib.rs b/aarch64/src/lib.rs
+index 78968b7..885078c 100644
+--- a/aarch64/src/lib.rs
++++ b/aarch64/src/lib.rs
+@@ -99,6 +99,9 @@ use vm_memory::MemoryRegionPurpose;
+ 
+ mod fdt;
+ mod simplefb;
++// iceland gvm (from DroidVM): the boot shim's ABI, the same file the shim itself includes.
++#[path = "../../hypervisor/src/gunyah/shim_abi.rs"]
++mod shim_abi;
+ 
+ const AARCH64_FDT_MAX_SIZE: u64 = 0x200000;
+ const AARCH64_FDT_ALIGN: u64 = 0x200000;
+@@ -115,6 +118,21 @@ const AARCH64_GIC_CPUI_SIZE: u64 = 0x20000;
+ const AARCH64_PHYS_MEM_START: u64 = 0x80000000;
+ const AARCH64_PLATFORM_MMIO_SIZE: u64 = 0x40000000;
+ 
++/// iceland gvm (pseudo-unprotected mode, from DroidVM): the lent region the VM boots in, holding
++/// the boot shim at its base and the device tree at AARCH64_SHIM_FDT_OFFSET. 4 MiB rather than
++/// 2 MiB because DroidVM measured that the 6.12-generation resource manager wants the tree where
++/// an ordinary VM has it (2 MiB aligned, 2 MiB long). It comes out of `--mem`.
++const AARCH64_SHIM_BOOT_REGION_SIZE: u64 = AARCH64_FDT_ALIGN + AARCH64_FDT_MAX_SIZE;
++const AARCH64_SHIM_FDT_OFFSET: u64 = AARCH64_FDT_ALIGN;
++const AARCH64_SHIM_FDT_MAX_SIZE: u64 = AARCH64_FDT_MAX_SIZE;
++/// The page host and shim talk through: one 2 MiB folio above the boot region, shared.
++const AARCH64_SHIM_HANDOFF_SIZE: u64 = 0x200000;
++/// The least guest RAM the window may be.
++const AARCH64_SHIM_MIN_WINDOW: u64 = 64 << 20;
++
++/// The boot shim (droidvm-shim, built by build-shim-par-in.sh), compiled in so it cannot be stale.
++const SHIM_IMAGE: &[u8] = include_bytes!("../../hypervisor/src/gunyah/shim.bin");
++
+ const AARCH64_PROTECTED_VM_FW_MAX_SIZE: u64 = 0x400000;
+ const AARCH64_PROTECTED_VM_FW_START: u64 =
+     AARCH64_PHYS_MEM_START - AARCH64_PROTECTED_VM_FW_MAX_SIZE;
+@@ -350,6 +368,11 @@ pub enum Error {
+     NestedVirtRequiresGicV3,
+     #[error("ARM nested virtualization requested, but not supported by the host")]
+     NestedVirtUnsupported,
++    #[error(
++        "--mem {0:#x} leaves no room for the guest's RAM: a pseudo-unprotected VM spends the \
++         bottom of it on the boot shim, the device tree and the handoff page"
++    )]
++    PseudoUnprotectedTooSmall(u64),
+     #[error("pVM firmware could not be loaded: {0}")]
+     PvmFwLoadFailure(base::Error),
+     #[error("ramoops address is different from high_mmio_base: {0} vs {1}")]
+@@ -378,6 +401,10 @@ pub enum Error {
+     SetReg(base::Error),
+     #[error("failed to set up guest memory: {0}")]
+     SetupGuestMemory(GuestMemoryError),
++    #[error("the compiled-in boot shim does not start with the header magic ({0:#x})")]
++    ShimBadImage(u64),
++    #[error("boot shim could not be written to guest memory: {0}")]
++    ShimLoadFailure(GuestMemoryError),
+     #[error("--simplefb does not fit: {0}")]
+     SimplefbLayout(String),
+     #[error("this function isn't supported")]
+@@ -430,6 +457,77 @@ fn get_block_size() -> u64 {
+     block_size as u64
+ }
+ 
++/// iceland gvm (from DroidVM): copy the boot shim to the base of the boot region and patch its
++/// header with the two addresses only the host knows. The region is lent right after this.
++fn load_shim(
++    mem: &GuestMemory,
++    at: GuestAddress,
++    payload: GuestAddress,
++    handoff: GuestAddress,
++    probe_exec: bool,
++) -> std::result::Result<(), Error> {
++    use shim_abi as abi;
++
++    let built_magic = SHIM_IMAGE
++        .get(abi::SHIM_HEADER_OFFSET..abi::SHIM_HEADER_OFFSET + 8)
++        .map(|b| u64::from_le_bytes(b.try_into().unwrap()))
++        .unwrap_or(0);
++    if built_magic != abi::SHIM_HEADER_MAGIC {
++        return Err(Error::ShimBadImage(built_magic));
++    }
++    mem.write_all_at_addr(SHIM_IMAGE, at)
++        .map_err(Error::ShimLoadFailure)?;
++    let mut flags = 0u32;
++    if probe_exec {
++        flags |= abi::SHIM_FLAG_PROBE_EXEC;
++    }
++    let header = abi::ShimHeader {
++        magic: abi::SHIM_HEADER_MAGIC,
++        version: abi::SHIM_ABI_VERSION,
++        flags,
++        payload: payload.offset(),
++        handoff: handoff.offset(),
++        dtb_max_size: AARCH64_SHIM_FDT_MAX_SIZE,
++        reserved: [0; 3],
++    };
++    // SAFETY: ShimHeader is repr(C) and made only of integers: no padding, no invalid pattern.
++    let bytes = unsafe {
++        std::slice::from_raw_parts(
++            &header as *const abi::ShimHeader as *const u8,
++            std::mem::size_of::<abi::ShimHeader>(),
++        )
++    };
++    mem.write_all_at_addr(
++        bytes,
++        at.unchecked_add(abi::SHIM_HEADER_OFFSET as u64),
++    )
++    .map_err(Error::ShimLoadFailure)?;
++    base::info!(
++        "GH-SHIM: {} bytes at {:#x}; payload {:#x}, handoff {:#x}, flags {:#x}",
++        SHIM_IMAGE.len(),
++        at.offset(),
++        payload.offset(),
++        handoff.offset(),
++        flags
++    );
++    Ok(())
++}
++
++/// Put the handoff page into the state the shim expects (magic and version; `ready` stays 0
++/// until the host has shared the window after GH_VM_START).
++fn init_handoff(mem: &GuestMemory, at: GuestAddress) -> std::result::Result<(), Error> {
++    let handoff = shim_abi::ShimHandoff::default();
++    // SAFETY: repr(C), integers and a byte array; no padding, no invalid pattern.
++    let bytes = unsafe {
++        std::slice::from_raw_parts(
++            &handoff as *const shim_abi::ShimHandoff as *const u8,
++            std::mem::size_of::<shim_abi::ShimHandoff>(),
++        )
++    };
++    mem.write_all_at_addr(bytes, at)
++        .map_err(Error::ShimLoadFailure)
++}
++
+ fn get_vcpu_mpidr_aff(vcpus: &[Arc<dyn VcpuAArch64>], index: usize) -> Option<u64> {
+     const MPIDR_AFF_MASK: u64 = 0xff_00ff_ffff;
+ 
+@@ -560,11 +658,44 @@ impl arch::LinuxArch for AArch64 {
+         }
+         let main_memory_size = main_memory_size(components, hypervisor);
+ 
+-        let mut memory_regions = vec![(
+-            GuestAddress(AARCH64_PHYS_MEM_START),
+-            main_memory_size,
+-            MemoryRegionOptions::new().align(get_block_size()),
+-        )];
++        // iceland gvm (pseudo-unprotected mode, from DroidVM): only a small boot region (shim +
++        // device tree) is lent; the handoff page above it is shared at creation; everything
++        // above that is the window the host shares after GH_VM_START and the shim accepts.
++        let mut memory_regions = if components.hv_cfg.protection_type.shares_guest_ram() {
++            let boot = AARCH64_SHIM_BOOT_REGION_SIZE;
++            let handoff = AARCH64_SHIM_HANDOFF_SIZE;
++            let window = main_memory_size
++                .checked_sub(boot + handoff)
++                .filter(|w| *w >= AARCH64_SHIM_MIN_WINDOW)
++                .ok_or(Error::PseudoUnprotectedTooSmall(components.memory_size))?;
++            vec![
++                (
++                    GuestAddress(AARCH64_PHYS_MEM_START),
++                    boot,
++                    MemoryRegionOptions::new().align(get_block_size()),
++                ),
++                (
++                    GuestAddress(AARCH64_PHYS_MEM_START + boot),
++                    handoff,
++                    MemoryRegionOptions::new()
++                        .purpose(MemoryRegionPurpose::ShimHandoff)
++                        .align(2 << 20),
++                ),
++                (
++                    GuestAddress(AARCH64_PHYS_MEM_START + boot + handoff),
++                    window,
++                    MemoryRegionOptions::new()
++                        .purpose(MemoryRegionPurpose::SharedGuestRam)
++                        .align(2 << 20),
++                ),
++            ]
++        } else {
++            vec![(
++                GuestAddress(AARCH64_PHYS_MEM_START),
++                main_memory_size,
++                MemoryRegionOptions::new().align(get_block_size()),
++            )]
++        };
+ 
+         // Allocate memory for the pVM firmware.
+         if components.hv_cfg.protection_type.runs_firmware() {
+@@ -675,12 +806,34 @@ impl arch::LinuxArch for AArch64 {
+             .map_err(Error::PvmFwLoadFailure)?;
+         }
+ 
++        // iceland gvm (pseudo-unprotected mode): the payload goes to the bottom of the window,
++        // the device tree stays in the lent boot region after the shim (the resource manager
++        // finds the guest's image through the parcel holding the tree).
++        let shares_guest_ram = components.hv_cfg.protection_type.shares_guest_ram();
++        let window_start = mem
++            .regions()
++            .find(|r| r.options.purpose == MemoryRegionPurpose::SharedGuestRam)
++            .map(|r| r.guest_addr);
++        let handoff_addr = mem
++            .regions()
++            .find(|r| r.options.purpose == MemoryRegionPurpose::ShimHandoff)
++            .map(|r| r.guest_addr);
++        if shares_guest_ram && (window_start.is_none() || handoff_addr.is_none()) {
++            return Err(Error::PseudoUnprotectedTooSmall(components.memory_size));
++        }
++
+         let fdt_position = fdt_position.unwrap_or(if has_bios {
+             FdtPosition::Start
+         } else {
+             FdtPosition::End
+         });
++        let fdt_position = if shares_guest_ram {
++            FdtPosition::Start
++        } else {
++            fdt_position
++        };
+         let payload_address = match fdt_position {
++            FdtPosition::Start if shares_guest_ram => window_start.unwrap(),
+             // If FDT is at the start RAM, the payload needs to go somewhere after it.
+             FdtPosition::Start => GuestAddress(AARCH64_PHYS_MEM_START + AARCH64_FDT_MAX_SIZE),
+             // Otherwise, put the payload at the start of RAM.
+@@ -735,6 +888,9 @@ impl arch::LinuxArch for AArch64 {
+         let memory_end = GuestAddress(AARCH64_PHYS_MEM_START + main_memory_size);
+ 
+         let fdt_address = match fdt_position {
++            FdtPosition::Start if shares_guest_ram => {
++                GuestAddress(AARCH64_PHYS_MEM_START + AARCH64_SHIM_FDT_OFFSET)
++            }
+             FdtPosition::Start => GuestAddress(AARCH64_PHYS_MEM_START),
+             FdtPosition::End => {
+                 let addr = memory_end
+@@ -1151,8 +1307,13 @@ impl arch::LinuxArch for AArch64 {
+             })
+         });
+ 
++        let fdt_max_size = if shares_guest_ram {
++            AARCH64_SHIM_FDT_MAX_SIZE
++        } else {
++            AARCH64_FDT_MAX_SIZE
++        };
+         fdt::create_fdt(
+-            AARCH64_FDT_MAX_SIZE as usize,
++            fdt_max_size as usize,
+             &mem,
+             pci_irqs,
+             pci_cfg,
+@@ -1191,12 +1352,27 @@ impl arch::LinuxArch for AArch64 {
+         )
+         .map_err(Error::CreateFdt)?;
+ 
+-        vm.init_arch(
+-            payload.entry(),
+-            fdt_address,
+-            AARCH64_FDT_MAX_SIZE.try_into().unwrap(),
+-        )
+-        .map_err(Error::InitVmError)?;
++        // iceland gvm (pseudo-unprotected mode): the hypervisor starts the shim at the base of the
++        // boot region; the shim accepts the window and jumps to the payload with x0 = the tree.
++        let entry = if shares_guest_ram {
++            let handoff_addr = handoff_addr.unwrap();
++            load_shim(
++                &mem,
++                GuestAddress(AARCH64_PHYS_MEM_START),
++                payload.entry(),
++                handoff_addr,
++                // ICELAND_SHIM_PROBE_EXEC (diagnostic): the shim executes two instructions out
++                // of the window before handing over and reports the result.
++                std::env::var_os("ICELAND_SHIM_PROBE_EXEC").is_some_and(|v| v != "0"),
++            )?;
++            init_handoff(&mem, handoff_addr)?;
++            GuestAddress(AARCH64_PHYS_MEM_START)
++        } else {
++            payload.entry()
++        };
++
++        vm.init_arch(entry, fdt_address, fdt_max_size.try_into().unwrap())
++            .map_err(Error::InitVmError)?;
+ 
+         let vm_request_tubes = vec![vmwdt_host_tube, vcpufreq_host_tube];
+ 
+diff --git a/arch/src/fdt.rs b/arch/src/fdt.rs
+index 3f74249..d75cc76 100644
+--- a/arch/src/fdt.rs
++++ b/arch/src/fdt.rs
+@@ -204,6 +204,13 @@ pub fn create_memory_node(fdt: &mut Fdt, guest_mem: &GuestMemory) -> Result<()>
+             MemoryRegionPurpose::SharedFramebuffer => true,
+             #[cfg(target_arch = "aarch64")]
+             MemoryRegionPurpose::StaticSwiotlbRegion => true,
++            // iceland gvm (from DroidVM): a pseudo-unprotected VM's window is not the guest's
++            // RAM until the boot shim has accepted it and pointed /memory at it itself; the
++            // handoff page never is.
++            #[cfg(target_arch = "aarch64")]
++            MemoryRegionPurpose::SharedGuestRam => false,
++            #[cfg(target_arch = "aarch64")]
++            MemoryRegionPurpose::ShimHandoff => false,
+         })
+         .collect();
+     regions.sort_by(|a, b| a.guest_addr.cmp(&b.guest_addr));
+diff --git a/hypervisor/src/geniezone/mod.rs b/hypervisor/src/geniezone/mod.rs
+index 0c634d5..d2c6683 100644
+--- a/hypervisor/src/geniezone/mod.rs
++++ b/hypervisor/src/geniezone/mod.rs
+@@ -607,6 +607,8 @@ impl GeniezoneVm {
+                 MemoryRegionPurpose::ReservedMemory => GZVM_USER_MEM_REGION_GUEST_MEM,
+                 MemoryRegionPurpose::SharedFramebuffer => GZVM_USER_MEM_REGION_GUEST_MEM,
+                 MemoryRegionPurpose::StaticSwiotlbRegion => GZVM_USER_MEM_REGION_STATIC_SWIOTLB,
++                MemoryRegionPurpose::SharedGuestRam => GZVM_USER_MEM_REGION_GUEST_MEM,
++                MemoryRegionPurpose::ShimHandoff => GZVM_USER_MEM_REGION_GUEST_MEM,
+             };
+             // SAFETY:
+             // Safe because the guest regions are guaranteed not to overlap.
+diff --git a/hypervisor/src/gunyah/aarch64.rs b/hypervisor/src/gunyah/aarch64.rs
+index 47ad85a..3b271a5 100644
+--- a/hypervisor/src/gunyah/aarch64.rs
++++ b/hypervisor/src/gunyah/aarch64.rs
+@@ -169,6 +169,11 @@ impl VmAArch64 for GunyahVm {
+                 // guest gets its stage-2 mapping at boot (no runtime accept).
+                 MemoryRegionPurpose::SharedFramebuffer => true,
+                 MemoryRegionPurpose::StaticSwiotlbRegion => true,
++                // iceland gvm (from DroidVM): the pseudo-unprotected window is handed over only
++                // after GH_VM_START, so no shm vdevice describes it; the handoff page is shared
++                // at creation like the swiotlb and gets one.
++                MemoryRegionPurpose::SharedGuestRam => false,
++                MemoryRegionPurpose::ShimHandoff => true,
+             };
+ 
+             if create_shm_node {
+diff --git a/hypervisor/src/gunyah/mod.rs b/hypervisor/src/gunyah/mod.rs
+index 6f068ef..67412e0 100644
+--- a/hypervisor/src/gunyah/mod.rs
++++ b/hypervisor/src/gunyah/mod.rs
+@@ -7,6 +7,8 @@ mod aarch64;
+ 
+ mod gunyah_sys;
+ pub mod gvm_accept;
++#[cfg(target_arch = "aarch64")]
++pub mod shim_abi;
+ use std::cmp::Reverse;
+ use std::collections::BTreeMap;
+ use std::collections::BinaryHeap;
+@@ -280,10 +282,23 @@ impl GunyahVm {
+                     MemoryRegionPurpose::SharedFramebuffer => false,
+                     #[cfg(target_arch = "aarch64")]
+                     MemoryRegionPurpose::StaticSwiotlbRegion => false,
++                    // iceland gvm (from DroidVM): the handoff page is shared so the host can
++                    // still write it after GH_VM_START. The window is skipped below.
++                    #[cfg(target_arch = "aarch64")]
++                    MemoryRegionPurpose::ShimHandoff => false,
++                    #[cfg(target_arch = "aarch64")]
++                    MemoryRegionPurpose::SharedGuestRam => false,
+                 }
+             } else {
+                 false
+             };
++            // iceland gvm (from DroidVM): the window of a pseudo-unprotected VM is not handed to
++            // the hypervisor here at all. It is shared after GH_VM_START (start()), because the
++            // guest has to accept it itself and there is no guest until then.
++            #[cfg(target_arch = "aarch64")]
++            if region.options.purpose == MemoryRegionPurpose::SharedGuestRam {
++                continue;
++            }
+             // For QTVMs, the first provided file-backed region is always CMA and must be
+             // mapped with GH_VM_ANDROID_MAP_CMA_MEM. Subsequent file-backed regions (if any)
+             // are mapped normally. The `cma_mapped` flag tracks whether the CMA region has
+@@ -551,12 +566,159 @@ impl GunyahVm {
+         if ret == 0 {
+             self.started
+                 .store(true, std::sync::atomic::Ordering::SeqCst);
++            #[cfg(target_arch = "aarch64")]
++            self.share_guest_ram_window()?;
+             Ok(())
+         } else {
+             errno_result()
+         }
+     }
+ 
++    /// iceland gvm (pseudo-unprotected mode, after DroidVM): hand the guest its RAM.
++    ///
++    /// The window has sat in guest memory with the payload already written into it. Sharing it
++    /// with GH_VM_PROTECTED_SHARE (patch 0008) makes memparcels the guest can accept; their
++    /// handles go into the handoff page, where the boot shim waits for them. This cannot happen
++    /// earlier: a memparcel needs a running VM. EXEC is in the ACL because the payload runs from
++    /// the window. `ready` is written last, after every handle, because the shim spins on it.
++    #[cfg(target_arch = "aarch64")]
++    fn share_guest_ram_window(&self) -> Result<()> {
++        use crate::gunyah::shim_abi as abi;
++
++        if !self.hv_cfg.protection_type.shares_guest_ram() {
++            return Ok(());
++        }
++        let mem = self.guest_mem.clone();
++        let window = mem
++            .regions()
++            .find(|r| r.options.purpose == MemoryRegionPurpose::SharedGuestRam);
++        let handoff = mem
++            .regions()
++            .find(|r| r.options.purpose == MemoryRegionPurpose::ShimHandoff);
++        let (Some(window), Some(handoff)) = (window, handoff) else {
++            error!("GH-SHIM: no window or no handoff region; refusing to start");
++            return Err(Error::new(EINVAL));
++        };
++        let size = window.size as u64;
++        let ho = handoff.guest_addr;
++
++        // ICELAND_SHIM_PARCEL_MB: share the window in parcels of at most this many MiB
++        // (default 0 = one parcel). Each parcel costs one of the VM's 1024 memparcels.
++        let chunk = std::env::var("ICELAND_SHIM_PARCEL_MB")
++            .ok()
++            .and_then(|v| v.parse::<u64>().ok())
++            .map(|mb| mb << 20)
++            .filter(|c| *c != 0)
++            .map(|c| c.next_multiple_of(2 << 20).min(size))
++            .unwrap_or(size);
++        let nparcels = size.div_ceil(chunk);
++        if nparcels > abi::SHIM_MAX_PARCELS as u64 {
++            error!(
++                "GH-SHIM: {:#x} of window in {:#x} chunks needs {} parcels; the handoff page holds {}",
++                size,
++                chunk,
++                nparcels,
++                abi::SHIM_MAX_PARCELS
++            );
++            return Err(Error::new(EINVAL));
++        }
++
++        let started = std::time::Instant::now();
++        let mut flags = GUNYAH_MEM_ALLOW_READ | GUNYAH_MEM_ALLOW_WRITE | GUNYAH_MEM_ALLOW_EXEC;
++        if std::env::var_os("ICELAND_SHIM_NO_EXEC").is_some_and(|v| v != "0") {
++            // Diagnostic only: repeat DroidVM's measurement that the payload needs X.
++            flags &= !GUNYAH_MEM_ALLOW_EXEC;
++        }
++        for i in 0..nparcels {
++            let off = i * chunk;
++            let len = chunk.min(size - off);
++            let at = window
++                .guest_addr
++                .checked_add(off)
++                .ok_or_else(|| Error::new(EINVAL))?;
++            let mut a = gunyah_protected_share {
++                label: 0x2000_0000 | i as u32,
++                flags,
++                guest_phys_addr: at.offset(),
++                memory_size: len,
++                // The region's own mapping in this process: the kernel pins its pages
++                // (FOLL_LONGTERM) for as long as the parcel lives, and sharing does not sanitise,
++                // so the payload written there before the VM started arrives intact.
++                userspace_addr: window.host_addr as u64 + off,
++                mem_handle: 0,
++                reserved: 0,
++            };
++            let t0 = std::time::Instant::now();
++            // SAFETY: the VM fd is valid, `a` a valid in/out argument and the mapping lives as
++            // long as the GuestMemory; the result is checked.
++            let ret = unsafe { ioctl_with_mut_ref(self, GH_VM_PROTECTED_SHARE, &mut a) };
++            if ret != 0 {
++                let e = Error::last();
++                error!(
++                    "GH-SHIM: share of window part {} ({:#x}+{:#x}) failed: {}",
++                    i,
++                    at.offset(),
++                    len,
++                    e
++                );
++                return Err(e);
++            }
++            info!(
++                "GH-SHIM: window part {} {:#x}+{:#x} shared, handle {:#x}, {:?}",
++                i,
++                at.offset(),
++                len,
++                a.mem_handle,
++                t0.elapsed()
++            );
++            let parcel = abi::ShimParcel {
++                handle: a.mem_handle,
++                reserved: 0,
++                base: at.offset(),
++                size: len,
++            };
++            let dst = ho
++                .checked_add(std::mem::offset_of!(abi::ShimHandoff, parcel) as u64)
++                .and_then(|p| p.checked_add(i * size_of::<abi::ShimParcel>() as u64))
++                .ok_or_else(|| Error::new(EINVAL))?;
++            // SAFETY: ShimParcel is repr(C) and made of integers; every byte pattern is valid.
++            let bytes = unsafe {
++                std::slice::from_raw_parts(
++                    &parcel as *const abi::ShimParcel as *const u8,
++                    size_of::<abi::ShimParcel>(),
++                )
++            };
++            mem.write_all_at_addr(bytes, dst)
++                .map_err(|_| Error::new(EINVAL))?;
++        }
++        // host= is this process's mapping of the window: gvm.sh's PV rows read the window through it
++        // (/proc/PID/mem) to show the host really can read this VM's memory, and nothing else.
++        info!(
++            "GH-SHIM: window {:#x}+{:#x} shared as {} parcel(s) in {:?} host={:#x}",
++            window.guest_addr.offset(),
++            size,
++            nparcels,
++            started.elapsed(),
++            window.host_addr as u64
++        );
++        mem.write_obj_at_addr(
++            nparcels as u32,
++            ho.checked_add(std::mem::offset_of!(abi::ShimHandoff, nparcels) as u64)
++                .ok_or_else(|| Error::new(EINVAL))?,
++        )
++        .map_err(|_| Error::new(EINVAL))?;
++        std::sync::atomic::fence(std::sync::atomic::Ordering::SeqCst);
++        // Last, and only now.
++        mem.write_obj_at_addr(
++            1u64,
++            ho.checked_add(std::mem::offset_of!(abi::ShimHandoff, ready) as u64)
++                .ok_or_else(|| Error::new(EINVAL))?,
++        )
++        .map_err(|_| Error::new(EINVAL))?;
++        watch_shim(mem, ho);
++        Ok(())
++    }
++
+     /// iceland gvm: share a runtime mapping with the protected guest and have it accepted.
+     fn runtime_share(
+         &self,
+@@ -670,6 +832,72 @@ impl GunyahVm {
+     }
+ }
+ 
++/// iceland gvm (after DroidVM): report what the boot shim did.
++///
++/// Everything the shim can fail at happens before the guest has a console of its own, so the
++/// handoff page is how it speaks. This thread turns that into GH-SHIM log lines and stops once
++/// the shim jumps to the payload (or gives up, or ten seconds pass).
++#[cfg(target_arch = "aarch64")]
++fn watch_shim(mem: GuestMemory, handoff: GuestAddress) {
++    use crate::gunyah::shim_abi as abi;
++
++    let spawned = std::thread::Builder::new()
++        .name("gh_shim_watch".into())
++        .spawn(move || {
++            let at = |off: usize| handoff.unchecked_add(off as u64);
++            let status_at = at(std::mem::offset_of!(abi::ShimHandoff, status));
++            let error_at = at(std::mem::offset_of!(abi::ShimHandoff, error));
++            let probe_at = at(std::mem::offset_of!(abi::ShimHandoff, exec_probe));
++            let msg_at = at(std::mem::offset_of!(abi::ShimHandoff, msg));
++            let mut last = 0u64;
++            for _ in 0..1000 {
++                let status: u64 = mem.read_obj_from_addr_volatile(status_at).unwrap_or(0);
++                if status != last {
++                    last = status;
++                    match status {
++                        abi::SHIM_STATUS_RUNNING => info!("GH-SHIM: shim is running"),
++                        abi::SHIM_STATUS_ACCEPTED => {
++                            let probe: u64 = mem.read_obj_from_addr(probe_at).unwrap_or(0);
++                            if probe != 0 {
++                                info!(
++                                    "GH-SHIM: window accepted; exec probe returned {} (42 = ok)",
++                                    probe
++                                );
++                            } else {
++                                info!("GH-SHIM: window accepted");
++                            }
++                        }
++                        abi::SHIM_STATUS_DT_DONE => info!("GH-SHIM: /memory now names the window"),
++                        abi::SHIM_STATUS_JUMPING => {
++                            info!("GH-SHIM: handing over to the payload");
++                            return;
++                        }
++                        s if s & abi::SHIM_STATUS_ERROR != 0 => {
++                            let mut msg = [0u8; 256];
++                            let _ = mem.read_exact_at_addr(&mut msg, msg_at);
++                            let end = msg.iter().position(|&c| c == 0).unwrap_or(msg.len());
++                            let err: u64 = mem.read_obj_from_addr(error_at).unwrap_or(0);
++                            error!(
++                                "GH-SHIM: gave up: {} (error {:#x})",
++                                String::from_utf8_lossy(&msg[..end]),
++                                err
++                            );
++                            return;
++                        }
++                        other => info!("GH-SHIM: status {:#x}", other),
++                    }
++                }
++                std::thread::sleep(std::time::Duration::from_millis(10));
++            }
++            if last == 0 {
++                error!("GH-SHIM: nothing written to the handoff page in ten seconds");
++            }
++        });
++    if let Err(e) = spawned {
++        warn!("GH-SHIM: could not watch the handoff page: {}", e);
++    }
++}
++
+ impl Vm for GunyahVm {
+     fn try_clone_descriptor(&self) -> Result<SafeDescriptor> {
+         error!("try_clone_descriptor hasn't been tested on gunyah, returning -ENOTSUP");
+diff --git a/hypervisor/src/halla/mod.rs b/hypervisor/src/halla/mod.rs
+index 0f7d30a..bd7baa0 100644
+--- a/hypervisor/src/halla/mod.rs
++++ b/hypervisor/src/halla/mod.rs
+@@ -637,6 +637,8 @@ impl HallaVm {
+                 MemoryRegionPurpose::ReservedMemory => HVM_USER_MEM_REGION_GUEST_MEM,
+                 MemoryRegionPurpose::SharedFramebuffer => HVM_USER_MEM_REGION_GUEST_MEM,
+                 MemoryRegionPurpose::StaticSwiotlbRegion => HVM_USER_MEM_REGION_STATIC_SWIOTLB,
++                MemoryRegionPurpose::SharedGuestRam => HVM_USER_MEM_REGION_GUEST_MEM,
++                MemoryRegionPurpose::ShimHandoff => HVM_USER_MEM_REGION_GUEST_MEM,
+             };
+             // SAFETY:
+             // Safe because the guest regions are guaranteed not to overlap.
+diff --git a/hypervisor/src/lib.rs b/hypervisor/src/lib.rs
+index 288e7ca..e453299 100644
+--- a/hypervisor/src/lib.rs
++++ b/hypervisor/src/lib.rs
+@@ -11,6 +11,10 @@ pub mod caps;
+ pub mod geniezone;
+ #[cfg(all(unix, target_arch = "aarch64", feature = "gunyah"))]
+ pub mod gunyah;
++/// The boot shim's ABI (iceland gvm, from DroidVM), re-exported so the arch code that loads the
++/// shim and the shim itself cannot disagree about it.
++#[cfg(all(unix, target_arch = "aarch64", feature = "gunyah"))]
++pub use crate::gunyah::shim_abi as gunyah_shim_abi;
+ #[cfg(target_arch = "aarch64")]
+ #[cfg(all(unix, target_arch = "aarch64", feature = "halla"))]
+ pub mod halla;
+@@ -673,6 +677,12 @@ pub enum ProtectionType {
+     /// mode, protected VM firmware loaded, and simulating protected mode as much as possible.
+     /// This is useful for debugging the protected VM firmware and other protected mode issues.
+     UnprotectedWithFirmware,
++    /// iceland gvm (from DroidVM): a Gunyah protected VM whose RAM is SHARED to it at run time
++    /// instead of lent before boot. Only a small boot region (a shim and the device tree) is
++    /// lent; the shim accepts the shared window and then starts the payload. The host can read
++    /// and write all of the guest's RAM: this is an opt-in mode for guests that need it (no
++    /// bounce buffers, zero-copy device access), not a protected VM.
++    ProtectedPseudoUnprotected,
+ }
+ 
+ impl ProtectionType {
+@@ -680,10 +690,20 @@ impl ProtectionType {
+     pub fn isolates_memory(&self) -> bool {
+         matches!(
+             self,
+-            Self::Protected | Self::ProtectedWithCustomFirmware | Self::ProtectedWithoutFirmware
++            Self::Protected
++                | Self::ProtectedWithCustomFirmware
++                | Self::ProtectedWithoutFirmware
++                // The boot region really is lent, and runtime mappings still need GuestAccept.
++                | Self::ProtectedPseudoUnprotected
+         )
+     }
+ 
++    /// Returns whether the guest's RAM is a window shared at run time and accepted by the boot
++    /// shim, rather than memory lent to the guest before boot.
++    pub fn shares_guest_ram(&self) -> bool {
++        matches!(self, Self::ProtectedPseudoUnprotected)
++    }
++
+     /// Returns whether the VMM needs to load the pVM firmware.
+     pub fn needs_firmware_loaded(&self) -> bool {
+         matches!(
+diff --git a/src/crosvm/cmdline.rs b/src/crosvm/cmdline.rs
+index a21f6b7..967c3cc 100644
+--- a/src/crosvm/cmdline.rs
++++ b/src/crosvm/cmdline.rs
+@@ -1720,6 +1720,12 @@ pub struct RunCommand {
+     /// prevent host access to guest memory
+     pub protected_vm: Option<bool>,
+ 
++    #[argh(switch)]
++    /// (EXPERIMENTAL, Gunyah only) run as a protected VM whose RAM is SHARED to it at run time
++    /// instead of lent before boot: the HOST CAN READ AND WRITE ALL OF THE GUEST'S MEMORY. A boot
++    /// shim inside the VM accepts the memory before the kernel runs; no bounce pool is needed
++    pub protected_vm_pseudo_unprotected: Option<bool>,
++
+     #[argh(option, arg_name = "PATH")]
+     /// (EXPERIMENTAL/FOR DEBUGGING) Use custom VM firmware to run in protected mode
+     pub protected_vm_with_firmware: Option<PathBuf>,
+@@ -3240,6 +3246,7 @@ impl TryFrom<RunCommand> for super::config::Config {
+             cmd.protected_vm.unwrap_or_default(),
+             cmd.protected_vm_with_firmware.is_some(),
+             cmd.protected_vm_without_firmware.unwrap_or_default(),
++            cmd.protected_vm_pseudo_unprotected.unwrap_or_default(),
+             cmd.unprotected_vm_with_firmware.is_some(),
+         ];
+ 
+@@ -3251,6 +3258,8 @@ impl TryFrom<RunCommand> for super::config::Config {
+             ProtectionType::Protected
+         } else if cmd.protected_vm_without_firmware.unwrap_or_default() {
+             ProtectionType::ProtectedWithoutFirmware
++        } else if cmd.protected_vm_pseudo_unprotected.unwrap_or_default() {
++            ProtectionType::ProtectedPseudoUnprotected
+         } else if let Some(p) = cmd.protected_vm_with_firmware {
+             if !p.exists() || !p.is_file() {
+                 return Err(
+diff --git a/src/crosvm/sys/linux.rs b/src/crosvm/sys/linux.rs
+index b2189de..203c3cb 100644
+--- a/src/crosvm/sys/linux.rs
++++ b/src/crosvm/sys/linux.rs
+@@ -1428,7 +1428,12 @@ fn setup_vm_components(cfg: &Config) -> Result<VmComponents> {
+             size.checked_mul(1024 * 1024)
+                 .ok_or_else(|| anyhow!("requested swiotlb size too large"))?,
+         )
+-    } else if matches!(cfg.protection_type, ProtectionType::Unprotected) {
++    } else if matches!(
++        cfg.protection_type,
++        // iceland gvm: a pseudo-unprotected VM's RAM is shared, so the host reaches every buffer
++        // directly and no bounce pool is needed (or wanted).
++        ProtectionType::Unprotected | ProtectionType::ProtectedPseudoUnprotected
++    ) {
+         None
+     } else {
+         Some(64 * 1024 * 1024)
+diff --git a/src/crosvm/sys/linux/config.rs b/src/crosvm/sys/linux/config.rs
+index 0aff504..459f40f 100644
+--- a/src/crosvm/sys/linux/config.rs
++++ b/src/crosvm/sys/linux/config.rs
+@@ -49,7 +49,19 @@ pub fn check_serial_params(_serial_params: &SerialParameters) -> Result<(), Stri
+     Ok(())
+ }
+ 
+-pub fn validate_config(_cfg: &mut Config) -> std::result::Result<(), String> {
++pub fn validate_config(cfg: &mut Config) -> std::result::Result<(), String> {
++    // iceland gvm: the pseudo-unprotected mode exists only for Gunyah.
++    if cfg.protection_type == hypervisor::ProtectionType::ProtectedPseudoUnprotected {
++        #[cfg(all(target_arch = "aarch64", feature = "gunyah"))]
++        let supported = matches!(cfg.hypervisor, Some(HypervisorKind::Gunyah { .. }));
++        #[cfg(not(all(target_arch = "aarch64", feature = "gunyah")))]
++        let supported = false;
++        if !supported {
++            return Err(
++                "--protected-vm-pseudo-unprotected requires --hypervisor gunyah".to_string(),
++            );
++        }
++    }
+     Ok(())
+ }
+ 
+diff --git a/vm_memory/src/guest_memory.rs b/vm_memory/src/guest_memory.rs
+index 93c2cce..4b1bcaf 100644
+--- a/vm_memory/src/guest_memory.rs
++++ b/vm_memory/src/guest_memory.rs
+@@ -148,6 +148,17 @@ pub enum MemoryRegionPurpose {
+     #[cfg(target_arch = "aarch64")]
+     SharedFramebuffer,
+ 
++    /// iceland gvm (from DroidVM): the guest's RAM in a pseudo-unprotected VM. Neither lent nor
++    /// shared when the VM is created; the host shares it after GH_VM_START and the boot shim
++    /// accepts it before the payload runs. Not described in `/memory` until the shim does so.
++    #[cfg(target_arch = "aarch64")]
++    SharedGuestRam,
++
++    /// iceland gvm (from DroidVM): the page a pseudo-unprotected VM's host and boot shim talk
++    /// through. Shared (never lent), so the host can still write it after the VM has started.
++    #[cfg(target_arch = "aarch64")]
++    ShimHandoff,
++
+     #[cfg(target_arch = "aarch64")]
+     StaticSwiotlbRegion,
+ }
+-- 
+2.43.0
+

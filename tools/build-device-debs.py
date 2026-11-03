@@ -72,7 +72,16 @@ def main():
     select.add_argument('--mesa-only', action='store_true', help='Build only the verified desktop Mesa package')
     select.add_argument('--snap-graphics-only', action='store_true', help='Build only piano-snap-graphics')
     select.add_argument('--mipps-auth-only', action='store_true', help='Build only the pinned MiPPS authentication package')
+    select.add_argument('--virtualization-only', action='store_true', help='Build optional VM userspace packages')
+    ap.add_argument('--crosvm-build', type=Path)
     a = ap.parse_args()
+    if a.virtualization_only:
+        if a.crosvm_build is None:
+            ap.error('--virtualization-only requires --crosvm-build')
+        subprocess.run(['python3', str(Path(__file__).resolve().parent / 'build-virtualization-debs.py'),
+                        '--output', str(a.output), '--version', a.version,
+                        '--crosvm-build', str(a.crosvm_build)], check=True)
+        return
     if a.snap_graphics_only and not a.snap_graphics_build:
         ap.error('--snap-graphics-only requires --snap-graphics-build')
     if a.mesa_only and not a.mesa_build:
@@ -233,6 +242,7 @@ def main():
         for p in support.rglob('*'):
             if p.is_file() and p.read_bytes().startswith(b'#!'):
                 p.chmod(0o755)
+        copy(repo / 'device/virtualization/piano-gunyah-load', support, 'usr/libexec/piano/piano-gunyah-load', 0o755)
         copy(repo / 'device/boot/piano-boot-switch', support, 'usr/sbin/piano-boot-switch', 0o755)
         copy(repo / 'device/boot/piano-slot-success', support, 'usr/sbin/piano-slot-success', 0o755)
         copy(repo / 'device/boot/piano_bootslot.py', support, 'usr/lib/piano/boot/piano_bootslot.py', 0o644)
@@ -275,10 +285,15 @@ def main():
              'Apache-2.0, the rest MIT (see NOTICE); it includes the MIT nlohmann JSON headers.'),
         ]
         package('piano-device-support', support,
-                'python3, openssl, device-tree-compiler, dracut, kmod, init-system-helpers, piano-mipps-auth, '
+                'python3, openssl, device-tree-compiler, dracut, kmod, init-system-helpers, piano-mipps-auth, udev, systemd, libpam-modules, pkexec, polkitd, '
                 'piano-local-firmware (>= 0.6+os3.0.303.0)',
                 'Piano platform, touchscreen and persistent boot integration',
                 '#!/bin/sh\nset -e\nif [ "$1" = configure ]; then\n'
+                ' systemd-sysusers /usr/lib/sysusers.d/piano-gunyah.conf\n'
+                ' if [ -d /run/udev ] && [ "$(stat -Lc %d:%i /)" = "$(stat -Lc %d:%i /proc/1/root 2>/dev/null || true)" ]; then\n'
+                '  udevadm control --reload-rules\n'
+                '  if [ -e /sys/class/misc/gunyah ]; then udevadm trigger --action=change /sys/class/misc/gunyah; fi\n'
+                ' fi\n'
                 # piano-thp.service is udev-activated only; remove the multi-user.target link
                 # and deb-systemd-helper state left by versions that enabled it.
                 ' deb-systemd-helper purge piano-thp.service >/dev/null\n'
@@ -289,7 +304,8 @@ def main():
                 ' if [ -d /run/systemd/system ]; then systemctl --system daemon-reload >/dev/null || true; fi\n'
                 'fi\n',
                 recommends='openssh-server',  # developer mode only; piano-devmode refuses without sshd
-                third_party=support_third_party)
+                third_party=support_third_party,
+                conffiles=['/etc/security/limits.d/90-piano-gunyah.conf', '/etc/dracut.conf.d/91-piano-gunyah.conf'])
         if a.support_only:
             (a.output / 'manifest.json').write_text(json.dumps(receipts, indent=2) + '\n')
             return

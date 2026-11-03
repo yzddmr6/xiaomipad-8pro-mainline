@@ -1,0 +1,143 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: iceland <iceland@localhost>
+Date: Sat, 24 Oct 2026 21:20:31 +0300
+Subject: [PATCH 09/30] aarch64, gunyah: iceland gvm: per-VM PCIe ECAM
+ (CROSVM_GVM_PCI_ECAM=1) and a GVM-EXIT marker per VM exit type
+
+ECAM after DroidVM dvm-crosvm 7d4712a (pci-host-ecam-generic, 1 MiB for bus 0, register
+shift 12), optional so proven Linux VMs keep CAM: edk2's DynamicTablesPkg only builds the
+MCFG / PCI root for an ECAM host, which Windows needs.
+
+GVM-EXIT type=N (name) is logged for every Gunyah exit status: on our host a PSCI
+SYSTEM_RESET ended crosvm with exit 0, and Windows prints no console line, so supervisors
+detect a guest reboot from type=2 / 3.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ aarch64/src/fdt.rs           |  6 +++++-
+ aarch64/src/lib.rs           | 38 ++++++++++++++++++++++++++++++------
+ hypervisor/src/gunyah/mod.rs | 17 +++++++++++++++-
+ 3 files changed, 53 insertions(+), 8 deletions(-)
+
+diff --git a/aarch64/src/fdt.rs b/aarch64/src/fdt.rs
+index 18fadcd..29c786d 100644
+--- a/aarch64/src/fdt.rs
++++ b/aarch64/src/fdt.rs
+@@ -515,7 +515,11 @@ fn create_pci_nodes(
+     ];
+ 
+     let pci_node = fdt.root_mut().subnode_mut("pci")?;
+-    pci_node.set_prop("compatible", "pci-host-cam-generic")?;
++    // iceland gvm: ECAM per VM (CROSVM_GVM_PCI_ECAM=1, Windows guests), CAM otherwise
++    pci_node.set_prop(
++        "compatible",
++        if crate::gvm_pci_ecam() { "pci-host-ecam-generic" } else { "pci-host-cam-generic" },
++    )?;
+     pci_node.set_prop("device_type", "pci")?;
+     pci_node.set_prop("ranges", ranges)?;
+     pci_node.set_prop("bus-range", &bus_range)?;
+diff --git a/aarch64/src/lib.rs b/aarch64/src/lib.rs
+index c857e3d..78968b7 100644
+--- a/aarch64/src/lib.rs
++++ b/aarch64/src/lib.rs
+@@ -165,6 +165,32 @@ const AARCH64_VMWDT_SIZE: u64 = 0x1000;
+ const AARCH64_PCI_CAM_BASE_DEFAULT: u64 = 0x10000;
+ // Default PCI MMIO configuration region size.
+ const AARCH64_PCI_CAM_SIZE_DEFAULT: u64 = 0x1000000;
++// iceland gvm: PCIe ECAM (CROSVM_GVM_PCI_ECAM=1, per VM, for Windows guests): the ACPI tables edk2's
++// DynamicTablesPkg builds only describe a "pci-host-ecam-generic" root (MCFG). bus-range is [0, 0], so one bus
++// takes 1 MiB of ECAM space. After DroidVM dvm-crosvm 7d4712a (made optional so proven Linux VMs keep CAM).
++const AARCH64_PCI_ECAM_SIZE_DEFAULT: u64 = 0x100000;
++
++/// iceland gvm: true when this VM uses a PCIe ECAM root instead of CAM (CROSVM_GVM_PCI_ECAM=1).
++pub fn gvm_pci_ecam() -> bool {
++    static ECAM: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
++    *ECAM.get_or_init(|| std::env::var("CROSVM_GVM_PCI_ECAM").is_ok_and(|v| v == "1"))
++}
++
++fn pci_cam_size_default() -> u64 {
++    if gvm_pci_ecam() {
++        AARCH64_PCI_ECAM_SIZE_DEFAULT
++    } else {
++        AARCH64_PCI_CAM_SIZE_DEFAULT
++    }
++}
++
++fn pci_cam_shift() -> usize {
++    if gvm_pci_ecam() {
++        12
++    } else {
++        8
++    }
++}
+ // Default PCI mem base address.
+ const AARCH64_PCI_MEM_BASE_DEFAULT: u64 = 0x2000000;
+ // Default PCI mem size.
+@@ -472,14 +498,14 @@ impl arch::LinuxArch for AArch64 {
+     ) -> std::result::Result<Self::ArchMemoryLayout, Self::Error> {
+         let (pci_cam_start, pci_cam_size) = match components.pci_config.cam {
+             Some(MemoryRegionConfig { start, size }) => {
+-                (start, size.unwrap_or(AARCH64_PCI_CAM_SIZE_DEFAULT))
++                (start, size.unwrap_or(pci_cam_size_default()))
+             }
+-            None => (AARCH64_PCI_CAM_BASE_DEFAULT, AARCH64_PCI_CAM_SIZE_DEFAULT),
++            None => (AARCH64_PCI_CAM_BASE_DEFAULT, pci_cam_size_default()),
+         };
+         // TODO: Make the PCI slot allocator aware of the CAM size so we can remove this check.
+-        if pci_cam_size != AARCH64_PCI_CAM_SIZE_DEFAULT {
++        if pci_cam_size != pci_cam_size_default() {
+             return Err(Error::ConfigurePciCam(format!(
+-                "PCI CAM size must be {AARCH64_PCI_CAM_SIZE_DEFAULT:#x}, got {pci_cam_size:#x}"
++                "PCI CAM size must be {:#x}, got {pci_cam_size:#x}", pci_cam_size_default()
+             )));
+         }
+         let pci_cam = AddressRange::from_start_and_size(pci_cam_start, pci_cam_size).ok_or(
+@@ -836,7 +862,7 @@ impl arch::LinuxArch for AArch64 {
+                 &*irq_chip,
+                 mmio_bus.clone(),
+                 GuestAddress(arch_memory_layout.pci_cam.start),
+-                8,
++                pci_cam_shift(),
+                 io_bus.clone(),
+                 system_allocator,
+                 &*vm,
+@@ -848,7 +874,7 @@ impl arch::LinuxArch for AArch64 {
+             .map_err(Error::CreatePciRoot)?;
+ 
+         let pci_root = Arc::new(Mutex::new(pci));
+-        let pci_bus = Arc::new(Mutex::new(PciConfigMmio::new(pci_root.clone(), 8)));
++        let pci_bus = Arc::new(Mutex::new(PciConfigMmio::new(pci_root.clone(), pci_cam_shift())));
+         let (platform_devices, _others): (Vec<_>, Vec<_>) = others
+             .into_iter()
+             .partition(|(dev, _)| dev.as_platform_device().is_some());
+diff --git a/hypervisor/src/gunyah/mod.rs b/hypervisor/src/gunyah/mod.rs
+index e5d48ac..5e25c4b 100644
+--- a/hypervisor/src/gunyah/mod.rs
++++ b/hypervisor/src/gunyah/mod.rs
+@@ -1055,7 +1055,22 @@ impl Vcpu for GunyahVcpu {
+                     }),
+                     GH_VM_STATUS_GH_VM_STATUS_CRASHED => Ok(VcpuExit::SystemEventCrash),
+                     GH_VM_STATUS_GH_VM_STATUS_EXITED => {
+-                        info!("exit type {}", status.exit_info.type_);
++                        // iceland gvm: always logged with a marker: on our host a PSCI SYSTEM_RESET
++                        // ended crosvm with exit 0, so supervisors detect a guest reboot (Windows prints no
++                        // console line) from "GVM-EXIT type=2|3" in the log.
++                        let t = status.exit_info.type_;
++                        let name = match t {
++                            GH_RM_EXIT_TYPE_VM_EXIT => "vm-exit",
++                            GH_RM_EXIT_TYPE_PSCI_POWER_OFF => "psci-power-off",
++                            GH_RM_EXIT_TYPE_PSCI_SYSTEM_RESET => "psci-system-reset",
++                            GH_RM_EXIT_TYPE_PSCI_SYSTEM_RESET2 => "psci-system-reset2",
++                            GH_RM_EXIT_TYPE_WDT_BITE => "watchdog-bite",
++                            GH_RM_EXIT_TYPE_HYP_ERROR => "hyp-error",
++                            GH_RM_EXIT_TYPE_ASYNC_EXT_ABORT => "async-ext-abort",
++                            GH_RM_EXIT_TYPE_VM_FORCE_STOPPED => "force-stopped",
++                            _ => "unknown",
++                        };
++                        warn!("GVM-EXIT type={} ({})", t, name);
+                         match status.exit_info.type_ {
+                             GH_RM_EXIT_TYPE_VM_EXIT => Ok(VcpuExit::SystemEventShutdown),
+                             GH_RM_EXIT_TYPE_PSCI_POWER_OFF => Ok(VcpuExit::SystemEventShutdown),
+-- 
+2.43.0
+

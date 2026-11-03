@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mzak <mzak.amin@gmail.com>
+Date: Sun, 25 Oct 2026 13:25:43 +0300
+Subject: [PATCH 16/30] gunyah: iceland gvm: GVM-ACCEPT-STATS, the cost of
+ runtime blob shares
+
+Count, average / maximum duration of runtime_share (SHARE ioctl + guest MEM_ACCEPT) and of the remove path (guest
+MEM_RELEASE + UNSHARE), and the MiB shared; logged on the first map and every 64th map / unmap. The measurement
+behind the DroidVM-style pre-shared GPU pool decision (parity step 3).
+
+Signed-off-by: mzak <mzak.amin@gmail.com>
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ hypervisor/src/gunyah/gvm_accept.rs | 37 +++++++++++++++++++++++++++++
+ hypervisor/src/gunyah/mod.rs        |  6 +++++
+ 2 files changed, 43 insertions(+)
+
+diff --git a/hypervisor/src/gunyah/gvm_accept.rs b/hypervisor/src/gunyah/gvm_accept.rs
+index 869324f..3e854bd 100755
+--- a/hypervisor/src/gunyah/gvm_accept.rs
++++ b/hypervisor/src/gunyah/gvm_accept.rs
+@@ -63,6 +63,43 @@ pub struct GvmAcceptResponse {
+ static LINK: Mutex<Option<Tube>> = Mutex::new(None);
+ static SEQ: AtomicU64 = AtomicU64::new(1);
+ 
++/// iceland gvm (parity step 3): what a runtime blob share costs, to decide on DroidVM-style pre-shared pools.
++/// kind 0 = map (SHARE ioctl + guest MEM_ACCEPT), 1 = unmap (guest MEM_RELEASE + UNSHARE).
++static STAT_N: [AtomicU64; 2] = [AtomicU64::new(0), AtomicU64::new(0)];
++static STAT_US: [AtomicU64; 2] = [AtomicU64::new(0), AtomicU64::new(0)];
++static STAT_MAX_US: [AtomicU64; 2] = [AtomicU64::new(0), AtomicU64::new(0)];
++static STAT_BYTES: AtomicU64 = AtomicU64::new(0);
++
++/// Records one map / unmap; every 64th map and every 64th unmap logs a GVM-ACCEPT-STATS line.
++pub fn record(kind: usize, elapsed: Duration, bytes: u64) {
++    let us = elapsed.as_micros() as u64;
++    let n = STAT_N[kind].fetch_add(1, Ordering::Relaxed) + 1;
++    STAT_US[kind].fetch_add(us, Ordering::Relaxed);
++    STAT_MAX_US[kind].fetch_max(us, Ordering::Relaxed);
++    if kind == 0 {
++        STAT_BYTES.fetch_add(bytes, Ordering::Relaxed);
++    }
++    if n == 1 || n % 64 == 0 {
++        log_stats();
++    }
++}
++
++/// `GVM-ACCEPT-STATS maps=N map_avg_us= map_max_us= mapped_mib= unmaps=N unmap_avg_us= unmap_max_us=`
++pub fn log_stats() {
++    let (m, u) = (STAT_N[0].load(Ordering::Relaxed), STAT_N[1].load(Ordering::Relaxed));
++    let avg = |k: usize, n: u64| if n == 0 { 0 } else { STAT_US[k].load(Ordering::Relaxed) / n };
++    base::warn!(
++        "GVM-ACCEPT-STATS maps={} map_avg_us={} map_max_us={} mapped_mib={} unmaps={} unmap_avg_us={} unmap_max_us={}",
++        m,
++        avg(0, m),
++        STAT_MAX_US[0].load(Ordering::Relaxed),
++        STAT_BYTES.load(Ordering::Relaxed) >> 20,
++        u,
++        avg(1, u),
++        STAT_MAX_US[1].load(Ordering::Relaxed)
++    );
++}
++
+ /// How long one accept / release may take: an RM RPC from the guest is well below a millisecond,
+ /// the budget covers the virtqueue interrupt and the guest workqueue.
+ pub const ACCEPT_TIMEOUT: Duration = Duration::from_secs(3);
+diff --git a/hypervisor/src/gunyah/mod.rs b/hypervisor/src/gunyah/mod.rs
+index 5e25c4b..6f068ef 100644
+--- a/hypervisor/src/gunyah/mod.rs
++++ b/hypervisor/src/gunyah/mod.rs
+@@ -567,6 +567,7 @@ impl GunyahVm {
+         mem_region: &dyn MappedRegion,
+     ) -> Result<u32> {
+         let label = 0x4000_0000 | slot;
++        let t0 = std::time::Instant::now();
+         let mut flags = GUNYAH_MEM_ALLOW_READ;
+         if !read_only {
+             flags |= GUNYAH_MEM_ALLOW_WRITE;
+@@ -626,6 +627,7 @@ impl GunyahVm {
+             let _ = self.protected_unshare(label);
+             return Err(e);
+         }
++        gvm_accept::record(0, t0.elapsed(), size);
+         Ok(label)
+     }
+ 
+@@ -821,8 +823,12 @@ impl Vm for GunyahVm {
+             }
+         };
+         let gpa = share.guest_addr.offset();
++        let t0 = std::time::Instant::now();
+         let res = gvm_accept::drive(gvm_accept::GvmAcceptOp::Release, 0, gpa, 0)
+             .and_then(|_| self.protected_unshare(share.label));
++        if res.is_ok() {
++            gvm_accept::record(1, t0.elapsed(), 0);
++        }
+         if let Err(e) = res {
+             error!("gvm-accept: could not take back {:#x}: {}; the pages stay shared", gpa, e);
+             // Keep the mapping alive: the guest may still reach these pages.
+-- 
+2.43.0
+

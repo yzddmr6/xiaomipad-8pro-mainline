@@ -1,0 +1,262 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mzak <mzak.amin@gmail.com>
+Date: Sun, 25 Oct 2026 01:11:50 +0300
+Subject: [PATCH 11/30] gpu + main: iceland gvm: retry deferred copy-path
+ frames; SIGBUS / SIGSEGV report
+
+- virtio-gpu copy path: when the compositor still holds the next buffer the flush was dropped; an idle guest then
+  never flushed again and the window kept an old (often black) frame (vm-run v10b: weston showed its first frame
+  only). The dropped resource is remembered and a 30 ms worker timer presents it once a buffer is free
+  (GVM-DROP log, power-of-two counts). CROSVM_GVM_REFRESH_MS keeps its meaning (re-present every scanout).
+- main: a SIGBUS / SIGSEGV handler prints the thread, the fault address and /proc/self/maps, then re-raises
+  (v10b: the Windows guest's crosvm died with SIGBUS and no log line; on Gunyah a host access to lent memory
+  faults with SIGBUS).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ devices/src/virtio/gpu/gvm_scanout.rs | 37 ++++++++++++
+ devices/src/virtio/gpu/mod.rs         | 14 +++--
+ devices/src/virtio/gpu/virtio_gpu.rs  | 10 +++
+ src/gvm_sigbus.rs                     | 87 +++++++++++++++++++++++++++
+ src/main.rs                           |  4 ++
+ 5 files changed, 147 insertions(+), 5 deletions(-)
+ create mode 100644 src/gvm_sigbus.rs
+
+diff --git a/devices/src/virtio/gpu/gvm_scanout.rs b/devices/src/virtio/gpu/gvm_scanout.rs
+index 75510e6..c9a954d 100755
+--- a/devices/src/virtio/gpu/gvm_scanout.rs
++++ b/devices/src/virtio/gpu/gvm_scanout.rs
+@@ -89,6 +89,43 @@ pub fn trace(text: std::fmt::Arguments) {
+     }
+ }
+ 
++static DROPPED: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
++static DROPS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
++
++/// The copy path skipped a flush because the compositor still held the next buffer.
++pub fn dropped(resource_id: u32) {
++    use std::sync::atomic::Ordering::Relaxed;
++    DROPPED.store(resource_id, Relaxed);
++    let n = DROPS.fetch_add(1, Relaxed) + 1;
++    if n.is_power_of_two() {
++        warn!("GVM-DROP {} flushes deferred (compositor held the next buffer), last res={}", n, resource_id);
++    }
++}
++
++/// A frame of this resource reached the window: nothing pending for it any more.
++pub fn presented(resource_id: u32) {
++    let _ = DROPPED.compare_exchange(
++        resource_id,
++        0,
++        std::sync::atomic::Ordering::Relaxed,
++        std::sync::atomic::Ordering::Relaxed,
++    );
++}
++
++/// The resource of a deferred frame, if any (cleared; a new drop sets it again).
++pub fn take_dropped() -> Option<u32> {
++    match DROPPED.swap(0, std::sync::atomic::Ordering::Relaxed) {
++        0 => None,
++        r => Some(r),
++    }
++}
++
++/// CROSVM_GVM_REFRESH_MS set: the refresh timer re-presents every scanout (else it only retries drops).
++pub fn refresh_all() -> bool {
++    static ALL: OnceLock<bool> = OnceLock::new();
++    *ALL.get_or_init(|| std::env::var("CROSVM_GVM_REFRESH_MS").is_ok_and(|v| v.parse::<u64>().is_ok_and(|n| n > 0)))
++}
++
+ /// One warn line per event kind and resource (at most 64 lines): which resources the guest flushes and
+ /// which one a scanout shows.
+ pub fn note(kind: &str, resource_id: u32, text: &str) {
+diff --git a/devices/src/virtio/gpu/mod.rs b/devices/src/virtio/gpu/mod.rs
+index f46f290..d1254d9 100644
+--- a/devices/src/virtio/gpu/mod.rs
++++ b/devices/src/virtio/gpu/mod.rs
+@@ -1222,10 +1222,14 @@ impl Worker {
+         // iceland gvm: CROSVM_GVM_REFRESH_MS=N re-presents the scanouts every N ms even without a guest flush.
+         // vm-run v5 (q90r): continuously rendering GL clients (kmscube) were drawn, idle GL compositors (glamor,
+         // weston-GL) black although the guest drew; a late re-read catches content that completed after the flush.
+-        let gvm_refresh_ms = std::env::var("CROSVM_GVM_REFRESH_MS")
+-            .ok()
+-            .and_then(|v| v.parse::<u64>().ok())
+-            .filter(|&ms| ms > 0);
++        // Without it, a 30 ms timer retries frames the copy path deferred (GVM-DROP; vm-run v10b).
++        let gvm_refresh_ms = Some(
++            std::env::var("CROSVM_GVM_REFRESH_MS")
++                .ok()
++                .and_then(|v| v.parse::<u64>().ok())
++                .filter(|&ms| ms > 0)
++                .unwrap_or(30),
++        );
+         let mut gvm_refresh_timer: Option<Timer> = None;
+         let gvm_refresh_desc: SafeDescriptor;
+         if let Some(ms) = gvm_refresh_ms {
+@@ -1237,7 +1241,7 @@ impl Worker {
+             event_manager
+                 .add(&gvm_refresh_desc, WorkerToken::GvmRefresh)
+                 .context("failed adding the gvm refresh timer")?;
+-            warn!("GVM-REFRESH every {} ms", ms.max(16));
++            warn!("GVM-REFRESH every {} ms ({})", ms.max(16), if gvm_scanout::refresh_all() { "all scanouts" } else { "deferred frames only" });
+             gvm_refresh_timer = Some(t);
+         }
+ 
+diff --git a/devices/src/virtio/gpu/virtio_gpu.rs b/devices/src/virtio/gpu/virtio_gpu.rs
+index 8d1eeab..b4a685e 100644
+--- a/devices/src/virtio/gpu/virtio_gpu.rs
++++ b/devices/src/virtio/gpu/virtio_gpu.rs
+@@ -435,7 +435,11 @@ impl VirtioGpuScanout {
+         let mut display = display.borrow_mut();
+ 
+         // Prevent overwriting a buffer that is currently being used by the compositor.
++        // iceland gvm: remember the dropped frame; the worker's retry timer presents it once a buffer is
++        // free (vm-run v10b: the last frame of a burst was dropped and an idle guest never flushed again,
++        // so the window kept an old, often black, frame).
+         if display.next_buffer_in_use(surface_id) {
++            super::gvm_scanout::dropped(resource.resource_id);
+             return Ok(OkNoData);
+         }
+ 
+@@ -460,6 +464,7 @@ impl VirtioGpuScanout {
+         );
+ 
+         display.flip(surface_id);
++        super::gvm_scanout::presented(resource.resource_id);
+         Ok(OkNoData)
+     }
+ 
+@@ -822,10 +827,15 @@ impl VirtioGpu {
+ 
+     /// iceland gvm: flush every resource that is currently on a scanout once more (refresh timer).
+     pub fn gvm_refresh_scanouts(&mut self) {
++        // CROSVM_GVM_REFRESH_MS set: re-present every scanout; otherwise only a frame the copy path had to
++        // drop (compositor still held the next buffer)
++        let all = super::gvm_scanout::refresh_all();
++        let pending = super::gvm_scanout::take_dropped();
+         let ids: Vec<u32> = self
+             .scanouts
+             .values()
+             .filter_map(|s| s.resource_id.map(|r| r.get()))
++            .filter(|&r| all || pending == Some(r))
+             .collect();
+         for id in ids {
+             let _ = self.flush_resource(id);
+diff --git a/src/gvm_sigbus.rs b/src/gvm_sigbus.rs
+new file mode 100644
+index 0000000..df9f951
+--- /dev/null
++++ b/src/gvm_sigbus.rs
+@@ -0,0 +1,87 @@
++// Copyright 2026 iceland gvm. Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++//! iceland gvm: a SIGBUS reporter. vm-run v10b: the Windows 11 guest's crosvm died with SIGBUS after ~9 min
++//! with no log line (core dumps disabled). On Gunyah a host access to guest memory that is lent to the
++//! protected VM faults with SIGBUS; this prints which thread touched which address, then the process mappings
++//! (to place the address in guest RAM, the swiotlb pool or the simplefb region) and re-raises the signal.
++
++use std::sync::atomic::AtomicBool;
++use std::sync::atomic::Ordering;
++
++static IN_HANDLER: AtomicBool = AtomicBool::new(false);
++
++fn put(buf: &mut [u8], n: &mut usize, s: &[u8]) {
++    for &b in s {
++        if *n < buf.len() {
++            buf[*n] = b;
++            *n += 1;
++        }
++    }
++}
++
++fn put_hex(buf: &mut [u8], n: &mut usize, v: usize) {
++    put(buf, n, b"0x");
++    let mut started = false;
++    for i in (0..(usize::BITS / 4)).rev() {
++        let d = (v >> (i * 4)) & 0xf;
++        if d != 0 || started || i == 0 {
++            started = true;
++            put(buf, n, &[b"0123456789abcdef"[d]]);
++        }
++    }
++}
++
++extern "C" fn handler(sig: libc::c_int, info: *mut libc::siginfo_t, _ctx: *mut libc::c_void) {
++    // SAFETY: only async-signal-safe calls (prctl, write, open, read, signal, raise) on local buffers.
++    unsafe {
++        if !IN_HANDLER.swap(true, Ordering::SeqCst) {
++            let addr = if info.is_null() { 0 } else { (*info).si_addr() as usize };
++            let code = if info.is_null() { 0 } else { (*info).si_code };
++            let mut name = [0u8; 17];
++            libc::prctl(libc::PR_GET_NAME, name.as_mut_ptr() as libc::c_ulong, 0, 0, 0);
++            let len = name.iter().position(|&c| c == 0).unwrap_or(16);
++            let mut buf = [0u8; 256];
++            let mut n = 0;
++            put(&mut buf, &mut n, b"\nGVM-SIGBUS signal ");
++            put_hex(&mut buf, &mut n, sig as usize);
++            put(&mut buf, &mut n, b" code ");
++            put_hex(&mut buf, &mut n, code as usize);
++            put(&mut buf, &mut n, b" addr ");
++            put_hex(&mut buf, &mut n, addr);
++            put(&mut buf, &mut n, b" thread ");
++            put(&mut buf, &mut n, &name[..len]);
++            put(&mut buf, &mut n, b" tid ");
++            put_hex(&mut buf, &mut n, libc::syscall(libc::SYS_gettid) as usize);
++            put(&mut buf, &mut n, b"\nGVM-SIGBUS maps:\n");
++            libc::write(2, buf.as_ptr() as *const libc::c_void, n);
++            let fd = libc::open(b"/proc/self/maps\0".as_ptr() as *const libc::c_char, libc::O_RDONLY);
++            if fd >= 0 {
++                let mut chunk = [0u8; 4096];
++                loop {
++                    let r = libc::read(fd, chunk.as_mut_ptr() as *mut libc::c_void, chunk.len());
++                    if r <= 0 {
++                        break;
++                    }
++                    libc::write(2, chunk.as_ptr() as *const libc::c_void, r as usize);
++                }
++                libc::close(fd);
++            }
++        }
++        libc::signal(sig, libc::SIG_DFL);
++        libc::raise(sig);
++    }
++}
++
++/// Installs the reporter for SIGBUS and SIGSEGV.
++pub fn install() {
++    // SAFETY: a plain sigaction with an extern "C" handler; the struct is zero-initialised.
++    unsafe {
++        let mut sa: libc::sigaction = std::mem::zeroed();
++        sa.sa_sigaction = handler as usize;
++        sa.sa_flags = libc::SA_SIGINFO | libc::SA_ONSTACK;
++        libc::sigemptyset(&mut sa.sa_mask);
++        libc::sigaction(libc::SIGBUS, &sa, std::ptr::null_mut());
++        libc::sigaction(libc::SIGSEGV, &sa, std::ptr::null_mut());
++    }
++}
+diff --git a/src/main.rs b/src/main.rs
+index 1b2d57b..b121226 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -26,6 +26,8 @@ use base::syslog::LogArgs;
+ use base::syslog::LogConfig;
+ use cmdline::RunCommand;
+ mod crosvm;
++#[cfg(any(target_os = "android", target_os = "linux"))]
++mod gvm_sigbus;
+ use crosvm::cmdline;
+ use crosvm::config::Config;
+ use device_virtio_block::run_block_device;
+@@ -913,6 +915,8 @@ fn crosvm_main<I: IntoIterator<Item = String>>(args: I) -> Result<CommandStatus>
+ 
+ fn main() {
+     syslog::early_init();
++    #[cfg(any(target_os = "android", target_os = "linux"))]
++    gvm_sigbus::install(); // iceland gvm: report SIGBUS / SIGSEGV (thread, address, mappings)
+     debug!("crosvm started.");
+     let res = crosvm_main(std::env::args());
+ 
+-- 
+2.43.0
+

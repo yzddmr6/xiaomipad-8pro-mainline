@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mzak <mzak.amin@gmail.com>
+Date: Sat, 24 Oct 2026 02:51:12 +0300
+Subject: [PATCH 02/30] gpu: iceland gvm: scanout copy path by default, window
+ title / app id from the environment
+
+The dmabuf import of 3D (virgl) scanout resources gave a black window (glamor) or a frozen one
+after the guest's second modeset on GNOME / Mutter (Wayland ping no longer answered). Use the
+transfer_read copy into the shm framebuffer unless CROSVM_GVM_SCANOUT_IMPORT=1. Set the
+xdg_toplevel title / app id from CROSVM_GVM_WINDOW_TITLE / CROSVM_GVM_APP_ID.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ devices/src/virtio/gpu/virtio_gpu.rs | 11 +++++++++--
+ gpu_display/src/display_wl.c         |  6 +++++-
+ 2 files changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/devices/src/virtio/gpu/virtio_gpu.rs b/devices/src/virtio/gpu/virtio_gpu.rs
+index ed918c4..a7c874a 100644
+--- a/devices/src/virtio/gpu/virtio_gpu.rs
++++ b/devices/src/virtio/gpu/virtio_gpu.rs
+@@ -411,9 +411,16 @@ impl VirtioGpuScanout {
+             _ => return Ok(OkNoData),
+         };
+ 
+-        if let Some(import_id) =
++        // iceland gvm: the dmabuf import of 3D (virgl) scanout resources gives a black or frozen window on
++        // GNOME / Mutter (modifier 0 is assumed for scanout_data, the compositor may reject the buffer
++        // asynchronously). Default to the copy path (transfer_read into the shm framebuffer), which works for
++        // every resource; CROSVM_GVM_SCANOUT_IMPORT=1 restores the import.
++        let try_import = std::env::var_os("CROSVM_GVM_SCANOUT_IMPORT").is_some_and(|v| v == "1");
++        if let Some(import_id) = if try_import {
+             VirtioGpuScanout::import_resource_to_display(display, surface_id, resource, rutabaga)
+-        {
++        } else {
++            None
++        } {
+             display
+                 .borrow_mut()
+                 .flip_to(surface_id, import_id, None, None, None)
+diff --git a/gpu_display/src/display_wl.c b/gpu_display/src/display_wl.c
+index 73a954c..637fd6d 100644
+--- a/gpu_display/src/display_wl.c
++++ b/gpu_display/src/display_wl.c
+@@ -1088,7 +1088,11 @@ struct dwl_surface *dwl_context_surface_new(struct dwl_context *self,
+ 			self->error_callback("failed to make toplevel xdg shell surface");
+ 			goto fail;
+ 		}
+-		xdg_toplevel_set_title(disp_surface->xdg_toplevel, "crosvm");
++		/* iceland gvm: window title / app id from the environment ("Unknown" in GNOME otherwise) */
++		const char *title = getenv("CROSVM_GVM_WINDOW_TITLE");
++		const char *app_id = getenv("CROSVM_GVM_APP_ID");
++		xdg_toplevel_set_title(disp_surface->xdg_toplevel, title && *title ? title : "crosvm");
++		xdg_toplevel_set_app_id(disp_surface->xdg_toplevel, app_id && *app_id ? app_id : "crosvm");
+ 		xdg_toplevel_add_listener(disp_surface->xdg_toplevel,
+ 					      &toplevel_listener, disp_surface);
+ 
+-- 
+2.43.0
+

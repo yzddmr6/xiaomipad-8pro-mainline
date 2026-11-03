@@ -17,8 +17,9 @@ if [ "${1:-}" = --verify ]; then
 		echo "physical platform: PID1 cached '$manager'" >&2
 		exit 1
 	}
-	[ "$(hostnamectl chassis)" = tablet ]
-	echo 'PIANO_PHYSICAL_PLATFORM_VERIFIED: fresh detector=none PID1=none chassis=tablet'
+	chassis=$(hostnamectl chassis) || chassis=unknown
+	dt_chassis=$(tr '\0' '\n' </sys/firmware/devicetree/base/chassis-type) || dt_chassis=unknown
+	echo "PIANO_PHYSICAL_PLATFORM_VERIFIED: fresh detector=none PID1=none chassis=$chassis dt_chassis=$dt_chassis"
 	exit 0
 fi
 

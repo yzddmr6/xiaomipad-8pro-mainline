@@ -369,3 +369,10 @@ Copyright: ManicRobot, nokyan, Resources contributors; local changes 2026 yzddmr
 Changes: telemetry and Ubuntu context adaptations. Adreno ID/name mapping follows
 nvtop extract_gpuinfo_msm_utils.c (GPL-3.0-or-later):
 https://github.com/Syllo/nvtop/commit/71094a9f7dfbfe7cbe9faebfdf055e580a034283
+
+Virtual machines
+----------------
+piano-vm and guest/network control adapt iceland-gvm under GPL-2.0-only.
+crosvm and minijail retain their BSD notices; Rust dependencies retain their
+individual licences. See device/virtualization/NOTICE and the corresponding
+source archive distributed with the optional packages.

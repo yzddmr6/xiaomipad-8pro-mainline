@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mzak <mzak.amin@gmail.com>
+Date: Sun, 25 Oct 2026 18:24:40 +0300
+Subject: [PATCH 22/30] CREDITS: the DroidVM pseudo-unprotected mode and boot
+ shim
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Signed-off-by: mzak <mzak.amin@gmail.com>
+---
+ CREDITS | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/CREDITS b/CREDITS
+index 79ccf8b..c50f3a4 100644
+--- a/CREDITS
++++ b/CREDITS
+@@ -19,3 +19,9 @@ Upstream crosvm files stay under their BSD-3-Clause license (LICENSE).
+   header. Links the system LibVNCServer (GPL-2.0-or-later). The option wiring (src/crosvm/config.rs
+   VncConfig, cmdline.rs, sys/linux/gpu.rs, simplefb_display.rs, devices DisplayBackend::Vnc) is our own,
+   modelled on DroidVM's.
++- DroidVM dvm-crosvm 849e05f, same licence: the pseudo-unprotected memory mode ("--protected-vm-pseudo-unprotected",
++  iceland-vms 0.2-11 "Shared with the tablet") -- droidvm-shim/ (the boot shim, kept with its own headers as
++  published) and hypervisor/src/gunyah/shim_abi.rs (the host / shim ABI, kept as published); the crosvm side
++  (aarch64/src/lib.rs layout + load_shim / init_handoff, hypervisor/src/gunyah/mod.rs window share + watch_shim,
++  vm_memory SharedGuestRam / ShimHandoff, the cmdline flag) follows DroidVM's design and is re-plumbed onto our
++  host kernel's GH_VM_PROTECTED_SHARE (patch 0008) instead of DroidVM's out-of-tree share module.
+-- 
+2.43.0
+

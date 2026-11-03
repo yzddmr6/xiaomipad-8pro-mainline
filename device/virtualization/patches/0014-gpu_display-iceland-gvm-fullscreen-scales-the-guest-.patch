@@ -1,0 +1,196 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mzak <mzak.amin@gmail.com>
+Date: Sun, 25 Oct 2026 11:18:16 +0300
+Subject: [PATCH 14/30] gpu_display: iceland gvm: fullscreen scales the guest
+ display to the output, input mapped per axis
+
+- toplevel configure: in the fullscreen state the viewport destination becomes the compositor's size (the guest
+  keeps its resolution), leaving fullscreen restores width / scale; committed after the ack (an idle guest sends
+  no frame); GVM-FULLSCREEN on WxH / off on stderr
+- pointer and touch coordinates: per-axis surface -> buffer scaling (the fullscreen stretch)
+- input / opaque region: 32767 x 32767 surface units (clipped to the surface), so a viewport larger than the
+  buffer still takes input everywhere
+
+Signed-off-by: mzak <mzak.amin@gmail.com>
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ gpu_display/src/display_wl.c | 83 ++++++++++++++++++++++++++++--------
+ 1 file changed, 66 insertions(+), 17 deletions(-)
+
+diff --git a/gpu_display/src/display_wl.c b/gpu_display/src/display_wl.c
+index 1755aab..6756295 100644
+--- a/gpu_display/src/display_wl.c
++++ b/gpu_display/src/display_wl.c
+@@ -152,6 +152,11 @@ struct dwl_surface {
+ 	uint32_t height;
+ 	uint32_t surface_id;
+ 	double scale;
++	/* iceland gvm (0.2-6): the compositor's fullscreen size (logical px; 0 = not fullscreen). The buffer is
++	 * then scaled to it with the viewport and input is mapped back per axis. */
++	int32_t fs_width;
++	int32_t fs_height;
++	bool gvm_commit;
+ 	bool close_requested;
+ 	size_t buffer_count;
+ 	uint64_t buffer_use_bit_mask;
+@@ -391,16 +396,21 @@ static const struct wl_keyboard_listener wl_keyboard_listener = {
+ 
+ /* iceland gvm: surface (logical) coordinates -> buffer pixels, the guest devices' coordinate space
+  * (up to v10i the window's logical coordinates went to a device sized in buffer pixels) */
+-static int32_t gvm_to_buffer(struct wl_surface *surface, wl_fixed_t v)
++static int32_t gvm_to_buffer_axis(struct wl_surface *surface, wl_fixed_t v, int axis)
+ {
+ 	double scale = 1.0;
+ 	if (surface) {
+ 		struct dwl_surface *ds = (struct dwl_surface *)wl_surface_get_user_data(surface);
+-		if (ds && ds->scale > 0)
++		if (ds && ds->fs_width > 0 && ds->fs_height > 0)
++			/* fullscreen: the viewport stretches the buffer to the compositor's size */
++			scale = axis == 0 ? (double)ds->width / ds->fs_width : (double)ds->height / ds->fs_height;
++		else if (ds && ds->scale > 0)
+ 			scale = ds->scale;
+ 	}
+ 	return (int32_t)(wl_fixed_to_double(v) * scale);
+ }
++#define gvm_to_buffer_x(s, v) gvm_to_buffer_axis((s), (v), 0)
++#define gvm_to_buffer_y(s, v) gvm_to_buffer_axis((s), (v), 1)
+ 
+ static void gvm_push(struct dwl_context *context, const void *surface, uint32_t type,
+ 		     int32_t p0, int32_t p1, int32_t p2)
+@@ -424,8 +434,8 @@ static void pointer_enter_handler(void *data, struct wl_pointer *wl_pointer,
+ 	(void)serial;
+ 
+ 	input->pointer_input_surface = surface;
+-	input->pointer_x = gvm_to_buffer(surface, x);
+-	input->pointer_y = gvm_to_buffer(surface, y);
++	input->pointer_x = gvm_to_buffer_x(surface, x);
++	input->pointer_y = gvm_to_buffer_y(surface, y);
+ 	gvm_push(context, surface, DWL_EVENT_TYPE_POINTER_MOVE, input->pointer_x, input->pointer_y, 0);
+ }
+ 
+@@ -451,8 +461,8 @@ static void pointer_motion_handler(void *data, struct wl_pointer *wl_pointer,
+ 
+ 	if (!input->pointer_input_surface)
+ 		return;
+-	input->pointer_x = gvm_to_buffer(input->pointer_input_surface, x);
+-	input->pointer_y = gvm_to_buffer(input->pointer_input_surface, y);
++	input->pointer_x = gvm_to_buffer_x(input->pointer_input_surface, x);
++	input->pointer_y = gvm_to_buffer_y(input->pointer_input_surface, y);
+ 	gvm_push(context, input->pointer_input_surface, DWL_EVENT_TYPE_POINTER_MOVE,
+ 		 input->pointer_x, input->pointer_y, 0);
+ }
+@@ -543,8 +553,8 @@ static void touch_down(void *data, struct wl_touch *wl_touch, uint32_t serial, u
+ 	(void)serial;
+ 	(void)time;
+ 	context->input.touch_surface = surface;
+-	gvm_push(context, surface, DWL_EVENT_TYPE_FINGER_DOWN, id, gvm_to_buffer(surface, x),
+-		 gvm_to_buffer(surface, y));
++	gvm_push(context, surface, DWL_EVENT_TYPE_FINGER_DOWN, id, gvm_to_buffer_x(surface, x),
++		 gvm_to_buffer_y(surface, y));
+ }
+ 
+ static void touch_up(void *data, struct wl_touch *wl_touch, uint32_t serial, uint32_t time, int32_t id)
+@@ -565,7 +575,7 @@ static void touch_motion(void *data, struct wl_touch *wl_touch, uint32_t time, i
+ 	(void)wl_touch;
+ 	(void)time;
+ 	if (s)
+-		gvm_push(context, s, DWL_EVENT_TYPE_FINGER_MOTION, id, gvm_to_buffer(s, x), gvm_to_buffer(s, y));
++		gvm_push(context, s, DWL_EVENT_TYPE_FINGER_MOTION, id, gvm_to_buffer_x(s, x), gvm_to_buffer_y(s, y));
+ }
+ 
+ static void touch_frame(void *data, struct wl_touch *wl_touch)
+@@ -794,11 +804,40 @@ static void toplevel_configure(void *data,
+ 			       int32_t width, int32_t height,
+ 			       struct wl_array *states)
+ {
+-	(void)data;
++	/* iceland gvm (0.2-6): in fullscreen the compositor asks for the output's size. The guest display keeps
++	 * its resolution; the viewport scales the buffer to that size (the app picks the monitor's resolution
++	 * for fullscreen VMs, so normally this is the plain HiDPI scale) and input is mapped back per axis.
++	 * Leaving fullscreen restores the window's normal size. Applied at the next commit (after the ack). */
++	struct dwl_surface *surface = (struct dwl_surface *)data;
++	bool fullscreen = false;
++	uint32_t *st;
+ 	(void)xdg_toplevel;
+-	(void)width;
+-	(void)height;
+-	(void)states;
++	wl_array_for_each(st, states)
++	{
++		if (*st == XDG_TOPLEVEL_STATE_FULLSCREEN)
++			fullscreen = true;
++	}
++	if (!surface || !surface->viewport)
++		return;
++	if (fullscreen && width > 0 && height > 0) {
++		if (surface->fs_width != width || surface->fs_height != height) {
++			surface->fs_width = width;
++			surface->fs_height = height;
++			wp_viewport_set_destination(surface->viewport, width, height);
++			surface->gvm_commit = true;
++			fprintf(stderr, "GVM-FULLSCREEN on %dx%d (buffer %ux%u)\n", width, height, surface->width,
++				surface->height);
++			fflush(stderr);
++		}
++	} else if (surface->fs_width > 0) {
++		surface->fs_width = 0;
++		surface->fs_height = 0;
++		wp_viewport_set_destination(surface->viewport, ceil(surface->width / surface->scale),
++					    ceil(surface->height / surface->scale));
++		surface->gvm_commit = true;
++		fprintf(stderr, "GVM-FULLSCREEN off\n");
++		fflush(stderr);
++	}
+ }
+ 
+ static void toplevel_close(void *data,
+@@ -827,8 +866,13 @@ static void xdg_surface_configure_handler(void *data,
+ 					  struct xdg_surface *xdg_surface,
+ 					  uint32_t serial)
+ {
+-	(void)data;
++	struct dwl_surface *surface = (struct dwl_surface *)data;
+ 	xdg_surface_ack_configure(xdg_surface, serial);
++	/* iceland gvm: a viewport change of the toplevel configure needs a commit (an idle guest sends none) */
++	if (surface && surface->gvm_commit) {
++		surface->gvm_commit = false;
++		wl_surface_commit(surface->wl_surface);
++	}
+ }
+ 
+ static const struct xdg_surface_listener xdg_surface_listener = {
+@@ -846,7 +890,10 @@ static void surface_enter(void *data, struct wl_surface *wl_surface,
+ 	surface->scale = (output->device_scale_factor / 1000.0) *
+ 			 (output->current_scale / 1000.0);
+ 
+-	if (surface->viewport) {
++	if (surface->viewport && surface->fs_width > 0) {
++		/* iceland gvm: fullscreen keeps the compositor's size */
++		wp_viewport_set_destination(surface->viewport, surface->fs_width, surface->fs_height);
++	} else if (surface->viewport) {
+ 		wp_viewport_set_destination(
+ 		    surface->viewport, ceil(surface->width / surface->scale),
+ 		    ceil(surface->height / surface->scale));
+@@ -1217,7 +1264,9 @@ struct dwl_surface *dwl_context_surface_new(struct dwl_context *self,
+ 
+ 	bool receive_input = (flags & DWL_SURFACE_FLAG_RECEIVE_INPUT);
+ 	if (receive_input) {
+-		wl_region_add(region, 0, 0, width, height);
++		/* iceland gvm: the region is in surface (logical) coordinates and is clipped to the surface; a
++		 * fullscreen viewport can make the surface larger than the buffer, so cover any size */
++		wl_region_add(region, 0, 0, 32767, 32767);
+ 	} else {
+ 		// We have to add an empty region because NULL doesn't work
+ 		wl_region_add(region, 0, 0, 0, 0);
+@@ -1260,7 +1309,7 @@ struct dwl_surface *dwl_context_surface_new(struct dwl_context *self,
+ 
+ 		xdg_surface_add_listener(disp_surface->xdg_surface,
+ 					     &xdg_surface_listener,
+-					     NULL);
++					     disp_surface);
+ 		/* iceland gvm (0.2-6): CROSVM_GVM_FULLSCREEN=1 opens the window fullscreen, on the output named
+ 		 * or numbered (0-based, binding order) by CROSVM_GVM_OUTPUT; unknown or unset = the compositor's choice */
+ 		const char *fs = getenv("CROSVM_GVM_FULLSCREEN");
+-- 
+2.43.0
+

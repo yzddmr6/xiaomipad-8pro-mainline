@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT
+abi <abi/4.0>,
+include <tunables/global>
+# Only grant the installed VMM the userns permission needed by its minijail workers.
+# Filesystem/syscall isolation is implemented by crosvm; this is not an AppArmor jail.
+profile piano-crosvm /usr/lib/piano/crosvm/crosvm flags=(unconfined) {
+  userns,
+}

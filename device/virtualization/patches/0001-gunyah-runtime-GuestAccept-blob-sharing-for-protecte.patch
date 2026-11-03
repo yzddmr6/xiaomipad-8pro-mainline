@@ -1,0 +1,921 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mzak <mzak.amin@gmail.com>
+Date: Fri, 23 Oct 2026 09:21:16 +0300
+Subject: [PATCH 01/30] gunyah: runtime GuestAccept blob sharing for protected
+ VMs (iceland gvm V4)
+
+---
+ Cargo.toml                                  |   4 +-
+ devices/device_virtio_gvm_accept/Cargo.toml |  21 ++
+ devices/device_virtio_gvm_accept/src/lib.rs | 296 ++++++++++++++++++++
+ hypervisor/src/gunyah/aarch64.rs            |  13 +
+ hypervisor/src/gunyah/gunyah_sys.rs         |  51 ++++
+ hypervisor/src/gunyah/gvm_accept.rs         | 137 +++++++++
+ hypervisor/src/gunyah/mod.rs                | 168 ++++++++++-
+ hypervisor/src/lib.rs                       |   5 +
+ src/crosvm/any_device_module.rs             |   2 +
+ src/crosvm/cmdline.rs                       |   9 +
+ vm_control/src/lib.rs                       |   7 +
+ 11 files changed, 709 insertions(+), 4 deletions(-)
+ create mode 100755 devices/device_virtio_gvm_accept/Cargo.toml
+ create mode 100755 devices/device_virtio_gvm_accept/src/lib.rs
+ create mode 100755 hypervisor/src/gunyah/gvm_accept.rs
+
+diff --git a/Cargo.toml b/Cargo.toml
+index 0c0fb0b..c0b9fde 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -161,6 +161,7 @@ device_virtio_fs = { path = "devices/device_virtio_fs" }
+ device_virtio_net = { path = "devices/device_virtio_net" }
+ device_virtio_pmem = { path = "devices/device_virtio_pmem" }
+ device_virtio_rng = { path = "devices/device_virtio_rng" }
++device_virtio_gvm_accept = { path = "devices/device_virtio_gvm_accept" }
+ device_virtio_scsi = { path = "devices/device_virtio_scsi" }
+ device_virtio_snd = { path = "devices/device_virtio_snd" }
+ device_virtio_tpm = { path = "devices/device_virtio_tpm" }
+@@ -373,7 +374,7 @@ media = ["devices/media"]
+ geniezone = ["devices/geniezone", "hypervisor/geniezone"]
+ 
+ ## Enables the use of the Gunyah hypervisor
+-gunyah = ["devices/gunyah", "hypervisor/gunyah"]
++gunyah = ["devices/gunyah", "hypervisor/gunyah", "dep:device_virtio_gvm_accept"]
+ 
+ ## Enables the use of the Halla hypervisor
+ halla = ["devices/halla", "hypervisor/halla"]
+@@ -606,6 +607,7 @@ device_virtio_block = { workspace = true }
+ device_virtio_console = { workspace = true }
+ device_virtio_net = { workspace = true, optional = true }
+ device_virtio_rng = { workspace = true }
++device_virtio_gvm_accept = { workspace = true, optional = true }
+ device_virtio_scsi = { workspace = true }
+ device_virtio_snd = { workspace = true, optional = true }
+ device_virtio_tpm = { workspace = true, optional = true }
+diff --git a/devices/device_virtio_gvm_accept/Cargo.toml b/devices/device_virtio_gvm_accept/Cargo.toml
+new file mode 100755
+index 0000000..e03410c
+--- /dev/null
++++ b/devices/device_virtio_gvm_accept/Cargo.toml
+@@ -0,0 +1,21 @@
++[package]
++name = "device_virtio_gvm_accept"
++version = "0.1.0"
++authors = ["The iceland-mainline authors"]
++edition = "2021"
++license = "BSD-3-Clause"
++
++[features]
++
++[dependencies]
++anyhow = { workspace = true }
++base = { workspace = true }
++devices = { workspace = true }
++hypervisor = { workspace = true, features = ["gunyah"] }
++serde = { workspace = true, features = [ "derive", "rc" ] }
++snapshot = { workspace = true }
++vm_memory = { workspace = true }
++
++[target.'cfg(any(target_os = "android", target_os = "linux"))'.dependencies]
++jail = { workspace = true }
++minijail = "*"
+diff --git a/devices/device_virtio_gvm_accept/src/lib.rs b/devices/device_virtio_gvm_accept/src/lib.rs
+new file mode 100755
+index 0000000..06457c5
+--- /dev/null
++++ b/devices/device_virtio_gvm_accept/src/lib.rs
+@@ -0,0 +1,296 @@
++// Copyright 2026 The iceland-mainline authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++//! gvm-accept: virtio transport that asks a protected Gunyah guest to MEM_ACCEPT / MEM_RELEASE
++//! runtime-shared memparcels (iceland gvm, V4).
++//!
++//! Wire format = the DroidVM guest module `gunyah_guest.ko` (droidvm-guest-additions, GPL-2.0+;
++//! virtio id 60), so that module can be used unchanged in the guest:
++//! - queue 0 (request): the guest posts device-writable 32-byte buffers; the device fills one per
++//!   request `{le32 req_id, le32 op (1 accept, 2 release), le32 handle, le32 flags 0, le64 gpa,
++//!   le64 size}`;
++//! - queue 1 (completion): the guest sends `{le32 req_id, le32 ret}` (0 or -errno);
++//! - queue 2 (pool): DroidVM's growable-pool control plane, not implemented here: every request
++//!   gets `ret = -ENOSYS`.
++//!
++//! The host end of the link is registered with `hypervisor::gunyah::gvm_accept::set_accept_link`;
++//! `GunyahVm` drives it synchronously from the vm_memory handler. Single-process crosvm only.
++
++use std::collections::BTreeMap;
++use std::collections::HashMap;
++use std::collections::VecDeque;
++use std::io::Read;
++use std::io::Write;
++
++use anyhow::anyhow;
++use anyhow::Context;
++use base::error;
++use base::warn;
++use base::Event;
++use base::EventToken;
++use base::RawDescriptor;
++use base::ReadNotifier;
++use base::Tube;
++use base::WaitContext;
++use base::WorkerThread;
++use devices::virtio;
++use devices::virtio::DeviceType;
++use devices::virtio::Interrupt;
++use devices::virtio::Queue;
++use devices::virtio::VirtioDevice;
++use devices::VirtioDeviceArgs;
++use devices::VirtioDeviceModule;
++use hypervisor::gunyah::gvm_accept::set_accept_link;
++use hypervisor::gunyah::gvm_accept::GvmAcceptOp;
++use hypervisor::gunyah::gvm_accept::GvmAcceptRequest;
++use hypervisor::gunyah::gvm_accept::GvmAcceptResponse;
++#[cfg(any(target_os = "android", target_os = "linux"))]
++use jail::JailConfig;
++#[cfg(any(target_os = "android", target_os = "linux"))]
++use minijail::Minijail;
++use snapshot::AnySnapshot;
++use vm_memory::GuestMemory;
++
++/// Non-standard virtio id used by the DroidVM guest module.
++pub const VIRTIO_ID_GUNYAH_ACCEPT: u32 = 60;
++const QUEUE_SIZE: u16 = 64;
++const QUEUE_SIZES: &[u16] = &[QUEUE_SIZE, QUEUE_SIZE, QUEUE_SIZE];
++const ENOSYS: i32 = 38;
++
++struct Worker {
++    req_q: Queue,
++    comp_q: Queue,
++    pool_q: Queue,
++    tube: Tube,
++    pending: VecDeque<GvmAcceptRequest>,
++    in_flight: HashMap<u32, u64>,
++}
++
++impl Worker {
++    /// Hand queued host requests to guest-posted request buffers.
++    fn push_requests(&mut self) {
++        let mut sent = false;
++        while let Some(req) = self.pending.front() {
++            let Some(mut desc) = self.req_q.pop() else {
++                break;
++            };
++            let req_id = req.seq as u32;
++            let op: u32 = match req.op {
++                GvmAcceptOp::Accept => 1,
++                GvmAcceptOp::Release => 2,
++            };
++            let mut buf = [0u8; 32];
++            buf[0..4].copy_from_slice(&req_id.to_le_bytes());
++            buf[4..8].copy_from_slice(&op.to_le_bytes());
++            buf[8..12].copy_from_slice(&req.handle.to_le_bytes());
++            buf[16..24].copy_from_slice(&req.gpa.to_le_bytes());
++            buf[24..32].copy_from_slice(&req.size.to_le_bytes());
++            if let Err(e) = desc.writer.write_all(&buf) {
++                error!("gvm-accept: request buffer too small: {}", e);
++            }
++            self.in_flight.insert(req_id, req.seq);
++            self.pending.pop_front();
++            self.req_q.add_used(desc);
++            sent = true;
++        }
++        if sent {
++            self.req_q.trigger_interrupt();
++        }
++    }
++
++    /// Guest completions -> host responses.
++    fn take_completions(&mut self) {
++        let mut used = false;
++        while let Some(mut desc) = self.comp_q.pop() {
++            let mut buf = [0u8; 8];
++            match desc.reader.read_exact(&mut buf) {
++                Ok(()) => {
++                    let req_id = u32::from_le_bytes(buf[0..4].try_into().unwrap());
++                    let ret = i32::from_le_bytes(buf[4..8].try_into().unwrap());
++                    match self.in_flight.remove(&req_id) {
++                        Some(seq) => {
++                            if let Err(e) = self.tube.send(&GvmAcceptResponse { seq, ret }) {
++                                error!("gvm-accept: response send failed: {}", e);
++                            }
++                        }
++                        None => warn!("gvm-accept: completion for unknown req {}", req_id),
++                    }
++                }
++                Err(e) => warn!("gvm-accept: short completion: {}", e),
++            }
++            self.comp_q.add_used(desc);
++            used = true;
++        }
++        if used {
++            self.comp_q.trigger_interrupt();
++        }
++    }
++
++    /// DroidVM pool requests: not supported, answer -ENOSYS.
++    fn refuse_pool(&mut self) {
++        let mut used = false;
++        while let Some(mut desc) = self.pool_q.pop() {
++            let mut req = [0u8; 32];
++            let req_id = match desc.reader.read_exact(&mut req) {
++                Ok(()) => u32::from_le_bytes(req[0..4].try_into().unwrap()),
++                Err(_) => 0,
++            };
++            let mut resp = [0u8; 16];
++            resp[0..4].copy_from_slice(&req_id.to_le_bytes());
++            resp[4..8].copy_from_slice(&(-ENOSYS).to_le_bytes());
++            let _ = desc.writer.write_all(&resp);
++            self.pool_q.add_used(desc);
++            used = true;
++        }
++        if used {
++            self.pool_q.trigger_interrupt();
++        }
++    }
++
++    fn run(&mut self, kill_evt: Event) -> anyhow::Result<()> {
++        #[derive(EventToken)]
++        enum Token {
++            ReqQueue,
++            CompQueue,
++            PoolQueue,
++            HostRequest,
++            Kill,
++        }
++
++        let wait_ctx = WaitContext::build_with(&[
++            (self.req_q.event(), Token::ReqQueue),
++            (self.comp_q.event(), Token::CompQueue),
++            (self.pool_q.event(), Token::PoolQueue),
++            (self.tube.get_read_notifier(), Token::HostRequest),
++            (&kill_evt, Token::Kill),
++        ])
++        .context("failed creating WaitContext")?;
++
++        loop {
++            let events = wait_ctx.wait().context("failed polling for events")?;
++            for event in events.iter().filter(|e| e.is_readable) {
++                match event.token {
++                    Token::ReqQueue => {
++                        self.req_q.event().wait().context("req queue event")?;
++                        self.push_requests();
++                    }
++                    Token::CompQueue => {
++                        self.comp_q.event().wait().context("comp queue event")?;
++                        self.take_completions();
++                    }
++                    Token::PoolQueue => {
++                        self.pool_q.event().wait().context("pool queue event")?;
++                        self.refuse_pool();
++                    }
++                    Token::HostRequest => match self.tube.recv::<GvmAcceptRequest>() {
++                        Ok(req) => {
++                            self.pending.push_back(req);
++                            self.push_requests();
++                        }
++                        Err(e) => {
++                            error!("gvm-accept: host link closed: {}", e);
++                            return Ok(());
++                        }
++                    },
++                    Token::Kill => return Ok(()),
++                }
++            }
++        }
++    }
++}
++
++struct GvmAccept {
++    worker_thread: Option<WorkerThread<Worker>>,
++    tube: Option<Tube>,
++    virtio_features: u64,
++}
++
++impl VirtioDevice for GvmAccept {
++    fn keep_rds(&self) -> Vec<RawDescriptor> {
++        Vec::new()
++    }
++
++    fn device_type(&self) -> DeviceType {
++        DeviceType::VendorDevice(VIRTIO_ID_GUNYAH_ACCEPT)
++    }
++
++    fn queue_max_sizes(&self) -> &[u16] {
++        QUEUE_SIZES
++    }
++
++    fn features(&self) -> u64 {
++        self.virtio_features
++    }
++
++    fn activate(
++        &mut self,
++        _mem: GuestMemory,
++        _interrupt: Interrupt,
++        mut queues: BTreeMap<usize, Queue>,
++    ) -> anyhow::Result<()> {
++        if queues.len() != 3 {
++            return Err(anyhow!("expected 3 queues, got {}", queues.len()));
++        }
++        let tube = self
++            .tube
++            .take()
++            .ok_or_else(|| anyhow!("gvm-accept activated twice"))?;
++        let req_q = queues.remove(&0).unwrap();
++        let comp_q = queues.remove(&1).unwrap();
++        let pool_q = queues.remove(&2).unwrap();
++        self.worker_thread = Some(WorkerThread::start("v_gvm_accept", move |kill_evt| {
++            let mut worker = Worker {
++                req_q,
++                comp_q,
++                pool_q,
++                tube,
++                pending: VecDeque::new(),
++                in_flight: HashMap::new(),
++            };
++            if let Err(e) = worker.run(kill_evt) {
++                error!("gvm-accept worker failed: {:#}", e);
++            }
++            worker
++        }));
++        Ok(())
++    }
++
++    fn reset(&mut self) -> anyhow::Result<()> {
++        if let Some(worker_thread) = self.worker_thread.take() {
++            let worker = worker_thread.stop();
++            self.tube = Some(worker.tube);
++        }
++        Ok(())
++    }
++
++    fn virtio_snapshot(&mut self) -> anyhow::Result<AnySnapshot> {
++        Err(anyhow!("gvm-accept does not support snapshots"))
++    }
++}
++
++/// The gvm-accept device. Added by crosvm for protected Gunyah VMs when `CROSVM_GVM_ACCEPT=1`.
++#[derive(serde::Serialize, serde::Deserialize)]
++pub struct GvmAcceptModule;
++
++impl VirtioDeviceModule for GvmAcceptModule {
++    fn sort_name(&self) -> &'static str {
++        "gvm_accept"
++    }
++
++    fn create(&self, args: &mut VirtioDeviceArgs<'_>) -> anyhow::Result<Box<dyn VirtioDevice>> {
++        let (host_end, device_end) = Tube::pair().context("gvm-accept tube")?;
++        set_accept_link(host_end);
++        Ok(Box::new(GvmAccept {
++            worker_thread: None,
++            tube: Some(device_end),
++            virtio_features: virtio::base_features(args.protection_type),
++        }))
++    }
++
++    #[cfg(any(target_os = "android", target_os = "linux"))]
++    fn create_jail(&self, _jail_config: Option<&JailConfig>) -> anyhow::Result<Option<Minijail>> {
++        // Needs the process-global link in the hypervisor crate: never jailed.
++        Ok(None)
++    }
++}
+diff --git a/hypervisor/src/gunyah/aarch64.rs b/hypervisor/src/gunyah/aarch64.rs
+index 5c1f605..58982ae 100644
+--- a/hypervisor/src/gunyah/aarch64.rs
++++ b/hypervisor/src/gunyah/aarch64.rs
+@@ -144,6 +144,19 @@ impl VmAArch64 for GunyahVm {
+             bell_node.set_prop("interrupts", &interrupts)?;
+         }
+ 
++        if self.protected && super::gvm_accept::accept_enabled_by_env() {
++            // iceland gvm: ask the RM for an RM-RPC msgq pair; it generates
++            // /hypervisor/qcom,resource-mgr (compatible "gunyah-resource-manager",
++            // reg = <tx_capid rx_capid>) for the guest's MEM_ACCEPT / MEM_RELEASE.
++            let rm_node = vdev_node.subnode_mut("rm-rpc")?;
++            rm_node.set_prop("vdevice-type", "rm-rpc")?;
++            rm_node.set_prop("generate", "/hypervisor/qcom,resource-mgr")?;
++            rm_node.set_prop("console-dev", ())?;
++            rm_node.set_prop("message-size", 0xf0u32)?;
++            rm_node.set_prop("queue-depth", 0x8u32)?;
++            rm_node.set_prop("qcom,label", 0x1u32)?;
++        }
++
+         for region in self.guest_mem.regions() {
+             let create_shm_node = match region.options.purpose {
+                 MemoryRegionPurpose::Bios => false,
+diff --git a/hypervisor/src/gunyah/gunyah_sys.rs b/hypervisor/src/gunyah/gunyah_sys.rs
+index b0c27a3..d4e53ef 100644
+--- a/hypervisor/src/gunyah/gunyah_sys.rs
++++ b/hypervisor/src/gunyah/gunyah_sys.rs
+@@ -10,6 +10,7 @@
+ 
+ use base::ioctl_io_nr;
+ use base::ioctl_iow_nr;
++use base::ioctl_iowr_nr;
+ 
+ // generated with gunyah_sys/bindgen.sh
+ pub mod bindings;
+@@ -72,3 +73,53 @@ ioctl_iow_nr!(
+     gunyah_auth_desc
+ );
+ ioctl_io_nr!(GH_VM_CHECK_EXTENSION, GH_ANDROID_IOCTL_TYPE, 0x17);
++
++// iceland gvm: runtime protected share (GuestAccept), kernel patch 0008
++// ("virt: gunyah: Add runtime protected share (GuestAccept) ioctls", SuperTurtleDev 06416a1eae).
++pub const GH_CAP_PROTECTED_SHARE: u64 = 1;
++#[repr(C)]
++#[derive(Debug, Default, Copy, Clone)]
++pub struct gunyah_protected_share {
++    pub label: u32,
++    pub flags: u32,
++    pub guest_phys_addr: u64,
++    pub memory_size: u64,
++    pub userspace_addr: u64,
++    pub mem_handle: u32,
++    pub reserved: u32,
++}
++#[repr(C)]
++#[derive(Debug, Default, Copy, Clone)]
++pub struct gunyah_protected_share_dmabuf {
++    pub label: u32,
++    pub flags: u32,
++    pub guest_phys_addr: u64,
++    pub memory_size: u64,
++    pub dmabuf_offset: u64,
++    pub dmabuf_fd: i32,
++    pub mem_handle: u32,
++}
++#[repr(C)]
++#[derive(Debug, Default, Copy, Clone)]
++pub struct gunyah_protected_unshare {
++    pub label: u32,
++    pub reserved: u32,
++}
++ioctl_iowr_nr!(
++    GH_VM_PROTECTED_SHARE,
++    GH_ANDROID_IOCTL_TYPE,
++    0x18,
++    gunyah_protected_share
++);
++ioctl_iowr_nr!(
++    GH_VM_PROTECTED_SHARE_DMABUF,
++    GH_ANDROID_IOCTL_TYPE,
++    0x19,
++    gunyah_protected_share_dmabuf
++);
++ioctl_iow_nr!(
++    GH_VM_PROTECTED_UNSHARE,
++    GH_ANDROID_IOCTL_TYPE,
++    0x1a,
++    gunyah_protected_unshare
++);
+diff --git a/hypervisor/src/gunyah/gvm_accept.rs b/hypervisor/src/gunyah/gvm_accept.rs
+new file mode 100755
+index 0000000..869324f
+--- /dev/null
++++ b/hypervisor/src/gunyah/gvm_accept.rs
+@@ -0,0 +1,137 @@
++// Copyright 2026 The iceland-mainline authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++//! Host side of the runtime GuestAccept transport for protected Gunyah VMs (iceland gvm).
++//!
++//! A protected guest owns its stage-2: the host cannot map a blob into it. The kernel's
++//! `GH_VM_PROTECTED_SHARE{,_DMABUF}` (iceland gunyah patch 0008, the in-tree form of DroidVM's
++//! gunyah_share) shares the pages as a resource-manager memparcel and returns its handle; the
++//! guest must then MEM_ACCEPT that handle at the GPA where crosvm placed the mapping.
++//!
++//! The request reaches the guest through the `gvm-accept` virtio device (crate
++//! `device_virtio_gvm_accept`), whose wire format matches the DroidVM guest module
++//! `gunyah_guest.ko` (virtio id 60: queue 0 host->guest requests, queue 1 completions). The device
++//! registers its host end here with [`set_accept_link`]; `GunyahVm::add_memory_region` /
++//! `remove_memory_region` call [`drive`] synchronously from the vm_memory handler.
++//!
++//! Requires a single-process crosvm (`--disable-sandbox`): the link is a process global.
++
++use std::sync::atomic::AtomicU64;
++use std::sync::atomic::Ordering;
++use std::sync::Mutex;
++use std::time::Duration;
++use std::time::Instant;
++
++use base::error;
++use base::info;
++use base::Error;
++use base::Result;
++use base::Tube;
++use libc::EIO;
++use libc::ENODEV;
++use libc::ETIMEDOUT;
++use serde::Deserialize;
++use serde::Serialize;
++
++/// Operation carried to the guest accept module.
++#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
++pub enum GvmAcceptOp {
++    /// MEM_ACCEPT `handle` at `gpa` (IPA-contiguous, `size` bytes).
++    Accept,
++    /// MEM_RELEASE whatever the guest accepted at `gpa`.
++    Release,
++}
++
++/// Request from `GunyahVm` to the gvm-accept device worker.
++#[derive(Serialize, Deserialize, Debug)]
++pub struct GvmAcceptRequest {
++    pub seq: u64,
++    pub op: GvmAcceptOp,
++    pub handle: u32,
++    pub gpa: u64,
++    pub size: u64,
++}
++
++/// Completion relayed from the guest (0 or a negative errno).
++#[derive(Serialize, Deserialize, Debug)]
++pub struct GvmAcceptResponse {
++    pub seq: u64,
++    pub ret: i32,
++}
++
++static LINK: Mutex<Option<Tube>> = Mutex::new(None);
++static SEQ: AtomicU64 = AtomicU64::new(1);
++
++/// How long one accept / release may take: an RM RPC from the guest is well below a millisecond,
++/// the budget covers the virtqueue interrupt and the guest workqueue.
++pub const ACCEPT_TIMEOUT: Duration = Duration::from_secs(3);
++
++/// Called once by the gvm-accept device when it is created.
++pub fn set_accept_link(tube: Tube) {
++    *LINK.lock().unwrap() = Some(tube);
++}
++
++/// True when a gvm-accept device exists in this VM.
++pub fn accept_link_present() -> bool {
++    LINK.lock().unwrap().is_some()
++}
++
++/// Whether the guest may need the RM-RPC message queue (set from the environment by the VMM
++/// configuration: `CROSVM_GVM_ACCEPT=1`).
++pub fn accept_enabled_by_env() -> bool {
++    std::env::var("CROSVM_GVM_ACCEPT").map(|v| v == "1").unwrap_or(false)
++}
++
++/// One synchronous round trip through the guest accept module.
++pub fn drive(op: GvmAcceptOp, handle: u32, gpa: u64, size: u64) -> Result<()> {
++    let guard = LINK.lock().unwrap();
++    let tube = match guard.as_ref() {
++        Some(t) => t,
++        None => {
++            error!("gvm-accept: no accept device in this VM; cannot {:?} at {:#x}", op, gpa);
++            return Err(Error::new(ENODEV));
++        }
++    };
++    let seq = SEQ.fetch_add(1, Ordering::Relaxed);
++    tube.send(&GvmAcceptRequest {
++        seq,
++        op,
++        handle,
++        gpa,
++        size,
++    })
++    .map_err(|e| {
++        error!("gvm-accept: send failed: {}", e);
++        Error::new(EIO)
++    })?;
++    let deadline = Instant::now() + ACCEPT_TIMEOUT;
++    loop {
++        let left = deadline.saturating_duration_since(Instant::now());
++        if left.is_zero() {
++            error!("gvm-accept: {:?} gpa={:#x} timed out", op, gpa);
++            return Err(Error::new(ETIMEDOUT));
++        }
++        tube.set_recv_timeout(Some(left)).map_err(|_| Error::new(EIO))?;
++        match tube.recv::<GvmAcceptResponse>() {
++            Ok(r) if r.seq == seq => {
++                return if r.ret == 0 {
++                    info!(
++                        "gvm-accept: {:?} handle={:#x} gpa={:#x} size={:#x} done",
++                        op, handle, gpa, size
++                    );
++                    Ok(())
++                } else {
++                    error!("gvm-accept: guest failed {:?} gpa={:#x}: {}", op, gpa, r.ret);
++                    Err(Error::new(-r.ret))
++                };
++            }
++            // A late answer to an earlier, timed-out request.
++            Ok(_) => continue,
++            Err(e) => {
++                error!("gvm-accept: recv failed: {}", e);
++                return Err(Error::new(ETIMEDOUT));
++            }
++        }
++    }
++}
+diff --git a/hypervisor/src/gunyah/mod.rs b/hypervisor/src/gunyah/mod.rs
+index aa04594..74b648c 100644
+--- a/hypervisor/src/gunyah/mod.rs
++++ b/hypervisor/src/gunyah/mod.rs
+@@ -6,6 +6,7 @@
+ mod aarch64;
+ 
+ mod gunyah_sys;
++pub mod gvm_accept;
+ use std::cmp::Reverse;
+ use std::collections::BTreeMap;
+ use std::collections::BinaryHeap;
+@@ -23,6 +24,7 @@ use base::errno_result;
+ use base::error;
+ use base::info;
+ use base::ioctl;
++use base::ioctl_with_mut_ref;
+ use base::ioctl_with_ref;
+ use base::ioctl_with_val;
+ use base::pagesize;
+@@ -221,6 +223,21 @@ pub struct GunyahVm {
+     mem_slot_gaps: Mutex<BinaryHeap<Reverse<MemSlot>>>,
+     routes: Mutex<HashSet<GunyahIrqRoute>>,
+     hv_cfg: crate::Config,
++    /// Guest RAM is lent (protected VM): runtime mappings must be shared and guest-accepted.
++    protected: bool,
++    /// GH_VM_START succeeded: from here on add_memory_region is a runtime attach.
++    started: std::sync::atomic::AtomicBool,
++    /// Runtime GuestAccept shares by slot (iceland gvm).
++    runtime_shares: Mutex<BTreeMap<MemSlot, RuntimeShare>>,
++    /// Descriptor + offset of the region the next add_memory_region maps (set by vm_control).
++    source_hint: Mutex<Option<(RawDescriptor, u64)>>,
++}
++
++/// A region shared at runtime with a protected guest and accepted by it.
++struct RuntimeShare {
++    region: Box<dyn MappedRegion>,
++    guest_addr: GuestAddress,
++    label: u32,
+ }
+ 
+ impl AsRawDescriptor for GunyahVm {
+@@ -322,7 +339,11 @@ impl GunyahVm {
+             mem_regions: Default::default(),
+             mem_slot_gaps: Default::default(),
+             routes: Default::default(),
++            protected: cfg.protection_type.isolates_memory(),
+             hv_cfg: cfg,
++            started: std::sync::atomic::AtomicBool::new(false),
++            runtime_shares: Default::default(),
++            source_hint: Mutex::new(None),
+         })
+     }
+ 
+@@ -524,12 +545,104 @@ impl GunyahVm {
+         // SAFETY: safe because memory is not modified and the return value is checked.
+         let ret = unsafe { ioctl(self, GH_VM_START) };
+         if ret == 0 {
++            self.started
++                .store(true, std::sync::atomic::Ordering::SeqCst);
+             Ok(())
+         } else {
+             errno_result()
+         }
+     }
+ 
++    /// iceland gvm: share a runtime mapping with the protected guest and have it accepted.
++    fn runtime_share(
++        &self,
++        slot: MemSlot,
++        guest_addr: GuestAddress,
++        size: u64,
++        read_only: bool,
++        mem_region: &dyn MappedRegion,
++    ) -> Result<u32> {
++        let label = 0x4000_0000 | slot;
++        let mut flags = GUNYAH_MEM_ALLOW_READ;
++        if !read_only {
++            flags |= GUNYAH_MEM_ALLOW_WRITE;
++        }
++        let hint = self.source_hint.lock().take();
++        let mut handle = None;
++        if let Some((fd, offset)) = hint {
++            let mut a = gunyah_protected_share_dmabuf {
++                label,
++                flags,
++                guest_phys_addr: guest_addr.offset(),
++                memory_size: size,
++                dmabuf_offset: offset,
++                dmabuf_fd: fd,
++                mem_handle: 0,
++            };
++            // SAFETY: the VM fd is valid, `a` is a valid in/out argument, the result is checked.
++            let ret = unsafe { ioctl_with_mut_ref(self, GH_VM_PROTECTED_SHARE_DMABUF, &mut a) };
++            if ret == 0 {
++                handle = Some(a.mem_handle);
++            } else {
++                info!(
++                    "gvm-accept: dma-buf share of {:#x} failed ({}), trying the mapping",
++                    guest_addr.offset(),
++                    Error::last()
++                );
++            }
++        }
++        let handle = match handle {
++            Some(h) => h,
++            None => {
++                let mut a = gunyah_protected_share {
++                    label,
++                    flags,
++                    guest_phys_addr: guest_addr.offset(),
++                    memory_size: size,
++                    userspace_addr: mem_region.as_ptr() as u64,
++                    mem_handle: 0,
++                    reserved: 0,
++                };
++                // SAFETY: as above; the kernel pins the pages of this live mapping.
++                let ret = unsafe { ioctl_with_mut_ref(self, GH_VM_PROTECTED_SHARE, &mut a) };
++                if ret != 0 {
++                    let e = Error::last();
++                    error!("gvm-accept: share of {:#x} (+{:#x}) failed: {}", guest_addr.offset(), size, e);
++                    return Err(e);
++                }
++                a.mem_handle
++            }
++        };
++        if let Err(e) = gvm_accept::drive(
++            gvm_accept::GvmAcceptOp::Accept,
++            handle,
++            guest_addr.offset(),
++            size,
++        ) {
++            let _ = self.protected_unshare(label);
++            return Err(e);
++        }
++        Ok(label)
++    }
++
++    /// iceland gvm: reclaim a runtime share; the RM answers EBUSY until the guest has released it.
++    fn protected_unshare(&self, label: u32) -> Result<()> {
++        let a = gunyah_protected_unshare { label, reserved: 0 };
++        for _ in 0..200 {
++            // SAFETY: the VM fd is valid and `a` a valid argument; the result is checked.
++            let ret = unsafe { ioctl_with_ref(self, GH_VM_PROTECTED_UNSHARE, &a) };
++            if ret == 0 {
++                return Ok(());
++            }
++            let e = Error::last();
++            if e.errno() != libc::EBUSY {
++                return Err(e);
++            }
++            std::thread::sleep(std::time::Duration::from_millis(10));
++        }
++        Err(Error::new(libc::EBUSY))
++    }
++
+     fn handle_inflate(&self, guest_addr: GuestAddress, size: u64) -> Result<()> {
+         let range = gunyah_address_range {
+             guest_phys_addr: guest_addr.0,
+@@ -614,9 +727,36 @@ impl Vm for GunyahVm {
+         let mut gaps = self.mem_slot_gaps.lock();
+         let slot = match gaps.pop() {
+             Some(gap) => gap.0,
+-            None => (regions.len() + self.guest_mem.num_regions() as usize) as MemSlot,
++            None => {
++                (regions.len()
++                    + self.runtime_shares.lock().len()
++                    + self.guest_mem.num_regions() as usize) as MemSlot
++            }
+         };
+ 
++        if self.protected && self.started.load(std::sync::atomic::Ordering::SeqCst) {
++            // A protected guest owns its stage-2: share + guest accept (iceland gvm).
++            return match self.runtime_share(slot, guest_addr, size, read_only, mem_region.as_ref())
++            {
++                Ok(label) => {
++                    self.runtime_shares.lock().insert(
++                        slot,
++                        RuntimeShare {
++                            region: mem_region,
++                            guest_addr,
++                            label,
++                        },
++                    );
++                    Ok(slot)
++                }
++                Err(e) => {
++                    gaps.push(Reverse(slot));
++                    Err(e)
++                }
++            };
++        }
++        self.source_hint.lock().take();
++
+         // SAFETY: safe because memory is not modified and the return value is checked.
+         let res = unsafe {
+             set_user_memory_region(
+@@ -667,8 +807,30 @@ impl Vm for GunyahVm {
+         Err(Error::new(ENOTSUP))
+     }
+ 
+-    fn remove_memory_region(&self, _slot: MemSlot) -> Result<Box<dyn MappedRegion>> {
+-        unimplemented!()
++    fn remove_memory_region(&self, slot: MemSlot) -> Result<Box<dyn MappedRegion>> {
++        // iceland gvm: runtime GuestAccept shares: guest release first, then reclaim.
++        let share = match self.runtime_shares.lock().remove(&slot) {
++            Some(s) => s,
++            None => {
++                error!("gunyah: removing non-runtime memory slot {} is not supported", slot);
++                return Err(Error::new(ENOTSUP));
++            }
++        };
++        let gpa = share.guest_addr.offset();
++        let res = gvm_accept::drive(gvm_accept::GvmAcceptOp::Release, 0, gpa, 0)
++            .and_then(|_| self.protected_unshare(share.label));
++        if let Err(e) = res {
++            error!("gvm-accept: could not take back {:#x}: {}; the pages stay shared", gpa, e);
++            // Keep the mapping alive: the guest may still reach these pages.
++            self.runtime_shares.lock().insert(slot, share);
++            return Err(e);
++        }
++        self.mem_slot_gaps.lock().push(Reverse(slot));
++        Ok(share.region)
++    }
++
++    fn note_region_source(&self, descriptor: RawDescriptor, offset: u64) {
++        *self.source_hint.lock() = Some((descriptor, offset));
+     }
+ 
+     fn create_device(&self, _kind: DeviceKind) -> Result<SafeDescriptor> {
+diff --git a/hypervisor/src/lib.rs b/hypervisor/src/lib.rs
+index 0aff8b7..288e7ca 100644
+--- a/hypervisor/src/lib.rs
++++ b/hypervisor/src/lib.rs
+@@ -218,6 +218,11 @@ pub trait Vm: Send + Sync {
+     /// Removes and drops the `UserMemoryRegion` that was previously added at the given slot.
+     fn remove_memory_region(&self, slot: MemSlot) -> Result<Box<dyn MappedRegion>>;
+ 
++    /// Tells the hypervisor which descriptor (and offset) backs the region the next
++    /// `add_memory_region` call maps. Only meaningful for hypervisors that must hand the
++    /// backing pages to the guest by reference (Gunyah protected VMs: dma-buf share).
++    fn note_region_source(&self, _descriptor: base::RawDescriptor, _offset: u64) {}
++
+     /// Creates an emulated device.
+     fn create_device(&self, kind: DeviceKind) -> Result<SafeDescriptor>;
+ 
+diff --git a/src/crosvm/any_device_module.rs b/src/crosvm/any_device_module.rs
+index c1fa9da..b7c65f9 100644
+--- a/src/crosvm/any_device_module.rs
++++ b/src/crosvm/any_device_module.rs
+@@ -79,6 +79,8 @@ declare_any_virtio_device_module! {
+     #[derive(Serialize, Deserialize)]
+     pub enum AnyVirtioDeviceModule {
+         Rng(device_virtio_rng::VirtioRngModule),
++        #[cfg(all(target_arch = "aarch64", feature = "gunyah"))]
++        GvmAccept(device_virtio_gvm_accept::GvmAcceptModule),
+         #[cfg(feature = "vtpm")]
+         Tpm(device_virtio_tpm::VirtioTpmModule),
+         Vsock(device_virtio_vsock::VirtioVsockModule),
+diff --git a/src/crosvm/cmdline.rs b/src/crosvm/cmdline.rs
+index c5bcc67..ad1bfa0 100644
+--- a/src/crosvm/cmdline.rs
++++ b/src/crosvm/cmdline.rs
+@@ -3242,6 +3242,15 @@ impl TryFrom<RunCommand> for super::config::Config {
+             ProtectionType::Unprotected
+         };
+ 
++        // iceland gvm: runtime GuestAccept transport for protected Gunyah VMs (opt-in).
++        #[cfg(all(target_arch = "aarch64", feature = "gunyah"))]
++        if cfg.protection_type.isolates_memory()
++            && hypervisor::gunyah::gvm_accept::accept_enabled_by_env()
++        {
++            cfg.virtio_device_modules
++                .push(device_virtio_gvm_accept::GvmAcceptModule.into());
++        }
++
+         if !matches!(cfg.protection_type, ProtectionType::Unprotected) {
+             // USB devices only work for unprotected VMs.
+             cfg.usb = false;
+diff --git a/vm_control/src/lib.rs b/vm_control/src/lib.rs
+index dba8d99..fa3a518 100644
+--- a/vm_control/src/lib.rs
++++ b/vm_control/src/lib.rs
+@@ -863,6 +863,10 @@ impl VmMemoryRequest {
+                     return resp;
+                 }
+ 
++                let source_offset = match &source {
++                    VmMemorySource::Descriptor { offset, .. } => *offset,
++                    _ => 0,
++                };
+                 // Correct on Windows because callers of this IPC guarantee descriptor is a mapping
+                 // handle.
+                 let (mapped_region, size, descriptor) = match source
+@@ -876,6 +880,9 @@ impl VmMemoryRequest {
+                     Ok((region, size, descriptor)) => (region, size, descriptor),
+                     Err(e) => return VmMemoryResponse::Err(e.into()),
+                 };
++                if let Some(d) = descriptor.as_ref() {
++                    vm.note_region_source(d.as_raw_descriptor(), source_offset);
++                }
+ 
+                 let guest_addr = match dest
+                     .allocate(sys_allocator, size)
+-- 
+2.43.0
+

@@ -1,0 +1,2170 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mzak <mzak.amin@gmail.com>
+Date: Sun, 25 Oct 2026 12:23:35 +0300
+Subject: [PATCH 15/30] gpu_display + main: iceland gvm: --vnc-server, a
+ headless VNC display (LibVNCServer bridge ported from DroidVM)
+
+crosvm run --vnc-server [host=ADDR][,port=N][,password-file=PATH] (feature vnc, links libvncserver):
+- gpu_display/src/vnc_server_bridge.c/.h, vnc_frame_consumer.h: DroidVM dvm-crosvm 849e05f (GPL-2.0-or-later +
+  ADDITIONAL-PERMISSIONS, header kept) without the H.264 path: honest listener binding, keysym map, input ring,
+  32-row damage bands, cursor compositing over a clean frame
+- gpu_display/src/gpu_display_vnc.rs: DisplayVnc reduced to the CPU transport (the copy path / simplefb bridge
+  write the surface, flip offers it), cursor surface, RFB pointer -> Tablet events in guest pixels (buttons,
+  wheel, hwheel), keys -> Keyboard events; GVM-VNC listening / GVM-VNC-FRAME stderr lines; GpuDisplay::open_vnc
+- devices DisplayBackend::Vnc; sys/linux/gpu.rs uses it instead of the window backends; the --simplefb bridge
+  serves its framebuffer over VNC too; gvm_pointer_devices adds the tablet (+ mouse) whenever VNC is on
+- config VncConfig: host defaults to 127.0.0.1 (DroidVM: every address), port 5900, the password from a file
+  (never on the command line); validation (address literal, port >= 1024, readable password file, vnc feature)
+- CREDITS entry
+
+Signed-off-by: mzak <mzak.amin@gmail.com>
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ CREDITS                                  |   8 +
+ Cargo.toml                               |   2 +
+ devices/Cargo.toml                       |   2 +
+ devices/src/virtio/gpu/mod.rs            |  17 +
+ gpu_display/Cargo.toml                   |   2 +
+ gpu_display/build.rs                     |  23 +
+ gpu_display/src/gpu_display_vnc.rs       | 503 ++++++++++++
+ gpu_display/src/lib.rs                   |  29 +
+ gpu_display/src/vnc_frame_consumer.h     | 122 +++
+ gpu_display/src/vnc_server_bridge.c      | 966 +++++++++++++++++++++++
+ gpu_display/src/vnc_server_bridge.h      | 107 +++
+ src/crosvm/cmdline.rs                    |  13 +
+ src/crosvm/config.rs                     |  57 ++
+ src/crosvm/sys/linux.rs                  |  15 +-
+ src/crosvm/sys/linux/gpu.rs              |  21 +
+ src/crosvm/sys/linux/simplefb_display.rs |  13 +-
+ 16 files changed, 1896 insertions(+), 4 deletions(-)
+ create mode 100644 gpu_display/src/gpu_display_vnc.rs
+ create mode 100644 gpu_display/src/vnc_frame_consumer.h
+ create mode 100644 gpu_display/src/vnc_server_bridge.c
+ create mode 100644 gpu_display/src/vnc_server_bridge.h
+
+diff --git a/CREDITS b/CREDITS
+index 9fbd8a4..79ccf8b 100644
+--- a/CREDITS
++++ b/CREDITS
+@@ -11,3 +11,11 @@ Upstream crosvm files stay under their BSD-3-Clause license (LICENSE).
+   each read. Ported in reduced form into aarch64/src/simplefb.rs and
+   src/crosvm/sys/linux/simplefb_display.rs, which keep DroidVM's SPDX / copyright header.
+   Nothing was taken from the DroidVM app or DroidVM-Daemon repositories.
++- DroidVM dvm-crosvm 849e05f, same licence: the VNC display ("--vnc-server", iceland-vms 0.2-7) --
++  gpu_display/src/vnc_server_bridge.c, vnc_server_bridge.h and vnc_frame_consumer.h (the LibVNCServer
++  bridge: listeners, keysym map, input ring, banded damage tracking, cursor compositing) ported without
++  the H.264 path; gpu_display/src/gpu_display_vnc.rs reduced to the CPU transport (no Vulkan blit, no
++  H.264 consumer, no dmabuf imports, input through the display's event devices). All keep DroidVM's
++  header. Links the system LibVNCServer (GPL-2.0-or-later). The option wiring (src/crosvm/config.rs
++  VncConfig, cmdline.rs, sys/linux/gpu.rs, simplefb_display.rs, devices DisplayBackend::Vnc) is our own,
++  modelled on DroidVM's.
+diff --git a/Cargo.toml b/Cargo.toml
+index 11963ec..6b3f3df 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -336,6 +336,8 @@ virgl_renderer = ["devices/virgl_renderer"]
+ 
+ ## Enables the usage of Vulkan for display on the host.
+ vulkan_display = ["gpu_display/vulkan_display"]
++## iceland gvm: --vnc-server, a headless RFB display over LibVNCServer (after DroidVM, GPL-2.0-or-later).
++vnc = ["gpu", "devices/vnc", "gpu_display/vnc"]
+ 
+ # Enables the highly experimental vulkan graphics buffer allocator.
+ # see rutabaga_gfx/Cargo.toml for instructions on building with enabled.
+diff --git a/devices/Cargo.toml b/devices/Cargo.toml
+index b8fe2da..f35d6de 100644
+--- a/devices/Cargo.toml
++++ b/devices/Cargo.toml
+@@ -15,6 +15,8 @@ audio = []
+ audio_cras = ["libcras"]
+ balloon = []
+ gpu = ["gpu_display", "rutabaga_gfx"]
++# iceland gvm: the VNC display backend (DisplayBackend::Vnc)
++vnc = ["gpu", "gpu_display/vnc"]
+ gunyah = []
+ libvda-stub = ["libvda/libvda-stub"]
+ net = []
+diff --git a/devices/src/virtio/gpu/mod.rs b/devices/src/virtio/gpu/mod.rs
+index d1254d9..17df021 100644
+--- a/devices/src/virtio/gpu/mod.rs
++++ b/devices/src/virtio/gpu/mod.rs
+@@ -1430,6 +1430,15 @@ pub enum DisplayBackend {
+     /// using the name given here. The entity holding the surface is expected to locate the service
+     /// via this name, and pass the surface to it.
+     Android(String),
++    #[cfg(feature = "vnc")]
++    /// iceland gvm: a headless VNC (RFB) server instead of a window (`--vnc-server`).
++    Vnc {
++        host: String,
++        port: u16,
++        password: Option<String>,
++        width: u32,
++        height: u32,
++    },
+ }
+ 
+ impl DisplayBackend {
+@@ -1459,6 +1468,14 @@ impl DisplayBackend {
+             },
+             #[cfg(feature = "android_display")]
+             DisplayBackend::Android(service_name) => GpuDisplay::open_android(service_name),
++            #[cfg(feature = "vnc")]
++            DisplayBackend::Vnc {
++                host,
++                port,
++                password,
++                width,
++                height,
++            } => GpuDisplay::open_vnc(host, *port, *width, *height, password.as_deref()),
+         }
+     }
+ }
+diff --git a/gpu_display/Cargo.toml b/gpu_display/Cargo.toml
+index 7a82b64..bd2db55 100644
+--- a/gpu_display/Cargo.toml
++++ b/gpu_display/Cargo.toml
+@@ -16,6 +16,8 @@ android_display = []
+ # Android display backend on a non-Android target
+ android_display_stub = []
+ gfxstream_display = []
++# iceland gvm: headless RFB (VNC) display backend over LibVNCServer, after DroidVM (GPL-2.0-or-later files)
++vnc = []
+ 
+ [dependencies]
+ anyhow = { workspace = true }
+diff --git a/gpu_display/build.rs b/gpu_display/build.rs
+index ecbce4e..4e1bccf 100644
+--- a/gpu_display/build.rs
++++ b/gpu_display/build.rs
+@@ -103,6 +103,26 @@ fn build_wayland() {
+     println!("cargo:rustc-link-lib=dylib=wayland-client");
+ }
+ 
++/// iceland gvm: the VNC sink's LibVNCServer bridge (ported from DroidVM, GPL-2.0-or-later), linked
++/// against the system libvncserver (Fedora libvncserver-devel).
++fn build_vnc() {
++    let lib = pkg_config::Config::new()
++        .probe("libvncserver")
++        .expect("the vnc feature needs libvncserver (pkg-config libvncserver; Fedora: libvncserver-devel)");
++    let mut build = cc::Build::new();
++    build.warnings(true);
++    build.flag("-std=gnu11");
++    for inc in &lib.include_paths {
++        build.include(inc);
++    }
++    build.file("src/vnc_server_bridge.c");
++    println!("cargo:rerun-if-changed=src/vnc_server_bridge.c");
++    println!("cargo:rerun-if-changed=src/vnc_server_bridge.h");
++    println!("cargo:rerun-if-changed=src/vnc_frame_consumer.h");
++    build.compile("vnc_server_bridge");
++    // pkg-config already printed the link lines of libvncserver for the crate
++}
++
+ fn main() {
+     // Skip installing dependencies when generating documents.
+     if std::env::var("CARGO_DOC").is_ok() {
+@@ -112,6 +132,9 @@ fn main() {
+     match std::env::var("CARGO_CFG_TARGET_OS").as_deref().unwrap() {
+         "linux" | "android" => {
+             build_wayland();
++            if std::env::var("CARGO_FEATURE_VNC").is_ok() {
++                build_vnc();
++            }
+         }
+         _ => {}
+     }
+diff --git a/gpu_display/src/gpu_display_vnc.rs b/gpu_display/src/gpu_display_vnc.rs
+new file mode 100644
+index 0000000..f606ea8
+--- /dev/null
++++ b/gpu_display/src/gpu_display_vnc.rs
+@@ -0,0 +1,503 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++// Copyright DroidVM contributors
++// Additional permissions apply; see ADDITIONAL-PERMISSIONS in the repository root.
++// iceland gvm: ported from DroidVM dvm-crosvm 849e05f (gpu_display/src/gpu_display_vnc.rs), CPU transport
++// only: no Vulkan blit (vnc_blit.rs), no H.264 consumer, no dmabuf imports, no per-binding devices (input
++// goes through the owner's event devices by kind: Tablet for the pointer, Keyboard for keys). See CREDITS.
++
++//! A headless display backend that serves the guest's scanout over RFB (LibVNCServer, through
++//! `vnc_server_bridge.c`). The virtio-gpu device or the simplefb bridge writes each frame into the
++//! surface's CPU framebuffer (the copy path) and flips; the frame is offered to the bridge, which
++//! diffs it in bands and marks only what changed. RFB pointer events become absolute tablet events
++//! in guest pixels, RFB keys Linux key events.
++
++use std::collections::VecDeque;
++use std::os::raw::c_char;
++use std::os::raw::c_int;
++use std::sync::Arc;
++use std::sync::Mutex;
++
++use base::AsRawDescriptor;
++use base::Event;
++use base::RawDescriptor;
++use base::VolatileSlice;
++use linux_input_sys::virtio_input_event;
++use vm_control::gpu::DisplayParameters;
++
++use crate::DisplayT;
++use crate::EventDeviceKind;
++use crate::GpuDisplayError;
++use crate::GpuDisplayEvents;
++use crate::GpuDisplayFramebuffer;
++use crate::GpuDisplayResult;
++use crate::GpuDisplaySurface;
++use crate::SurfaceType;
++use crate::SysDisplayT;
++
++const VNC_INPUT_NONE: c_int = 0;
++const VNC_INPUT_KEY: u8 = 1;
++const VNC_INPUT_POINTER: u8 = 2;
++
++#[repr(C)]
++#[derive(Default, Clone)]
++struct VncInputEvent {
++    event_type: u8,
++    down: u8,
++    linux_keycode: u16,
++    x: i32,
++    y: i32,
++    button_mask: u8,
++}
++
++extern "C" {
++    fn vnc_server_create(
++        width: c_int,
++        height: c_int,
++        host: *const c_char,
++        port: c_int,
++        password: *const c_char,
++    ) -> *mut std::ffi::c_void;
++    fn vnc_server_start(server: *mut std::ffi::c_void);
++    fn vnc_server_has_input_events(server: *mut std::ffi::c_void) -> c_int;
++    fn vnc_server_has_clients(server: *mut std::ffi::c_void) -> c_int;
++    fn vnc_server_resize(server: *mut std::ffi::c_void, width: c_int, height: c_int) -> c_int;
++    fn vnc_server_destroy(server: *mut std::ffi::c_void);
++    fn vnc_server_set_input_event_fd(server: *mut std::ffi::c_void, fd: c_int);
++    fn vnc_server_poll_input_event(server: *mut std::ffi::c_void, out: *mut VncInputEvent) -> c_int;
++    fn vnc_server_set_cursor(
++        server: *mut std::ffi::c_void,
++        argb: *const u8,
++        width: c_int,
++        height: c_int,
++        hot_x: c_int,
++        hot_y: c_int,
++    );
++    fn vnc_server_set_cursor_pos(server: *mut std::ffi::c_void, x: c_int, y: c_int);
++    #[allow(clippy::too_many_arguments)]
++    fn vnc_server_offer_frame(
++        server: *mut std::ffi::c_void,
++        clean: *const u8,
++        clean_size: u32,
++        cursor_argb: *const u8,
++        cw: c_int,
++        ch: c_int,
++        cx: c_int,
++        cy: c_int,
++        visible: c_int,
++        full: c_int,
++        gpu_blit_ctx: *mut std::ffi::c_void,
++        gpu_import_id: i64,
++    );
++}
++
++struct VncServerHandle {
++    ptr: *mut std::ffi::c_void,
++}
++
++// SAFETY: the bridge serialises its own state (input ring under a mutex, LibVNCServer's own client
++// threads); the handle is only an opaque pointer that outlives every user through the Arc.
++unsafe impl Send for VncServerHandle {}
++unsafe impl Sync for VncServerHandle {}
++
++impl VncServerHandle {
++    fn has_clients(&self) -> bool {
++        // SAFETY: ptr is a live server handle owned by this VncServerHandle.
++        !self.ptr.is_null() && unsafe { vnc_server_has_clients(self.ptr) != 0 }
++    }
++}
++
++impl Drop for VncServerHandle {
++    fn drop(&mut self) {
++        if !self.ptr.is_null() {
++            // SAFETY: the last reference; nothing can offer a frame any more.
++            unsafe { vnc_server_destroy(self.ptr) };
++        }
++    }
++}
++
++/// The guest's hardware cursor, as last reported by virtio-gpu.
++#[derive(Default)]
++struct CursorState {
++    pixels: Vec<u8>,
++    width: u32,
++    height: u32,
++    x: i32,
++    y: i32,
++    visible: bool,
++}
++
++struct SharedFramebuffer {
++    /// The guest scanout with NO cursor composited into it (the bridge restores from it when the
++    /// pointer moves), BGRX = DRM XRGB8888 little endian, packed to the width.
++    data: Vec<u8>,
++    server: Arc<VncServerHandle>,
++    cursor: CursorState,
++    frames: u64,
++}
++
++impl SharedFramebuffer {
++    fn offer_frame(&mut self, full: bool) {
++        let c = &self.cursor;
++        let has_img = !c.pixels.is_empty() && c.width > 0 && c.height > 0;
++        // SAFETY: both buffers outlive the call; the bridge only reads them.
++        unsafe {
++            vnc_server_offer_frame(
++                self.server.ptr,
++                self.data.as_ptr(),
++                self.data.len() as u32,
++                if has_img { c.pixels.as_ptr() } else { std::ptr::null() },
++                c.width as c_int,
++                c.height as c_int,
++                c.x as c_int,
++                c.y as c_int,
++                (c.visible && has_img) as c_int,
++                full as c_int,
++                std::ptr::null_mut(),
++                0,
++            )
++        }
++        if full {
++            self.frames += 1;
++            // iceland gvm: frame statistics for the tests (V9-2): first frame, then every 300th
++            if self.frames == 1 || self.frames % 300 == 0 {
++                let (mean, nonzero) = frame_stats(&self.data);
++                eprintln!(
++                    "GVM-VNC-FRAME {} clients={} mean={:.3} nonzero={:.3}",
++                    self.frames,
++                    self.server.has_clients() as u8,
++                    mean,
++                    nonzero
++                );
++            }
++        }
++    }
++}
++
++/// Mean brightness and the share of non-black pixels on a 64x64 grid of a packed BGRX frame.
++fn frame_stats(data: &[u8]) -> (f64, f64) {
++    let px = data.len() / 4;
++    if px == 0 {
++        return (0.0, 0.0);
++    }
++    let step = (px / 4096).max(1);
++    let (mut sum, mut nz, mut n) = (0u64, 0u64, 0u64);
++    let mut i = 0;
++    while i < px {
++        let p = &data[i * 4..i * 4 + 3];
++        let s = p[0] as u64 + p[1] as u64 + p[2] as u64;
++        sum += s;
++        if s > 24 {
++            nz += 1;
++        }
++        n += 1;
++        i += step;
++    }
++    (sum as f64 / (n as f64 * 765.0), nz as f64 / n as f64)
++}
++
++struct VncSurface {
++    width: u32,
++    height: u32,
++    shared_fb: Arc<Mutex<SharedFramebuffer>>,
++    local_buffer: Vec<u8>,
++}
++
++impl GpuDisplaySurface for VncSurface {
++    fn framebuffer(&mut self) -> Option<GpuDisplayFramebuffer> {
++        let stride = self.width * 4;
++        Some(GpuDisplayFramebuffer::new(
++            VolatileSlice::new(self.local_buffer.as_mut_slice()),
++            stride,
++            4,
++        ))
++    }
++
++    fn flip(&mut self) {
++        // No "skip when nobody is connected": the flip is driven by the guest's flush, a frame
++        // dropped here is never offered again (DroidVM measured a black client after a resize).
++        if let Ok(mut fb) = self.shared_fb.lock() {
++            let n = fb.data.len().min(self.local_buffer.len());
++            fb.data[..n].copy_from_slice(&self.local_buffer[..n]);
++            fb.offer_frame(true);
++        }
++    }
++}
++
++/// virtio-gpu's cursor plane: composited into the outgoing frame by the bridge, and published as
++/// an RFB cursor for clients with the Cursor pseudo-encoding. The upstream gpu device gives no
++/// hotspot, so the image is drawn with its top-left corner at the reported position (as the
++/// Wayland backend does) and the RFB cursor gets hotspot 0,0.
++struct VncCursorSurface {
++    width: u32,
++    height: u32,
++    server: Arc<VncServerHandle>,
++    shared_fb: Arc<Mutex<SharedFramebuffer>>,
++    pixels: Vec<u8>,
++}
++
++impl GpuDisplaySurface for VncCursorSurface {
++    fn framebuffer(&mut self) -> Option<GpuDisplayFramebuffer> {
++        Some(GpuDisplayFramebuffer::new(
++            VolatileSlice::new(self.pixels.as_mut_slice()),
++            self.width * 4,
++            4,
++        ))
++    }
++
++    fn flip(&mut self) {
++        if let Ok(mut fb) = self.shared_fb.lock() {
++            fb.cursor.pixels.clear();
++            fb.cursor.pixels.extend_from_slice(&self.pixels);
++            fb.cursor.width = self.width;
++            fb.cursor.height = self.height;
++            fb.cursor.visible = true;
++            fb.offer_frame(false);
++        }
++        // SAFETY: `pixels` is width*height*4 bytes and outlives the call.
++        unsafe {
++            vnc_server_set_cursor(
++                self.server.ptr,
++                self.pixels.as_ptr(),
++                self.width as c_int,
++                self.height as c_int,
++                0,
++                0,
++            )
++        }
++    }
++
++    fn set_position(&mut self, x: u32, y: u32) {
++        if let Ok(mut fb) = self.shared_fb.lock() {
++            fb.cursor.x = x as i32;
++            fb.cursor.y = y as i32;
++            fb.offer_frame(false);
++        }
++        // SAFETY: server handle is valid for this surface's lifetime.
++        unsafe { vnc_server_set_cursor_pos(self.server.ptr, x as c_int, y as c_int) }
++    }
++}
++
++pub struct DisplayVnc {
++    // Field order is drop order: the server (its client threads write to `event`) goes first.
++    shared_fb: Option<Arc<Mutex<SharedFramebuffer>>>,
++    server: Arc<VncServerHandle>,
++    width: u32,
++    height: u32,
++    input_queue: VecDeque<VncInputEvent>,
++    prev_button_mask: u8,
++    event: Event,
++}
++
++impl DisplayVnc {
++    /// `host` is an IPv4 / IPv6 literal or "" / "0.0.0.0" / "::" for every address (the bridge
++    /// refuses names). `width` x `height` is the first screen size; a surface of another size
++    /// resizes the RFB framebuffer.
++    pub fn new_tcp(
++        host: &str,
++        port: u16,
++        width: u32,
++        height: u32,
++        password: Option<&str>,
++    ) -> GpuDisplayResult<DisplayVnc> {
++        let event = Event::new().map_err(|_| GpuDisplayError::CreateEvent)?;
++        let c_host = std::ffi::CString::new(host).map_err(|_| GpuDisplayError::Allocate)?;
++        let c_password = match password {
++            Some(p) if !p.is_empty() => {
++                Some(std::ffi::CString::new(p).map_err(|_| GpuDisplayError::Allocate)?)
++            }
++            _ => None,
++        };
++        // SAFETY: the strings outlive the call; the bridge copies what it keeps.
++        let server_ptr = unsafe {
++            vnc_server_create(
++                width as c_int,
++                height as c_int,
++                c_host.as_ptr(),
++                port as c_int,
++                c_password.as_ref().map(|p| p.as_ptr()).unwrap_or(std::ptr::null()),
++            )
++        };
++        if server_ptr.is_null() {
++            base::error!("GVM-VNC server failed to start on {}:{}", host, port);
++            return Err(GpuDisplayError::Allocate);
++        }
++        // SAFETY: the server is live; the event outlives it (DisplayVnc drops `server` before
++        // `event`, and surfaces holding the server are dropped before the display).
++        unsafe {
++            vnc_server_set_input_event_fd(server_ptr, event.as_raw_descriptor());
++            vnc_server_start(server_ptr);
++        }
++        eprintln!(
++            "GVM-VNC listening on {}:{} ({}x{}, {})",
++            if host.is_empty() { "*" } else { host },
++            port,
++            width,
++            height,
++            if c_password.is_some() { "VNC password" } else { "no password" }
++        );
++        Ok(DisplayVnc {
++            event,
++            width,
++            height,
++            server: Arc::new(VncServerHandle { ptr: server_ptr }),
++            shared_fb: None,
++            input_queue: VecDeque::new(),
++            prev_button_mask: 0,
++        })
++    }
++
++    fn drain_c_events(&mut self) {
++        loop {
++            let mut ev = VncInputEvent::default();
++            // SAFETY: the server is live; `ev` is a valid out pointer.
++            let t = unsafe { vnc_server_poll_input_event(self.server.ptr, &mut ev) };
++            if t == VNC_INPUT_NONE {
++                break;
++            }
++            self.input_queue.push_back(ev);
++        }
++        let _ = self.event.wait_timeout(std::time::Duration::ZERO);
++    }
++
++    /// Absolute pointer (like QEMU's usb-tablet): position on every event, button transitions
++    /// from the RFB mask (bit0 left, bit1 middle, bit2 right, bit3 / bit4 wheel up / down,
++    /// bit5 / bit6 wheel left / right). Coordinates are guest pixels: the gvm tablet device is
++    /// sized to the display.
++    fn pointer_events(&mut self, ev: &VncInputEvent) -> Vec<virtio_input_event> {
++        const REL_HWHEEL: u16 = 0x06;
++        let cur = ev.button_mask;
++        let changed = cur ^ self.prev_button_mask;
++        self.prev_button_mask = cur;
++        let mut events = vec![
++            virtio_input_event::absolute_x(ev.x.clamp(0, self.width.saturating_sub(1) as i32)),
++            virtio_input_event::absolute_y(ev.y.clamp(0, self.height.saturating_sub(1) as i32)),
++        ];
++        if changed & 0x01 != 0 {
++            events.push(virtio_input_event::left_click(cur & 0x01 != 0));
++        }
++        if changed & 0x02 != 0 {
++            events.push(virtio_input_event::middle_click(cur & 0x02 != 0));
++        }
++        if changed & 0x04 != 0 {
++            events.push(virtio_input_event::right_click(cur & 0x04 != 0));
++        }
++        if changed & 0x08 != 0 && cur & 0x08 != 0 {
++            events.push(virtio_input_event::wheel(1));
++        }
++        if changed & 0x10 != 0 && cur & 0x10 != 0 {
++            events.push(virtio_input_event::wheel(-1));
++        }
++        if changed & 0x20 != 0 && cur & 0x20 != 0 {
++            events.push(virtio_input_event::relative(REL_HWHEEL, -1));
++        }
++        if changed & 0x40 != 0 && cur & 0x40 != 0 {
++            events.push(virtio_input_event::relative(REL_HWHEEL, 1));
++        }
++        events
++    }
++
++    fn next_report(&mut self) -> Option<GpuDisplayEvents> {
++        let ev = self.input_queue.pop_front()?;
++        match ev.event_type {
++            VNC_INPUT_KEY => Some(GpuDisplayEvents {
++                events: vec![virtio_input_event::key(ev.linux_keycode, ev.down != 0, false)],
++                device_type: EventDeviceKind::Keyboard,
++            }),
++            VNC_INPUT_POINTER => Some(GpuDisplayEvents {
++                events: self.pointer_events(&ev),
++                device_type: EventDeviceKind::Tablet,
++            }),
++            _ => None,
++        }
++    }
++}
++
++impl DisplayT for DisplayVnc {
++    fn pending_events(&self) -> bool {
++        // SAFETY: the server is live.
++        !self.input_queue.is_empty() || unsafe { vnc_server_has_input_events(self.server.ptr) != 0 }
++    }
++
++    fn next_event(&mut self) -> GpuDisplayResult<u64> {
++        self.drain_c_events();
++        Ok(0)
++    }
++
++    fn handle_next_event(
++        &mut self,
++        _surface: &mut Box<dyn GpuDisplaySurface>,
++    ) -> Option<GpuDisplayEvents> {
++        self.next_report()
++    }
++
++    fn create_surface(
++        &mut self,
++        parent_surface_id: Option<u32>,
++        _surface_id: u32,
++        _scanout_id: Option<u32>,
++        display_params: &DisplayParameters,
++        surf_type: SurfaceType,
++    ) -> GpuDisplayResult<Box<dyn GpuDisplaySurface>> {
++        if parent_surface_id.is_some() {
++            if !matches!(surf_type, SurfaceType::Cursor) {
++                return Err(GpuDisplayError::Unsupported);
++            }
++            let (width, height) = (64u32, 64u32); // virtio-gpu's cursor plane
++            let shared_fb = self.shared_fb.clone().ok_or(GpuDisplayError::Unsupported)?;
++            return Ok(Box::new(VncCursorSurface {
++                width,
++                height,
++                server: self.server.clone(),
++                shared_fb,
++                pixels: vec![0u8; (width as usize) * (height as usize) * 4],
++            }));
++        }
++        let (req_w, req_h) = display_params.get_virtual_display_size();
++        let width = if req_w != 0 { req_w } else { self.width };
++        let height = if req_h != 0 { req_h } else { self.height };
++        if width != self.width || height != self.height {
++            // SAFETY: the server is live.
++            if unsafe { vnc_server_resize(self.server.ptr, width as c_int, height as c_int) } != 0 {
++                base::error!("GVM-VNC resize to {}x{} failed", width, height);
++                return Err(GpuDisplayError::Allocate);
++            }
++            eprintln!("GVM-VNC resized to {}x{}", width, height);
++            self.width = width;
++            self.height = height;
++        }
++        let buf = (width as usize) * (height as usize) * 4;
++        let shared_fb = Arc::new(Mutex::new(SharedFramebuffer {
++            data: vec![0u8; buf],
++            server: self.server.clone(),
++            cursor: CursorState::default(),
++            frames: 0,
++        }));
++        self.shared_fb = Some(shared_fb.clone());
++        Ok(Box::new(VncSurface {
++            width,
++            height,
++            shared_fb,
++            local_buffer: vec![0u8; buf],
++        }))
++    }
++}
++
++impl SysDisplayT for DisplayVnc {}
++
++impl AsRawDescriptor for DisplayVnc {
++    fn as_raw_descriptor(&self) -> RawDescriptor {
++        self.event.as_raw_descriptor()
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::frame_stats;
++
++    #[test]
++    fn stats_black_and_white() {
++        assert_eq!(frame_stats(&[0u8; 4 * 100]), (0.0, 0.0));
++        let (m, nz) = frame_stats(&[255u8; 4 * 100]);
++        assert!((m - 1.0).abs() < 1e-9 && (nz - 1.0).abs() < 1e-9);
++    }
++}
+diff --git a/gpu_display/src/lib.rs b/gpu_display/src/lib.rs
+index 2551f39..ea500e8 100644
+--- a/gpu_display/src/lib.rs
++++ b/gpu_display/src/lib.rs
+@@ -40,6 +40,8 @@ mod gpu_display_win;
+ mod gpu_display_wl;
+ #[cfg(any(target_os = "android", target_os = "linux"))]
+ pub mod gvm_input;
++#[cfg(all(feature = "vnc", any(target_os = "linux", target_os = "android")))]
++mod gpu_display_vnc;
+ #[cfg(feature = "x")]
+ mod gpu_display_x;
+ #[cfg(any(windows, feature = "x"))]
+@@ -479,6 +481,33 @@ impl GpuDisplay {
+         Err(GpuDisplayError::Unsupported)
+     }
+ 
++    /// iceland gvm: a headless VNC (RFB) server instead of a window; `host` is an address literal
++    /// ("" = every address), see gpu_display_vnc.rs.
++    pub fn open_vnc(
++        host: &str,
++        port: u16,
++        width: u32,
++        height: u32,
++        password: Option<&str>,
++    ) -> GpuDisplayResult<GpuDisplay> {
++        let _ = (host, port, width, height, password);
++        #[cfg(all(feature = "vnc", any(target_os = "linux", target_os = "android")))]
++        {
++            let display = gpu_display_vnc::DisplayVnc::new_tcp(host, port, width, height, password)?;
++            let wait_ctx = WaitContext::new()?;
++            wait_ctx.add(&display, DisplayEventToken::Display)?;
++            Ok(GpuDisplay {
++                inner: Box::new(display),
++                next_id: 1,
++                event_devices: Default::default(),
++                surfaces: Default::default(),
++                wait_ctx,
++            })
++        }
++        #[cfg(not(all(feature = "vnc", any(target_os = "linux", target_os = "android"))))]
++        Err(GpuDisplayError::Unsupported)
++    }
++
+     pub fn open_stub() -> GpuDisplayResult<GpuDisplay> {
+         let display = gpu_display_stub::DisplayStub::new()?;
+         let wait_ctx = WaitContext::new()?;
+diff --git a/gpu_display/src/vnc_frame_consumer.h b/gpu_display/src/vnc_frame_consumer.h
+new file mode 100644
+index 0000000..ebb18b0
+--- /dev/null
++++ b/gpu_display/src/vnc_frame_consumer.h
+@@ -0,0 +1,122 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++// Copyright DroidVM contributors
++// Binds LibVNCServer (GPL-2.0-or-later); no LibVNCServer code is included here.
++// Additional permissions apply; see ADDITIONAL-PERMISSIONS in the repository root.
++// iceland gvm: ported from DroidVM dvm-crosvm 849e05f (gpu_display/src) without the H.264 path
++// (vnc_h264_rfb.*: not ported); otherwise unchanged. See CREDITS.
++
++#ifndef VNC_FRAME_CONSUMER_H
++#define VNC_FRAME_CONSUMER_H
++
++#include <stddef.h>
++#include <stdint.h>
++
++#include "vnc_server_bridge.h"
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++/* The seam between "a frame was offered" and "somebody does something with it".
++ *
++ * Above the seam is ingest, and it runs once per offered frame no matter how many consumers
++ * there are: clip the producer's buffer to the screen, compare it against the frame before it,
++ * hand down the answer. Below the seam is one consumer at a time.
++ *
++ * The split exists because the two consumers this sink is growing want opposite things out of
++ * the same frame. LibVNCServer wants to touch as little as possible -- the whole point of the
++ * band damage is that a static desktop costs nothing -- while a hardware H.264 encoder wants the
++ * entire picture every time, because that is what a codec swallows. An offer therefore carries
++ * both: the whole frame, AND what part of it is new. Neither consumer has to know the other
++ * exists, and neither of them repeats the comparison.
++ *
++ * The LibVNCServer consumer is registered internally when the server is created and is not
++ * configurable. The H.264 one is registered by the Rust sink between `vnc_server_create` and
++ * `vnc_server_start`, because whether it exists at all is a property of the binding (its transport
++ * ceiling) that this file has no way to learn.
++ */
++
++/* A run of consecutive full-width rows that differ from the previously offered frame. */
++struct vnc_damage_band {
++    int    y;     /* first row */
++    int    rows;  /* how many rows; the last band of a screen is short unless the height divides */
++    size_t off;   /* where the band starts in the frame, in bytes */
++    size_t len;   /* how many bytes of it there are -- short if the producer's buffer ends first */
++};
++
++/* One frame, or one cursor-only update, as every consumer sees it. */
++struct vnc_frame_offer {
++    /* The guest scanout with NO cursor composited into it, packed to `width` pixels of 4 bytes
++     * each in BGRX order. Borrowed for the duration of the call and not beyond it. `size` is how
++     * much of it is readable, already clipped to the screen: a producer's buffer is not required
++     * to be screen-sized, and was measured not to be during a resize. */
++    const uint8_t* pixels;
++    uint32_t       size;
++    int            width;
++    int            height;
++
++    /* 1 when the guest produced a new frame, 0 when only the pointer moved. A consumer that
++     * encodes pictures wants the first kind and can ignore the second; `bands` is always empty
++     * for a cursor-only update, because not one guest pixel changed. */
++    int full;
++
++    /* What is new since the previous offer, top to bottom. Empty means the frame is byte for
++     * byte the one before it. A consumer is free to ignore this entirely and take `pixels`
++     * whole -- that is the difference the seam exists to allow. */
++    const struct vnc_damage_band* bands;
++    int                           band_count;
++
++    /* Set when ingest had no buffer to compare against, so the single band above is the whole
++     * frame. Not the same statement as "the diff happened to mark every band": it also says
++     * nothing of the previous frame is left underneath, so a consumer that draws its own overlay
++     * on top of the picture has nothing to restore. Only reachable when the comparison buffer
++     * cannot be allocated. */
++    int frame_replaced;
++
++    /* The same picture as `pixels`, still where the GPU can reach it: the guest's own dmabuf, as
++     * the producer imported it, ready to be blitted somewhere a consumer chooses. Both zero when
++     * the frame came up the CPU transport, and both zero on a cursor-only update -- there the
++     * previous frame's import may already have been released, and `pixels` is the honest answer
++     * anyway because it is what the last blit left behind.
++     *
++     * The handle is only good for the duration of the call, like `pixels`. A consumer that wants
++     * the frame later has to have copied it, which for the H.264 consumer means handing it to a
++     * codec before returning.
++     *
++     * `gpu_import_id` is the source declared in the byte order a video encoder reads (R,G,B,A),
++     * not the one LibVNCServer is served in -- the two orders are two imports of one dmabuf, and
++     * this is the consumer that wants the other one. See blitSourceFourcc, C++ side. */
++    void*   gpu_blit_ctx;
++    int64_t gpu_import_id;
++
++    /* The guest's hardware cursor as last reported, in the same BGRX order as `pixels` with a
++     * meaningful alpha byte. `visible` is the whole answer: it already folds in "the guest hid
++     * it" and "there is no image to draw". (cursor_x, cursor_y) is the image's top-left corner
++     * with the hotspot already applied by the guest, and goes negative against the top and left
++     * edges. */
++    const uint8_t* cursor_argb;
++    int cursor_w, cursor_h;
++    int cursor_x, cursor_y;
++    int cursor_visible;
++};
++
++/* A consumer of offered frames. Copied by value on registration, so the descriptor does not have
++ * to outlive the call. */
++struct vnc_frame_consumer {
++    const char* name;
++    /* Consumer-private state, handed back on every offer. NULL for the LibVNCServer path, whose
++     * state is the server itself. */
++    void* ctx;
++    void (*on_frame)(vnc_server_t* server, void* ctx, const struct vnc_frame_offer* offer);
++};
++
++/* Registers a consumer, returning 0 if there is no room for it. Call it while the server is
++ * being built: offers run on the producer's thread and the list is read without a lock, so it is
++ * fixed by the time frames start arriving. */
++int vnc_server_attach_consumer(vnc_server_t* server, const struct vnc_frame_consumer* consumer);
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif
+diff --git a/gpu_display/src/vnc_server_bridge.c b/gpu_display/src/vnc_server_bridge.c
+new file mode 100644
+index 0000000..a1b7c63
+--- /dev/null
++++ b/gpu_display/src/vnc_server_bridge.c
+@@ -0,0 +1,966 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++// Copyright DroidVM contributors
++// Binds LibVNCServer (GPL-2.0-or-later); no LibVNCServer code is included here.
++// Additional permissions apply; see ADDITIONAL-PERMISSIONS in the repository root.
++// iceland gvm: ported from DroidVM dvm-crosvm 849e05f (gpu_display/src) without the H.264 path
++// (vnc_h264_rfb.*: not ported); otherwise unchanged. See CREDITS.
++
++#define _GNU_SOURCE
++#include "vnc_server_bridge.h"
++
++#include <rfb/rfb.h>
++#include <rfb/keysym.h>
++#include <arpa/inet.h>
++#include <errno.h>
++#include <linux/input-event-codes.h>
++#include <netinet/in.h>
++#include <pthread.h>
++#include <stdlib.h>
++#include <string.h>
++#include <sys/socket.h>
++#include <unistd.h>
++
++#include "vnc_frame_consumer.h"
++
++#define INPUT_RING_SIZE 256
++#define INPUT_RING_MASK (INPUT_RING_SIZE - 1)
++
++/* Rows compared as one unit. Small enough that a pointer-sized change marks a small rectangle,
++ * large enough that the per-band bookkeeping stays negligible against the memcmp. */
++#define DAMAGE_BAND_ROWS 32
++
++/* How many consumers a server can carry. Fixed rather than grown: this is a handful of entries
++ * for the lifetime of the process, and a list that can fail to allocate would put an error path
++ * on the frame route in exchange for nothing. */
++#define VNC_MAX_FRAME_CONSUMERS 4
++
++struct input_ring {
++    struct vnc_input_event buf[INPUT_RING_SIZE];
++    volatile unsigned head;
++    volatile unsigned tail;
++};
++
++/* What the ingest half needs to say what changed. Shared by every consumer and owned by none of
++ * them: the comparison happens once per offered frame however many are listening. */
++struct vnc_ingest {
++    /* The last cursor-free frame we were offered, kept so the next one can be compared against
++     * it. screen->frameBuffer cannot serve: it has the cursor blended in, so the pointer's
++     * rectangle would read as changed on every frame no matter what the guest drew. `valid` is
++     * separate from the pointer because a freshly allocated buffer says nothing about what is on
++     * screen -- an all-black guest frame would compare equal to a zeroed buffer and nothing
++     * would be sent. */
++    uint8_t* last_clean;
++    uint32_t last_clean_size;
++    int last_clean_valid;
++    /* The band list handed down with each offer. Held here rather than built on the stack
++     * because it is sized by the screen, and freed with the server. */
++    struct vnc_damage_band* bands;
++    int bands_cap;
++};
++
++struct vnc_server {
++    rfbScreenInfoPtr screen;
++    char* passwords[2];
++    struct input_ring ring;
++    pthread_mutex_t ring_lock;
++    int input_event_fd;
++    /* Rectangle the composited cursor currently occupies, so a move knows what to restore from
++     * the clean frame. w==0 means nothing is drawn.
++     *
++     * This is the LibVNCServer consumer's own state, and it lives here rather than behind that
++     * consumer's `ctx` because its canvas is the server's own screen -- there is nothing else
++     * for it to hang off. A consumer that is not the bridge brings its own. */
++    int drawn_x, drawn_y, drawn_w, drawn_h;
++    struct vnc_ingest ingest;
++    struct vnc_frame_consumer consumers[VNC_MAX_FRAME_CONSUMERS];
++    int consumer_count;
++};
++
++static void attach_frame_consumers(vnc_server_t* server);
++
++struct keysym_entry {
++    uint32_t keysym;
++    uint16_t linux_keycode;
++};
++
++static const struct keysym_entry keysym_map[] = {
++    { XK_Escape,      KEY_ESC },
++    { XK_Return,      KEY_ENTER },
++    { XK_BackSpace,   KEY_BACKSPACE },
++    { XK_Tab,         KEY_TAB },
++    { XK_space,       KEY_SPACE },
++    { XK_Delete,      KEY_DELETE },
++    { XK_Insert,      KEY_INSERT },
++    { XK_Home,        KEY_HOME },
++    { XK_End,         KEY_END },
++    { XK_Page_Up,     KEY_PAGEUP },
++    { XK_Page_Down,   KEY_PAGEDOWN },
++    { XK_Left,        KEY_LEFT },
++    { XK_Up,          KEY_UP },
++    { XK_Right,       KEY_RIGHT },
++    { XK_Down,        KEY_DOWN },
++    { XK_Print,       KEY_SYSRQ },
++    { XK_Scroll_Lock, KEY_SCROLLLOCK },
++    { XK_Pause,       KEY_PAUSE },
++    { XK_Num_Lock,    KEY_NUMLOCK },
++    { XK_Menu,        KEY_COMPOSE },
++    { XK_F1,  KEY_F1 },  { XK_F2,  KEY_F2 },  { XK_F3,  KEY_F3 },
++    { XK_F4,  KEY_F4 },  { XK_F5,  KEY_F5 },  { XK_F6,  KEY_F6 },
++    { XK_F7,  KEY_F7 },  { XK_F8,  KEY_F8 },  { XK_F9,  KEY_F9 },
++    { XK_F10, KEY_F10 }, { XK_F11, KEY_F11 }, { XK_F12, KEY_F12 },
++    { XK_Shift_L,   KEY_LEFTSHIFT },  { XK_Shift_R,   KEY_RIGHTSHIFT },
++    { XK_Control_L, KEY_LEFTCTRL },   { XK_Control_R, KEY_RIGHTCTRL },
++    { XK_Alt_L,     KEY_LEFTALT },    { XK_Alt_R,     KEY_RIGHTALT },
++    { XK_Super_L,   KEY_LEFTMETA },   { XK_Super_R,   KEY_RIGHTMETA },
++    { XK_Caps_Lock, KEY_CAPSLOCK },
++    { XK_0, KEY_0 }, { XK_1, KEY_1 }, { XK_2, KEY_2 }, { XK_3, KEY_3 },
++    { XK_4, KEY_4 }, { XK_5, KEY_5 }, { XK_6, KEY_6 }, { XK_7, KEY_7 },
++    { XK_8, KEY_8 }, { XK_9, KEY_9 },
++    { XK_a, KEY_A }, { XK_b, KEY_B }, { XK_c, KEY_C }, { XK_d, KEY_D },
++    { XK_e, KEY_E }, { XK_f, KEY_F }, { XK_g, KEY_G }, { XK_h, KEY_H },
++    { XK_i, KEY_I }, { XK_j, KEY_J }, { XK_k, KEY_K }, { XK_l, KEY_L },
++    { XK_m, KEY_M }, { XK_n, KEY_N }, { XK_o, KEY_O }, { XK_p, KEY_P },
++    { XK_q, KEY_Q }, { XK_r, KEY_R }, { XK_s, KEY_S }, { XK_t, KEY_T },
++    { XK_u, KEY_U }, { XK_v, KEY_V }, { XK_w, KEY_W }, { XK_x, KEY_X },
++    { XK_y, KEY_Y }, { XK_z, KEY_Z },
++    { XK_A, KEY_A }, { XK_B, KEY_B }, { XK_C, KEY_C }, { XK_D, KEY_D },
++    { XK_E, KEY_E }, { XK_F, KEY_F }, { XK_G, KEY_G }, { XK_H, KEY_H },
++    { XK_I, KEY_I }, { XK_J, KEY_J }, { XK_K, KEY_K }, { XK_L, KEY_L },
++    { XK_M, KEY_M }, { XK_N, KEY_N }, { XK_O, KEY_O }, { XK_P, KEY_P },
++    { XK_Q, KEY_Q }, { XK_R, KEY_R }, { XK_S, KEY_S }, { XK_T, KEY_T },
++    { XK_U, KEY_U }, { XK_V, KEY_V }, { XK_W, KEY_W }, { XK_X, KEY_X },
++    { XK_Y, KEY_Y }, { XK_Z, KEY_Z },
++    { XK_minus,        KEY_MINUS },
++    { XK_equal,        KEY_EQUAL },
++    { XK_bracketleft,  KEY_LEFTBRACE },
++    { XK_bracketright, KEY_RIGHTBRACE },
++    { XK_backslash,    KEY_BACKSLASH },
++    { XK_semicolon,    KEY_SEMICOLON },
++    { XK_apostrophe,   KEY_APOSTROPHE },
++    { XK_grave,        KEY_GRAVE },
++    { XK_comma,        KEY_COMMA },
++    { XK_period,       KEY_DOT },
++    { XK_slash,        KEY_SLASH },
++    { XK_exclam,       KEY_1 },
++    { XK_at,           KEY_2 },
++    { XK_numbersign,   KEY_3 },
++    { XK_dollar,       KEY_4 },
++    { XK_percent,      KEY_5 },
++    { XK_asciicircum,  KEY_6 },
++    { XK_ampersand,    KEY_7 },
++    { XK_asterisk,     KEY_8 },
++    { XK_parenleft,    KEY_9 },
++    { XK_parenright,   KEY_0 },
++    { XK_underscore,   KEY_MINUS },
++    { XK_plus,         KEY_EQUAL },
++    { XK_braceleft,    KEY_LEFTBRACE },
++    { XK_braceright,   KEY_RIGHTBRACE },
++    { XK_bar,          KEY_BACKSLASH },
++    { XK_colon,        KEY_SEMICOLON },
++    { XK_quotedbl,     KEY_APOSTROPHE },
++    { XK_asciitilde,   KEY_GRAVE },
++    { XK_less,         KEY_COMMA },
++    { XK_greater,      KEY_DOT },
++    { XK_question,     KEY_SLASH },
++    { XK_KP_Enter,     KEY_KPENTER },
++    { XK_KP_Multiply,  KEY_KPASTERISK },
++    { XK_KP_Add,       KEY_KPPLUS },
++    { XK_KP_Subtract,  KEY_KPMINUS },
++    { XK_KP_Decimal,   KEY_KPDOT },
++    { XK_KP_Divide,    KEY_KPSLASH },
++    { XK_KP_0, KEY_KP0 }, { XK_KP_1, KEY_KP1 }, { XK_KP_2, KEY_KP2 },
++    { XK_KP_3, KEY_KP3 }, { XK_KP_4, KEY_KP4 }, { XK_KP_5, KEY_KP5 },
++    { XK_KP_6, KEY_KP6 }, { XK_KP_7, KEY_KP7 }, { XK_KP_8, KEY_KP8 },
++    { XK_KP_9, KEY_KP9 },
++};
++#define KEYSYM_MAP_SIZE (sizeof(keysym_map) / sizeof(keysym_map[0]))
++
++static uint16_t keysym_to_linux(uint32_t keysym) {
++    for (unsigned i = 0; i < KEYSYM_MAP_SIZE; i++)
++        if (keysym_map[i].keysym == keysym)
++            return keysym_map[i].linux_keycode;
++    return 0;
++}
++
++static void ring_push(struct vnc_server* s, const struct vnc_input_event* ev) {
++    pthread_mutex_lock(&s->ring_lock);
++    unsigned next = (s->ring.head + 1) & INPUT_RING_MASK;
++    if (next != s->ring.tail) {
++        s->ring.buf[s->ring.head] = *ev;
++        s->ring.head = next;
++    }
++    if (s->input_event_fd >= 0) {
++        uint64_t val = 1;
++        (void)write(s->input_event_fd, &val, sizeof(val));
++    }
++    pthread_mutex_unlock(&s->ring_lock);
++}
++
++static void vnc_kbd_callback(rfbBool down, rfbKeySym keySym, rfbClientPtr cl) {
++    struct vnc_server* s = (struct vnc_server*)cl->screen->screenData;
++    if (!s) return;
++    uint16_t lkc = keysym_to_linux(keySym);
++    if (lkc == 0) {
++        fprintf(stderr, "VNC: unmapped keysym 0x%x\n", keySym);
++        return;
++    }
++    struct vnc_input_event ev = {
++        .type = VNC_INPUT_KEY,
++        .down = down ? 1 : 0,
++        .linux_keycode = lkc,
++    };
++    ring_push(s, &ev);
++}
++
++static void vnc_ptr_callback(int buttonMask, int x, int y, rfbClientPtr cl) {
++    struct vnc_server* s = (struct vnc_server*)cl->screen->screenData;
++    if (!s) return;
++    struct vnc_input_event ev = {
++        .type = VNC_INPUT_POINTER,
++        .down = (buttonMask != 0) ? 1 : 0,
++        .x = x,
++        .y = y,
++        .button_mask = (uint8_t)buttonMask,
++    };
++    ring_push(s, &ev);
++    rfbDefaultPtrAddEvent(buttonMask, x, y, cl);
++}
++
++static void vnc_server_set_bgrx_format(rfbScreenInfoPtr screen) {
++    screen->serverFormat.bitsPerPixel = 32;
++    screen->serverFormat.depth = 24;
++    screen->serverFormat.trueColour = TRUE;
++    screen->serverFormat.bigEndian = 0;
++    screen->serverFormat.redShift   = 16;
++    screen->serverFormat.greenShift = 8;
++    screen->serverFormat.blueShift  = 0;
++    screen->serverFormat.redMax     = 0xFF;
++    screen->serverFormat.greenMax   = 0xFF;
++    screen->serverFormat.blueMax    = 0xFF;
++}
++
++/* Stop LibVNCServer compositing the cursor into the shared framebuffer.
++ *
++ * rfbSendFramebufferUpdate draws the cursor into screen->frameBuffer whenever the client it is
++ * serving has enableCursorShapeUpdates == FALSE (rfbserver.c:3376), and erases it afterwards
++ * (rfbserver.c:3628). Three things make that unusable here:
++ *
++ *   - The decision is PER-CLIENT but the canvas is PER-SCREEN. With alwaysShared, one viewer that
++ *     never negotiated a cursor encoding paints into the same framebuffer another viewer's thread
++ *     is encoding, so a client that draws its own pointer sees a second one baked into the pixels.
++ *   - rfbHideCursor restores the pixels but never marks that rectangle modified, so the leftover
++ *     stays on the client until some unrelated full-frame update washes it away. That is exactly
++ *     the "stale content around the pointer" and "cursor only appears once it stops" behaviour.
++ *   - SetEncodings clears the flag at rfbserver.c:2370 and only sets it back after blocking reads
++ *     of the encoding list, so the window reopens every time a client renegotiates.
++ *
++ * displayHook runs at the top of rfbSendFramebufferUpdate (rfbserver.c:3180), BEFORE that gate, so
++ * forcing the flag here closes it for good. Doing it in newClientHook instead would not survive
++ * the reset at 2370.
++ *
++ * The flag's value on entry is also the only reliable answer to "did this client ask for cursor
++ * updates?" -- SetEncodings resets every cursor flag, so none of them is a durable marker. A
++ * client that asked already has it TRUE and is left alone; for one that did not, cursorWasChanged
++ * is cleared as well so forcing the flag does not make us send a shape it never requested.
++ */
++static void vnc_display_hook(rfbClientPtr cl) {
++    if (!cl->enableCursorShapeUpdates) {
++        cl->enableCursorShapeUpdates = TRUE;
++        cl->cursorWasChanged = FALSE;
++    }
++
++}
++
++/* Point the screen's listeners at `host`. Returns 0 on success, -1 on a host that cannot be bound.
++ *
++ * Two listeners, always, because LibVNCServer sets IPV6_V6ONLY on its IPv6 socket ("some OS's do
++ * not support dual binding") -- a wildcard v6 socket does not also serve v4, so the families are
++ * two sockets and `port`/`ipv6port` decide independently whether each exists. A family whose port
++ * is <= 0 gets no listener at all: that is how "this family only" is spelt here, and it is NOT
++ * "pick a free port" -- that is the separate `autoPort` flag, which rfbGetScreen leaves FALSE and
++ * this bridge never sets.
++ *
++ * The v4 address goes in as an in_addr because that is what rfbListenOnTCPPort takes; the v6 one
++ * goes in as the string LibVNCServer hands to getaddrinfo, so it is strdup'd (the screen owns it
++ * for its lifetime, and this server outlives every caller's buffer). */
++/* An in_addr as text, for a log line. Static buffer: only ever called to build one message at a
++ * time, on the one thread that brings a server up. */
++static const char* vnc_v4_str(in_addr_t iface) {
++    static char buf[INET_ADDRSTRLEN];
++    struct in_addr a;
++    a.s_addr = iface;
++    if (!inet_ntop(AF_INET, &a, buf, sizeof(buf)))
++        return "?";
++    return buf;
++}
++
++static int vnc_server_set_listen(rfbScreenInfoPtr screen, const char* host, int port) {
++    struct in_addr v4;
++    struct in6_addr v6;
++
++    screen->port = port;
++    screen->ipv6port = port;
++    /* Unset or either family's wildcard: both listeners, as before this argument existed. */
++    if (host == NULL || host[0] == '\0'
++        || strcmp(host, "0.0.0.0") == 0 || strcmp(host, "::") == 0)
++        return 0;
++
++    if (inet_pton(AF_INET, host, &v4) == 1) {
++        screen->listenInterface = v4.s_addr;
++        screen->ipv6port = 0;
++        return 0;
++    }
++    if (inet_pton(AF_INET6, host, &v6) == 1) {
++        screen->listen6Interface = strdup(host);
++        if (!screen->listen6Interface)
++            return -1;
++        screen->port = 0;
++        return 0;
++    }
++    rfbErr("VNC: listen address \"%s\" is not an IPv4 or IPv6 literal\n", host);
++    return -1;
++}
++
++/* Open the listening sockets the screen asked for. Returns 0 if at least one came up, -1 if none
++ * did.
++ *
++ * Done here rather than left to rfbInitServer, which cannot report any of this. Its rfbInitSockets
++ * logs a bind failure and `return`s -- through a void, so nothing upstream learns anything -- and
++ * because the IPv4 block comes first, a busy v4 port also skips the IPv6 one that would have bound
++ * fine. What crosvm got out of that was a VNC server that started, said so, and was listening on
++ * nothing at all. Binding here instead means each family reports its own outcome, one family's
++ * failure does not take the other down, and "no listener at all" can be a refusal to start.
++ *
++ * The sockets are handed over exactly as rfbInitSockets would have left them -- the two socket
++ * fields, the fd_set and maxFd -- and socketState is set to READY so that the rfbInitSockets call
++ * inside rfbInitServer sees the work as already done and returns immediately. */
++static int vnc_server_bind_listeners(rfbScreenInfoPtr screen) {
++    int wanted = 0;
++    int bound = 0;
++
++    FD_ZERO(&screen->allFds);
++    screen->maxFd = 0;
++    screen->listenSock = RFB_INVALID_SOCKET;
++    screen->listen6Sock = RFB_INVALID_SOCKET;
++
++    if (screen->port > 0) {
++        wanted++;
++        screen->listenSock = rfbListenOnTCPPort(screen->port, screen->listenInterface);
++        if (screen->listenSock == RFB_INVALID_SOCKET) {
++            rfbErr("VNC: failed to bind IPv4 %s:%d: %s\n",
++                   vnc_v4_str(screen->listenInterface), screen->port, strerror(errno));
++        } else {
++            FD_SET(screen->listenSock, &screen->allFds);
++            if ((int)screen->listenSock > screen->maxFd)
++                screen->maxFd = (int)screen->listenSock;
++            bound++;
++            rfbLog("VNC: listening on IPv4 %s:%d\n",
++                   vnc_v4_str(screen->listenInterface), screen->port);
++        }
++    }
++
++    if (screen->ipv6port > 0) {
++        const char* iface = screen->listen6Interface ? screen->listen6Interface : "::";
++        wanted++;
++        /* rfbListenOnTCP6Port prints its own detail on failure. */
++        screen->listen6Sock = rfbListenOnTCP6Port(screen->ipv6port, screen->listen6Interface);
++        if (screen->listen6Sock == RFB_INVALID_SOCKET) {
++            rfbErr("VNC: failed to bind IPv6 [%s]:%d\n", iface, screen->ipv6port);
++        } else {
++            FD_SET(screen->listen6Sock, &screen->allFds);
++            if ((int)screen->listen6Sock > screen->maxFd)
++                screen->maxFd = (int)screen->listen6Sock;
++            bound++;
++            rfbLog("VNC: listening on IPv6 [%s]:%d\n", iface, screen->ipv6port);
++        }
++    }
++
++    if (bound == 0) {
++        /* Nowhere to accept a client: the exporter this screen was configured with does not
++         * exist, and coming up anyway is the failure this function was written to end. */
++        rfbErr("VNC: no listening socket could be opened (%d attempted)\n", wanted);
++        return -1;
++    }
++    if (bound < wanted) {
++        /* Only reachable on a wildcard host, where both families were asked for. One of them is
++         * still servable, so this is a warning and not a refusal -- but it is the difference
++         * between "reachable over IPv6" and "reachable", and nobody can see it from outside. */
++        rfbErr("VNC: warning: only %d of %d address families could be bound\n", bound, wanted);
++    }
++    /* Tells rfbInitSockets, called from rfbInitServer below, that the sockets already exist. */
++    screen->socketState = RFB_SOCKET_READY;
++    return 0;
++}
++
++vnc_server_t* vnc_server_create(int width, int height, const char* host, int port,
++                                const char* password) {
++    vnc_server_t* server = calloc(1, sizeof(vnc_server_t));
++    if (!server)
++        return NULL;
++    pthread_mutex_init(&server->ring_lock, NULL);
++    server->input_event_fd = -1;
++    server->screen = rfbGetScreen(NULL, NULL, width, height, 8, 3, 4);
++    if (!server->screen) {
++        free(server);
++        return NULL;
++    }
++    /* Before the framebuffer, so a host that cannot be bound costs nothing to refuse. */
++    if (vnc_server_set_listen(server->screen, host, port) != 0) {
++        rfbScreenCleanup(server->screen);
++        free(server);
++        return NULL;
++    }
++    server->screen->frameBuffer = calloc(width * height, 4);
++    if (!server->screen->frameBuffer) {
++        rfbScreenCleanup(server->screen);
++        free(server);
++        return NULL;
++    }
++    server->screen->desktopName = "crosvm";
++    /* The two ports are vnc_server_set_listen's; it is what knows which families to open. */
++    server->screen->alwaysShared = TRUE;
++    server->screen->screenData = server;
++    server->screen->kbdAddEvent = vnc_kbd_callback;
++    server->screen->ptrAddEvent = vnc_ptr_callback;
++    server->screen->displayHook = vnc_display_hook;
++    if (password && password[0]) {
++        server->passwords[0] = strdup(password);
++        server->passwords[1] = NULL;
++        server->screen->authPasswdData = (void*)server->passwords;
++        server->screen->passwordCheck = rfbCheckPasswordByList;
++    }
++    vnc_server_set_bgrx_format(server->screen);
++    attach_frame_consumers(server);
++    /* Before rfbInitServer, which is what would otherwise do this and cannot say how it went. */
++    if (vnc_server_bind_listeners(server->screen) != 0) {
++        free(server->screen->frameBuffer);
++        server->screen->frameBuffer = NULL;
++        free(server->passwords[0]);
++        /* Ours to free: rfbScreenCleanup's FREE_IF list does not name this one. */
++        free(server->screen->listen6Interface);
++        server->screen->listen6Interface = NULL;
++        rfbScreenCleanup(server->screen);
++        pthread_mutex_destroy(&server->ring_lock);
++        free(server);
++        return NULL;
++    }
++    rfbInitServer(server->screen);
++    return server;
++}
++
++void vnc_server_start(vnc_server_t* server) {
++    if (!server || !server->screen)
++        return;
++    rfbRunEventLoop(server->screen, -1, TRUE);
++}
++
++int vnc_server_has_input_events(vnc_server_t* server) {
++    if (!server) return 0;
++    return server->ring.head != server->ring.tail;
++}
++
++void vnc_server_set_input_event_fd(vnc_server_t* server, int fd) {
++    if (!server) return;
++    server->input_event_fd = fd;
++}
++
++int vnc_server_poll_input_event(vnc_server_t* server, struct vnc_input_event* out) {
++    if (!server || !out) return VNC_INPUT_NONE;
++    pthread_mutex_lock(&server->ring_lock);
++    if (server->ring.head == server->ring.tail) {
++        pthread_mutex_unlock(&server->ring_lock);
++        return VNC_INPUT_NONE;
++    }
++    *out = server->ring.buf[server->ring.tail];
++    server->ring.tail = (server->ring.tail + 1) & INPUT_RING_MASK;
++    pthread_mutex_unlock(&server->ring_lock);
++    return out->type;
++}
++
++int vnc_server_resize(vnc_server_t* server, int width, int height) {
++    if (!server || !server->screen)
++        return -1;
++    if (server->screen->width == width && server->screen->height == height)
++        return 0;
++    char* new_fb = calloc(width * height, 4);
++    if (!new_fb)
++        return -1;
++    char* old_fb = server->screen->frameBuffer;
++    rfbNewFramebuffer(server->screen, new_fb, width, height, 8, 3, 4);
++    vnc_server_set_bgrx_format(server->screen);
++    free(old_fb);
++
++    /* The framebuffer handed over above is freshly zeroed, which makes every "this band is already
++     * on screen" verdict recorded in last_clean false. collect_damaged_bands would then skip
++     * exactly the bands the guest is not repainting and leave them black -- marking nothing, so not
++     * one byte goes out to report it. It shows up as a permanently black client at 0 bytes/s, and
++     * only sometimes: ensure_ingest_buffers already reallocates (and invalidates) when the pixel
++     * count changes, so the hole is a resize that lands back on a size seen before with no offer in
++     * between. The display does exactly that while booting -- 1400x1050 -> 640x480 -> 1280x800 ->
++     * 1400x1050 inside 200 ms, against a 33 ms producer.
++     *
++     * drawn_* is dropped for the same reason: it locates the cursor in the OLD geometry, and there
++     * is nothing of the old frame left underneath it to restore. */
++    server->ingest.last_clean_valid = 0;
++    server->drawn_x = 0; server->drawn_y = 0;
++    server->drawn_w = 0; server->drawn_h = 0;
++    return 0;
++}
++
++void vnc_server_update_framebuffer(vnc_server_t* server, const uint8_t* data, uint32_t size) {
++    if (!server || !server->screen || !server->screen->frameBuffer || !data)
++        return;
++    uint32_t fb_size = server->screen->width * server->screen->height * 4;
++    if (size > fb_size)
++        size = fb_size;
++    memcpy(server->screen->frameBuffer, data, size);
++    /* This path writes the server framebuffer without going through last_clean, so the band
++     * comparison in collect_damaged_bands would afterwards skip every band whose *source* did not
++     * change -- leaving those regions showing whatever was written here, permanently, with
++     * nothing reporting a fault. Invalidating forces the next offer to refresh everything.
++     *
++     * There is no caller today (the Rust side declares this symbol and never uses it), so this
++     * is not a live bug. It is one line because the function existing at all is an invitation:
++     * whoever wires it up will not know a caching assumption depends on them. */
++    server->ingest.last_clean_valid = 0;
++    rfbMarkRectAsModified(server->screen, 0, 0, server->screen->width, server->screen->height);
++}
++
++void vnc_server_set_cursor(vnc_server_t* server, const uint8_t* argb,
++                           int width, int height, int hot_x, int hot_y) {
++    if (!server || !server->screen)
++        return;
++
++    /* width 0 (or no pixels) means "no cursor": the guest disables it with UPDATE_CURSOR
++     * resource_id 0. rfbSetCursor(NULL) frees the previous one and stops advertising it. */
++    if (!argb || width <= 0 || height <= 0) {
++        rfbSetCursor(server->screen, NULL);
++        return;
++    }
++
++    rfbCursorPtr c = calloc(1, sizeof(rfbCursor));
++    if (!c)
++        return;
++    c->width  = width;
++    c->height = height;
++    c->xhot   = hot_x < 0 ? 0 : (hot_x >= width  ? width  - 1 : hot_x);
++    c->yhot   = hot_y < 0 ? 0 : (hot_y >= height ? height - 1 : hot_y);
++
++    /* richSource is in the SERVER pixel format, which vnc_server_set_bgrx_format pinned to the
++     * same BGRX byte order the guest's cursor resource already uses -- so the colour bytes copy
++     * straight across and only the alpha has to be split out into its own plane. */
++    size_t px = (size_t)width * (size_t)height;
++    c->richSource  = malloc(px * 4);
++    c->alphaSource = malloc(px);
++    if (!c->richSource || !c->alphaSource) {
++        free(c->richSource);
++        free(c->alphaSource);
++        free(c);
++        return;
++    }
++    memcpy(c->richSource, argb, px * 4);
++    for (size_t i = 0; i < px; i++)
++        c->alphaSource[i] = argb[i * 4 + 3];
++
++    /* A mask is MANDATORY even for a rich cursor. rfbSendCursorShape dereferences
++     * pCursor->mask[0] unconditionally, before it has decided which encoding to use:
++     *
++     *     if ( pCursor && pCursor->width == 1 && ... && pCursor->mask[0] == 0 )
++     *
++     * With only richSource set, the first client to negotiate RichCursor works fine and the
++     * SECOND client -- which may negotiate plain XCursor -- takes crosvm down with a SIGSEGV at
++     * a null fault address. rfbMakeMaskFromAlphaSource builds it from the alpha we already have.
++     *
++     * `source` is left NULL deliberately: cursor.c fills it in on demand with
++     * rfbMakeXCursorFromRichCursor for clients that need the 1-bit form, and doing it lazily
++     * avoids paying for a conversion no client may ever ask for. */
++    c->mask = (unsigned char*)rfbMakeMaskFromAlphaSource(width, height, c->alphaSource);
++    if (!c->mask) {
++        free(c->richSource);
++        free(c->alphaSource);
++        free(c);
++        return;
++    }
++
++    /* Tell LibVNCServer it owns these buffers: rfbSetCursor frees the OLD cursor using exactly
++     * these flags, and a cursor moves several times a second, so getting them wrong is a leak
++     * that grows for as long as the VM runs rather than a one-off. cleanupSource is TRUE even
++     * though we pass no source, because cursor.c may allocate one later and that allocation has
++     * to be freed by the same flags. */
++    c->cleanup           = TRUE;
++    c->cleanupRichSource = TRUE;
++    c->cleanupSource     = TRUE;
++    c->cleanupMask       = TRUE;
++
++    /* The guest's cursor comes off a DRM cursor plane in DRM_FORMAT_HOST_ARGB8888, and both
++     * compositors we care about (KWin, mutter) render those PREMULTIPLIED -- that is the Wayland
++     * and DRM convention. Getting this wrong does not hide the cursor, it fringes it: straight
++     * alpha declared premultiplied comes out too bright at the edges, and the reverse too dark.
++     * Worth an eyeball at first light rather than trusting the convention blindly. */
++    c->alphaPreMultiplied = TRUE;
++
++    rfbSetCursor(server->screen, c);
++}
++
++void vnc_server_set_cursor_pos(vnc_server_t* server, int x, int y) {
++    if (!server || !server->screen)
++        return;
++    /* Assignment is enough: LibVNCServer's per-client update check compares cl->cursorX against
++     * screen->cursorX, so changing it here is what makes the next update carry the new position
++     * (as a cursor-position message, or as a redraw for clients without cursor encodings). */
++    server->screen->cursorX = x;
++    server->screen->cursorY = y;
++}
++
++/* Alpha-blend one cursor image into the outgoing framebuffer at (cx,cy), clipped to the screen.
++ * Both are BGRX in the server pixel format (vnc_server_set_bgrx_format pins that), so only the
++ * alpha byte needs interpreting. Returns the rectangle actually touched via the out params. */
++static void blend_cursor(rfbScreenInfoPtr screen, const uint8_t* cur, int cw, int ch,
++                         int cx, int cy, int* out_x, int* out_y, int* out_w, int* out_h) {
++    int sw = screen->width, sh = screen->height;
++    int x0 = cx < 0 ? 0 : cx;
++    int y0 = cy < 0 ? 0 : cy;
++    int x1 = cx + cw > sw ? sw : cx + cw;
++    int y1 = cy + ch > sh ? sh : cy + ch;
++    *out_x = x0; *out_y = y0;
++    *out_w = x1 > x0 ? x1 - x0 : 0;
++    *out_h = y1 > y0 ? y1 - y0 : 0;
++    if (*out_w == 0 || *out_h == 0)
++        return;
++
++    for (int y = y0; y < y1; y++) {
++        const uint8_t* src = cur + (((y - cy) * cw) + (x0 - cx)) * 4;
++        uint8_t* dst = (uint8_t*)screen->frameBuffer + ((size_t)y * sw + x0) * 4;
++        for (int x = x0; x < x1; x++, src += 4, dst += 4) {
++            uint32_t a = src[3];
++            if (a == 0)
++                continue;          /* fully transparent: the common case, most of a cursor image */
++            if (a == 255) {
++                dst[0] = src[0]; dst[1] = src[1]; dst[2] = src[2];
++                continue;
++            }
++            /* Straight (non-premultiplied) alpha: the guest's cursor plane is ARGB8888 and both
++             * KWin and mutter hand it over premultiplied, but treating it as premultiplied here
++             * and being wrong darkens the edges, while this form is correct either way for the
++             * fully-opaque and fully-transparent pixels that dominate a pointer. */
++            for (int c = 0; c < 3; c++)
++                dst[c] = (uint8_t)((src[c] * a + dst[c] * (255 - a)) / 255);
++        }
++    }
++}
++
++/* Copy one rectangle of the clean guest frame back over the outgoing framebuffer. */
++/* The rectangle is clamped to the CURRENT screen, because it does not necessarily describe the
++ * current screen: drawn_* is written by the previous frame, and vnc_server_resize can replace the
++ * framebuffer with a smaller one in between. Unclamped, a rectangle left over from a taller screen
++ * indexes past the end of the new buffer -- a heap write out of bounds, not a wrong pixel. That was
++ * survivable while only the cursor-move path came here; the full-frame path calls it every frame
++ * now. clean_size bounds the source for the same reason: `clean` is the producer's buffer and is
++ * not required to be as large as the screen. */
++static void restore_rect(rfbScreenInfoPtr screen, const uint8_t* clean, uint32_t clean_size,
++                         int x, int y, int w, int h) {
++    int sw = screen->width, sh = screen->height;
++    if (x < 0) { w += x; x = 0; }
++    if (y < 0) { h += y; y = 0; }
++    if (x >= sw || y >= sh)
++        return;
++    if (x + w > sw) w = sw - x;
++    if (y + h > sh) h = sh - y;
++    if (w <= 0 || h <= 0)
++        return;
++    for (int r = 0; r < h; r++) {
++        size_t off = ((size_t)(y + r) * sw + x) * 4;
++        size_t len = (size_t)w * 4;
++        if (off >= clean_size)
++            break;
++        if (off + len > clean_size)
++            len = clean_size - off;
++        memcpy((uint8_t*)screen->frameBuffer + off, clean + off, len);
++    }
++}
++
++/* THE CLASSIC CONSUMER: the LibVNCServer path. blend_cursor and restore_rect above are its alone
++ * -- nothing on the ingest side of the seam calls them, and the H.264 consumer that joined it does
++ * its own blending into its own canvas.
++ *
++ * Copies the bands ingest says are new into the outgoing framebuffer, marks them, and puts the
++ * cursor back on top -- erase where it was, draw where it is, mark both -- because banded copying
++ * does not refresh the whole frame. A band that did not change is not rewritten, so the pointer's
++ * old pixels would survive there unless restore_rect takes them out.
++ *
++ * A cursor-only offer arrives with no bands at all, so the loop does nothing and only the two
++ * pointer rectangles move: that is what keeps the pointer travelling at input rate over a static
++ * desktop without pushing a whole frame for every step. */
++static void libvncserver_on_frame(vnc_server_t* server, void* ctx,
++                                  const struct vnc_frame_offer* offer) {
++    (void)ctx;
++    rfbScreenInfoPtr screen = server->screen;
++    int ox = server->drawn_x, oy = server->drawn_y;
++    int ow = server->drawn_w, oh = server->drawn_h;
++    int nx = 0, ny = 0, nw = 0, nh = 0;
++
++    for (int i = 0; i < offer->band_count; i++) {
++        const struct vnc_damage_band* band = &offer->bands[i];
++        memcpy(screen->frameBuffer + band->off, offer->pixels + band->off, band->len);
++        rfbMarkRectAsModified(screen, 0, band->y, offer->width, band->y + band->rows);
++    }
++
++    /* The whole frame was just rewritten in one piece, so nothing of the previous cursor is left
++     * to restore -- and the rectangle it used to occupy is inside what was already marked. */
++    if (offer->frame_replaced)
++        ox = oy = ow = oh = 0;
++
++    restore_rect(screen, offer->pixels, offer->size, ox, oy, ow, oh);
++    if (offer->cursor_visible && offer->cursor_argb && offer->cursor_w > 0 && offer->cursor_h > 0)
++        blend_cursor(screen, offer->cursor_argb, offer->cursor_w, offer->cursor_h, offer->cursor_x,
++                     offer->cursor_y, &nx, &ny, &nw, &nh);
++    server->drawn_x = nx; server->drawn_y = ny;
++    server->drawn_w = nw; server->drawn_h = nh;
++
++    if (ow > 0 && oh > 0)
++        rfbMarkRectAsModified(screen, ox, oy, ox + ow, oy + oh);
++    if (nw > 0 && nh > 0)
++        rfbMarkRectAsModified(screen, nx, ny, nx + nw, ny + nh);
++}
++
++/* Where the compiled-in consumers are named. Unconditional -- there is no configuration surface
++ * here, because whether LibVNCServer should be served is not a question this file gets to ask.
++ *
++ * The H.264 consumer is not in this list and could not be: whether it exists depends on the
++ * binding's transport ceiling and on an encoder coming up, neither of which is known here. It
++ * registers itself through vnc_server_attach_consumer before the server starts. */
++static void attach_frame_consumers(vnc_server_t* server) {
++    static const struct vnc_frame_consumer libvncserver = {
++        .name = "libvncserver",
++        .ctx = NULL,
++        .on_frame = libvncserver_on_frame,
++    };
++    vnc_server_attach_consumer(server, &libvncserver);
++}
++
++int vnc_server_attach_consumer(vnc_server_t* server, const struct vnc_frame_consumer* consumer) {
++    if (!server || !consumer || !consumer->on_frame)
++        return 0;
++    if (server->consumer_count >= VNC_MAX_FRAME_CONSUMERS)
++        return 0;
++    server->consumers[server->consumer_count++] = *consumer;
++    return 1;
++}
++
++/* Makes the ingest buffers usable for a frame of `size` bytes on a screen `height` rows tall.
++ * Returns 0 if it cannot, in which case the caller offers the whole frame untracked.
++ *
++ * The band list is grown first and never shrunk: it is four ints per 32 rows, so a screen's worth
++ * is a rounding error next to the comparison buffer beside it. */
++static int ensure_ingest_buffers(vnc_server_t* server, uint32_t size, int height) {
++    int want = (height + DAMAGE_BAND_ROWS - 1) / DAMAGE_BAND_ROWS;
++    if (want < 1)
++        want = 1;
++    if (server->ingest.bands_cap < want) {
++        struct vnc_damage_band* grown = (struct vnc_damage_band*)realloc(
++            server->ingest.bands, (size_t)want * sizeof(*grown));
++        if (!grown)
++            return 0;
++        server->ingest.bands = grown;
++        server->ingest.bands_cap = want;
++    }
++    if (server->ingest.last_clean && server->ingest.last_clean_size == size)
++        return 1;
++    free(server->ingest.last_clean);
++    server->ingest.last_clean = (uint8_t*)malloc(size);
++    if (!server->ingest.last_clean) {
++        server->ingest.last_clean_size = 0;
++        server->ingest.last_clean_valid = 0;
++        return 0;
++    }
++    server->ingest.last_clean_size = size;
++    server->ingest.last_clean_valid = 0;  /* contents unknown: the next pass must refresh all */
++    return 1;
++}
++
++/* INGEST. Records which horizontal bands of `clean` differ from the previous frame and brings
++ * last_clean into step with it. Returns how many bands are in server->ingest.bands.
++ *
++ * Nothing here touches a consumer, and it runs once however many are listening -- that is the
++ * whole reason the comparison sits on this side of the seam.
++ *
++ * Without this the bridge marked the whole screen on every frame, so LibVNCServer re-encoded and
++ * re-sent 1400x1050 whether or not a single pixel had moved: measured at 0.4-0.6 MB/s to a
++ * connected client watching a completely static desktop, plus the encode behind it. A memcmp of
++ * the frame is a fraction of that and skips both.
++ *
++ * Bands rather than a single whole-frame compare because the answer has to be a rectangle to mark,
++ * and rather than tiles because the encoder's own unit is a row range -- a taller, full-width
++ * rectangle costs it nothing extra. */
++static int collect_damaged_bands(vnc_server_t* server, const uint8_t* clean, uint32_t clean_size,
++                                 int width, int height) {
++    size_t row_bytes = (size_t)width * 4;
++    int force = !server->ingest.last_clean_valid;
++    int count = 0;
++    for (int y0 = 0; y0 < height; y0 += DAMAGE_BAND_ROWS) {
++        int rows = (y0 + DAMAGE_BAND_ROWS <= height) ? DAMAGE_BAND_ROWS : (height - y0);
++        size_t off = (size_t)y0 * row_bytes;
++        if (off >= clean_size)
++            break;
++        size_t len = (size_t)rows * row_bytes;
++        if (off + len > clean_size)
++            len = clean_size - off;
++        if (!force && memcmp(server->ingest.last_clean + off, clean + off, len) == 0)
++            continue;
++        memcpy(server->ingest.last_clean + off, clean + off, len);
++        server->ingest.bands[count].y = y0;
++        server->ingest.bands[count].rows = rows;
++        server->ingest.bands[count].off = off;
++        server->ingest.bands[count].len = len;
++        count++;
++    }
++    server->ingest.last_clean_valid = 1;
++    return count;
++}
++
++/* The acceptance instrument for a byte-identical refactor of the display pipeline (see the plan's
++ * §6 step 4 and §9): the three CPU copy sites that feed this sink are being consolidated behind one
++ * function, and "the sink receives the same bytes" is not an acceptance condition until something
++ * measures it. It sits deliberately below everything that refactor touches -- and is the same hash,
++ * over the same thing, in the same line shape as the native sink's -- so the two frame sequences
++ * can simply be compared, to each other and across binaries.
++ *
++ * It is logged from the ingest point, one line per offered frame, which is what keeps it meaning
++ * the same thing as consumers come and go: it describes what the sink was handed, not what any
++ * one consumer did with it.
++ *
++ * `clean` is packed to screen->width, but the row loop is written against the stride anyway: the
++ * number must describe the visible pixels and nothing else, or a padded producer would make two
++ * identical frames disagree. Off unless CROSVM_DISPLAY_HASH_FRAMES=1, read once. */
++static int frame_hash_enabled(void) {
++    static int cached = -1;
++    if (cached < 0) {
++        const char* value = getenv("CROSVM_DISPLAY_HASH_FRAMES");
++        cached = (value && (strcmp(value, "1") == 0 || strcmp(value, "true") == 0 ||
++                            strcmp(value, "on") == 0))
++                ? 1
++                : 0;
++    }
++    return cached;
++}
++
++static void log_frame_hash(const char* kind, const uint8_t* clean, uint32_t clean_size, int width,
++                           int height) {
++    uint64_t hash = 0xcbf29ce484222325ULL;
++    size_t row_bytes = (size_t)width * 4;
++    size_t stride = row_bytes;
++    for (int y = 0; y < height; y++) {
++        size_t off = (size_t)y * stride;
++        if (off + row_bytes > clean_size)
++            break;
++        for (size_t i = 0; i < row_bytes; i++)
++            hash = (hash ^ clean[off + i]) * 0x100000001b3ULL;
++    }
++    fprintf(stderr, "VNC: FRAMEHASH surface=%s %dx%d fnv1a64=0x%016llx\n", kind, width, height,
++            (unsigned long long)hash);
++}
++
++int vnc_server_has_clients(vnc_server_t* server) {
++    if (!server || !server->screen)
++        return 0;
++    return server->screen->clientHead != NULL;
++}
++
++void vnc_server_offer_frame(vnc_server_t* server, const uint8_t* clean, uint32_t clean_size,
++                            const uint8_t* cursor_argb, int cw, int ch,
++                            int cx, int cy, int visible, int full,
++                            void* gpu_blit_ctx, int64_t gpu_import_id) {
++    if (!server || !server->screen || !server->screen->frameBuffer || !clean)
++        return;
++    rfbScreenInfoPtr screen = server->screen;
++
++    if (frame_hash_enabled()) {
++        uint32_t hashable = (uint32_t)screen->width * screen->height * 4;
++        if (clean_size < hashable)
++            hashable = clean_size;
++        log_frame_hash(full ? "scanout" : "scanout-cursoronly", clean, hashable, screen->width,
++                       screen->height);
++    }
++
++    /* No early return for "there are no clients" here, though everything below is work done for
++     * nobody when the client list is empty. This is only reached from the producer's flip, and on
++     * the virtio-gpu route that producer is the guest's own flush: a frame skipped here is never
++     * offered again, so a client connecting to a guest that has since gone idle is served whatever
++     * the framebuffer held when the last consumer left. That was measured as a permanently black
++     * screen after a guest resolution change -- the resize zeroes the framebuffer, so the stale
++     * content was black rather than merely old -- and it went away with a client held across the
++     * same change. The skip belongs to the timer-driven producer, which picks a new client up on
++     * its next tick; see simplefb_display_loop. */
++    uint32_t fb_size = (uint32_t)screen->width * screen->height * 4;
++    if (clean_size > fb_size)
++        clean_size = fb_size;
++
++    /* Lives here rather than in the offer because it is only ever one band and only ever on the
++     * path where there is no band list to put it in. */
++    struct vnc_damage_band whole;
++    struct vnc_frame_offer offer;
++    memset(&offer, 0, sizeof(offer));
++    offer.pixels = clean;
++    offer.size = clean_size;
++    offer.width = screen->width;
++    offer.height = screen->height;
++    offer.full = full;
++    offer.cursor_argb = cursor_argb;
++    offer.cursor_w = cw;
++    offer.cursor_h = ch;
++    /* (cx,cy) is the cursor image's top-left corner, already hotspot-compensated by the guest --
++     * measured, not assumed: a pointer driven to (700,400) with hot=(22,21) arrives here as
++     * (678,379). Subtracting the hotspot a second time was drawing the pointer up and left of
++     * the truth by exactly the hotspot, invisible on an arrow and 22px on a resize arrow.
++     * blend_cursor clips negative origins, so a pointer against the left edge is simply cut off. */
++    offer.cursor_x = cx;
++    offer.cursor_y = cy;
++    offer.cursor_visible = visible;
++    offer.gpu_blit_ctx = gpu_blit_ctx;
++    offer.gpu_import_id = gpu_import_id;
++
++    if (full) {
++        if (ensure_ingest_buffers(server, clean_size, screen->height)) {
++            offer.bands = server->ingest.bands;
++            offer.band_count =
++                collect_damaged_bands(server, clean, clean_size, screen->width, screen->height);
++        } else {
++            /* No memory for the comparison buffer: nothing can be told apart from anything, so
++             * the frame is offered as one band covering all of it. Correct, only wasteful. */
++            whole.y = 0;
++            whole.rows = screen->height;
++            whole.off = 0;
++            whole.len = clean_size;
++            offer.bands = &whole;
++            offer.band_count = 1;
++            offer.frame_replaced = 1;
++        }
++    }
++
++    for (int i = 0; i < server->consumer_count; i++)
++        server->consumers[i].on_frame(server, server->consumers[i].ctx, &offer);
++}
++
++void vnc_server_destroy(vnc_server_t* server) {
++    if (!server)
++        return;
++    free(server->ingest.last_clean);
++    server->ingest.last_clean = NULL;
++    server->ingest.last_clean_size = 0;
++    server->ingest.last_clean_valid = 0;
++    free(server->ingest.bands);
++    server->ingest.bands = NULL;
++    server->ingest.bands_cap = 0;
++    if (server->screen) {
++        rfbShutdownServer(server->screen, TRUE);
++        free(server->screen->frameBuffer);
++        server->screen->frameBuffer = NULL;
++        /* strdup'd by vnc_server_set_listen; rfbScreenCleanup does not free it. */
++        free(server->screen->listen6Interface);
++        server->screen->listen6Interface = NULL;
++        rfbScreenCleanup(server->screen);
++    }
++    pthread_mutex_destroy(&server->ring_lock);
++    free(server->passwords[0]);
++    free(server);
++}
+diff --git a/gpu_display/src/vnc_server_bridge.h b/gpu_display/src/vnc_server_bridge.h
+new file mode 100644
+index 0000000..5821e9c
+--- /dev/null
++++ b/gpu_display/src/vnc_server_bridge.h
+@@ -0,0 +1,107 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++// Copyright DroidVM contributors
++// Binds LibVNCServer (GPL-2.0-or-later); no LibVNCServer code is included here.
++// Additional permissions apply; see ADDITIONAL-PERMISSIONS in the repository root.
++// iceland gvm: ported from DroidVM dvm-crosvm 849e05f (gpu_display/src) without the H.264 path
++// (vnc_h264_rfb.*: not ported); otherwise unchanged. See CREDITS.
++
++#ifndef VNC_SERVER_BRIDGE_H
++#define VNC_SERVER_BRIDGE_H
++
++#include <stdint.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++typedef struct vnc_server vnc_server_t;
++
++
++#define VNC_INPUT_NONE      0
++#define VNC_INPUT_KEY       1
++#define VNC_INPUT_POINTER   2
++
++struct vnc_input_event {
++    uint8_t  type;
++    uint8_t  down;
++    uint16_t linux_keycode;
++    int32_t  x;
++    int32_t  y;
++    uint8_t  button_mask;
++};
++
++/* Bring up the RFB server on `host`:`port`, or NULL on a `host` this cannot bind.
++ *
++ * `host` is a numeric address literal, or NULL/""/"0.0.0.0"/"::" for every address. A literal of
++ * either family binds that family alone; a wildcard binds both, which is what this server did
++ * before it was given a host at all. It is deliberately not a name: an IPv4 listen address reaches
++ * LibVNCServer as an in_addr with nowhere for a resolver to run, and quietly listening on
++ * everything because a name did not parse is the one failure a bind address must not have. A host
++ * that is neither a literal nor a wildcard is refused, and the display fails to open. */
++vnc_server_t* vnc_server_create(int width, int height, const char* host, int port,
++                                const char* password);
++void vnc_server_start(vnc_server_t* server);
++int vnc_server_has_input_events(vnc_server_t* server);
++int vnc_server_resize(vnc_server_t* server, int width, int height);
++void vnc_server_update_framebuffer(vnc_server_t* server, const uint8_t* data, uint32_t size);
++void vnc_server_destroy(vnc_server_t* server);
++
++/* Whether any RFB client is connected. Non-zero means a frame pushed now will actually be
++ * encoded and sent; zero means every copy on the way there is wasted. Cheap enough to ask per
++ * frame -- it is a NULL check on the client list head. */
++int vnc_server_has_clients(vnc_server_t* server);
++
++/* Publish the guest's hardware cursor.
++ *
++ * `argb` is width*height pixels of the guest's cursor resource in the same BGRX byte order as the
++ * framebuffer, with a meaningful alpha byte. LibVNCServer then serves it two ways from one call:
++ * clients that speak the Cursor pseudo-encoding draw the pointer themselves (no framebuffer
++ * traffic at all when the mouse moves), and clients that do not get it composited into the
++ * outgoing framebuffer at the position rfbDefaultPtrAddEvent has been tracking.
++ *
++ * width == 0 hides the cursor, which is how the guest disables it (UPDATE_CURSOR with
++ * resource_id 0). */
++void vnc_server_set_cursor(vnc_server_t* server, const uint8_t* argb,
++                           int width, int height, int hot_x, int hot_y);
++
++/* Where the guest thinks its pointer is.
++ *
++ * Needed because the pointer is not necessarily driven by the VNC client: the DroidVM app feeds
++ * input over its own channel, so a passive viewer sends no PointerEvents and LibVNCServer's idea
++ * of the cursor position would stay at (0,0) forever. Clients that draw the cursor themselves
++ * ignore this; clients that do not get it composited here. */
++void vnc_server_set_cursor_pos(vnc_server_t* server, int x, int y);
++
++/* Offer the guest frame and the guest's cursor to whoever is consuming frames.
++ *
++ * This is the sink's ingest point. It works out what changed since the last offer and then hands
++ * the frame to each registered consumer; compositing the cursor into an outgoing framebuffer is
++ * one consumer's job, not this function's. See vnc_frame_consumer.h.
++ *
++ * `gpu_blit_ctx`/`gpu_import_id` describe the same picture as `clean` while it is still a GPU
++ * object -- the guest dmabuf the producer imported -- for a consumer that would rather blit it
++ * than read it. NULL/0 says there is no such thing for this frame, which is the answer on the CPU
++ * transport and on every cursor-only update. They are arguments rather than state on the server
++ * because the handle is only valid for the length of this call.
++ *
++ * `clean` is the guest scanout with NO cursor in it, and stays that way -- keeping a pristine
++ * copy is what removes the need for LibVNCServer's save-under-cursor bookkeeping entirely: the
++ * area the cursor used to cover is restored by copying from `clean`, never by remembering what
++ * was underneath.
++ *
++ * full=1 for a new guest frame. full=0 for a cursor move, where not one guest pixel changed and
++ * only the pointer's old and new rectangles are in play -- that is what lets the pointer keep
++ * moving over a completely static desktop without pushing a whole frame. */
++void vnc_server_offer_frame(vnc_server_t* server, const uint8_t* clean, uint32_t clean_size,
++                            const uint8_t* cursor_argb, int cw, int ch,
++                            int cx, int cy, int visible, int full,
++                            void* gpu_blit_ctx, int64_t gpu_import_id);
++void vnc_server_set_input_event_fd(vnc_server_t* server, int fd);
++int vnc_server_poll_input_event(vnc_server_t* server, struct vnc_input_event* out);
++
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif
+diff --git a/src/crosvm/cmdline.rs b/src/crosvm/cmdline.rs
+index a2402cd..a21f6b7 100644
+--- a/src/crosvm/cmdline.rs
++++ b/src/crosvm/cmdline.rs
+@@ -111,6 +111,7 @@ use crate::crosvm::config::SimplefbConfig;
+ #[cfg(target_arch = "aarch64")]
+ use crate::crosvm::config::ToggleMode;
+ use crate::crosvm::config::TouchDeviceOption;
++use crate::crosvm::config::VncConfig;
+ use crate::crosvm::config::VhostUserFrontendOption;
+ 
+ #[derive(FromArgs)]
+@@ -2296,6 +2297,17 @@ pub struct RunCommand {
+     ///         per device.
+     pub virtio_snd: Vec<SndParameters>,
+ 
++    #[argh(option, arg_name = "[host=ADDR][,port=N][,password-file=PATH]")]
++    /// iceland gvm: serve the display (virtio-gpu scanout or
++    /// --simplefb) over VNC instead of a window; pointer and keys
++    /// reach the guest as an absolute tablet and a keyboard.
++    /// Possible key values:
++    ///     host=ADDR - listen address literal (default 127.0.0.1;
++    ///     0.0.0.0 = every address)
++    ///     port=N - TCP port (default 5900)
++    ///     password-file=PATH - VNC password (first line)
++    pub vnc_server: Option<VncConfig>,
++
+     #[argh(option, arg_name = "cid=CID[,device=VHOST_DEVICE]")]
+     /// add a vsock device. Since a guest can only have one CID,
+     /// this option can only be specified once.
+@@ -2765,6 +2777,7 @@ impl TryFrom<RunCommand> for super::config::Config {
+ 
+         cfg.display_window_keyboard = cmd.display_window_keyboard.unwrap_or_default();
+         cfg.display_window_mouse = cmd.display_window_mouse.unwrap_or_default();
++        cfg.vnc_server = cmd.vnc_server; // iceland gvm
+ 
+         cfg.swap_dir = cmd.swap_dir;
+         cfg.restore_path = cmd.restore;
+diff --git a/src/crosvm/config.rs b/src/crosvm/config.rs
+index 4a54da5..f89c9fd 100644
+--- a/src/crosvm/config.rs
++++ b/src/crosvm/config.rs
+@@ -448,6 +448,58 @@ fn validate_simplefb(sfb: &SimplefbConfig) -> Result<(), String> {
+     Ok(())
+ }
+ 
++/// iceland gvm: `--vnc-server [host=ADDR][,port=N][,password-file=PATH]`: serve the display (the
++/// virtio-gpu scanout or the --simplefb framebuffer) over VNC instead of a window. After DroidVM's
++/// `VncConfig` (dvm-crosvm 849e05f), reduced to one server. host defaults to 127.0.0.1 (DroidVM: every
++/// address): a LAN listener has to be asked for. The password is read from a file so it never shows in
++/// the process list (RFB "VNC authentication": 8 characters, DES; only for a LAN behind a firewall).
++#[derive(Clone, Debug, Serialize, Deserialize, FromKeyValues, PartialEq, Eq)]
++#[serde(deny_unknown_fields, rename_all = "kebab-case")]
++pub struct VncConfig {
++    #[serde(default = "default_vnc_host")]
++    pub host: String,
++    #[serde(default = "default_vnc_port")]
++    pub port: u16,
++    #[serde(default)]
++    pub password_file: Option<PathBuf>,
++}
++
++fn default_vnc_host() -> String {
++    "127.0.0.1".to_string()
++}
++
++fn default_vnc_port() -> u16 {
++    5900
++}
++
++impl VncConfig {
++    /// The password (first line of password-file), None without one.
++    pub fn password(&self) -> Result<Option<String>, String> {
++        match &self.password_file {
++            None => Ok(None),
++            Some(p) => {
++                let s = std::fs::read_to_string(p)
++                    .map_err(|e| format!("`vnc-server` password-file {}: {}", p.display(), e))?;
++                let line = s.lines().next().unwrap_or("").trim().to_string();
++                Ok(if line.is_empty() { None } else { Some(line) })
++            }
++        }
++    }
++}
++
++fn validate_vnc(v: &VncConfig) -> Result<(), String> {
++    if !cfg!(feature = "vnc") {
++        return Err("`vnc-server` needs a crosvm built with the vnc feature".to_string());
++    }
++    if v.host.parse::<std::net::IpAddr>().is_err() && !v.host.is_empty() {
++        return Err(format!("`vnc-server` host {} is not an IP address literal", v.host));
++    }
++    if v.port < 1024 {
++        return Err("`vnc-server` port must be 1024..65535".to_string());
++    }
++    v.password().map(|_| ())
++}
++
+ #[derive(Debug, Serialize, Deserialize, FromKeyValues)]
+ #[serde(deny_unknown_fields, rename_all = "kebab-case")]
+ pub struct BatteryConfig {
+@@ -807,6 +859,7 @@ pub struct Config {
+     #[serde(default)]
+     pub virtio_device_modules: Vec<AnyVirtioDeviceModule>,
+     pub virtio_input: Vec<InputDeviceOption>,
++    pub vnc_server: Option<VncConfig>,
+     pub wayland_socket_paths: BTreeMap<String, PathBuf>,
+     #[cfg(all(windows, feature = "gpu"))]
+     pub window_procedure_thread_split_config: Option<WindowProcedureThreadSplitConfig>,
+@@ -977,6 +1030,7 @@ impl Default for Config {
+             #[cfg(feature = "media")]
+             simple_media_device: Default::default(),
+             simplefb: None,
++            vnc_server: None,
+             #[cfg(any(feature = "slirp-ring-capture", feature = "slirp-debug"))]
+             slirp_capture_file: None,
+             #[cfg(target_arch = "x86_64")]
+@@ -1053,6 +1107,9 @@ pub fn validate_config(cfg: &mut Config) -> std::result::Result<(), String> {
+     if let Some(sfb) = &cfg.simplefb {
+         validate_simplefb(sfb)?;
+     }
++    if let Some(v) = &cfg.vnc_server {
++        validate_vnc(v)?;
++    }
+     #[cfg(feature = "gdb")]
+     if cfg.gdb.is_some() && cfg.vcpu_count.unwrap_or(1) != 1 {
+         return Err("`gdb` requires the number of vCPU to be 1".to_string());
+diff --git a/src/crosvm/sys/linux.rs b/src/crosvm/sys/linux.rs
+index bf3b640..b2189de 100644
+--- a/src/crosvm/sys/linux.rs
++++ b/src/crosvm/sys/linux.rs
+@@ -233,8 +233,11 @@ fn gvm_pointer_devices(
+     idx: u32,
+     which: &'static str,
+ ) -> DeviceResult<()> {
+-    let mode = std::env::var("CROSVM_GVM_INPUT_MODE").unwrap_or_default();
+-    if mode != "tablet" && mode != "touchpad" {
++    let mut mode = std::env::var("CROSVM_GVM_INPUT_MODE").unwrap_or_default();
++    if cfg.vnc_server.is_some() {
++        // iceland gvm: the VNC sink drives the guest with an absolute pointer (RFB pointer events)
++        mode = "vnc".to_string();
++    } else if mode != "tablet" && mode != "touchpad" {
+         return Ok(());
+     }
+     let (event_socket, virtio_socket) =
+@@ -2636,6 +2639,14 @@ fn run_vm(
+             format: sfb.format.clone(),
+             poll_hz: sfb.poll_hz,
+             wayland_socket: cfg.wayland_socket_paths.get("").cloned(),
++            vnc: match &cfg.vnc_server {
++                Some(v) => Some((
++                    v.host.clone(),
++                    v.port,
++                    v.password().map_err(|e| anyhow::anyhow!(e))?,
++                )),
++                None => None,
++            },
+         };
+         simplefb_display::start(
+             linux.vm.get_memory().clone(),
+diff --git a/src/crosvm/sys/linux/gpu.rs b/src/crosvm/sys/linux/gpu.rs
+index 3f983de..e96412f 100644
+--- a/src/crosvm/sys/linux/gpu.rs
++++ b/src/crosvm/sys/linux/gpu.rs
+@@ -146,6 +146,27 @@ pub fn create_gpu_device(
+         );
+     }
+ 
++    // iceland gvm: --vnc-server replaces every window backend with the headless VNC server (a VNC
++    // display that cannot start falls back to the stub, the VM keeps running)
++    #[cfg(feature = "vnc")]
++    if let Some(v) = &cfg.vnc_server {
++        let (width, height) = gpu_params
++            .display_params
++            .first()
++            .map(|d| d.get_virtual_display_size())
++            .unwrap_or((1280, 1024));
++        display_backends = vec![
++            virtio::DisplayBackend::Vnc {
++                host: v.host.clone(),
++                port: v.port,
++                password: v.password().map_err(|e| anyhow::anyhow!(e))?,
++                width,
++                height,
++            },
++            virtio::DisplayBackend::Stub,
++        ];
++    }
++
+     let dev = virtio::Gpu::new(
+         exit_evt_wrtube
+             .try_clone()
+diff --git a/src/crosvm/sys/linux/simplefb_display.rs b/src/crosvm/sys/linux/simplefb_display.rs
+index 6b109db..09e866f 100644
+--- a/src/crosvm/sys/linux/simplefb_display.rs
++++ b/src/crosvm/sys/linux/simplefb_display.rs
+@@ -53,6 +53,9 @@ pub struct SimplefbParams {
+     pub poll_hz: u32,
+     /// `--wayland-sock` (the unnamed one), else $WAYLAND_DISPLAY.
+     pub wayland_socket: Option<PathBuf>,
++    /// iceland gvm: `--vnc-server` (host, port, password): serve the framebuffer over VNC instead
++    /// of a window.
++    pub vnc: Option<(String, u16, Option<String>)>,
+ }
+ 
+ /// Logs the GVM-SIMPLEFB line and starts the bridge thread. The thread lives until the
+@@ -202,8 +205,14 @@ fn bridge(
+     event_devices: Vec<EventDevice>,
+     vm_evt_wrtube: &SendTube,
+ ) -> Result<()> {
+-    let mut display = GpuDisplay::open_wayland(params.wayland_socket.as_ref())
+-        .context("simplefb: failed to open the Wayland display")?;
++    let mut display = match &params.vnc {
++        Some((host, port, password)) => {
++            GpuDisplay::open_vnc(host, *port, params.width, params.height, password.as_deref())
++                .context("simplefb: failed to start the VNC server")?
++        }
++        None => GpuDisplay::open_wayland(params.wayland_socket.as_ref())
++            .context("simplefb: failed to open the Wayland display")?,
++    };
+     for dev in event_devices {
+         display
+             .import_event_device(dev)
+-- 
+2.43.0
+

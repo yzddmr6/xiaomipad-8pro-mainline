@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mzak <mzak.amin@gmail.com>
+Date: Mon, 26 Oct 2026 11:28:28 +0300
+Subject: [PATCH 28/30] gunyah: iceland gvm: request the RM-RPC queue in the
+ shared memory mode too (pvm51)
+
+pvm51: the boot shim found /hypervisor with doorbells, the shared-memory and the VM-id nodes, but no resource-manager
+node, so it could not accept its RAM window. That node comes from the vm-config rm-rpc vdevice, which crosvm only
+requested with CROSVM_GVM_ACCEPT=1 (the 3D display's GuestAccept). It is now requested whenever the protection type
+shares the guest RAM.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Signed-off-by: mzak <mzak.amin@gmail.com>
+---
+ hypervisor/src/gunyah/aarch64.rs | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/hypervisor/src/gunyah/aarch64.rs b/hypervisor/src/gunyah/aarch64.rs
+index 3b271a5..7abc260 100644
+--- a/hypervisor/src/gunyah/aarch64.rs
++++ b/hypervisor/src/gunyah/aarch64.rs
+@@ -145,7 +145,13 @@ impl VmAArch64 for GunyahVm {
+             bell_node.set_prop("interrupts", &interrupts)?;
+         }
+ 
+-        if self.protected && super::gvm_accept::accept_enabled_by_env() {
++        // pvm51: the shared memory mode's boot shim accepts the RAM window over the same RM-RPC queue, so the
++        // node must exist in that mode too (the shim found /hypervisor with doorbells but no RM node: no rm-rpc
++        // vdevice had been requested, because CROSVM_GVM_ACCEPT was only set for the 3D display).
++        if self.protected
++            && (super::gvm_accept::accept_enabled_by_env()
++                || self.hv_cfg.protection_type.shares_guest_ram())
++        {
+             // iceland gvm: ask the RM for an RM-RPC msgq pair; it generates
+             // /hypervisor/qcom,resource-mgr (compatible "gunyah-resource-manager",
+             // reg = <tx_capid rx_capid>) for the guest's MEM_ACCEPT / MEM_RELEASE.
+-- 
+2.43.0
+

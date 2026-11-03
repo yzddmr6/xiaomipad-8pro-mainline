@@ -1,0 +1,127 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: iceland <iceland@localhost>
+Date: Sat, 24 Oct 2026 10:27:19 +0300
+Subject: [PATCH 05/30] gpu: iceland gvm: SET-SCANOUT / FLUSH-OFFSCREEN notes,
+ dump cadence (CROSVM_GVM_DUMP_EVERY / _MAX) and a dump on every scanout
+ resource change
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ devices/src/virtio/gpu/gvm_scanout.rs | 31 +++++++++++++++++++++++++--
+ devices/src/virtio/gpu/virtio_gpu.rs  | 29 +++++++++++++++++++++++++
+ 2 files changed, 58 insertions(+), 2 deletions(-)
+
+diff --git a/devices/src/virtio/gpu/gvm_scanout.rs b/devices/src/virtio/gpu/gvm_scanout.rs
+index 38ad296..11f14ff 100755
+--- a/devices/src/virtio/gpu/gvm_scanout.rs
++++ b/devices/src/virtio/gpu/gvm_scanout.rs
+@@ -66,8 +66,32 @@ fn dump_dir() -> Option<&'static str> {
+         .as_deref()
+ }
+ 
++/// CROSVM_GVM_DUMP_EVERY (seconds, default 5) / CROSVM_GVM_DUMP_MAX (default 5): dump cadence; a scanout
++/// resource change always dumps (vm-run 24 Oct: 5 dumps in the first 25 s only saw the boot console).
++fn dump_cfg() -> (u64, u32) {
++    static CFG: OnceLock<(u64, u32)> = OnceLock::new();
++    *CFG.get_or_init(|| {
++        let n = |k: &str, d: u64| std::env::var(k).ok().and_then(|v| v.parse::<u64>().ok()).unwrap_or(d);
++        (n("CROSVM_GVM_DUMP_EVERY", 5).max(1), n("CROSVM_GVM_DUMP_MAX", 5) as u32)
++    })
++}
++
++/// One warn line per event kind and resource (at most 64 lines): which resources the guest flushes and
++/// which one a scanout shows.
++pub fn note(kind: &str, resource_id: u32, text: &str) {
++    STATE.with(|s| {
++        let mut s = s.borrow_mut();
++        if s.notes.len() < 64 && s.notes.insert((kind.to_string(), resource_id)) {
++            warn!("GVM-{} res={} {}", kind, resource_id, text);
++        }
++    })
++}
++
+ #[derive(Default)]
+ struct State {
++    /// (event kind, resource id) already logged by note()
++    notes: std::collections::BTreeSet<(String, u32)>,
++    last_dump_res: u32,
+     /// resource id -> guest backing (host address, length) as attached by the guest
+     backing: Map<u32, Vec<(usize, usize)>>,
+     /// resource id -> the source that last gave a non-black frame (auto mode)
+@@ -362,9 +386,11 @@ pub fn fill(
+         let want = read_mode();
+ 
+         // statistics of every source, every 5 s, at most 5 times
++        let (every, max) = dump_cfg();
+         let dump = dump_dir().is_some()
+-            && st.dumps < 5
+-            && st.last_dump.is_none_or(|t| t.elapsed() >= Duration::from_secs(5));
++            && st.dumps < max
++            && (st.last_dump_res != resource_id
++                || st.last_dump.is_none_or(|t| t.elapsed() >= Duration::from_secs(every)));
+         if dump {
+             let mut line = format!(
+                 "GVM-FRAME {} res={} {}x{} blob={} backing={} {} flush#{}",
+@@ -469,6 +495,7 @@ pub fn fill(
+             }
+             st.dumps += 1;
+             st.last_dump = Some(Instant::now());
++            st.last_dump_res = resource_id;
+         }
+         used
+     })
+diff --git a/devices/src/virtio/gpu/virtio_gpu.rs b/devices/src/virtio/gpu/virtio_gpu.rs
+index 3ebcc7f..d1d8466 100644
+--- a/devices/src/virtio/gpu/virtio_gpu.rs
++++ b/devices/src/virtio/gpu/virtio_gpu.rs
+@@ -844,11 +844,26 @@ impl VirtioGpu {
+             None => return Ok(OkNoData),
+         };
+ 
++        let mut shown = false;
+         for scanout in self.scanouts.values_mut() {
+             if scanout.resource_id == resource_id {
++                shown = true;
+                 scanout.flush(&self.display, resource, &mut self.rutabaga)?;
+             }
+         }
++        if !shown && self.cursor_scanout.resource_id != resource_id {
++            // iceland gvm: a flushed resource that no scanout shows (the guest draws somewhere else)
++            let on: Vec<String> = self
++                .scanouts
++                .values()
++                .map(|s| s.resource_id.map_or("none".to_string(), |r| r.to_string()))
++                .collect();
++            super::gvm_scanout::note(
++                "FLUSH-OFFSCREEN",
++                resource_id.map_or(0, |r| r.get()),
++                &format!("is flushed but not on a scanout (scanouts show {})", on.join(",")),
++            );
++        }
+         if self.cursor_scanout.resource_id == resource_id {
+             self.cursor_scanout
+                 .flush(&self.display, resource, &mut self.rutabaga)?;
+@@ -1433,6 +1448,20 @@ impl VirtioGpu {
+             .get_mut(&resource_id)
+             .ok_or(ErrInvalidResourceId)?;
+ 
++        if let SurfaceType::Scanout = scanout_type {
++            // iceland gvm: which resource each scanout shows (Xorg / a compositor may switch it)
++            super::gvm_scanout::note(
++                "SET-SCANOUT",
++                resource_id,
++                &format!(
++                    "scanout {} blob={} rect={:?}",
++                    scanout_id,
++                    scanout_data.is_some() as u8,
++                    scanout_rect.as_ref().map(|r| (r.x.to_native(), r.y.to_native(), r.width.to_native(), r.height.to_native()))
++                ),
++            );
++        }
++
+         // Ensure scanout has a display surface.
+         match scanout_type {
+             SurfaceType::Cursor => {
+-- 
+2.43.0
+

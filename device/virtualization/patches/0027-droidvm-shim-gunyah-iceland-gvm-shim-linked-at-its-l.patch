@@ -1,0 +1,403 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mzak <mzak.amin@gmail.com>
+Date: Mon, 26 Oct 2026 10:47:56 +0300
+Subject: [PATCH 27/30] droidvm-shim + gunyah: iceland gvm: shim linked at its
+ load address, SHIM[n] step markers, GVM-PAGE-FAULT (pvm49)
+
+pvm49 (0.3-49): crosvm logged "unknown gh exit reason: 3" (GUNYAH_VCPU_EXIT_PAGE_FAULT) right after the shim's
+device-tree line and the VM died silently. The shim was linked at 0 and run at 0x80000000; the table of compatible
+strings added in 0.3-45 put absolute pointers (0x39fc...) into .rodata, so the first lookup read near address 0,
+which no binding backs. The shim is now linked at 0x80000000 (shim_abi SHIM_LINK_BASE, crosvm refuses another
+base; the shim build fails on pointer-like words below the base), looks the compatibles up one literal at a time,
+and prints a numbered SHIM[n] line before / after every step (entry pc and dtb, DT parse, each RM lookup, capids,
+every drained message, accept, /memory rewrite, jump). crosvm logs GVM-PAGE-FAULT gpa / attempt for exit 3 and,
+with CROSVM_GVM_FAULT_INJECT=1, resumes with the fault so the guest's own vector reports it.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Signed-off-by: mzak <mzak.amin@gmail.com>
+---
+ aarch64/src/lib.rs                |   3 ++
+ droidvm-shim/shim.ld              |   4 +-
+ droidvm-shim/src/main.rs          |  84 ++++++++++++++++++++++++------
+ droidvm-shim/src/rm.rs            |   1 +
+ hypervisor/src/gunyah/mod.rs      |  21 ++++++++
+ hypervisor/src/gunyah/shim.bin    | Bin 15653 -> 16945 bytes
+ hypervisor/src/gunyah/shim_abi.rs |   2 +
+ 7 files changed, 97 insertions(+), 18 deletions(-)
+
+diff --git a/aarch64/src/lib.rs b/aarch64/src/lib.rs
+index 885078c..42f759b 100644
+--- a/aarch64/src/lib.rs
++++ b/aarch64/src/lib.rs
+@@ -468,6 +468,9 @@ fn load_shim(
+ ) -> std::result::Result<(), Error> {
+     use shim_abi as abi;
+ 
++    if at.offset() != abi::SHIM_LINK_BASE {
++        return Err(Error::ShimBadImage(at.offset()));
++    }
+     let built_magic = SHIM_IMAGE
+         .get(abi::SHIM_HEADER_OFFSET..abi::SHIM_HEADER_OFFSET + 8)
+         .map(|b| u64::from_le_bytes(b.try_into().unwrap()))
+diff --git a/droidvm-shim/shim.ld b/droidvm-shim/shim.ld
+index 0050fa4..e2d77a3 100644
+--- a/droidvm-shim/shim.ld
++++ b/droidvm-shim/shim.ld
+@@ -12,7 +12,9 @@ ENTRY(_start)
+ 
+ SECTIONS
+ {
+-	. = 0;
++	/* pvm49: linked at the address crosvm loads it to (AARCH64_PHYS_MEM_START), so an absolute pointer the compiler
++	 * emits (a table of &str, a vtable) points into the image instead of near zero; crosvm refuses any other base. */
++	. = 0x80000000;
+ 
+ 	.head : { KEEP(*(.head)) }
+ 	.text : { *(.text*) }
+diff --git a/droidvm-shim/src/main.rs b/droidvm-shim/src/main.rs
+index 41a05d3..87a18e7 100644
+--- a/droidvm-shim/src/main.rs
++++ b/droidvm-shim/src/main.rs
+@@ -145,6 +145,36 @@ fn die(err: u64, text: &str) -> ! {
+     hang()
+ }
+ 
++/// pvm49: one line per message-queue receive during the drain (error code and size).
++pub(crate) fn drain_trace(n: u32, err: u64, got: u64) {
++    uart_str("SHIM[22] rm: drain recv ");
++    uart_hex(n as u64);
++    uart_str(" err=");
++    uart_hex(err);
++    uart_str(" size=");
++    uart_hex(got);
++    uart_str("\r\n");
++}
++
++/// pvm49: a numbered marker before / after every step, so the last line on the console says exactly where the
++/// shim stopped (the output is the only trace: the shim runs before any console driver).
++fn step(n: u64, text: &str) {
++    uart_str("SHIM[");
++    uart_hex(n);
++    uart_str("] ");
++    uart_str(text);
++    uart_str("\r\n");
++}
++
++fn step_v(n: u64, text: &str, v: u64) {
++    uart_str("SHIM[");
++    uart_hex(n);
++    uart_str("] ");
++    uart_str(text);
++    uart_hex(v);
++    uart_str("\r\n");
++}
++
+ fn hang() -> ! {
+     loop {
+         // SAFETY: wfi is a hint; there is nothing left to do and nobody to wake us.
+@@ -164,6 +194,13 @@ fn panic(_info: &PanicInfo) -> ! {
+ #[no_mangle]
+ pub extern "C" fn shim_main(dtb: *mut u8) -> u64 {
+     // SAFETY: the header lives in our own image, patched by crosvm before the VM started.
++    // pvm49: where we run and what the hypervisor passed, before anything else can go wrong
++    let pc: u64;
++    // SAFETY: reads the address of this instruction; no memory access.
++    unsafe { core::arch::asm!("adr {}, .", out(reg) pc, options(nomem, nostack)) };
++    uart_str("\r\n");
++    step_v(0x01, "entry pc=", pc);
++    step_v(0x02, "dtb=", dtb as u64);
+     let hdr = unsafe { ptr::read_volatile(ptr::addr_of!(shim_header)) };
+     if hdr.magic != SHIM_HEADER_MAGIC || hdr.version != SHIM_ABI_VERSION {
+         // Nothing to complain into: the handoff address is in the header we just failed to trust.
+@@ -189,6 +226,7 @@ pub extern "C" fn shim_main(dtb: *mut u8) -> u64 {
+     }
+     h.status = SHIM_STATUS_RUNNING;
+     handoff_sync();
++    step(0x03, "header + handoff ok, waiting for ready");
+ 
+     if hdr.payload == 0 {
+         die(0, "no payload address in the header")
+@@ -229,6 +267,7 @@ pub extern "C" fn shim_main(dtb: *mut u8) -> u64 {
+         // off, so its loads bypass the caches: without cleaning the tree's lines to the point of
+         // coherency first, the shim reads the tree as crosvm wrote it, before the RM touched it
+         // (p6: "no gunyah-resource-manager node", while Linux, reading cacheably, finds it).
++        step(0x10, "dt: clean header lines");
+         cache_flush(dtb as u64, 64);
+         let blob = unsafe {
+             let len = match fdt_total_size(dtb) {
+@@ -247,22 +286,25 @@ pub extern "C" fn shim_main(dtb: *mut u8) -> u64 {
+             Ok(t) => t,
+             Err(_) => die(0, "the device tree header did not parse"),
+         };
++        step(0x11, "dt: parsed");
+         // iceland gvm (p7): the guest kernel finds "gunyah-resource-manager", but the shim did not
+         // (error 5, /hypervisor present). Try the Qualcomm compatibles too, and if none matches print
+         // the whole /hypervisor subtree (names + compatibles) so the next run says what is there.
+-        let found = ["gunyah-resource-manager", "qcom,resource-manager-1-0", "qcom,resource-manager"]
+-            .iter()
+-            .find_map(|c| {
+-                let hit = tree.find_prop(fdt::Match::Compatible(c), "reg").ok()?;
+-                // fix run: the shim went silent right after this point; say which node it took
+-                uart_str("SHIM: rm node by ");
+-                uart_str(c);
+-                uart_str(" reg len ");
+-                uart_hex(hit.1 as u64);
+-                uart_str("
+-");
+-                Some(hit)
+-            });
++        // One literal per call, never a table: the shim is a flat image and a table of &str would hold
++        // absolute pointers (pvm49: the old table pointed at the link address and faulted the VM).
++        step(0x12, "rm: look up gunyah-resource-manager");
++        let mut found = tree.find_prop(fdt::Match::Compatible("gunyah-resource-manager"), "reg").ok();
++        if found.is_none() {
++            step(0x13, "rm: look up qcom,resource-manager-1-0");
++            found = tree.find_prop(fdt::Match::Compatible("qcom,resource-manager-1-0"), "reg").ok();
++        }
++        if found.is_none() {
++            step(0x14, "rm: look up qcom,resource-manager");
++            found = tree.find_prop(fdt::Match::Compatible("qcom,resource-manager"), "reg").ok();
++        }
++        if let Some(hit) = found {
++            step_v(0x15, "rm: node found, reg len ", hit.1 as u64);
++        }
+         let (at, len) = match found.ok_or(fdt::Error::NotFound) {
+             Ok(hit) => hit,
+             Err(e) => {
+@@ -303,11 +345,15 @@ pub extern "C" fn shim_main(dtb: *mut u8) -> u64 {
+         uart_hex(tx);
+         uart_str(" rx ");
+         uart_hex(rx);
+-        uart_str(", draining
+-");
++        uart_str(", draining\r\n");
++        step_v(0x16, "rm: tx capid ", tx);
++        step_v(0x17, "rm: rx capid ", rx);
+         let mut rm = rm::Rm::new(tx, rx);
++        step(0x20, "rm: drain the queue");
++        let drained = rm.drain();
++        step_v(0x21, "rm: drained messages ", drained as u64);
+         uart_str("SHIM: queue had ");
+-        uart_hex(rm.drain() as u64);
++        uart_hex(drained as u64);
+         uart_str(" stale messages\r\n");
+ 
+         uart_str("SHIM: rm tx ");
+@@ -325,8 +371,9 @@ pub extern "C" fn shim_main(dtb: *mut u8) -> u64 {
+             uart_str(" size ");
+             uart_hex(p.size);
+             uart_str("\r\n");
++            step_v(0x30, "accept: send MEM_ACCEPT for handle ", p.handle as u64);
+             match rm.mem_accept(p.handle, p.base, p.size) {
+-                Ok(()) => {}
++                Ok(()) => step(0x31, "accept: ok"),
+                 Err(rm::Error::Refused(code)) => {
+                     h.error = code as u64;
+                     die(code as u64, "the resource manager refused MEM_ACCEPT")
+@@ -379,11 +426,13 @@ pub extern "C" fn shim_main(dtb: *mut u8) -> u64 {
+                 }
+                 total += h.parcel[i].size;
+             }
++            step(0x40, "dt: rewrite /memory");
+             if tree.set_memory_window(h.parcel[0].base, total).is_err() {
+                 die(0, "could not point /memory at the window")
+             }
+             // The tree was written with the MMU off; leave no stale line for Linux to read.
+             cache_flush(dtb as u64, tree.len());
++            step(0x41, "dt: /memory rewritten");
+             h.status = SHIM_STATUS_DT_DONE;
+             uart_str("SHIM: /memory now ");
+             uart_hex(h.parcel[0].base);
+@@ -393,6 +442,7 @@ pub extern "C" fn shim_main(dtb: *mut u8) -> u64 {
+         }
+     }
+ 
++    step_v(0x50, "jump to ", hdr.payload);
+     h.status = SHIM_STATUS_JUMPING;
+     handoff_sync();
+     uart_str("SHIM: jumping to ");
+diff --git a/droidvm-shim/src/rm.rs b/droidvm-shim/src/rm.rs
+index cf057e9..25e724b 100644
+--- a/droidvm-shim/src/rm.rs
++++ b/droidvm-shim/src/rm.rs
+@@ -126,6 +126,7 @@ impl Rm {
+                 )
+             };
+             cache_flush(self.rxbuf.as_ptr() as u64, self.rxbuf.len());
++            crate::drain_trace(n, err, got);
+             if err != GH_ERROR_OK || got == 0 {
+                 return n;
+             }
+diff --git a/hypervisor/src/gunyah/mod.rs b/hypervisor/src/gunyah/mod.rs
+index 67412e0..f835b42 100644
+--- a/hypervisor/src/gunyah/mod.rs
++++ b/hypervisor/src/gunyah/mod.rs
+@@ -1326,6 +1326,27 @@ impl Vcpu for GunyahVcpu {
+                     }
+                 }
+             }
++            // iceland gvm (pvm49): GUNYAH_VCPU_EXIT_PAGE_FAULT - a guest access the host kernel could not back
++            // (page_fault.attempt = its error). Say where; with CROSVM_GVM_FAULT_INJECT=1 resume with the
++            // fault (the kernel set resume_action = FAULT), so the guest takes an abort its own vector reports,
++            // instead of the VM dying silently. Default: the VM stops as before.
++            3 => {
++                // SAFETY: the union starts right after exit_reason; page_fault = { u64 phys_addr; i32 attempt;
++                // u8 resume_action } (include/uapi/linux/gunyah.h), inside the mapped run page.
++                let base = &run.__bindgen_anon_1 as *const _ as *const u8;
++                let (gpa, attempt) = unsafe {
++                    (
++                        std::ptr::read_unaligned(base as *const u64),
++                        std::ptr::read_unaligned(base.add(8) as *const i32),
++                    )
++                };
++                error!("GVM-PAGE-FAULT gpa={:#x} attempt={} (host could not back this guest access)", gpa, attempt);
++                if std::env::var("CROSVM_GVM_FAULT_INJECT").is_ok_and(|v| v == "1") {
++                    Ok(VcpuExit::IrqWindowOpen)
++                } else {
++                    Err(Error::new(EINVAL))
++                }
++            }
+             r => {
+                 warn!("unknown gh exit reason: {}", r);
+                 Err(Error::new(EINVAL))
+diff --git a/hypervisor/src/gunyah/shim.bin b/hypervisor/src/gunyah/shim.bin
+index ef212fa65aebe8898477fa1ea16e980aa3190e13..7b20c0b4c3abeb79f60956cf9f76c57cec36b20e 100755
+GIT binary patch
+delta 4841
+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
+
+delta 3689
+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
+QpIBBAjZk=ai|{G)fBd;xcmMzZ
+
+diff --git a/hypervisor/src/gunyah/shim_abi.rs b/hypervisor/src/gunyah/shim_abi.rs
+index dee3b2d..843ab19 100644
+--- a/hypervisor/src/gunyah/shim_abi.rs
++++ b/hypervisor/src/gunyah/shim_abi.rs
+@@ -28,6 +28,8 @@ pub const SHIM_HEADER_MAGIC: u64 = 0x4d53_4856_554d_5644;
+ /// "MVSHANDO", little-endian.
+ pub const SHIM_HANDOFF_MAGIC: u64 = 0x4f44_4e41_4853_564d;
+ pub const SHIM_ABI_VERSION: u32 = 1;
++/// The address the shim image is linked at (and crosvm must load it at): AARCH64_PHYS_MEM_START.
++pub const SHIM_LINK_BASE: u64 = 0x8000_0000;
+ 
+ /// The most parcels one window may be shared as. A window is one parcel unless something forces
+ /// it to be split, so this is headroom rather than a target: every parcel costs one of the 1024
+-- 
+2.43.0
+

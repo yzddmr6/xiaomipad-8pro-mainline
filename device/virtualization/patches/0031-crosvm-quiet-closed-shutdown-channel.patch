@@ -1,0 +1,37 @@
+Subject: [PATCH] crosvm: log closed VCPU shutdown channels at debug level
+
+Keep non-shutdown send errors and join errors visible. No VM control or
+shutdown ordering changes. Applies after the iceland-gvm queue.
+
+--- a/src/crosvm/sys/linux/vcpu.rs
++++ b/src/crosvm/sys/linux/vcpu.rs
+@@ -651,7 +651,13 @@
+ ) {
+     for (handle, tube) in vcpu_handles {
+         if let Err(e) = tube.send(message.clone()) {
+-            error!("failed to send VcpuControl: {}", e);
++            // A VCPU may already have dropped its receiver during VM shutdown.
++            // Other control delivery failures remain errors.
++            if matches!(&e.0, VcpuControl::RunState(VmRunMode::Exiting)) {
++                debug!("VCPU control receiver already closed during shutdown: {}", e);
++            } else {
++                error!("failed to send VcpuControl: {}", e);
++            }
+         }
+         let _ = handle.kill(SIGRTMIN() + 0);
+     }
+@@ -669,7 +675,13 @@
+ ) {
+     if let Some((handle, tube)) = vcpu_handle {
+         if let Err(e) = tube.send(message) {
+-            error!("failed to send VcpuControl: {}", e);
++            // A VCPU may already have dropped its receiver during VM shutdown.
++            // Other control delivery failures remain errors.
++            if matches!(&e.0, VcpuControl::RunState(VmRunMode::Exiting)) {
++                debug!("VCPU control receiver already closed during shutdown: {}", e);
++            } else {
++                error!("failed to send VcpuControl: {}", e);
++            }
+         }
+         let _ = handle.kill(SIGRTMIN() + 0);
+     }

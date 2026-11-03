@@ -1,0 +1,321 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: iceland <iceland@localhost>
+Date: Sat, 24 Oct 2026 05:36:10 +0300
+Subject: [PATCH 04/30] gpu_display: iceland gvm: server-side frame on KWin,
+ window close reported instead of a hard VM exit
+
+Bind zxdg_decoration_manager_v1 when the compositor offers it (KWin; Mutter
+does not) and ask for a server-side frame so the crosvm window gets a title
+bar on Plasma (CROSVM_GVM_NO_SSD=1 disables it). A compositor close request
+now prints GVM-WINDOW-CLOSE instead of exiting the VM without a guest
+shutdown; the iceland-vms supervisor shuts the guest down cleanly.
+CROSVM_GVM_CLOSE=exit restores the upstream behaviour.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ gpu_display/build.rs                          |   1 +
+ .../protocol/xdg-decoration-unstable-v1.xml   | 176 ++++++++++++++++++
+ gpu_display/src/display_wl.c                  |  36 +++-
+ 3 files changed, 212 insertions(+), 1 deletion(-)
+ create mode 100644 gpu_display/protocol/xdg-decoration-unstable-v1.xml
+
+diff --git a/gpu_display/build.rs b/gpu_display/build.rs
+index 3a0e30e..ecbce4e 100644
+--- a/gpu_display/build.rs
++++ b/gpu_display/build.rs
+@@ -94,6 +94,7 @@ fn build_wayland() {
+         "xdg-shell",
+         "viewporter",
+         "virtio-gpu-metadata-v1",
++        "xdg-decoration-unstable-v1",
+     ] {
+         build.file(compile_protocol(protocol, &out_dir));
+     }
+diff --git a/gpu_display/protocol/xdg-decoration-unstable-v1.xml b/gpu_display/protocol/xdg-decoration-unstable-v1.xml
+new file mode 100644
+index 0000000..023589a
+--- /dev/null
++++ b/gpu_display/protocol/xdg-decoration-unstable-v1.xml
+@@ -0,0 +1,176 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<protocol name="xdg_decoration_unstable_v1">
++  <copyright>
++    Copyright © 2018 Simon Ser
++
++    Permission is hereby granted, free of charge, to any person obtaining a
++    copy of this software and associated documentation files (the "Software"),
++    to deal in the Software without restriction, including without limitation
++    the rights to use, copy, modify, merge, publish, distribute, sublicense,
++    and/or sell copies of the Software, and to permit persons to whom the
++    Software is furnished to do so, subject to the following conditions:
++
++    The above copyright notice and this permission notice (including the next
++    paragraph) shall be included in all copies or substantial portions of the
++    Software.
++
++    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++    DEALINGS IN THE SOFTWARE.
++  </copyright>
++
++  <interface name="zxdg_decoration_manager_v1" version="2">
++    <description summary="window decoration manager">
++      This interface allows a compositor to announce support for server-side
++      decorations.
++
++      A window decoration is a set of window controls as deemed appropriate by
++      the party managing them, such as user interface components used to move,
++      resize and change a window's state.
++
++      A client can use this protocol to request being decorated by a supporting
++      compositor.
++
++      If compositor and client do not negotiate the use of a server-side
++      decoration using this protocol, clients continue to self-decorate as they
++      see fit.
++
++      Warning! The protocol described in this file is experimental and
++      backward incompatible changes may be made. Backward compatible changes
++      may be added together with the corresponding interface version bump.
++      Backward incompatible changes are done by bumping the version number in
++      the protocol and interface names and resetting the interface version.
++      Once the protocol is to be declared stable, the 'z' prefix and the
++      version number in the protocol and interface names are removed and the
++      interface version number is reset.
++    </description>
++
++    <request name="destroy" type="destructor">
++      <description summary="destroy the decoration manager object">
++        Destroy the decoration manager. This doesn't destroy objects created
++        with the manager.
++      </description>
++    </request>
++
++    <request name="get_toplevel_decoration">
++      <description summary="create a new toplevel decoration object">
++        Create a new decoration object associated with the given toplevel.
++
++        For objects of version 1, creating an xdg_toplevel_decoration from an
++        xdg_toplevel which has a buffer attached or committed is a client
++        error, and any attempts by a client to attach or manipulate a buffer
++        prior to the first xdg_toplevel_decoration.configure event must also be
++        treated as errors.
++
++        For objects of version 2 or newer, creating an xdg_toplevel_decoration
++        from an xdg_toplevel which has a buffer attached or committed is
++        allowed. The initial decoration mode of the surface if a buffer is
++        already attached depends on whether a xdg_toplevel_decoration object
++        has been associated with the surface or not prior to this request.
++
++        If an xdg_toplevel_decoration was associated with the surface, then
++        destroyed without a surface commit, the previous decoration mode is
++        retained.
++
++        If no xdg_toplevel_decoration was associated with the surface prior to
++        this request, or if a surface commit has been performed after a previous
++        xdg_toplevel_decoration object associated with the surface was
++        destroyed, the decoration mode is assumed to be client-side.
++      </description>
++      <arg name="id" type="new_id" interface="zxdg_toplevel_decoration_v1"/>
++      <arg name="toplevel" type="object" interface="xdg_toplevel"/>
++    </request>
++  </interface>
++
++  <interface name="zxdg_toplevel_decoration_v1" version="2">
++    <description summary="decoration object for a toplevel surface">
++      The decoration object allows the compositor to toggle server-side window
++      decorations for a toplevel surface. The client can request to switch to
++      another mode.
++
++      The xdg_toplevel_decoration object must be destroyed before its
++      xdg_toplevel.
++    </description>
++
++    <enum name="error">
++      <entry name="unconfigured_buffer" value="0"
++        summary="xdg_toplevel has a buffer attached before configure"/>
++      <entry name="already_constructed" value="1"
++        summary="xdg_toplevel already has a decoration object"/>
++      <entry name="orphaned" value="2"
++        summary="xdg_toplevel destroyed before the decoration object"/>
++      <entry name="invalid_mode" value="3" summary="invalid mode"/>
++    </enum>
++
++    <request name="destroy" type="destructor">
++      <description summary="destroy the decoration object">
++        Switch back to a mode without any server-side decorations at the next
++        commit, unless a new xdg_toplevel_decoration is created for the surface
++        first.
++      </description>
++    </request>
++
++    <enum name="mode">
++      <description summary="window decoration modes">
++        These values describe window decoration modes.
++      </description>
++      <entry name="client_side" value="1"
++        summary="no server-side window decoration"/>
++      <entry name="server_side" value="2"
++        summary="server-side window decoration"/>
++    </enum>
++
++    <request name="set_mode">
++      <description summary="set the decoration mode">
++        Set the toplevel surface decoration mode. This informs the compositor
++        that the client prefers the provided decoration mode.
++
++        After requesting a decoration mode, the compositor will respond by
++        emitting an xdg_surface.configure event. The client should then update
++        its content, drawing it without decorations if the received mode is
++        server-side decorations. The client must also acknowledge the configure
++        when committing the new content (see xdg_surface.ack_configure).
++
++        The compositor can decide not to use the client's mode and enforce a
++        different mode instead.
++
++        Clients whose decoration mode depend on the xdg_toplevel state may send
++        a set_mode request in response to an xdg_surface.configure event and wait
++        for the next xdg_surface.configure event to prevent unwanted state.
++        Such clients are responsible for preventing configure loops and must
++        make sure not to send multiple successive set_mode requests with the
++        same decoration mode.
++
++        If an invalid mode is supplied by the client, the invalid_mode protocol
++        error is raised by the compositor.
++      </description>
++      <arg name="mode" type="uint" enum="mode" summary="the decoration mode"/>
++    </request>
++
++    <request name="unset_mode">
++      <description summary="unset the decoration mode">
++        Unset the toplevel surface decoration mode. This informs the compositor
++        that the client doesn't prefer a particular decoration mode.
++
++        This request has the same semantics as set_mode.
++      </description>
++    </request>
++
++    <event name="configure">
++      <description summary="notify a decoration mode change">
++        The configure event configures the effective decoration mode. The
++        configured state should not be applied immediately. Clients must send an
++        ack_configure in response to this event. See xdg_surface.configure and
++        xdg_surface.ack_configure for details.
++
++        A configure event can be sent at any time. The specified mode must be
++        obeyed by the client.
++      </description>
++      <arg name="mode" type="uint" enum="mode" summary="the decoration mode"/>
++    </event>
++  </interface>
++</protocol>
+diff --git a/gpu_display/src/display_wl.c b/gpu_display/src/display_wl.c
+index 637fd6d..69c2643 100644
+--- a/gpu_display/src/display_wl.c
++++ b/gpu_display/src/display_wl.c
+@@ -8,6 +8,7 @@
+ #include <stdint.h>
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <string.h>
+ 
+ #include <errno.h>
+ #include <fcntl.h>
+@@ -24,6 +25,7 @@
+ #include "viewporter.h"
+ #include "xdg-shell.h"
+ #include "virtio-gpu-metadata-v1.h"
++#include "xdg-decoration-unstable-v1.h"
+ #include <wayland-client-core.h>
+ #include <wayland-client-protocol.h>
+ #include <wayland-client.h>
+@@ -72,6 +74,7 @@ struct interfaces {
+ 	struct xdg_wm_base *xdg_wm_base;
+ 	struct wp_viewporter *viewporter; // optional
+ 	struct wp_virtio_gpu_metadata_v1 *virtio_gpu_metadata; // optional
++	struct zxdg_decoration_manager_v1 *decoration_manager; /* iceland gvm: KWin server-side frame */
+ };
+ 
+ struct output {
+@@ -132,6 +135,7 @@ struct dwl_surface {
+ 	struct zaura_surface *aura;
+ 	struct xdg_surface *xdg_surface;
+ 	struct xdg_toplevel *xdg_toplevel;
++	struct zxdg_toplevel_decoration_v1 *decoration;
+ 	struct wp_viewport *viewport;
+ 	struct wp_virtio_gpu_surface_metadata_v1 *virtio_gpu_surface_metadata;
+ 	struct wl_subsurface *subsurface;
+@@ -619,6 +623,11 @@ static void registry_global(void *data, struct wl_registry *registry,
+ 	} else if (strcmp(interface, "wp_viewporter") == 0) {
+ 		ifaces->viewporter = (struct wp_viewporter *)wl_registry_bind(
+ 		    registry, id, &wp_viewporter_interface, 1);
++	} else if (strcmp(interface, zxdg_decoration_manager_v1_interface.name) == 0) {
++		/* iceland gvm: KWin (Plasma) draws a title bar / close button when asked;
++		 * Mutter does not offer this global, so GNOME is unchanged. */
++		ifaces->decoration_manager = (struct zxdg_decoration_manager_v1 *)wl_registry_bind(
++		    registry, id, &zxdg_decoration_manager_v1_interface, 1);
+ 	} else if (strcmp(interface, "wp_virtio_gpu_metadata_v1") == 0) {
+ 		ifaces->virtio_gpu_metadata =
+ 			(struct wp_virtio_gpu_metadata_v1 *)wl_registry_bind(
+@@ -665,7 +674,18 @@ static void toplevel_close(void *data,
+ {
+ 	(void)xdg_toplevel;
+ 	struct dwl_surface *surface = (struct dwl_surface *)data;
+-	surface->close_requested = true;
++	/* iceland gvm: upstream turns a window close into a hard VM exit (no guest
++	 * shutdown). KWin's title-bar close button makes that one tap away, so by
++	 * default only report it: the iceland-vms supervisor sees this line and
++	 * shuts the guest down cleanly through its agent. CROSVM_GVM_CLOSE=exit
++	 * restores the upstream behaviour. */
++	const char *mode = getenv("CROSVM_GVM_CLOSE");
++	if (mode && strcmp(mode, "exit") == 0) {
++		surface->close_requested = true;
++		return;
++	}
++	fprintf(stderr, "GVM-WINDOW-CLOSE requested by the compositor\n");
++	fflush(stderr);
+ }
+ 
+ static const struct xdg_toplevel_listener toplevel_listener = {
+@@ -1095,6 +1115,16 @@ struct dwl_surface *dwl_context_surface_new(struct dwl_context *self,
+ 		xdg_toplevel_set_app_id(disp_surface->xdg_toplevel, app_id && *app_id ? app_id : "crosvm");
+ 		xdg_toplevel_add_listener(disp_surface->xdg_toplevel,
+ 					      &toplevel_listener, disp_surface);
++		if (self->ifaces.decoration_manager &&
++		    !(getenv("CROSVM_GVM_NO_SSD") && *getenv("CROSVM_GVM_NO_SSD"))) {
++			disp_surface->decoration =
++			    zxdg_decoration_manager_v1_get_toplevel_decoration(
++				self->ifaces.decoration_manager, disp_surface->xdg_toplevel);
++			if (disp_surface->decoration)
++				zxdg_toplevel_decoration_v1_set_mode(
++				    disp_surface->decoration,
++				    ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
++		}
+ 
+ 		xdg_surface_add_listener(disp_surface->xdg_surface,
+ 					     &xdg_surface_listener,
+@@ -1193,6 +1223,8 @@ fail:
+ 		wp_viewport_destroy(disp_surface->viewport);
+ 	if (disp_surface->subsurface)
+ 		wl_subsurface_destroy(disp_surface->subsurface);
++	if (disp_surface->decoration)
++		zxdg_toplevel_decoration_v1_destroy(disp_surface->decoration);
+ 	if (disp_surface->xdg_toplevel)
+ 		xdg_toplevel_destroy(disp_surface->xdg_toplevel);
+ 	if (disp_surface->xdg_surface)
+@@ -1222,6 +1254,8 @@ void dwl_surface_destroy(struct dwl_surface **self)
+ 		wp_viewport_destroy((*self)->viewport);
+ 	if ((*self)->subsurface)
+ 		wl_subsurface_destroy((*self)->subsurface);
++	if ((*self)->decoration)
++		zxdg_toplevel_decoration_v1_destroy((*self)->decoration);
+ 	if ((*self)->xdg_toplevel)
+ 		xdg_toplevel_destroy((*self)->xdg_toplevel);
+ 	if ((*self)->xdg_surface)
+-- 
+2.43.0
+

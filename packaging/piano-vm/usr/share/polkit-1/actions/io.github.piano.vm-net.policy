@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: MIT -->
+<policyconfig>
+ <vendor>xiaomipad-8pro-mainline</vendor>
+ <action id="io.github.piano.vm-net">
+  <description>Set up or remove a virtual machine network</description>
+  <description xml:lang="zh_CN">创建或删除虚拟机网络</description>
+  <message>Administrator authentication is required to manage the virtual machine network</message>
+  <message xml:lang="zh_CN">管理虚拟机网络需要管理员认证</message>
+  <defaults><allow_any>no</allow_any><allow_inactive>no</allow_inactive><allow_active>auth_admin</allow_active></defaults>
+  <annotate key="org.freedesktop.policykit.exec.path">/usr/libexec/piano/piano-vm-net</annotate>
+ </action>
+</policyconfig>

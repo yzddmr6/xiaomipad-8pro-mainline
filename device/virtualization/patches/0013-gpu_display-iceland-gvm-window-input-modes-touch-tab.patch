@@ -1,0 +1,1118 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mzak <mzak.amin@gmail.com>
+Date: Sun, 25 Oct 2026 09:56:04 +0300
+Subject: [PATCH 13/30] gpu_display: iceland gvm: window input modes (touch /
+ tablet / touchpad), multi-finger touch, fullscreen output
+
+- display_wl.c: raw pointer (move / every button / axis) and wl_touch fingers, coordinates scaled from surface
+  to buffer pixels (the guest devices' space; before, logical coordinates went to a device sized in buffer px);
+  wl_output v4 names; CROSVM_GVM_FULLSCREEN=1 + CROSVM_GVM_OUTPUT=<name|index> open the window fullscreen
+- gvm_input.rs: the mode mapper (CROSVM_GVM_INPUT_MODE), unit-tested: tablet (tap = click where it lands,
+  drag, long press = right click, two-finger scroll / tap), touchpad (relative pointer, tap, long press,
+  two-finger scroll / tap), touch (multi-touch slots, the upstream left-button touch)
+- devices: a virtio tablet (ABS_X/Y, buttons, wheel + hwheel); in tablet / touchpad mode the window and the
+  simplefb window get a tablet and a mouse next to the touch screen (EventDeviceKind::Tablet)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ devices/src/virtio/input/defaults.rs |  21 ++
+ devices/src/virtio/input/mod.rs      |  19 ++
+ gpu_display/src/display_wl.c         | 210 ++++++++++++--
+ gpu_display/src/dwl.rs               |   6 +
+ gpu_display/src/event_device.rs      |   7 +
+ gpu_display/src/gpu_display_wl.rs    | 101 ++++++-
+ gpu_display/src/gvm_input.rs         | 420 +++++++++++++++++++++++++++
+ gpu_display/src/lib.rs               |   2 +
+ src/crosvm/sys/linux.rs              |  71 +++++
+ 9 files changed, 827 insertions(+), 30 deletions(-)
+ create mode 100644 gpu_display/src/gvm_input.rs
+
+diff --git a/devices/src/virtio/input/defaults.rs b/devices/src/virtio/input/defaults.rs
+index 481904b..410c1b5 100644
+--- a/devices/src/virtio/input/defaults.rs
++++ b/devices/src/virtio/input/defaults.rs
+@@ -52,6 +52,27 @@ pub fn new_multitouch_trackpad_config(
+     )
+ }
+ 
++/// iceland gvm: an absolute pointer like QEMU's virtio-tablet (ABS_X/Y in buffer pixels, left / right /
++/// middle buttons, vertical and horizontal wheel) for the window's tablet / touchpad input modes.
++pub fn new_tablet_config(idx: u32, width: u32, height: u32, name: Option<&str>) -> VirtioInputConfig {
++    let name = name.map(str::to_owned).unwrap_or(format!("Crosvm Virtio Tablet {idx}"));
++    let mut events: BTreeMap<u16, virtio_input_bitmap> = BTreeMap::new();
++    events.insert(EV_KEY, virtio_input_bitmap::from_bits(&[BTN_LEFT, BTN_RIGHT, BTN_MIDDLE]));
++    events.insert(EV_ABS, virtio_input_bitmap::from_bits(&[ABS_X, ABS_Y]));
++    events.insert(EV_REL, virtio_input_bitmap::from_bits(&[REL_WHEEL, REL_HWHEEL]));
++    let mut absinfo: BTreeMap<u16, virtio_input_absinfo> = BTreeMap::new();
++    absinfo.insert(ABS_X, virtio_input_absinfo::new(0, width, 0, 0));
++    absinfo.insert(ABS_Y, virtio_input_absinfo::new(0, height, 0, 0));
++    VirtioInputConfig::new(
++        virtio_input_device_ids::new(0, 0, 0, 0),
++        name,
++        format!("virtio-tablet-{idx}"),
++        virtio_input_bitmap::new([0u8; 128]),
++        events,
++        absinfo,
++    )
++}
++
+ /// Instantiates a VirtioInputConfig object with the default configuration for a mouse.
+ /// It supports left, right and middle buttons, as wel as X, Y and wheel relative axes.
+ pub fn new_mouse_config(idx: u32) -> VirtioInputConfig {
+diff --git a/devices/src/virtio/input/mod.rs b/devices/src/virtio/input/mod.rs
+index 8e805e3..0f39a97 100644
+--- a/devices/src/virtio/input/mod.rs
++++ b/devices/src/virtio/input/mod.rs
+@@ -797,6 +797,25 @@ where
+     ))
+ }
+ 
++/// iceland gvm: a new virtio absolute pointer (tablet) for the display window's input modes.
++pub fn new_tablet<T>(
++    idx: u32,
++    source: T,
++    width: u32,
++    height: u32,
++    name: Option<&str>,
++    virtio_features: u64,
++) -> Result<Input<SocketEventSource<T>>>
++where
++    T: Read + Write + AsRawDescriptor + Send + 'static,
++{
++    Ok(Input::new(
++        defaults::new_tablet_config(idx, width, height, name),
++        Some(SocketEventSource::new(source)),
++        virtio_features,
++    ))
++}
++
+ /// Creates a new virtio mouse which supports primary, secondary, wheel and REL events.
+ pub fn new_mouse<T>(
+     idx: u32,
+diff --git a/gpu_display/src/display_wl.c b/gpu_display/src/display_wl.c
+index 69c2643..1755aab 100644
+--- a/gpu_display/src/display_wl.c
++++ b/gpu_display/src/display_wl.c
+@@ -51,6 +51,12 @@ const uint32_t DWL_EVENT_TYPE_POINTER_BUTTON = 0x13;
+ const uint32_t DWL_EVENT_TYPE_TOUCH_DOWN     = 0x20;
+ const uint32_t DWL_EVENT_TYPE_TOUCH_UP       = 0x21;
+ const uint32_t DWL_EVENT_TYPE_TOUCH_MOTION   = 0x22;
++/* iceland gvm (input modes, 0.2-6): raw pointer + real multi-finger touch; the mode logic is gvm_input.rs */
++const uint32_t DWL_EVENT_TYPE_POINTER_AXIS   = 0x14;
++const uint32_t DWL_EVENT_TYPE_FINGER_DOWN    = 0x30;
++const uint32_t DWL_EVENT_TYPE_FINGER_UP      = 0x31;
++const uint32_t DWL_EVENT_TYPE_FINGER_MOTION  = 0x32;
++const uint32_t DWL_EVENT_TYPE_FINGER_CANCEL  = 0x33;
+ 
+ const uint32_t DWL_SURFACE_FLAG_RECEIVE_INPUT = 1 << 0;
+ const uint32_t DWL_SURFACE_FLAG_HAS_ALPHA     = 1 << 1;
+@@ -85,6 +91,7 @@ struct output {
+ 	uint32_t current_scale;
+ 	uint32_t device_scale_factor;
+ 	bool internal;
++	char name[64]; /* iceland gvm: wl_output v4 name (e.g. "DSI-1", "DP-1") for CROSVM_GVM_OUTPUT */
+ };
+ 
+ struct input {
+@@ -95,6 +102,8 @@ struct input {
+ 	int32_t pointer_x;
+ 	int32_t pointer_y;
+ 	bool pointer_lbutton_state;
++	struct wl_touch *wl_touch;       /* iceland gvm */
++	struct wl_surface *touch_surface;
+ };
+ 
+ typedef void (*dwl_error_callback_type)(const char *message);
+@@ -202,11 +211,27 @@ static void output_scale(void *data, struct wl_output *wl_output,
+ 	output->current_scale = 1000 * scale_factor;
+ }
+ 
++static void output_name(void *data, struct wl_output *wl_output, const char *name)
++{
++	(void)wl_output;
++	struct output *output = (struct output *)data;
++	snprintf(output->name, sizeof(output->name), "%s", name ? name : "");
++}
++
++static void output_description(void *data, struct wl_output *wl_output, const char *description)
++{
++	(void)data;
++	(void)wl_output;
++	(void)description;
++}
++
+ static const struct wl_output_listener output_listener = {
+     .geometry = output_geometry,
+     .mode = output_mode,
+     .done = output_done,
+-    .scale = output_scale};
++    .scale = output_scale,
++    .name = output_name,
++    .description = output_description};
+ 
+ static void aura_output_scale(void *data, struct zaura_output *aura_output,
+ 			      uint32_t flags, uint32_t scale)
+@@ -364,6 +389,31 @@ static const struct wl_keyboard_listener wl_keyboard_listener = {
+ 	.repeat_info = wl_keyboard_repeat_info,
+ };
+ 
++/* iceland gvm: surface (logical) coordinates -> buffer pixels, the guest devices' coordinate space
++ * (up to v10i the window's logical coordinates went to a device sized in buffer pixels) */
++static int32_t gvm_to_buffer(struct wl_surface *surface, wl_fixed_t v)
++{
++	double scale = 1.0;
++	if (surface) {
++		struct dwl_surface *ds = (struct dwl_surface *)wl_surface_get_user_data(surface);
++		if (ds && ds->scale > 0)
++			scale = ds->scale;
++	}
++	return (int32_t)(wl_fixed_to_double(v) * scale);
++}
++
++static void gvm_push(struct dwl_context *context, const void *surface, uint32_t type,
++		     int32_t p0, int32_t p1, int32_t p2)
++{
++	struct dwl_event event = {0};
++	event.surface_descriptor = surface;
++	event.event_type = type;
++	event.params[0] = p0;
++	event.params[1] = p1;
++	event.params[2] = p2;
++	dwl_context_push_event(context, &event);
++}
++
+ static void pointer_enter_handler(void *data, struct wl_pointer *wl_pointer,
+ 				  uint32_t serial, struct wl_surface *surface,
+ 				  wl_fixed_t x, wl_fixed_t y)
+@@ -374,8 +424,9 @@ static void pointer_enter_handler(void *data, struct wl_pointer *wl_pointer,
+ 	(void)serial;
+ 
+ 	input->pointer_input_surface = surface;
+-	input->pointer_x = wl_fixed_to_int(x);
+-	input->pointer_y = wl_fixed_to_int(y);
++	input->pointer_x = gvm_to_buffer(surface, x);
++	input->pointer_y = gvm_to_buffer(surface, y);
++	gvm_push(context, surface, DWL_EVENT_TYPE_POINTER_MOVE, input->pointer_x, input->pointer_y, 0);
+ }
+ 
+ static void pointer_leave_handler(void *data, struct wl_pointer *wl_pointer,
+@@ -395,19 +446,15 @@ static void pointer_motion_handler(void *data, struct wl_pointer *wl_pointer,
+ {
+ 	struct dwl_context *context = (struct dwl_context*)data;
+ 	struct input *input = &context->input;
+-	struct dwl_event event = {0};
+ 	(void)wl_pointer;
+ 	(void)time;
+ 
+-	input->pointer_x = wl_fixed_to_int(x);
+-	input->pointer_y = wl_fixed_to_int(y);
+-	if (input->pointer_lbutton_state) {
+-		event.surface_descriptor = input->pointer_input_surface;
+-		event.event_type = DWL_EVENT_TYPE_TOUCH_MOTION;
+-		event.params[0] = input->pointer_x;
+-		event.params[1] = input->pointer_y;
+-		dwl_context_push_event(context, &event);
+-	}
++	if (!input->pointer_input_surface)
++		return;
++	input->pointer_x = gvm_to_buffer(input->pointer_input_surface, x);
++	input->pointer_y = gvm_to_buffer(input->pointer_input_surface, y);
++	gvm_push(context, input->pointer_input_surface, DWL_EVENT_TYPE_POINTER_MOVE,
++		 input->pointer_x, input->pointer_y, 0);
+ }
+ 
+ static void pointer_button_handler(void *data, struct wl_pointer *wl_pointer,
+@@ -420,17 +467,13 @@ static void pointer_button_handler(void *data, struct wl_pointer *wl_pointer,
+ 	(void)time;
+ 	(void)serial;
+ 
+-	// we track only the left mouse button since we emulate a single touch device
+-	if (button == BTN_LEFT) {
++	if (!input->pointer_input_surface)
++		return;
++	if (button == BTN_LEFT)
+ 		input->pointer_lbutton_state = state != 0;
+-		struct dwl_event event = {0};
+-		event.surface_descriptor = input->pointer_input_surface;
+-		event.event_type = (state != 0)?
+-			DWL_EVENT_TYPE_TOUCH_DOWN:DWL_EVENT_TYPE_TOUCH_UP;
+-		event.params[0] = input->pointer_x;
+-		event.params[1] = input->pointer_y;
+-		dwl_context_push_event(context, &event);
+-	}
++	/* every button; the touch mode (gvm_input.rs) still turns the left one into a touch */
++	gvm_push(context, input->pointer_input_surface, DWL_EVENT_TYPE_POINTER_BUTTON,
++		 (int32_t)button, state != 0, 0);
+ }
+ 
+ static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer)
+@@ -442,11 +485,15 @@ static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer)
+ static void pointer_axis_handler(void *data, struct wl_pointer *wl_pointer,
+ 				 uint32_t time, uint32_t axis, wl_fixed_t value)
+ {
+-	(void)data;
++	struct dwl_context *context = (struct dwl_context*)data;
++	struct input *input = &context->input;
+ 	(void)wl_pointer;
+ 	(void)time;
+-	(void)axis;
+-	(void)value;
++
++	if (!input->pointer_input_surface)
++		return;
++	/* params[1] = wl_fixed (value * 256); gvm_input.rs turns it into wheel notches */
++	gvm_push(context, input->pointer_input_surface, DWL_EVENT_TYPE_POINTER_AXIS, (int32_t)axis, value, 0);
+ }
+ 
+ static void wl_pointer_axis_source(void *data, struct wl_pointer *wl_pointer,
+@@ -487,6 +534,81 @@ const struct wl_pointer_listener wl_pointer_listener = {
+ 	.axis_discrete = wl_pointer_axis_discrete,
+ };
+ 
++/* iceland gvm: real multi-finger touch (KWin sends wl_touch to clients that bind it) */
++static void touch_down(void *data, struct wl_touch *wl_touch, uint32_t serial, uint32_t time,
++		       struct wl_surface *surface, int32_t id, wl_fixed_t x, wl_fixed_t y)
++{
++	struct dwl_context *context = (struct dwl_context*)data;
++	(void)wl_touch;
++	(void)serial;
++	(void)time;
++	context->input.touch_surface = surface;
++	gvm_push(context, surface, DWL_EVENT_TYPE_FINGER_DOWN, id, gvm_to_buffer(surface, x),
++		 gvm_to_buffer(surface, y));
++}
++
++static void touch_up(void *data, struct wl_touch *wl_touch, uint32_t serial, uint32_t time, int32_t id)
++{
++	struct dwl_context *context = (struct dwl_context*)data;
++	(void)wl_touch;
++	(void)serial;
++	(void)time;
++	if (context->input.touch_surface)
++		gvm_push(context, context->input.touch_surface, DWL_EVENT_TYPE_FINGER_UP, id, 0, 0);
++}
++
++static void touch_motion(void *data, struct wl_touch *wl_touch, uint32_t time, int32_t id,
++			 wl_fixed_t x, wl_fixed_t y)
++{
++	struct dwl_context *context = (struct dwl_context*)data;
++	struct wl_surface *s = context->input.touch_surface;
++	(void)wl_touch;
++	(void)time;
++	if (s)
++		gvm_push(context, s, DWL_EVENT_TYPE_FINGER_MOTION, id, gvm_to_buffer(s, x), gvm_to_buffer(s, y));
++}
++
++static void touch_frame(void *data, struct wl_touch *wl_touch)
++{
++	(void)data;
++	(void)wl_touch;
++}
++
++static void touch_cancel(void *data, struct wl_touch *wl_touch)
++{
++	struct dwl_context *context = (struct dwl_context*)data;
++	(void)wl_touch;
++	if (context->input.touch_surface)
++		gvm_push(context, context->input.touch_surface, DWL_EVENT_TYPE_FINGER_CANCEL, 0, 0, 0);
++}
++
++static void touch_shape(void *data, struct wl_touch *wl_touch, int32_t id, wl_fixed_t major, wl_fixed_t minor)
++{
++	(void)data;
++	(void)wl_touch;
++	(void)id;
++	(void)major;
++	(void)minor;
++}
++
++static void touch_orientation(void *data, struct wl_touch *wl_touch, int32_t id, wl_fixed_t orientation)
++{
++	(void)data;
++	(void)wl_touch;
++	(void)id;
++	(void)orientation;
++}
++
++static const struct wl_touch_listener gvm_touch_listener = {
++	.down = touch_down,
++	.up = touch_up,
++	.motion = touch_motion,
++	.frame = touch_frame,
++	.cancel = touch_cancel,
++	.shape = touch_shape,
++	.orientation = touch_orientation,
++};
++
+ static void wl_seat_capabilities(void *data, struct wl_seat *wl_seat,
+ 				 uint32_t capabilities)
+ {
+@@ -503,6 +625,15 @@ static void wl_seat_capabilities(void *data, struct wl_seat *wl_seat,
+ 		input->wl_keyboard = NULL;
+ 	}
+ 
++	bool have_touch = capabilities & WL_SEAT_CAPABILITY_TOUCH;
++	if (have_touch && input->wl_touch == NULL) {
++		input->wl_touch = wl_seat_get_touch(wl_seat);
++		wl_touch_add_listener(input->wl_touch, &gvm_touch_listener, context);
++	} else if (!have_touch && input->wl_touch != NULL) {
++		wl_touch_release(input->wl_touch);
++		input->wl_touch = NULL;
++	}
++
+ 	if (have_pointer && input->wl_pointer == NULL) {
+ 		input->wl_pointer = wl_seat_get_pointer(wl_seat);
+ 		wl_pointer_add_listener(input->wl_pointer, &wl_pointer_listener, context);
+@@ -605,8 +736,9 @@ static void registry_global(void *data, struct wl_registry *registry,
+ 		    registry, id, &wl_seat_interface, 5);
+ 		wl_seat_add_listener(ifaces->seat, &wl_seat_listener, ifaces->context);
+ 	} else if (strcmp(interface, wl_output_interface.name) == 0) {
++		/* iceland gvm: v4 for the output name (CROSVM_GVM_OUTPUT) */
+ 		struct wl_output *output = (struct wl_output *)wl_registry_bind(
+-		    registry, id, &wl_output_interface, 2);
++		    registry, id, &wl_output_interface, version < 4 ? (version < 2 ? version : 2) : 4);
+ 		dwl_context_output_add(ifaces->context, output, id);
+ 	} else if (strcmp(interface, "zaura_shell") == 0 && version >= 6) {
+ 		ifaces->aura = (struct zaura_shell *)wl_registry_bind(
+@@ -1129,6 +1261,30 @@ struct dwl_surface *dwl_context_surface_new(struct dwl_context *self,
+ 		xdg_surface_add_listener(disp_surface->xdg_surface,
+ 					     &xdg_surface_listener,
+ 					     NULL);
++		/* iceland gvm (0.2-6): CROSVM_GVM_FULLSCREEN=1 opens the window fullscreen, on the output named
++		 * or numbered (0-based, binding order) by CROSVM_GVM_OUTPUT; unknown or unset = the compositor's choice */
++		const char *fs = getenv("CROSVM_GVM_FULLSCREEN");
++		if (fs && *fs && strcmp(fs, "0") != 0) {
++			const char *want = getenv("CROSVM_GVM_OUTPUT");
++			struct wl_output *target = NULL;
++			if (want && *want) {
++				char *end = NULL;
++				long n = strtol(want, &end, 10);
++				size_t oi, k = 0;
++				struct output *o;
++				outputs_for_each(self, oi, o)
++				{
++					if (!o->output)
++						continue;
++					if ((end && *end == 0 && (long)k == n) || strcmp(o->name, want) == 0) {
++						target = o->output;
++						break;
++					}
++					k++;
++				}
++			}
++			xdg_toplevel_set_fullscreen(disp_surface->xdg_toplevel, target);
++		}
+ 		if (self->ifaces.aura) {
+ 			disp_surface->aura = zaura_shell_get_aura_surface(
+ 			    self->ifaces.aura, disp_surface->wl_surface);
+diff --git a/gpu_display/src/dwl.rs b/gpu_display/src/dwl.rs
+index 4831248..46d2d0d 100644
+--- a/gpu_display/src/dwl.rs
++++ b/gpu_display/src/dwl.rs
+@@ -79,6 +79,12 @@ pub const DWL_EVENT_TYPE_POINTER_BUTTON: u32 = 0x13;
+ pub const DWL_EVENT_TYPE_TOUCH_DOWN: u32 = 0x20;
+ pub const DWL_EVENT_TYPE_TOUCH_UP: u32 = 0x21;
+ pub const DWL_EVENT_TYPE_TOUCH_MOTION: u32 = 0x22;
++// iceland gvm (input modes): raw pointer and multi-finger touch from display_wl.c
++pub const DWL_EVENT_TYPE_POINTER_AXIS: u32 = 0x14;
++pub const DWL_EVENT_TYPE_FINGER_DOWN: u32 = 0x30;
++pub const DWL_EVENT_TYPE_FINGER_UP: u32 = 0x31;
++pub const DWL_EVENT_TYPE_FINGER_MOTION: u32 = 0x32;
++pub const DWL_EVENT_TYPE_FINGER_CANCEL: u32 = 0x33;
+ 
+ pub const DWL_SURFACE_FLAG_RECEIVE_INPUT: u32 = 1 << 0;
+ pub const DWL_SURFACE_FLAG_HAS_ALPHA: u32 = 1 << 1;
+diff --git a/gpu_display/src/event_device.rs b/gpu_display/src/event_device.rs
+index 64e0736..4f67aaf 100644
+--- a/gpu_display/src/event_device.rs
++++ b/gpu_display/src/event_device.rs
+@@ -31,6 +31,8 @@ pub enum EventDeviceKind {
+     Touchscreen,
+     /// Produces key events while the display window has focus.
+     Keyboard,
++    /// iceland gvm: absolute pointer (ABS_X/Y, buttons, wheel) of the window's tablet / touchpad modes.
++    Tablet,
+ }
+ 
+ /// Encapsulates a virtual event device, such as a mouse or keyboard
+@@ -66,6 +68,11 @@ impl EventDevice {
+         Self::new(EventDeviceKind::Keyboard, event_socket)
+     }
+ 
++    #[inline]
++    pub fn tablet(event_socket: StreamChannel) -> EventDevice {
++        Self::new(EventDeviceKind::Tablet, event_socket)
++    }
++
+     #[inline]
+     pub fn kind(&self) -> EventDeviceKind {
+         self.kind
+diff --git a/gpu_display/src/gpu_display_wl.rs b/gpu_display/src/gpu_display_wl.rs
+index d7b16f6..a070d88 100644
+--- a/gpu_display/src/gpu_display_wl.rs
++++ b/gpu_display/src/gpu_display_wl.rs
+@@ -203,6 +203,70 @@ pub struct DisplayWl {
+     ctx: DwlContext,
+     current_event: Option<dwl_event>,
+     mt_tracking_id: u16,
++    // iceland gvm: the window's input mode (CROSVM_GVM_INPUT_MODE) and the last pointer position
++    gvm_input: crate::gvm_input::Mapper,
++    gvm_pointer: (i32, i32),
++    gvm_t0: std::time::Instant,
++}
++
++/// iceland gvm: turns the mode mapper's output into one report for one guest device.
++fn gvm_report(outs: Vec<crate::gvm_input::Out>) -> Option<GpuDisplayEvents> {
++    use crate::gvm_input::Out;
++    const REL_HWHEEL: u16 = 0x06;
++    if outs.is_empty() {
++        return None;
++    }
++    let device_type = match outs[0] {
++        Out::MtDown { .. } | Out::MtMove { .. } | Out::MtUp { .. } => EventDeviceKind::Touchscreen,
++        Out::RelMove { .. } | Out::RelButton { .. } | Out::RelWheel { .. } | Out::RelSyn => EventDeviceKind::Mouse,
++        _ => EventDeviceKind::Tablet,
++    };
++    let mut events = Vec::new();
++    for o in outs {
++        match o {
++            Out::MtDown { slot, id, x, y } => events.extend([
++                virtio_input_event::multitouch_slot(slot),
++                virtio_input_event::multitouch_tracking_id(id),
++                virtio_input_event::multitouch_absolute_x(max(0, x)),
++                virtio_input_event::multitouch_absolute_y(max(0, y)),
++                virtio_input_event::touch(true),
++            ]),
++            Out::MtMove { slot, x, y } => events.extend([
++                virtio_input_event::multitouch_slot(slot),
++                virtio_input_event::multitouch_absolute_x(max(0, x)),
++                virtio_input_event::multitouch_absolute_y(max(0, y)),
++            ]),
++            Out::MtUp { slot, last } => {
++                events.push(virtio_input_event::multitouch_slot(slot));
++                events.push(virtio_input_event::multitouch_tracking_id(-1));
++                if last {
++                    events.push(virtio_input_event::touch(false));
++                }
++            }
++            Out::AbsMove { x, y } => {
++                events.push(virtio_input_event::absolute_x(max(0, x)));
++                events.push(virtio_input_event::absolute_y(max(0, y)));
++            }
++            Out::AbsButton { code, down } | Out::RelButton { code, down } => {
++                events.push(virtio_input_event::key(code, down, false))
++            }
++            Out::AbsWheel { v, h } => {
++                if v != 0 {
++                    events.push(virtio_input_event::wheel(v));
++                }
++                if h != 0 {
++                    events.push(virtio_input_event::relative(REL_HWHEEL, h));
++                }
++            }
++            Out::RelWheel { v } => events.push(virtio_input_event::wheel(v)),
++            Out::RelMove { dx, dy } => {
++                events.push(virtio_input_event::relative_x(dx));
++                events.push(virtio_input_event::relative_y(dy));
++            }
++            Out::AbsSyn | Out::RelSyn => events.push(virtio_input_event::syn()),
++        }
++    }
++    Some(GpuDisplayEvents { events, device_type })
+ }
+ 
+ /// Error logging callback used by wrapped C implementation.
+@@ -260,11 +324,18 @@ impl DisplayWl {
+             return Err(GpuDisplayError::Connect);
+         }
+ 
++        let mode = crate::gvm_input::Mode::from_env();
++        if mode != crate::gvm_input::Mode::Touch {
++            base::warn!("GVM-INPUT mode {:?} (CROSVM_GVM_INPUT_MODE)", mode);
++        }
+         Ok(DisplayWl {
+             dmabufs: HashMap::new(),
+             ctx,
+             current_event: None,
+             mt_tracking_id: 0u16,
++            gvm_input: crate::gvm_input::Mapper::new(mode),
++            gvm_pointer: (0, 0),
++            gvm_t0: std::time::Instant::now(),
+         })
+     }
+ 
+@@ -326,9 +397,33 @@ impl DisplayT for DisplayWl {
+                     device_type: EventDeviceKind::Keyboard,
+                 })
+             }
+-            // TODO(tutankhamen): slot is always 0, because all the input
+-            // events come from mouse device, i.e. only one touch is possible at a time.
+-            // Full MT protocol has to be implemented and properly wired later.
++            // iceland gvm (0.2-6): display_wl.c sends the raw pointer and real fingers; the input mode
++            // (gvm_input.rs) decides what reaches which guest device (touch screen, tablet, mouse)
++            DWL_EVENT_TYPE_POINTER_MOVE => {
++                self.gvm_pointer = (event.params[0], event.params[1]);
++                gvm_report(self.gvm_input.pointer_move(event.params[0], event.params[1]))
++            }
++            DWL_EVENT_TYPE_POINTER_BUTTON => {
++                let (x, y) = self.gvm_pointer;
++                gvm_report(self.gvm_input.pointer_button(event.params[0] as u16, event.params[1] != 0, x, y))
++            }
++            DWL_EVENT_TYPE_POINTER_AXIS => {
++                gvm_report(self.gvm_input.pointer_axis(event.params[0] as u32, event.params[1] as f64 / 256.0))
++            }
++            DWL_EVENT_TYPE_FINGER_DOWN => {
++                let now = self.gvm_t0.elapsed().as_millis() as u64;
++                gvm_report(self.gvm_input.finger_down(event.params[0], event.params[1], event.params[2], now))
++            }
++            DWL_EVENT_TYPE_FINGER_MOTION => {
++                let now = self.gvm_t0.elapsed().as_millis() as u64;
++                gvm_report(self.gvm_input.finger_motion(event.params[0], event.params[1], event.params[2], now))
++            }
++            DWL_EVENT_TYPE_FINGER_UP => {
++                let now = self.gvm_t0.elapsed().as_millis() as u64;
++                gvm_report(self.gvm_input.finger_up(event.params[0], now))
++            }
++            DWL_EVENT_TYPE_FINGER_CANCEL => gvm_report(self.gvm_input.finger_cancel()),
++            // upstream single-touch emulation (no longer sent by display_wl.c, kept for other senders)
+             DWL_EVENT_TYPE_TOUCH_DOWN | DWL_EVENT_TYPE_TOUCH_MOTION => {
+                 let tracking_id = if event.event_type == DWL_EVENT_TYPE_TOUCH_DOWN {
+                     self.next_tracking_id()
+diff --git a/gpu_display/src/gvm_input.rs b/gpu_display/src/gvm_input.rs
+new file mode 100644
+index 0000000..9af2706
+--- /dev/null
++++ b/gpu_display/src/gvm_input.rs
+@@ -0,0 +1,420 @@
++// Copyright 2026 iceland gvm. Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++//! iceland gvm: input modes of the crosvm display window (iceland-vms 0.2-6).
++//!
++//! `CROSVM_GVM_INPUT_MODE` picks how the window's pointer and touch reach the guest:
++//!
++//! * `touch` (default, the upstream behaviour plus real multi-finger touch): the left button and every finger
++//!   go to the guest's multi-touch screen; the guest's own gestures apply.
++//! * `tablet`: an absolute pointer. The mouse moves the guest pointer (hover), buttons and the wheel pass
++//!   through. A finger tap clicks where it lands, a drag drags with the left button, a long press (>= 600 ms
++//!   without moving) is a right click, two fingers scroll, a two-finger tap is a right click.
++//! * `touchpad`: the touch screen works like a laptop touchpad. A finger moves the guest pointer relatively,
++//!   a tap is a left click, a long press or a two-finger tap a right click, two fingers scroll. The mouse stays
++//!   absolute (tablet device).
++//!
++//! Coordinates are buffer pixels (display_wl.c scales surface coordinates by the buffer scale). This module
++//! has no crosvm dependencies so its gesture logic is unit-tested on its own.
++
++pub const BTN_LEFT: u16 = 0x110;
++pub const BTN_RIGHT: u16 = 0x111;
++pub const BTN_MIDDLE: u16 = 0x112;
++
++const TAP_MAX_MS: u64 = 300;
++const LONG_PRESS_MS: u64 = 600;
++const MOVE_THRESHOLD: i32 = 16; // buffer px (about 8 logical px at scale 2)
++const SCROLL_STEP: i32 = 40; // buffer px of two-finger travel per wheel notch
++const AXIS_STEP: f64 = 10.0; // wl_pointer axis units per wheel notch
++const MAX_SLOTS: usize = 10;
++
++#[derive(Clone, Copy, PartialEq, Eq, Debug)]
++pub enum Mode {
++    Touch,
++    Tablet,
++    Touchpad,
++}
++
++impl Mode {
++    pub fn parse(s: Option<&str>) -> Mode {
++        match s {
++            Some("tablet") => Mode::Tablet,
++            Some("touchpad") => Mode::Touchpad,
++            _ => Mode::Touch,
++        }
++    }
++
++    pub fn from_env() -> Mode {
++        Mode::parse(std::env::var("CROSVM_GVM_INPUT_MODE").ok().as_deref())
++    }
++}
++
++/// One output event; `*Syn` ends an evdev frame inside a report (the report itself ends with one too).
++#[derive(Clone, Copy, PartialEq, Eq, Debug)]
++pub enum Out {
++    MtDown { slot: i32, id: i32, x: i32, y: i32 },
++    MtMove { slot: i32, x: i32, y: i32 },
++    MtUp { slot: i32, last: bool },
++    AbsMove { x: i32, y: i32 },
++    AbsButton { code: u16, down: bool },
++    AbsWheel { v: i32, h: i32 },
++    AbsSyn,
++    RelMove { dx: i32, dy: i32 },
++    RelButton { code: u16, down: bool },
++    RelWheel { v: i32 },
++    RelSyn,
++}
++
++#[derive(Clone, Copy, Debug)]
++struct Finger {
++    id: i32,
++    slot: i32,
++    x: i32,
++    y: i32,
++    x0: i32,
++    y0: i32,
++}
++
++pub struct Mapper {
++    pub mode: Mode,
++    lbutton: bool,
++    fingers: Vec<Finger>,
++    t0: u64,
++    moved: bool,
++    dragging: bool,
++    two: bool,
++    scrolled: bool,
++    centroid: (i32, i32),
++    scroll_acc: (i32, i32),
++    axis_acc: (f64, f64),
++    mt_next_id: i32,
++}
++
++fn click(code: u16, abs: bool) -> Vec<Out> {
++    if abs {
++        vec![Out::AbsButton { code, down: true }, Out::AbsSyn, Out::AbsButton { code, down: false }]
++    } else {
++        vec![Out::RelButton { code, down: true }, Out::RelSyn, Out::RelButton { code, down: false }]
++    }
++}
++
++impl Mapper {
++    pub fn new(mode: Mode) -> Mapper {
++        Mapper {
++            mode,
++            lbutton: false,
++            fingers: Vec::new(),
++            t0: 0,
++            moved: false,
++            dragging: false,
++            two: false,
++            scrolled: false,
++            centroid: (0, 0),
++            scroll_acc: (0, 0),
++            axis_acc: (0.0, 0.0),
++            mt_next_id: 0,
++        }
++    }
++
++    fn centroid_now(&self) -> (i32, i32) {
++        let n = self.fingers.len().max(1) as i32;
++        let sx: i32 = self.fingers.iter().map(|f| f.x).sum();
++        let sy: i32 = self.fingers.iter().map(|f| f.y).sum();
++        (sx / n, sy / n)
++    }
++
++    // ---- mouse (wl_pointer) ----------------------------------------------------------------
++    pub fn pointer_move(&mut self, x: i32, y: i32) -> Vec<Out> {
++        match self.mode {
++            Mode::Touch => {
++                if self.lbutton {
++                    vec![Out::MtMove { slot: 0, x, y }]
++                } else {
++                    vec![]
++                }
++            }
++            _ => vec![Out::AbsMove { x, y }],
++        }
++    }
++
++    pub fn pointer_button(&mut self, code: u16, down: bool, x: i32, y: i32) -> Vec<Out> {
++        match self.mode {
++            Mode::Touch => {
++                if code != BTN_LEFT {
++                    return vec![];
++                }
++                self.lbutton = down;
++                if down {
++                    let id = self.mt_next_id;
++                    self.mt_next_id = self.mt_next_id.wrapping_add(1) & 0xffff;
++                    vec![Out::MtDown { slot: 0, id, x, y }]
++                } else {
++                    vec![Out::MtUp { slot: 0, last: true }]
++                }
++            }
++            _ => vec![Out::AbsMove { x, y }, Out::AbsButton { code, down }],
++        }
++    }
++
++    /// `axis`: 0 vertical, 1 horizontal (wl_pointer); `value` in wl units (positive = down / right).
++    pub fn pointer_axis(&mut self, axis: u32, value: f64) -> Vec<Out> {
++        if self.mode == Mode::Touch {
++            return vec![];
++        }
++        let acc = if axis == 0 { &mut self.axis_acc.0 } else { &mut self.axis_acc.1 };
++        *acc += value;
++        let steps = (*acc / AXIS_STEP).trunc();
++        if steps == 0.0 {
++            return vec![];
++        }
++        *acc -= steps * AXIS_STEP;
++        let n = steps as i32;
++        if axis == 0 {
++            vec![Out::AbsWheel { v: -n, h: 0 }] // REL_WHEEL positive = up
++        } else {
++            vec![Out::AbsWheel { v: 0, h: n }]
++        }
++    }
++
++    // ---- touch (wl_touch) --------------------------------------------------------------------
++    pub fn finger_down(&mut self, id: i32, x: i32, y: i32, now_ms: u64) -> Vec<Out> {
++        if self.fingers.len() >= MAX_SLOTS || self.fingers.iter().any(|f| f.id == id) {
++            return vec![];
++        }
++        let slot = (0..MAX_SLOTS as i32).find(|s| !self.fingers.iter().any(|f| f.slot == *s)).unwrap_or(0);
++        self.fingers.push(Finger { id, slot, x, y, x0: x, y0: y });
++        if self.mode == Mode::Touch {
++            let tid = self.mt_next_id;
++            self.mt_next_id = self.mt_next_id.wrapping_add(1) & 0xffff;
++            return vec![Out::MtDown { slot, id: tid, x, y }];
++        }
++        let mut out = vec![];
++        if self.fingers.len() == 1 {
++            self.t0 = now_ms;
++            self.moved = false;
++            self.dragging = false;
++            self.two = false;
++            self.scrolled = false;
++            if self.mode == Mode::Tablet {
++                out.push(Out::AbsMove { x, y }); // the pointer follows the finger; no click yet
++            }
++        } else if self.fingers.len() == 2 {
++            if self.dragging {
++                out.push(Out::AbsButton { code: BTN_LEFT, down: false });
++                self.dragging = false;
++            }
++            self.two = true;
++            self.centroid = self.centroid_now();
++            self.scroll_acc = (0, 0);
++        }
++        out
++    }
++
++    pub fn finger_motion(&mut self, id: i32, x: i32, y: i32, _now_ms: u64) -> Vec<Out> {
++        let Some(i) = self.fingers.iter().position(|f| f.id == id) else {
++            return vec![];
++        };
++        let (px, py) = (self.fingers[i].x, self.fingers[i].y);
++        self.fingers[i].x = x;
++        self.fingers[i].y = y;
++        let f = self.fingers[i];
++        if self.mode == Mode::Touch {
++            return vec![Out::MtMove { slot: f.slot, x, y }];
++        }
++        if (x - f.x0).abs() > MOVE_THRESHOLD || (y - f.y0).abs() > MOVE_THRESHOLD {
++            self.moved = true;
++        }
++        if self.two {
++            if self.fingers.len() < 2 {
++                return vec![];
++            }
++            let c = self.centroid_now();
++            self.scroll_acc.0 += c.0 - self.centroid.0;
++            self.scroll_acc.1 += c.1 - self.centroid.1;
++            self.centroid = c;
++            let (sv, sh) = (self.scroll_acc.1 / SCROLL_STEP, self.scroll_acc.0 / SCROLL_STEP);
++            if sv == 0 && sh == 0 {
++                return vec![];
++            }
++            self.scroll_acc.1 -= sv * SCROLL_STEP;
++            self.scroll_acc.0 -= sh * SCROLL_STEP;
++            self.scrolled = true;
++            // natural scrolling: the content follows the fingers (fingers up = scroll down = negative wheel)
++            return match self.mode {
++                Mode::Touchpad => {
++                    if sv != 0 {
++                        vec![Out::RelWheel { v: sv }]
++                    } else {
++                        vec![]
++                    }
++                }
++                _ => vec![Out::AbsWheel { v: sv, h: -sh }],
++            };
++        }
++        match self.mode {
++            Mode::Tablet => {
++                if !self.moved {
++                    return vec![];
++                }
++                if !self.dragging {
++                    self.dragging = true;
++                    return vec![
++                        Out::AbsMove { x: f.x0, y: f.y0 },
++                        Out::AbsButton { code: BTN_LEFT, down: true },
++                        Out::AbsSyn,
++                        Out::AbsMove { x, y },
++                    ];
++                }
++                vec![Out::AbsMove { x, y }]
++            }
++            Mode::Touchpad => {
++                let (dx, dy) = (x - px, y - py);
++                if dx == 0 && dy == 0 {
++                    vec![]
++                } else {
++                    vec![Out::RelMove { dx, dy }]
++                }
++            }
++            Mode::Touch => vec![],
++        }
++    }
++
++    pub fn finger_up(&mut self, id: i32, now_ms: u64) -> Vec<Out> {
++        let Some(i) = self.fingers.iter().position(|f| f.id == id) else {
++            return vec![];
++        };
++        let f = self.fingers.remove(i);
++        if self.mode == Mode::Touch {
++            return vec![Out::MtUp { slot: f.slot, last: self.fingers.is_empty() }];
++        }
++        if !self.fingers.is_empty() {
++            return vec![]; // the gesture ends with the last finger
++        }
++        let held = now_ms.saturating_sub(self.t0);
++        let abs = self.mode == Mode::Tablet;
++        if self.two {
++            self.two = false;
++            // a two-finger tap (no scroll, short) is a right click
++            if !self.scrolled && !self.moved && held < LONG_PRESS_MS {
++                return click(BTN_RIGHT, abs);
++            }
++            return vec![];
++        }
++        if self.dragging {
++            self.dragging = false;
++            return vec![Out::AbsButton { code: BTN_LEFT, down: false }];
++        }
++        if self.moved {
++            return vec![];
++        }
++        let code = if held >= LONG_PRESS_MS {
++            BTN_RIGHT
++        } else if held <= TAP_MAX_MS || abs {
++            BTN_LEFT
++        } else {
++            return vec![]; // touchpad: a medium press without movement is nothing
++        };
++        let mut out = vec![];
++        if abs {
++            out.push(Out::AbsMove { x: f.x0, y: f.y0 });
++        }
++        out.extend(click(code, abs));
++        out
++    }
++
++    pub fn finger_cancel(&mut self) -> Vec<Out> {
++        let mut out = vec![];
++        if self.mode == Mode::Touch {
++            let n = self.fingers.len();
++            for (k, f) in self.fingers.iter().enumerate() {
++                out.push(Out::MtUp { slot: f.slot, last: k + 1 == n });
++            }
++        } else if self.dragging {
++            out.push(Out::AbsButton { code: BTN_LEFT, down: false });
++        }
++        self.fingers.clear();
++        self.dragging = false;
++        self.two = false;
++        out
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn tablet_tap_is_left_click_where_it_lands() {
++        let mut m = Mapper::new(Mode::Tablet);
++        assert_eq!(m.finger_down(1, 100, 200, 0), vec![Out::AbsMove { x: 100, y: 200 }]);
++        let o = m.finger_up(1, 100);
++        assert_eq!(o[0], Out::AbsMove { x: 100, y: 200 });
++        assert_eq!(&o[1..], &click(BTN_LEFT, true)[..]);
++    }
++
++    #[test]
++    fn tablet_long_press_is_right_click() {
++        let mut m = Mapper::new(Mode::Tablet);
++        m.finger_down(1, 10, 10, 0);
++        m.finger_motion(1, 14, 12, 300); // below the threshold
++        let o = m.finger_up(1, 700);
++        assert!(o.contains(&Out::AbsButton { code: BTN_RIGHT, down: true }));
++    }
++
++    #[test]
++    fn tablet_drag_holds_left() {
++        let mut m = Mapper::new(Mode::Tablet);
++        m.finger_down(1, 10, 10, 0);
++        let o = m.finger_motion(1, 60, 10, 50);
++        assert!(o.contains(&Out::AbsButton { code: BTN_LEFT, down: true }));
++        assert_eq!(m.finger_up(1, 90), vec![Out::AbsButton { code: BTN_LEFT, down: false }]);
++    }
++
++    #[test]
++    fn two_finger_scroll_and_tap() {
++        let mut m = Mapper::new(Mode::Tablet);
++        m.finger_down(1, 100, 300, 0);
++        m.finger_down(2, 200, 300, 10);
++        m.finger_motion(1, 100, 220, 20);
++        let o = m.finger_motion(2, 200, 220, 30);
++        assert_eq!(o, vec![Out::AbsWheel { v: -1, h: 0 }]); // centroid up 40 px = one notch (natural: down)
++        m.finger_up(1, 40);
++        assert_eq!(m.finger_up(2, 50), vec![]); // scrolled: no click
++        m.finger_down(3, 100, 100, 100);
++        m.finger_down(4, 200, 100, 110);
++        m.finger_up(3, 150);
++        assert_eq!(m.finger_up(4, 160), click(BTN_RIGHT, true));
++    }
++
++    #[test]
++    fn touchpad_moves_relatively_and_taps() {
++        let mut m = Mapper::new(Mode::Touchpad);
++        assert_eq!(m.finger_down(1, 500, 500, 0), vec![]);
++        assert_eq!(m.finger_motion(1, 530, 490, 20), vec![Out::RelMove { dx: 30, dy: -10 }]);
++        assert_eq!(m.finger_up(1, 40), vec![]); // moved: no click
++        m.finger_down(2, 500, 500, 100);
++        assert_eq!(m.finger_up(2, 180), click(BTN_LEFT, false));
++        m.finger_down(3, 500, 500, 200);
++        assert_eq!(m.finger_up(3, 900), click(BTN_RIGHT, false));
++    }
++
++    #[test]
++    fn touch_mode_forwards_fingers_and_left_button() {
++        let mut m = Mapper::new(Mode::Touch);
++        assert!(matches!(m.finger_down(7, 1, 2, 0)[0], Out::MtDown { slot: 0, x: 1, y: 2, .. }));
++        assert!(matches!(m.finger_down(8, 3, 4, 0)[0], Out::MtDown { slot: 1, .. }));
++        assert_eq!(m.finger_up(7, 5), vec![Out::MtUp { slot: 0, last: false }]);
++        assert_eq!(m.finger_up(8, 6), vec![Out::MtUp { slot: 1, last: true }]);
++        assert_eq!(m.pointer_move(5, 5), vec![]);
++        assert!(matches!(m.pointer_button(BTN_LEFT, true, 5, 5)[0], Out::MtDown { .. }));
++        assert_eq!(m.pointer_button(BTN_RIGHT, true, 5, 5), vec![]);
++    }
++
++    #[test]
++    fn wheel_notches() {
++        let mut m = Mapper::new(Mode::Tablet);
++        assert_eq!(m.pointer_axis(0, 5.0), vec![]);
++        assert_eq!(m.pointer_axis(0, 5.0), vec![Out::AbsWheel { v: -1, h: 0 }]);
++        assert_eq!(m.pointer_axis(1, -20.0), vec![Out::AbsWheel { v: 0, h: -2 }]);
++    }
++}
+diff --git a/gpu_display/src/lib.rs b/gpu_display/src/lib.rs
+index bea90e4..2551f39 100644
+--- a/gpu_display/src/lib.rs
++++ b/gpu_display/src/lib.rs
+@@ -38,6 +38,8 @@ mod gpu_display_stub;
+ mod gpu_display_win;
+ #[cfg(any(target_os = "android", target_os = "linux"))]
+ mod gpu_display_wl;
++#[cfg(any(target_os = "android", target_os = "linux"))]
++pub mod gvm_input;
+ #[cfg(feature = "x")]
+ mod gpu_display_x;
+ #[cfg(any(windows, feature = "x"))]
+diff --git a/src/crosvm/sys/linux.rs b/src/crosvm/sys/linux.rs
+index ecaaf9a..bf3b640 100644
+--- a/src/crosvm/sys/linux.rs
++++ b/src/crosvm/sys/linux.rs
+@@ -220,6 +220,59 @@ static GUNYAH_PATH: &str = "/dev/gunyah";
+ #[cfg(feature = "halla")]
+ const HALLA_PATH: &str = "/dev/halla";
+ 
++/// iceland gvm (iceland-vms 0.2-6): the window's tablet / touchpad input modes (CROSVM_GVM_INPUT_MODE) need an
++/// absolute pointer (tablet: ABS_X/Y, buttons, wheel) and a relative mouse next to the touch screen. Added only
++/// in those modes, so the guest's device set is unchanged in the default touch mode.
++#[cfg(feature = "gpu")]
++fn gvm_pointer_devices(
++    cfg: &Config,
++    devs: &mut Vec<(&'static str, VirtioDeviceStub)>,
++    event_devices: &mut Vec<EventDevice>,
++    width: u32,
++    height: u32,
++    idx: u32,
++    which: &'static str,
++) -> DeviceResult<()> {
++    let mode = std::env::var("CROSVM_GVM_INPUT_MODE").unwrap_or_default();
++    if mode != "tablet" && mode != "touchpad" {
++        return Ok(());
++    }
++    let (event_socket, virtio_socket) =
++        StreamChannel::pair(BlockingMode::Nonblocking, FramingMode::Byte).context("failed to create socket")?;
++    let dev = virtio::input::new_tablet(
++        idx,
++        virtio_socket,
++        width,
++        height,
++        Some(if which == "simplefb" { "gvm simplefb tablet" } else { "gvm window tablet" }),
++        virtio::base_features(cfg.protection_type),
++    )
++    .context("failed to set up the gvm tablet device")?;
++    devs.push((
++        if which == "simplefb" { "simplefb_tablet" } else { "window_tablet" },
++        VirtioDeviceStub {
++            dev: Box::new(dev),
++            jail: simple_jail(cfg.jail_config.as_ref(), "input_device")?,
++        },
++    ));
++    event_devices.push(EventDevice::tablet(event_socket));
++
++    let (event_socket, virtio_socket) =
++        StreamChannel::pair(BlockingMode::Nonblocking, FramingMode::Byte).context("failed to create socket")?;
++    let dev = virtio::input::new_mouse(idx - 1, virtio_socket, virtio::base_features(cfg.protection_type))
++        .context("failed to set up the gvm mouse device")?;
++    devs.push((
++        if which == "simplefb" { "simplefb_mouse" } else { "window_mouse" },
++        VirtioDeviceStub {
++            dev: Box::new(dev),
++            jail: simple_jail(cfg.jail_config.as_ref(), "input_device")?,
++        },
++    ));
++    event_devices.push(EventDevice::mouse(event_socket));
++    warn!("GVM-INPUT {which}: tablet + mouse devices for mode {mode}");
++    Ok(())
++}
++
+ fn create_virtio_devices(
+     cfg: &Config,
+     vm: &dyn VmArch,
+@@ -358,6 +411,15 @@ fn create_virtio_devices(
+                     },
+                 ));
+                 event_devices.push(EventDevice::touchscreen(event_device_socket));
++                gvm_pointer_devices(
++                    cfg,
++                    &mut devs,
++                    &mut event_devices,
++                    multi_touch_width,
++                    multi_touch_height,
++                    u32::MAX - 4,
++                    "window",
++                )?;
+             }
+             if cfg.display_window_keyboard {
+                 let (event_device_socket, virtio_dev_socket) =
+@@ -425,6 +487,15 @@ fn create_virtio_devices(
+             },
+         ));
+         simplefb_event_devices.push(EventDevice::touchscreen(event_device_socket));
++        gvm_pointer_devices(
++            cfg,
++            &mut devs,
++            simplefb_event_devices,
++            sfb.width,
++            sfb.height,
++            u32::MAX - 6,
++            "simplefb",
++        )?;
+ 
+         let (event_device_socket, virtio_dev_socket) =
+             StreamChannel::pair(BlockingMode::Nonblocking, FramingMode::Byte)
+-- 
+2.43.0
+

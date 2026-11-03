@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: iceland <iceland@localhost>
+Date: Sat, 24 Oct 2026 21:46:12 +0300
+Subject: [PATCH 10/30] gpu: iceland gvm: CROSVM_GVM_TRACE_SCANOUT=1 logs every
+ SET_SCANOUT / RESOURCE_FLUSH (first 400)
+
+vm-run v9: atomic-KMS kmscube never reached the scanout while legacy kmscube did; this shows
+what an atomic guest really sends.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ devices/src/virtio/gpu/gvm_scanout.rs | 13 +++++++++++++
+ devices/src/virtio/gpu/virtio_gpu.rs  | 11 +++++++++++
+ 2 files changed, 24 insertions(+)
+
+diff --git a/devices/src/virtio/gpu/gvm_scanout.rs b/devices/src/virtio/gpu/gvm_scanout.rs
+index 1182a59..75510e6 100755
+--- a/devices/src/virtio/gpu/gvm_scanout.rs
++++ b/devices/src/virtio/gpu/gvm_scanout.rs
+@@ -76,6 +76,19 @@ fn dump_cfg() -> (u64, u32) {
+     })
+ }
+ 
++/// CROSVM_GVM_TRACE_SCANOUT=1: every SET_SCANOUT / RESOURCE_FLUSH (first 400), to see what an atomic-KMS
++/// guest really sends (vm-run v9: atomic kmscube never reached the scanout).
++pub fn trace(text: std::fmt::Arguments) {
++    static ON: OnceLock<bool> = OnceLock::new();
++    static N: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
++    if !*ON.get_or_init(|| std::env::var("CROSVM_GVM_TRACE_SCANOUT").is_ok_and(|v| v == "1")) {
++        return;
++    }
++    if N.fetch_add(1, std::sync::atomic::Ordering::Relaxed) < 400 {
++        warn!("GVM-TRACE {}", text);
++    }
++}
++
+ /// One warn line per event kind and resource (at most 64 lines): which resources the guest flushes and
+ /// which one a scanout shows.
+ pub fn note(kind: &str, resource_id: u32, text: &str) {
+diff --git a/devices/src/virtio/gpu/virtio_gpu.rs b/devices/src/virtio/gpu/virtio_gpu.rs
+index 0686b4a..8d1eeab 100644
+--- a/devices/src/virtio/gpu/virtio_gpu.rs
++++ b/devices/src/virtio/gpu/virtio_gpu.rs
+@@ -857,6 +857,11 @@ impl VirtioGpu {
+         };
+ 
+         let mut shown = false;
++        super::gvm_scanout::trace(format_args!(
++            "flush res={} on-scanout={}",
++            resource_id.map_or(0, |r| r.get()),
++            self.scanouts.values().any(|s| s.resource_id == resource_id)
++        ));
+         for scanout in self.scanouts.values_mut() {
+             if scanout.resource_id == resource_id {
+                 shown = true;
+@@ -1461,6 +1466,12 @@ impl VirtioGpu {
+             .ok_or(ErrInvalidResourceId)?;
+ 
+         if let SurfaceType::Scanout = scanout_type {
++            super::gvm_scanout::trace(format_args!(
++                "set-scanout {} res={} blob={}",
++                scanout_id,
++                resource_id,
++                scanout_data.is_some() as u8
++            ));
+             // iceland gvm: which resource each scanout shows (Xorg / a compositor may switch it)
+             super::gvm_scanout::note(
+                 "SET-SCANOUT",
+-- 
+2.43.0
+

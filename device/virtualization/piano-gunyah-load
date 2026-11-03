@@ -1,0 +1,30 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# Fixed module loading only. Never run a VMM or accept a file/command.
+set -eu
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+fail() { echo "piano-gunyah-load: $*" >&2; exit 1; }
+[ "$#" -eq 0 ] || fail 'no arguments accepted'
+[ "$(id -u)" -eq 0 ] || fail 'administrator authorization required'
+[ ! -e /etc/initrd-release ] && [ ! -e /proc/1/root/etc/initrd-release ] || fail 'still in initrd'
+[ "$(readlink /proc/self/ns/mnt)" = "$(readlink /proc/1/ns/mnt)" ] || fail 'not in the host mount namespace'
+
+physical_gate() {
+    # Require the actual pre-PID1 mask, not just a successful detector result.
+    awk '$1=="piano-physical-platform" && $2=="/sys/firmware/devicetree/base/hypervisor" && $3=="tmpfs" {ok=1} END {exit !ok}' /proc/self/mounts || fail 'early physical-platform mask missing'
+    rc=0
+    detector=$(systemd-detect-virt --vm) || rc=$?
+    [ "$detector" = none ] && [ "$rc" -eq 1 ] || fail 'VM detector changed'
+    manager=$(systemctl show --property=Virtualization --value) || fail 'cannot query PID1'
+    [ -z "$manager" ] || fail 'PID1 cached virtualization'
+    [ ! -d /sys/module/gunyah_qcom ] && [ ! -d /sys/module/gunyah_qtvm ] || fail 'unsupported Gunyah platform plugin loaded'
+}
+physical_gate
+# Empty environment prevents MODPROBE_OPTIONS from selecting another config.
+/usr/bin/env -i PATH="$PATH" /usr/sbin/modprobe --all gunyah_rsc_mgr gunyah_vcpu gunyah_irqfd gunyah_ioeventfd
+udevadm settle --timeout=10
+physical_gate
+[ -c /dev/gunyah ] || fail 'device missing after module load'
+[ "$(stat -c '%a %U %G' /dev/gunyah)" = '660 root gunyah' ] || fail 'install the group and udev rule first'
+echo 'Gunyah enabled; run the VMM as your ordinary user.'

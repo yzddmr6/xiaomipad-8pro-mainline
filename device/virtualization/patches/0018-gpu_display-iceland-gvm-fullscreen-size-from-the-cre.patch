@@ -1,0 +1,95 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mzak <mzak.amin@gmail.com>
+Date: Sun, 25 Oct 2026 16:05:26 +0300
+Subject: [PATCH 18/30] gpu_display: iceland gvm: fullscreen size from the
+ creation roundtrip, touchpad horizontal scroll
+
+- the first xdg configure arrives before the viewport exists and already carries the fullscreen size: keep it and
+  apply it to the new viewport (p3: the window first mapped at 800x500 and KWin answered with 800x500 configures)
+- touchpad mode: a horizontal two-finger scroll goes to the tablet device's REL_HWHEEL (the virtio mouse has no
+  horizontal wheel; p3 VI-7 on the rotated tablet scrolled sideways and the guest saw nothing); unit test
+
+Signed-off-by: mzak <mzak.amin@gmail.com>
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ gpu_display/src/display_wl.c | 20 +++++++++++++++++++-
+ gpu_display/src/gvm_input.rs | 14 ++++++++++++++
+ 2 files changed, 33 insertions(+), 1 deletion(-)
+
+diff --git a/gpu_display/src/display_wl.c b/gpu_display/src/display_wl.c
+index 627ff65..c70bff1 100644
+--- a/gpu_display/src/display_wl.c
++++ b/gpu_display/src/display_wl.c
+@@ -832,8 +832,18 @@ static void toplevel_configure(void *data,
+ 	fprintf(stderr, "GVM-CONFIGURE %dx%d fullscreen=%d viewport=%d\n", width, height, fullscreen,
+ 		surface && surface->viewport ? 1 : 0);
+ 	fflush(stderr);
+-	if (!surface || !surface->viewport)
++	if (!surface)
+ 		return;
++	/* p3: the first configure arrives in the creation roundtrip, before the viewport exists; it already
++	 * carries the fullscreen size. Keep it: dwl_context_surface_new applies it to the new viewport, so the
++	 * window does not first map at its windowed size (KWin then answered with an 800x500 configure). */
++	if (!surface->viewport) {
++		if (fullscreen && width > 0 && height > 0) {
++			surface->fs_width = width;
++			surface->fs_height = height;
++		}
++		return;
++	}
+ 	if (fullscreen && width > 0 && height > 0) {
+ 		if (surface->fs_width != width || surface->fs_height != height) {
+ 			surface->fs_width = width;
+@@ -1392,6 +1402,14 @@ struct dwl_surface *dwl_context_surface_new(struct dwl_context *self,
+ 			self->error_callback("failed to make surface viewport");
+ 			goto fail;
+ 		}
++		/* iceland gvm (p3): a fullscreen size from the creation roundtrip applies from the first commit */
++		if (disp_surface->fs_width > 0 && disp_surface->fs_height > 0) {
++			wp_viewport_set_destination(disp_surface->viewport, disp_surface->fs_width,
++						    disp_surface->fs_height);
++			fprintf(stderr, "GVM-FULLSCREEN on %dx%d (buffer %ux%u, at creation)\n", disp_surface->fs_width,
++				disp_surface->fs_height, disp_surface->width, disp_surface->height);
++			fflush(stderr);
++		}
+ 	}
+ 
+ 	if (self->ifaces.virtio_gpu_metadata) {
+diff --git a/gpu_display/src/gvm_input.rs b/gpu_display/src/gvm_input.rs
+index 9af2706..0aabd1c 100644
+--- a/gpu_display/src/gvm_input.rs
++++ b/gpu_display/src/gvm_input.rs
+@@ -241,9 +241,13 @@ impl Mapper {
+             self.scrolled = true;
+             // natural scrolling: the content follows the fingers (fingers up = scroll down = negative wheel)
+             return match self.mode {
++                // p3: horizontal two-finger scroll goes to the tablet device's REL_HWHEEL (the virtio mouse has
++                // no horizontal wheel); one axis per report, vertical first
+                 Mode::Touchpad => {
+                     if sv != 0 {
+                         vec![Out::RelWheel { v: sv }]
++                    } else if sh != 0 {
++                        vec![Out::AbsWheel { v: 0, h: -sh }]
+                     } else {
+                         vec![]
+                     }
+@@ -410,6 +414,16 @@ mod tests {
+         assert_eq!(m.pointer_button(BTN_RIGHT, true, 5, 5), vec![]);
+     }
+ 
++    #[test]
++    fn touchpad_horizontal_scroll_uses_the_tablet_hwheel() {
++        let mut m = Mapper::new(Mode::Touchpad);
++        m.finger_down(1, 100, 300, 0);
++        m.finger_down(2, 100, 400, 10);
++        // each finger's 80 px moves the centroid 40 px = one notch (natural: fingers right = content right)
++        assert_eq!(m.finger_motion(1, 180, 300, 20), vec![Out::AbsWheel { v: 0, h: -1 }]);
++        assert_eq!(m.finger_motion(2, 180, 400, 30), vec![Out::AbsWheel { v: 0, h: -1 }]);
++    }
++
+     #[test]
+     fn wheel_notches() {
+         let mut m = Mapper::new(Mode::Tablet);
+-- 
+2.43.0
+

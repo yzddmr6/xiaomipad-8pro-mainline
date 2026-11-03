@@ -1,0 +1,245 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mzak <mzak.amin@gmail.com>
+Date: Sun, 25 Oct 2026 22:22:46 +0300
+Subject: [PATCH 24/30] droidvm-shim: iceland gvm: clean the device tree to PoC
+ before parsing it (p6)
+
+The shim runs with the MMU off, so its loads bypass the caches; the resource manager adds its /hypervisor nodes
+through a cacheable mapping. p6: the shim read the handoff page (0.3-39 fix) and the parcel count, then reported
+no gunyah-resource-manager node, while Linux (reading cacheably) finds it in every protected VM. dc civac over the
+tree before parsing it (header first, for its size) and again after rewriting /memory; on failure the shim prints
+the root node names and the walk error code. shim.bin 13973 bytes.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Signed-off-by: mzak <mzak.amin@gmail.com>
+---
+ droidvm-shim/src/fdt.rs        |  51 +++++++++++++++++++++++++++++++++
+ droidvm-shim/src/main.rs       |  28 +++++++++++++++++-
+ hypervisor/src/gunyah/shim.bin | Bin 13286 -> 13973 bytes
+ 3 files changed, 78 insertions(+), 1 deletion(-)
+
+diff --git a/droidvm-shim/src/fdt.rs b/droidvm-shim/src/fdt.rs
+index e0d533e..fba7626 100644
+--- a/droidvm-shim/src/fdt.rs
++++ b/droidvm-shim/src/fdt.rs
+@@ -38,6 +38,19 @@ pub enum Error {
+     NotFound,
+ }
+ 
++impl Error {
++    /// A number for the handoff page / console (iceland gvm diagnostics).
++    pub fn code(&self) -> u64 {
++        match self {
++            Error::BadMagic => 1,
++            Error::Truncated => 2,
++            Error::BadTag => 3,
++            Error::TooDeep => 4,
++            Error::NotFound => 5,
++        }
++    }
++}
++
+ /// What to look for: a node by the name of a direct child of the root, or by a string in some
+ /// node's `compatible` list at any depth.
+ #[derive(Clone, Copy)]
+@@ -192,6 +205,44 @@ impl<'a> Fdt<'a> {
+         Err(Error::NotFound)
+     }
+ 
++    /// The blob's length.
++    pub fn len(&self) -> usize {
++        self.blob.len()
++    }
++
++    /// Calls `f` with the name of every direct child of the root (iceland gvm diagnostics).
++    pub fn for_each_root_child(&self, mut f: impl FnMut(&[u8])) {
++        let mut depth = 0usize;
++        let mut p = self.struct_off;
++        let end = self.struct_off + self.struct_len;
++        while p < end {
++            let Ok(tag) = be32(self.blob, p) else { return };
++            p += 4;
++            match tag {
++                FDT_BEGIN_NODE => {
++                    let Ok(name) = cstr(self.blob, p) else { return };
++                    p += (name.len() + 4) & !3;
++                    if depth == 1 {
++                        f(name);
++                    }
++                    depth += 1;
++                }
++                FDT_END_NODE => {
++                    if depth == 0 {
++                        return;
++                    }
++                    depth -= 1;
++                }
++                FDT_PROP => {
++                    let Ok(len) = be32(self.blob, p) else { return };
++                    p += 8 + ((len as usize + 3) & !3);
++                }
++                FDT_NOP => {}
++                _ => return,
++            }
++        }
++    }
++
+     pub fn prop_bytes(&self, at: usize, len: usize) -> Result<&[u8], Error> {
+         self.blob.get(at..at + len).ok_or(Error::Truncated)
+     }
+diff --git a/droidvm-shim/src/main.rs b/droidvm-shim/src/main.rs
+index ed01b06..42ab238 100644
+--- a/droidvm-shim/src/main.rs
++++ b/droidvm-shim/src/main.rs
+@@ -223,13 +223,26 @@ pub extern "C" fn shim_main(dtb: *mut u8) -> u64 {
+         //
+         // SAFETY: the hypervisor handed us this pointer, and the header it starts with says how
+         // long it is; every access past this point is bounds-checked against that length.
++        //
++        // iceland gvm (p6): the resource manager adds its own nodes (the /hypervisor one with the
++        // message queues among them) through a cacheable mapping, and this code runs with the MMU
++        // off, so its loads bypass the caches: without cleaning the tree's lines to the point of
++        // coherency first, the shim reads the tree as crosvm wrote it, before the RM touched it
++        // (p6: "no gunyah-resource-manager node", while Linux, reading cacheably, finds it).
++        cache_flush(dtb as u64, 64);
+         let blob = unsafe {
+             let len = match fdt_total_size(dtb) {
+                 Some(l) => l,
+                 None => die(0, "the device tree pointer is not a device tree"),
+             };
++            cache_flush(dtb as u64, len);
+             core::slice::from_raw_parts_mut(dtb, len)
+         };
++        uart_str("SHIM: device tree ");
++        uart_hex(dtb as u64);
++        uart_str("+");
++        uart_hex(blob.len() as u64);
++        uart_str("\r\n");
+         let mut tree = match fdt::Fdt::new(blob) {
+             Ok(t) => t,
+             Err(_) => die(0, "the device tree header did not parse"),
+@@ -239,7 +252,18 @@ pub extern "C" fn shim_main(dtb: *mut u8) -> u64 {
+             "reg",
+         ) {
+             Ok(hit) => hit,
+-            Err(_) => die(0, "no gunyah-resource-manager node in the device tree"),
++            Err(e) => {
++                // What the tree does have at the top, for the next diagnosis.
++                uart_str("SHIM: root nodes:");
++                tree.for_each_root_child(|name| {
++                    uart_str(" ");
++                    for &b in name.iter().take(40) {
++                        uart(b);
++                    }
++                });
++                uart_str("\r\n");
++                die(e.code(), "no gunyah-resource-manager node in the device tree")
++            }
+         };
+         if len < 16 {
+             die(len as u64, "the resource manager node's reg is too short")
+@@ -324,6 +348,8 @@ pub extern "C" fn shim_main(dtb: *mut u8) -> u64 {
+             if tree.set_memory_window(h.parcel[0].base, total).is_err() {
+                 die(0, "could not point /memory at the window")
+             }
++            // The tree was written with the MMU off; leave no stale line for Linux to read.
++            cache_flush(dtb as u64, tree.len());
+             h.status = SHIM_STATUS_DT_DONE;
+             uart_str("SHIM: /memory now ");
+             uart_hex(h.parcel[0].base);
+diff --git a/hypervisor/src/gunyah/shim.bin b/hypervisor/src/gunyah/shim.bin
+index cde8081e110d5701c81f0748fe449550e9bbc6bf..19dce48a7216d02446d09b0bcc4e17f068634930 100755
+GIT binary patch
+delta 3140
+zcmZ8jdr(x@8UN0`3*KefxUj%3yXd_OK6V$9;AkpqjC)sN0{G~<xv?=-7c@j3S^=H-
+zYO<?ngpek)99uI<Ehy6|dy`3Zz-cjKMV+KLiESvg_A#A+ww>K<?Ua~AR$RB=0gN<%
+z+&Slb=X?CV?|hH@udP4cekw~?HnNL1xB)_<#9t+DFpz%p)z94gRdznOlNi`~30FVx
+zvCROA{}7BNl1bArZ&WQQJw9Q{%sF%7oS_4C5MRmFe7WQ*Us-bX4!}_W$V%)#8y?p|
+zoJ!WLK(^!w=aB4oFX})!&*j8Urh$^RN)F%VMKw1N^jS1P-=0hu9Okps5j1d}&sJ3p
+z9Ie#C;`2FhT0nl`ZspJinFv@5jp+mwF$Eec*@|bI0E$U~-rK1#_&6FD_0TADc$Wc<
+zo*58OzJtV8&e|5>tg*<#*0;M-K?(52SS7BXBM2Rz{c%xkUCA~M7FDD`C_vI;2a-vp
+z5amvy(fhy-BdC52EM{N?J%oh4ue5h_LYuGvfe~wLoEOwC4Ja0r^Jl~9GTfJc6?mmR
+z%xT*kHVC<qsf!0CnF^yp3@fguB|N92z!Dx@6$E-?2naz8rq|Y&1dhXK5z-m2pXg%s
+z2+o7R(9_U3uT=wlPV6h*s+NA8RKEP~3Jkd%|N47RhR6J+;X7NGhZFlh>h7Px`~RdM
+za@uWLN}i<uG|lHCzoieEmvLnu(KTi#CwxfvnMH1GDSgMBO9tr~^J1>`0{xHqCGNsG
+z`eJS!xl9Lh-Q4A~G}Dr=v7dzo>NQ(3jp~VH@)!#sOBbOJ3`owSK}$L}@GJU;1vU53
+zvlemA+R}J0dM3b6eG>_H2E4(G>7jfs=%ei<-tq>CyJ^BA>vNL^ac*f?oVz@nT}>;j
+z^D>tvDu>2-P$N@T%1_gSRwoxZMc=pP738X=h#&{x)4%xmcy0>x4)eJxc{S)8y_Y-|
+zzWmxB?DVG9^t4?k_pyv2DWLTGO5=72`s{C#cqKqD;~qioXZ_H-P=3p|2=8{je4+_u
+z;$^9DrsEO$ixU`sl%p&2W^q;T(Yn0Z8v8{krmyGOABmiYVl8H|4iktakG~N{3kkSb
+z0!h3aC(~jyZ~`N3p?C8PTuV27XqF{cnko0i(0X*rKT8LA1=LnSJ+q7fc3b%rEE0pz
+zIIs>B<JkkgVSH~Q1bsv2&o%uBC2M%uRXam=)#+qc{Y=><*tAZ;ljanvbWV{N>rePV
+zsWBpt33;r@BTn)-#yfn`nVn7dd2_V=&kvl0wIb2hb8A6CJ8Q5UbJSgE<o+XfcYVv*
+z@(0c`U}umw3*pzK1QBSC+QNbB6w=u9mD3T)7^p$0wFud66P&dOS@39`wG4KZb^@+v
+zHNu^bJOv2%7{aAfyoGqSr8(>0nUZ-_c2#(E&ial?*>ZGOKo=bNIf>BbCpoc51t@ik
+zQO82rwe5)P+TJV&CY3xcyWX><JGZw@DRIlL*FAdY_BZj2irT95&I(jikKZ<u*4BZ_
+zTFOA#Uk1IOEZft5Wj16+evuN6U<R{{*1m%!LG)_0KnSzkVzjRJ!Q0skgChkbbo~Yi
+zjsIQ~{`{9)Qo|89#E)}uw42{l!je)##htu=Oq5~t5+d$y-ZUnzfYUAWLD70x(=f(b
+zkiMH2+J;fl2yaq%qkQCs#}zG=;}f)e)`6gL%-H&N15FX<TW;g-9FJTWc`d*x$IbLm
+z8otcfXY?s?wz(1?Wta!&;%SdNK*39YC`uYTMRz(yOQu;Zn08;*j^s~7i`Aswx&`6!
+zYa|>uK|C8-So(gGwyUEiIldG_!))hCYSTEPW+C~QLa|dX_c^K{WJF9m?-@cYTiD%C
+z@Ge@&hohn##}tf725jI5uuam9l9hYz?{uFun~Npr+frVkS-p{%%&E(DH6;QTotO)w
+zt(a@9=!P*qf1A2zIcMVTB<LN<@)-7q3_%Y1qFXW@LS|=E^j_sq{1U%6as>K>B<^p+
+z-n-XkI+9OAJmNPxqJb>OPFijgNs!js3Ot*65`z9;H}SKBzJH)=9KauM^F$rP{#1!~
+z1nKM1u*k#c*k{)8aN4RnJa+f!kf+a`0t+hX72DiEUVRnLE$z#OXM}`z$Zd1gM|$|Z
+z64D~qJgiGCkn}k35NqTb={u8(U28n4+`|bmd`a$$6kvETTq~QQIQZY>q6mhXoo$D~
+za2@9;j^ntD7_cXvisM}wX5&Q1yWj0B*zWAe@Z~j6m{s*HY;yuK3)}VdNdByR2ezDA
+z0T#IrLnBuNN*X`;j?75?K4@@O(~t6BOi_13u|yXXm@=eep7;}}@c&XEV9bEUc2vb?
+zyt4~J(apj30h|Hs>9w<<x6mlZ>xt=I4*ix7VDf`5W}5}d%EO*9^nGwQ-ZkG#Doz4N
+z2hfLw$j=~j9RhDRFOIRj{SX*BZ%kI$NvyQ<1<S&#kiWZmLtvt^hVwu<*}QSgkCoMo
+z`?7Soy(|yTbn_d>%0YNHKao^EpCQNHIPY7mpwvFp|JN3r=l&;Q)S0LmDoi{#RD_SD
+z#de;S4K61RBb^>xg^9AEbS=34jr0Ds)llM0>>1LffGdXbjzq)IYx-Pp)uDn`WQrow
+zHdK=K7^6K$kIY%YEl;Dro3n2H2-;@<7W?idkJX}+tX^1+I`FZWgO|5LLt*VyhGVB)
+zi8v<43I?MOWsKi+T9aCX+24yarlXuT&Nb$<XKz8R(+AxK<hb9<g{^d-XrcXcHTvU7
+ze(-*SbKRtkX3R4dX%PSe^bLrO4?w&!O;yW_*g3rOEC#c>b2_=2u9-L6P&18G^8({E
+zn`!?%iL9d|^GsxN)G>c;RnRbu_zz;v=}-tTp$UFv_*cp9N4^gY`Kdvl2JhI}vmU(5
+zkr$@UBWt0U$v=X{!tTiy@J{GM9k<6PWyl&ZFdB!nFQ#ZC&%(M1!IMb5IYsnr2JdDZ
+zV^KW!7&n!$z%r%fo4ys36%S%ETtGtA$p0XgIK@{msS6vxfWMoe<p_Up%7X2AXgG)#
+zuHczLA|&X$j%zBqD`5@%27kB{`_G3HJcJ~AbN+m~>R~U5(hU0tWIw%P_iKKR{}!~^
+z5!4)Fn_h>c*^ir^KRb#E3H4|Tc|yEYU$l}uLDv^ON*2)8q8|OvCR%@%N-%P7^&Efr
+yQ$F*VvhvkSq!+4Rs@+m8?P{v7mU^}?=p`AG^rjs<c1b_j@j~^^CDgX?!~X%{y>9RT
+
+delta 2496
+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
+RT1sxQL1pO>p|{FD`ag+qn{EIA
+
+-- 
+2.43.0
+

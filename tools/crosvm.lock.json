@@ -1,0 +1,308 @@
+{
+  "crosvm_commit": "96e84c3f680e34e82e932ef911ae97d734121758",
+  "iceland_commit": "7ae498c24e61a8860740d003572455a7443eecd3",
+  "minijail_commit": "7845d89927a82dbdcdee6276837cd0978f69ba19",
+  "cargo_lock_sha256": "3dd3103d84d1eaf303918b05317fcc19feb6a90f265e3591297f2ce151d1425b",
+  "sysroot_packages": [
+    {
+      "package": "libc6",
+      "version": "2.43-2ubuntu2",
+      "architecture": "arm64",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/g/glibc/libc6_2.43-2ubuntu2_arm64.deb",
+      "sha256": "6be782d90425acbdf9b7523f791a69a0d3f8770be0750b5cce71d4cdc18397c0"
+    },
+    {
+      "package": "libc6-dev",
+      "version": "2.43-2ubuntu2",
+      "architecture": "arm64",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/g/glibc/libc6-dev_2.43-2ubuntu2_arm64.deb",
+      "sha256": "26060610ffbcb3e7260d113e659dbedfe0bacd5dd116affa3bde72431184d328"
+    },
+    {
+      "package": "linux-libc-dev",
+      "version": "7.0.0-14.14",
+      "architecture": "arm64",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/l/linux/linux-libc-dev_7.0.0-14.14_arm64.deb",
+      "sha256": "e86f6bbf7bebdc1958241b546ca9467c35fc29f57c01d4f0336c1908ca21f2fe"
+    },
+    {
+      "package": "libgcc-s1",
+      "version": "16-20260322-1ubuntu1",
+      "architecture": "arm64",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/g/gcc-16/libgcc-s1_16-20260322-1ubuntu1_arm64.deb",
+      "sha256": "106e53a42bebdc55f253d737a818991eba5b4f22c8b1a035a4202b133ade9743"
+    },
+    {
+      "package": "libcap2",
+      "version": "1:2.75-10ubuntu2",
+      "architecture": "arm64",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libc/libcap2/libcap2_2.75-10ubuntu2_arm64.deb",
+      "sha256": "52c249af074c215f6372f9cd911ae70c63a8bddefdc1aca80350b47d39888829"
+    },
+    {
+      "package": "libcap-dev",
+      "version": "1:2.75-10ubuntu2",
+      "architecture": "arm64",
+      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libc/libcap2/libcap-dev_2.75-10ubuntu2_arm64.deb",
+      "sha256": "b9d1f3a08a86bdc59aa6f1bc502fc2485c39b9a724bc603a06c72ee5680c3a31"
+    }
+  ],
+  "schema": 1,
+  "rust_version": "1.88.0",
+  "rustc": "rustc 1.88.0 (6b00bc388 2025-06-23)",
+  "cargo": "cargo 1.88.0 (873a06493 2025-05-10)",
+  "source_date_epoch": 1760000000,
+  "target": "aarch64-unknown-linux-gnu",
+  "features": [
+    "gunyah",
+    "net"
+  ],
+  "pkg_version": "96e84c3f680e-iceland-7ae498c2-piano-product1",
+  "inputs": {
+    "crosvm-96e84c3.tar.gz": "805f9e718ae1256193a65549281b52cfd44999d3ebe54204f1c75c91fd5249c3",
+    "host-debs/libclang-common-18-dev_1%3a18.1.3-1ubuntu1_amd64.deb": "d41631bb752815a8196261d1030c096591c59678c8adfbf2e6a740a691b49e80",
+    "host-debs/libclang1-18_1%3a18.1.3-1ubuntu1_amd64.deb": "1ed67106d743ab4f12db2726c5fc11c436c5e1fba613e9f1006bf3fa05cc69bd",
+    "host-debs/libllvm18_1%3a18.1.3-1ubuntu1_amd64.deb": "af6197096ce3b89aab86de59f01c1b5feb008b2ae1514a03906c0664edb8b0b1",
+    "minijail-7845d899.tar.gz": "f9b1844f624a298d62ce5cabe8b95d9b582c175f92da9352041db48af83a6ea4",
+    "sysroot-debs/libc6-dev_2.43-2ubuntu2_arm64.deb": "26060610ffbcb3e7260d113e659dbedfe0bacd5dd116affa3bde72431184d328",
+    "sysroot-debs/libc6_2.43-2ubuntu2_arm64.deb": "6be782d90425acbdf9b7523f791a69a0d3f8770be0750b5cce71d4cdc18397c0",
+    "sysroot-debs/libcap-dev_2.75-10ubuntu2_arm64.deb": "b9d1f3a08a86bdc59aa6f1bc502fc2485c39b9a724bc603a06c72ee5680c3a31",
+    "sysroot-debs/libcap2_2.75-10ubuntu2_arm64.deb": "52c249af074c215f6372f9cd911ae70c63a8bddefdc1aca80350b47d39888829",
+    "sysroot-debs/libgcc-s1_16-20260322-1ubuntu1_arm64.deb": "106e53a42bebdc55f253d737a818991eba5b4f22c8b1a035a4202b133ade9743",
+    "sysroot-debs/linux-libc-dev_7.0.0-14.14_arm64.deb": "e86f6bbf7bebdc1958241b546ca9467c35fc29f57c01d4f0336c1908ca21f2fe"
+  },
+  "patches": [
+    {
+      "file": "device/virtualization/patches/0001-gunyah-runtime-GuestAccept-blob-sharing-for-protecte.patch",
+      "sha256": "165dc31e32d9da6af5f926223dcc01f84961cb44e008e250ec2dcec665f04dba"
+    },
+    {
+      "file": "device/virtualization/patches/0002-gpu-iceland-gvm-scanout-copy-path-by-default-window-.patch",
+      "sha256": "6fac9754c33d70efe23548b569ca4ee1b2d2d8c8fba926cffd428e6decd36db2"
+    },
+    {
+      "file": "device/virtualization/patches/0003-gpu-iceland-gvm-scanout-copy-source-selection-ctx0-d.patch",
+      "sha256": "fdc514633f7db959975a5fca7e8dfec6afe1f183402f8b394f8e9b694882ade6"
+    },
+    {
+      "file": "device/virtualization/patches/0004-gpu_display-iceland-gvm-server-side-frame-on-KWin-wi.patch",
+      "sha256": "210b3780b4786d299300d2ea4c422d8d21c91666589bd912d82c10ac928dc8a5"
+    },
+    {
+      "file": "device/virtualization/patches/0005-gpu-iceland-gvm-SET-SCANOUT-FLUSH-OFFSCREEN-notes-du.patch",
+      "sha256": "6870033fc9ecebaec3404b5274ea1c28c2b657af664200497f33e9f0aa864db0"
+    },
+    {
+      "file": "device/virtualization/patches/0006-gpu-iceland-gvm-frame-dumps-at-most-once-a-second-on.patch",
+      "sha256": "3937c6eaf57d121b9197446d08b4a42a60aeb27c142f87cbdde2f9541cec53f5"
+    },
+    {
+      "file": "device/virtualization/patches/0007-simplefb-iceland-gvm-simplefb-software-display-in-ho.patch",
+      "sha256": "74aaabc0b3b39e2a7df4aec43dbd0cd2604844ac02311b521789964cdb24c874"
+    },
+    {
+      "file": "device/virtualization/patches/0008-gpu-iceland-gvm-CROSVM_GVM_REFRESH_MS-re-presents-th.patch",
+      "sha256": "97aa0a9111bd6639791f6956734908ac8ef87723e4520c495234b1b3881eb0a4"
+    },
+    {
+      "file": "device/virtualization/patches/0009-aarch64-gunyah-iceland-gvm-per-VM-PCIe-ECAM-CROSVM_G.patch",
+      "sha256": "f1242b624d2a5dcd0af6ef6626976575da4b6d797a8072f38a7bf0a92eadf7b1"
+    },
+    {
+      "file": "device/virtualization/patches/0010-gpu-iceland-gvm-CROSVM_GVM_TRACE_SCANOUT-1-logs-ever.patch",
+      "sha256": "fb9ed5e555b0c4afee77018c4866169ca7220f631bb1ce7ef2f67df3b1409142"
+    },
+    {
+      "file": "device/virtualization/patches/0011-gpu-main-iceland-gvm-retry-deferred-copy-path-frames.patch",
+      "sha256": "dbef363a27416d02675e1a14bdff42805c620a57c343b7236b734d9a0ac185fd"
+    },
+    {
+      "file": "device/virtualization/patches/0012-virtio-iceland-gvm-DMA-guard-for-protected-Gunyah-VM.patch",
+      "sha256": "f8c6fa4b87dbdf6b408fe8256facfc9a537e3c13f0f3361840402b8ef3898fc6"
+    },
+    {
+      "file": "device/virtualization/patches/0013-gpu_display-iceland-gvm-window-input-modes-touch-tab.patch",
+      "sha256": "d4ac8e7de899ba82cf2262c878ea58a9c8f51a1bdd86b25b55ad9c87c49f50b0"
+    },
+    {
+      "file": "device/virtualization/patches/0014-gpu_display-iceland-gvm-fullscreen-scales-the-guest-.patch",
+      "sha256": "2e05285e3cc304ca4a362c4a124766cc6f55e5a18e661f83c4eff536ca124111"
+    },
+    {
+      "file": "device/virtualization/patches/0015-gpu_display-main-iceland-gvm-vnc-server-a-headless-V.patch",
+      "sha256": "268983a78b35b08696f1277abc3bb2ce59de6921b2ccb25120630f560d3b22f6"
+    },
+    {
+      "file": "device/virtualization/patches/0016-gunyah-iceland-gvm-GVM-ACCEPT-STATS-the-cost-of-runt.patch",
+      "sha256": "7d0710d303af53043a31334d089be60e1833fb2ef3b925ced5f2dcab4de5bab7"
+    },
+    {
+      "file": "device/virtualization/patches/0017-gpu_display-iceland-gvm-GVM-CONFIGURE-and-GVM-TOUCH-.patch",
+      "sha256": "acab11348f1bd4850368d4d17e2d2548826461cdf1e038c440572a6ca61a7d99"
+    },
+    {
+      "file": "device/virtualization/patches/0018-gpu_display-iceland-gvm-fullscreen-size-from-the-cre.patch",
+      "sha256": "81c577452ec36000c6b5374062eb46a88e9d979198068bd152fea744d059bbae"
+    },
+    {
+      "file": "device/virtualization/patches/0019-droidvm-shim-the-pseudo-unprotected-boot-shim-from-D.patch",
+      "sha256": "487a83d3e6c48d642578424a25b96fed6c81ca8d1b6b53205ca5e476e6b2fd96"
+    },
+    {
+      "file": "device/virtualization/patches/0020-gpu_display-iceland-gvm-touch-mode-sends-ABS_X-ABS_Y.patch",
+      "sha256": "be7232f51e803b0040bf9ba7fbf8531232cdaf9ceb48eda61592daaf8f690304"
+    },
+    {
+      "file": "device/virtualization/patches/0021-gunyah-aarch64-iceland-gvm-protected-vm-pseudo-unpro.patch",
+      "sha256": "c4829bed8d45b4ffa1e0816b5beb70ff4e1f936997449120c986cf820af0f172"
+    },
+    {
+      "file": "device/virtualization/patches/0022-CREDITS-the-DroidVM-pseudo-unprotected-mode-and-boot.patch",
+      "sha256": "52a4e480f091c65d68bbe9d4a4adcf2bf19ac78ad05463f14bff174202f616a4"
+    },
+    {
+      "file": "device/virtualization/patches/0023-arch-aarch64-iceland-gvm-the-shim-handoff-page-in-me.patch",
+      "sha256": "b7e47805980dba36c37676b24775057435dfa85e2e9a1952fec528bb58f9c118"
+    },
+    {
+      "file": "device/virtualization/patches/0024-droidvm-shim-iceland-gvm-clean-the-device-tree-to-Po.patch",
+      "sha256": "df767ad3025bf3c4f9d1701b7881b932f82e75a423cb17936cc3ce68963b5182"
+    },
+    {
+      "file": "device/virtualization/patches/0025-droidvm-shim-iceland-gvm-RM-node-lookup-by-the-Qualc.patch",
+      "sha256": "41d3c8f95253baa3f6e26b0bdb98ae75224e55cf6c17b8fbe9a0a8904c9df43e"
+    },
+    {
+      "file": "device/virtualization/patches/0026-droidvm-shim-iceland-gvm-say-which-RM-node-and-capid.patch",
+      "sha256": "4115963abd93af292727efe2ded778e8072d79d37e1aedfdd44c9a24648d491d"
+    },
+    {
+      "file": "device/virtualization/patches/0027-droidvm-shim-gunyah-iceland-gvm-shim-linked-at-its-l.patch",
+      "sha256": "147c8f44b21d9f938f25a58b12ffbd4f90cfa7a04dc2e79a9dd77ae1248c6220"
+    },
+    {
+      "file": "device/virtualization/patches/0028-gunyah-iceland-gvm-request-the-RM-RPC-queue-in-the-s.patch",
+      "sha256": "c557b930f40d8040e1ef2269b654f71fbbe866b423dc6916e3860027d8e8906e"
+    },
+    {
+      "file": "device/virtualization/patches/0029-gpu_display-iceland-gvm-keyboard-grab-keyboard-short.patch",
+      "sha256": "6f02e47f550b37e1c276921d50f4cf9560a5beae5e23bd1bb8abecec9bbe9c67"
+    },
+    {
+      "file": "device/virtualization/patches/0030-virtio-input-iceland-gvm-the-default-keyboard-advert.patch",
+      "sha256": "d0172b3124205557d991f78a576016582e4314d5de32310742e8f49c164d3485"
+    },
+    {
+      "file": "device/virtualization/patches/0031-crosvm-quiet-closed-shutdown-channel.patch",
+      "sha256": "e4578ff6d3f0dde9d6c5cbcd01e201667ff20d915dd6e57b9b7348054cdd431d"
+    }
+  ],
+  "host_packages": {
+    "gcc-13-aarch64-linux-gnu": "13.3.0-6ubuntu2~24.04.1cross1",
+    "binutils-aarch64-linux-gnu": "2.42-4ubuntu2.10",
+    "make": "4.3-4.1build2",
+    "pkg-config": "1.8.1-2build1",
+    "python3": "3.12.3-0ubuntu2.1",
+    "libc6:amd64": "2.39-0ubuntu8.7"
+  },
+  "artifacts": {
+    "crosvm": "bd5e396542dbe5aebf4a17450ada8e0fa467221cd463f658c456fa0f18b9aae9",
+    "libghtrace.so": "50bfcee7aa3de27b2e30c75f91c4df88a8e8d5752102e3c75d541df8ded44bc4"
+  },
+  "input_urls": {
+    "crosvm-96e84c3.tar.gz": "https://github.com/google/crosvm/archive/96e84c3f680e34e82e932ef911ae97d734121758.tar.gz",
+    "minijail-7845d899.tar.gz": "https://github.com/google/minijail/archive/7845d89927a82dbdcdee6276837cd0978f69ba19.tar.gz",
+    "host-debs/libclang-common-18-dev_1%3a18.1.3-1ubuntu1_amd64.deb": "https://archive.ubuntu.com/ubuntu/pool/universe/l/llvm-toolchain-18/libclang-common-18-dev_18.1.3-1ubuntu1_amd64.deb",
+    "host-debs/libclang1-18_1%3a18.1.3-1ubuntu1_amd64.deb": "https://archive.ubuntu.com/ubuntu/pool/main/l/llvm-toolchain-18/libclang1-18_18.1.3-1ubuntu1_amd64.deb",
+    "host-debs/libllvm18_1%3a18.1.3-1ubuntu1_amd64.deb": "https://archive.ubuntu.com/ubuntu/pool/main/l/llvm-toolchain-18/libllvm18_18.1.3-1ubuntu1_amd64.deb",
+    "sysroot-debs/libc6-dev_2.43-2ubuntu2_arm64.deb": "https://ports.ubuntu.com/ubuntu-ports/pool/main/g/glibc/libc6-dev_2.43-2ubuntu2_arm64.deb",
+    "sysroot-debs/libc6_2.43-2ubuntu2_arm64.deb": "https://ports.ubuntu.com/ubuntu-ports/pool/main/g/glibc/libc6_2.43-2ubuntu2_arm64.deb",
+    "sysroot-debs/libcap-dev_2.75-10ubuntu2_arm64.deb": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libc/libcap2/libcap-dev_2.75-10ubuntu2_arm64.deb",
+    "sysroot-debs/libcap2_2.75-10ubuntu2_arm64.deb": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libc/libcap2/libcap2_2.75-10ubuntu2_arm64.deb",
+    "sysroot-debs/libgcc-s1_16-20260322-1ubuntu1_arm64.deb": "https://ports.ubuntu.com/ubuntu-ports/pool/main/g/gcc-16/libgcc-s1_16-20260322-1ubuntu1_arm64.deb",
+    "sysroot-debs/linux-libc-dev_7.0.0-14.14_arm64.deb": "https://ports.ubuntu.com/ubuntu-ports/pool/main/l/linux/linux-libc-dev_7.0.0-14.14_arm64.deb"
+  },
+  "rust_toolchain_files": {
+    "bin/cargo": "de9be4299324f5c1f5d12103792d35e8b8ab195df3a374194b8ffc33562c7e3d",
+    "bin/rustc": "ac3e92e45fe15c789939deedf7614f4f9578cc9609cb9ead39c9b1808a316c5b",
+    "lib/libLLVM-20-rust-1.88.0-stable.so": "ed3b1c9e76c49d5482a0f80c1182a316c945d3aed2fc997c7786ea12120d5d2e",
+    "lib/libLLVM.so.20.1-rust-1.88.0-stable": "e03afb05eeb8c5f3354ff7ea5a839bae7f7b79ec1a5096f4611072e7313ef72f",
+    "lib/librustc_driver-277627f6f3b9f29c.so": "ce408ed4018b56fe4175475b516b1440946bcaf0edf33f957ac581b405c8a9b4",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libaddr2line-e13c09779f9bd1fe.rlib": "12de2a2d808fa0ae6a17a0f839403d51903415d29adf28b8ca51f72f8454926d",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libadler2-1f2bf9552ed1f9e7.rlib": "2bdc619aab41a7ac1ccb44ae0cf89f91817d2f32f305fe5b5d2c503791da9478",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/liballoc-09ef765a209db0c9.rlib": "2778936e84c547f1d7d77fd0351c02be29182d61af3c7d2313e3473c37bcf240",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libcfg_if-2bab85fe55e7e3ac.rlib": "c5d5137151f7648093b01c6ac1d75f4aa6be917728e92a4ec2d60b24be867bfa",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libcompiler_builtins-33e5932ab6994ef6.rlib": "f0b10c8d0212988437a638d12b72ea1da2f2aba8af9449d2cb0ab5d7f5e3374b",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libcore-722598690b414e06.rlib": "c6178c9a179bfc6dee1ed8961298c58349f119b21e1bb996903b22229fb57b1c",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libgetopts-b61ee8a46abe349e.rlib": "bfe94d61ad30820851d32e3cfcf655ef34bacdfa00900e7436feaf813c80e575",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libgimli-75f11d1fb742f2da.rlib": "6f96b741b0c6854a9f0b707e2c52ec26aecfcc67ff54dfc063f80fb2093b5db1",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libhashbrown-25295da9fc3f8d08.rlib": "98db27f6d84863c5dcd65112ad17e860b2d5194cfb9c475fe71b732a7a6ee57c",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/liblibc-1926f909fc5812b0.rlib": "e32551b997c77d7f119df15725a2dcf92d0dc4527b36e51fdf7236b4da275b0b",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libmemchr-d388eaacb2733051.rlib": "e719aa68f20e4c48fb506f18344cd6c624b38565b1158da6c398c5a4f36c39b8",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libminiz_oxide-db38e83e4c5f2692.rlib": "90e328b0464b852e293c99e4b9cc6e7461da6fa1ea8224adf65651f9ba6269fd",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libobject-a95a16857fcfabec.rlib": "1c23127acf4fad297f203bb2dc2f616d6b466a53137363d67cafde8036c93ab3",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libpanic_abort-b767606fe66e4334.rlib": "093f9820d995350d9454db85745511e16495a19c93442df5ffa97041b3fe79ba",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libpanic_unwind-613587ee1dccd45c.rlib": "a58cad383b1428b8e1ec5974eae3b2f08b9e2725c35aad9cd5f9aecac98d3bae",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libproc_macro-8daed4cd52ac00c2.rlib": "f95a161618c9b181111bc11637338885105b5004db07b2b9ef9716e1cab9c7b2",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libprofiler_builtins-485be91e74082562.rlib": "c71e6f9afae8bfd98d4d4f1ea3f93904d8db5d8f00835ca9e218e99d153f90b1",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/librustc_demangle-a2db633b70d1006d.rlib": "ee2298ff94fc478b31e5411f852419f6fe1de260a075e63084971a1ab04bbd16",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/librustc_literal_escaper-a68804814a88675a.rlib": "7135501af2a3e7be246220ec4a8d35fb6ca9d74fb80978eeb9d8781c5b5de828",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/librustc_std_workspace_alloc-b3647ce8292f59db.rlib": "e16dcf1d661c455f2884d0de5ad78fa86e282fe60f9e4d4dda42f188d48d8d8c",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/librustc_std_workspace_core-e2e9c89c2e94e09a.rlib": "73e023cbd58022b2197fff7d07e66b36538308ecad769a92c5d0368445a6b34a",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/librustc_std_workspace_std-510790bb170a700c.rlib": "80fc66efd5bd84ad8a24a1bbbb8ce00bd0b9fc04478e9869dd2b7a7e06075cea",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libstd-2ec902685bc11f08.rlib": "5a5123ea6871e8d6b570b19d4b3710e7cd5d0a9a695c4ae4638a1bf7810a03d0",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libstd-2ec902685bc11f08.so": "58d3f473f492b235e8d2777443a782d2815f3b0c59201d6aa637c88148adab29",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libstd_detect-b0e6fb22b0c57932.rlib": "3ad5b1297fab2ef1e66baeac4d9b548fa67f0a461af538cb448bd9eec64db34c",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libsysroot-5b93dfed9d3dab0a.rlib": "c4d5477ee91220e2882691a3100ad8877b4e02d51125cba99b43a52826b89ec1",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libtest-2752cb35fe3cff72.rlib": "a794da9df50a475946cd8aeb5acd40acb86f3b44ea545c0addbf6a737709979f",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libunicode_width-679720ae8a2ef45b.rlib": "5f57ba781883ccefb9e4b448656e01e285ad6766b1a75bb3a6d0051dd14a9777",
+    "lib/rustlib/aarch64-unknown-linux-gnu/lib/libunwind-876ca6fec439250d.rlib": "9344bfbcfd087259f8ecde3b21d8ea0963e4aff957bc2daa88a56dd2e7fcb299",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libLLVM-20-rust-1.88.0-stable.so": "ed3b1c9e76c49d5482a0f80c1182a316c945d3aed2fc997c7786ea12120d5d2e",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libaddr2line-98301de5f7086436.rlib": "de89a79879aee7dc7a18c8e1c42621ef2ff49bf6d4b669240367d7a6f8674f24",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libadler2-1771173790878ec9.rlib": "0b361d369e11a754733bec7ba2316a96713a4d762a6f508f6ec1ed9f2f018af3",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/liballoc-dd4278716aec610d.rlib": "a0e6bfb7dfa27a95d008cf8a8bd414afbfe88d615136e7b1f7e704f515c9c571",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcfg_if-bb9ca1ec3e4f14df.rlib": "31a6e701df8156f04ec03f920b2b35b5950ad3e38bd4e0b04bdb5fef60f963f4",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcompiler_builtins-5b527a916c3a9013.rlib": "68e25e04d2bc127824512dff14ab7d01506a33ec5551ad4fe9a10e5d0a680416",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libcore-14c6c9cbfe9f3e2d.rlib": "4061e1e827a579a6cfcf361db858bb955a825190d81001dcaeca7700ba14704c",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libgetopts-a5810e86d1114b52.rlib": "38e0cb9d72690e6174ed1bca695a5ac83961a7242aa5b953286068f8b973e0a4",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libgimli-c04b364b33261ab8.rlib": "9688f2774c40294a17288e3dbbf5f6e968e7821720e58373fbbcf7c501d6f295",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libhashbrown-4b2c04502d3e324b.rlib": "20754c2cb44c53ffa690e5acc633aef977ac37ae3f0da76b26471784d3bfaeff",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/liblibc-06a8c693b4aab691.rlib": "73729f1bb914d7bcadeb52d1beae115c93bff2b592df7b336d33b7fcd84189be",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libmemchr-4ab95264898e2f40.rlib": "71d57d6c27beaedc73a6552b25c616ef9d4d7c28e9d7f142ec30283374e5a153",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libminiz_oxide-e56d2a038e1f7798.rlib": "b288bc6f7d739dc4f42e73962798129133229418d142bd4d8106abc8ee97d8a3",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libobject-293bc8e42ad97307.rlib": "4678a3cb7765cef41c472e64f3508818324d60b4afff27c50c800b5c59393e56",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libpanic_abort-a6672b8c17e51203.rlib": "cf7af706dd4558273ce76d7b1f39107a9380306f0027331ec673ffaf0f8063c5",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libpanic_unwind-e6943c8b7850575a.rlib": "50088931b722051ff637b439c565acb705ee4ca59e70e8cc67ecfd7735ce2960",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libproc_macro-c1ed4634a1399598.rlib": "dfdc8885d315094dd53f851e3cd20d6c461c422d3c4bf8a26c367dd558ee770e",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libprofiler_builtins-c04de9df3d3fb223.rlib": "ecd1604abb95c118207d92298d0b87fe6654bae3c4739ad90bc40617525514b1",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_demangle-7ab55e5a1abede85.rlib": "9dd2b942947eec6daf14aa8a4bd4cddcaeb48f1f7f1a02d85b73c99f819243b6",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_literal_escaper-98d3f0cf3c563537.rlib": "76a83e54aa168c145a1657f36c4d86ebc10cd3fe02afb2e71a892452670997d8",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_std_workspace_alloc-1aeb559ec68adac8.rlib": "ccceb875971befc0ed51cf89700bdb407d2c328ecc6344f1234cc045f56021b5",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_std_workspace_core-21d8811a3176bd13.rlib": "10b922010baca718721e01d41429d3f6676815b7f54ad7dc08adb1ddfc944ca1",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/librustc_std_workspace_std-4d7f32f0db1cd890.rlib": "97c5c20302d4da12ce2a5245f312e0a6e25a5a3a76892e03c786a64921ca1608",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd-8df6be531efb3fd0.rlib": "d72ed382331f0f02b08824d38d712dec08a39c35d9af27a9c941593efe5e610e",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd-8df6be531efb3fd0.so": "248c40144de82b73ee0fd24137df0128e82a376b06086897a3958b10dd238478",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libstd_detect-f9ea2d02cc19f59b.rlib": "dbb17517334c17f5648a3b9fb4ce095b6714135fd643983354bf8c7113c5ecdf",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libsysroot-7d230db447fb9ed4.rlib": "52ba9227bb7be1c18cb90160988150f7bbf30af1a4ef171fbbdb880cfed6a5ad",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libtest-3180d4e8f9567e63.rlib": "2c617cb6468459a7b2e1ba5b91c0fd007a1e8777eba981372e5262221004d5be",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libunicode_width-00c1d01c52469360.rlib": "c83b4cc03b4c32091fb2a4d73bbaabe32d015cec329266033d8d51ed22e6280d",
+    "lib/rustlib/x86_64-unknown-linux-gnu/lib/libunwind-40a29baa8a137f0c.rlib": "b8ce1e41476573f008db0f55d26afb792cd914d43e0dd6387b08d15d5cc32592"
+  },
+  "host_build_packages": [
+    {
+      "file": "downloads/host-debs/libclang-common-18-dev_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "metadata": "Package: libclang-common-18-dev\nVersion: 1:18.1.3-1ubuntu1\nArchitecture: amd64\n",
+      "sha256": "d41631bb752815a8196261d1030c096591c59678c8adfbf2e6a740a691b49e80"
+    },
+    {
+      "file": "downloads/host-debs/libclang1-18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "metadata": "Package: libclang1-18\nVersion: 1:18.1.3-1ubuntu1\nArchitecture: amd64\n",
+      "sha256": "1ed67106d743ab4f12db2726c5fc11c436c5e1fba613e9f1006bf3fa05cc69bd"
+    },
+    {
+      "file": "downloads/host-debs/libllvm18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "metadata": "Package: libllvm18\nVersion: 1:18.1.3-1ubuntu1\nArchitecture: amd64\n",
+      "sha256": "af6197096ce3b89aab86de59f01c1b5feb008b2ae1514a03906c0664edb8b0b1"
+    }
+  ]
+}

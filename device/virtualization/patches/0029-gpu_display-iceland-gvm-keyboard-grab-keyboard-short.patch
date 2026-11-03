@@ -1,0 +1,286 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mzak <mzak.amin@gmail.com>
+Date: Mon, 26 Oct 2026 20:47:20 +0300
+Subject: [PATCH 29/30] gpu_display: iceland gvm: keyboard grab
+ (keyboard-shortcuts-inhibit) with CROSVM_GVM_KBD_GRAB=1
+
+The VM window asks the compositor (KWin, Mutter) to pass its own shortcuts - Super, Alt+Tab, ... - to the VM while
+the window has the keyboard focus (zwp_keyboard_shortcuts_inhibit_manager_v1). Off unless CROSVM_GVM_KBD_GRAB=1;
+GVM-KBD-GRAB requested / active / inactive / unavailable on stderr for the kit rows. The protocol XML
+(wayland-protocols, MIT) is bundled as the fallback the build script looks for.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Signed-off-by: mzak <mzak.amin@gmail.com>
+(cherry picked from commit b47d6436080e690a4638ae9287aa1f6d0517b85e)
+---
+ gpu_display/build.rs                          |   1 +
+ ...keyboard-shortcuts-inhibit-unstable-v1.xml | 143 ++++++++++++++++++
+ gpu_display/src/display_wl.c                  |  48 ++++++
+ 3 files changed, 192 insertions(+)
+ create mode 100644 gpu_display/protocol/keyboard-shortcuts-inhibit-unstable-v1.xml
+
+diff --git a/gpu_display/build.rs b/gpu_display/build.rs
+index 4e1bccf..8a1a0a4 100644
+--- a/gpu_display/build.rs
++++ b/gpu_display/build.rs
+@@ -95,6 +95,7 @@ fn build_wayland() {
+         "viewporter",
+         "virtio-gpu-metadata-v1",
+         "xdg-decoration-unstable-v1",
++        "keyboard-shortcuts-inhibit-unstable-v1",
+     ] {
+         build.file(compile_protocol(protocol, &out_dir));
+     }
+diff --git a/gpu_display/protocol/keyboard-shortcuts-inhibit-unstable-v1.xml b/gpu_display/protocol/keyboard-shortcuts-inhibit-unstable-v1.xml
+new file mode 100644
+index 0000000..2774876
+--- /dev/null
++++ b/gpu_display/protocol/keyboard-shortcuts-inhibit-unstable-v1.xml
+@@ -0,0 +1,143 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<protocol name="keyboard_shortcuts_inhibit_unstable_v1">
++
++  <copyright>
++    Copyright © 2017 Red Hat Inc.
++
++    Permission is hereby granted, free of charge, to any person obtaining a
++    copy of this software and associated documentation files (the "Software"),
++    to deal in the Software without restriction, including without limitation
++    the rights to use, copy, modify, merge, publish, distribute, sublicense,
++    and/or sell copies of the Software, and to permit persons to whom the
++    Software is furnished to do so, subject to the following conditions:
++
++    The above copyright notice and this permission notice (including the next
++    paragraph) shall be included in all copies or substantial portions of the
++    Software.
++
++    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++    DEALINGS IN THE SOFTWARE.
++  </copyright>
++
++  <description summary="Protocol for inhibiting the compositor keyboard shortcuts">
++    This protocol specifies a way for a client to request the compositor
++    to ignore its own keyboard shortcuts for a given seat, so that all
++    key events from that seat get forwarded to a surface.
++
++    Warning! The protocol described in this file is experimental and
++    backward incompatible changes may be made. Backward compatible
++    changes may be added together with the corresponding interface
++    version bump.
++    Backward incompatible changes are done by bumping the version
++    number in the protocol and interface names and resetting the
++    interface version. Once the protocol is to be declared stable,
++    the 'z' prefix and the version number in the protocol and
++    interface names are removed and the interface version number is
++    reset.
++  </description>
++
++  <interface name="zwp_keyboard_shortcuts_inhibit_manager_v1" version="1">
++    <description summary="context object for keyboard grab_manager">
++      A global interface used for inhibiting the compositor keyboard shortcuts.
++    </description>
++
++    <request name="destroy" type="destructor">
++      <description summary="destroy the keyboard shortcuts inhibitor object">
++	Destroy the keyboard shortcuts inhibitor manager.
++      </description>
++    </request>
++
++    <request name="inhibit_shortcuts">
++      <description summary="create a new keyboard shortcuts inhibitor object">
++	Create a new keyboard shortcuts inhibitor object associated with
++	the given surface for the given seat.
++
++	If shortcuts are already inhibited for the specified seat and surface,
++	a protocol error "already_inhibited" is raised by the compositor.
++      </description>
++      <arg name="id" type="new_id" interface="zwp_keyboard_shortcuts_inhibitor_v1"/>
++      <arg name="surface" type="object" interface="wl_surface"
++	   summary="the surface that inhibits the keyboard shortcuts behavior"/>
++      <arg name="seat" type="object" interface="wl_seat"
++	   summary="the wl_seat for which keyboard shortcuts should be disabled"/>
++    </request>
++
++    <enum name="error">
++      <entry name="already_inhibited"
++	     value="0"
++	     summary="the shortcuts are already inhibited for this surface"/>
++    </enum>
++  </interface>
++
++  <interface name="zwp_keyboard_shortcuts_inhibitor_v1" version="1">
++    <description summary="context object for keyboard shortcuts inhibitor">
++      A keyboard shortcuts inhibitor instructs the compositor to ignore
++      its own keyboard shortcuts when the associated surface has keyboard
++      focus. As a result, when the surface has keyboard focus on the given
++      seat, it will receive all key events originating from the specified
++      seat, even those which would normally be caught by the compositor for
++      its own shortcuts.
++
++      The Wayland compositor is however under no obligation to disable
++      all of its shortcuts, and may keep some special key combo for its own
++      use, including but not limited to one allowing the user to forcibly
++      restore normal keyboard events routing in the case of an unwilling
++      client. The compositor may also use the same key combo to reactivate
++      an existing shortcut inhibitor that was previously deactivated on
++      user request.
++
++      When the compositor restores its own keyboard shortcuts, an
++      "inactive" event is emitted to notify the client that the keyboard
++      shortcuts inhibitor is not effectively active for the surface and
++      seat any more, and the client should not expect to receive all
++      keyboard events.
++
++      When the keyboard shortcuts inhibitor is inactive, the client has
++      no way to forcibly reactivate the keyboard shortcuts inhibitor.
++
++      The user can chose to re-enable a previously deactivated keyboard
++      shortcuts inhibitor using any mechanism the compositor may offer,
++      in which case the compositor will send an "active" event to notify
++      the client.
++
++      If the surface is destroyed, unmapped, or loses the seat's keyboard
++      focus, the keyboard shortcuts inhibitor becomes irrelevant and the
++      compositor will restore its own keyboard shortcuts but no "inactive"
++      event is emitted in this case.
++    </description>
++
++    <request name="destroy" type="destructor">
++      <description summary="destroy the keyboard shortcuts inhibitor object">
++	Remove the keyboard shortcuts inhibitor from the associated wl_surface.
++      </description>
++    </request>
++
++    <event name="active">
++      <description summary="shortcuts are inhibited">
++	This event indicates that the shortcut inhibitor is active.
++
++	The compositor sends this event every time compositor shortcuts
++	are inhibited on behalf of the surface. When active, the client
++	may receive input events normally reserved by the compositor
++	(see zwp_keyboard_shortcuts_inhibitor_v1).
++
++	This occurs typically when the initial request "inhibit_shortcuts"
++	first becomes active or when the user instructs the compositor to
++	re-enable and existing shortcuts inhibitor using any mechanism
++	offered by the compositor.
++      </description>
++    </event>
++
++    <event name="inactive">
++      <description summary="shortcuts are restored">
++	This event indicates that the shortcuts inhibitor is inactive,
++	normal shortcuts processing is restored by the compositor.
++       </description>
++    </event>
++  </interface>
++</protocol>
+diff --git a/gpu_display/src/display_wl.c b/gpu_display/src/display_wl.c
+index c70bff1..6770450 100644
+--- a/gpu_display/src/display_wl.c
++++ b/gpu_display/src/display_wl.c
+@@ -26,6 +26,7 @@
+ #include "xdg-shell.h"
+ #include "virtio-gpu-metadata-v1.h"
+ #include "xdg-decoration-unstable-v1.h"
++#include "keyboard-shortcuts-inhibit-unstable-v1.h"
+ #include <wayland-client-core.h>
+ #include <wayland-client-protocol.h>
+ #include <wayland-client.h>
+@@ -81,6 +82,8 @@ struct interfaces {
+ 	struct wp_viewporter *viewporter; // optional
+ 	struct wp_virtio_gpu_metadata_v1 *virtio_gpu_metadata; // optional
+ 	struct zxdg_decoration_manager_v1 *decoration_manager; /* iceland gvm: KWin server-side frame */
++	/* iceland gvm (kbd grab): compositor shortcuts go to the VM while its window has the keyboard */
++	struct zwp_keyboard_shortcuts_inhibit_manager_v1 *kbd_inhibit_manager;
+ };
+ 
+ struct output {
+@@ -145,6 +148,7 @@ struct dwl_surface {
+ 	struct xdg_surface *xdg_surface;
+ 	struct xdg_toplevel *xdg_toplevel;
+ 	struct zxdg_toplevel_decoration_v1 *decoration;
++	struct zwp_keyboard_shortcuts_inhibitor_v1 *kbd_inhibitor; /* iceland gvm (kbd grab) */
+ 	struct wp_viewport *viewport;
+ 	struct wp_virtio_gpu_surface_metadata_v1 *virtio_gpu_surface_metadata;
+ 	struct wl_subsurface *subsurface;
+@@ -736,6 +740,27 @@ static void dwl_context_output_get_aura(struct dwl_context *context)
+ 	}
+ }
+ 
++/* iceland gvm (kbd grab): the compositor tells whether the inhibitor is in force (it may ask the user first, or
++ * the user may cancel it with the compositor's escape shortcut); logged for the kit rows */
++static void kbd_inhibitor_active(void *data, struct zwp_keyboard_shortcuts_inhibitor_v1 *inhibitor)
++{
++	(void)data;
++	(void)inhibitor;
++	fprintf(stderr, "GVM-KBD-GRAB active\n");
++}
++
++static void kbd_inhibitor_inactive(void *data, struct zwp_keyboard_shortcuts_inhibitor_v1 *inhibitor)
++{
++	(void)data;
++	(void)inhibitor;
++	fprintf(stderr, "GVM-KBD-GRAB inactive\n");
++}
++
++static const struct zwp_keyboard_shortcuts_inhibitor_v1_listener kbd_inhibitor_listener = {
++	.active = kbd_inhibitor_active,
++	.inactive = kbd_inhibitor_inactive,
++};
++
+ static void registry_global(void *data, struct wl_registry *registry,
+ 			    uint32_t id, const char *interface,
+ 			    uint32_t version)
+@@ -781,6 +806,10 @@ static void registry_global(void *data, struct wl_registry *registry,
+ 		 * Mutter does not offer this global, so GNOME is unchanged. */
+ 		ifaces->decoration_manager = (struct zxdg_decoration_manager_v1 *)wl_registry_bind(
+ 		    registry, id, &zxdg_decoration_manager_v1_interface, 1);
++	} else if (strcmp(interface, zwp_keyboard_shortcuts_inhibit_manager_v1_interface.name) == 0) {
++		/* iceland gvm (kbd grab): KWin and Mutter offer it; bound always, used with CROSVM_GVM_KBD_GRAB=1 */
++		ifaces->kbd_inhibit_manager = (struct zwp_keyboard_shortcuts_inhibit_manager_v1 *)wl_registry_bind(
++		    registry, id, &zwp_keyboard_shortcuts_inhibit_manager_v1_interface, 1);
+ 	} else if (strcmp(interface, "wp_virtio_gpu_metadata_v1") == 0) {
+ 		ifaces->virtio_gpu_metadata =
+ 			(struct wp_virtio_gpu_metadata_v1 *)wl_registry_bind(
+@@ -1335,6 +1364,23 @@ struct dwl_surface *dwl_context_surface_new(struct dwl_context *self,
+ 		xdg_surface_add_listener(disp_surface->xdg_surface,
+ 					     &xdg_surface_listener,
+ 					     disp_surface);
++		/* iceland gvm (kbd grab): CROSVM_GVM_KBD_GRAB=1 asks the compositor to send its own shortcuts
++		 * (Super, Alt+Tab, ...) to the VM while this window has the keyboard focus */
++		const char *kg = getenv("CROSVM_GVM_KBD_GRAB");
++		if (kg && *kg && strcmp(kg, "0") != 0) {
++			if (self->ifaces.kbd_inhibit_manager && self->ifaces.seat) {
++				disp_surface->kbd_inhibitor =
++				    zwp_keyboard_shortcuts_inhibit_manager_v1_inhibit_shortcuts(
++					self->ifaces.kbd_inhibit_manager, disp_surface->wl_surface,
++					self->ifaces.seat);
++				if (disp_surface->kbd_inhibitor)
++					zwp_keyboard_shortcuts_inhibitor_v1_add_listener(
++					    disp_surface->kbd_inhibitor, &kbd_inhibitor_listener, disp_surface);
++				fprintf(stderr, "GVM-KBD-GRAB requested\n");
++			} else {
++				fprintf(stderr, "GVM-KBD-GRAB unavailable (no keyboard-shortcuts-inhibit in this compositor)\n");
++			}
++		}
+ 		/* iceland gvm (0.2-6): CROSVM_GVM_FULLSCREEN=1 opens the window fullscreen, on the output named
+ 		 * or numbered (0-based, binding order) by CROSVM_GVM_OUTPUT; unknown or unset = the compositor's choice */
+ 		const char *fs = getenv("CROSVM_GVM_FULLSCREEN");
+@@ -1492,6 +1538,8 @@ void dwl_surface_destroy(struct dwl_surface **self)
+ 		wp_viewport_destroy((*self)->viewport);
+ 	if ((*self)->subsurface)
+ 		wl_subsurface_destroy((*self)->subsurface);
++	if ((*self)->kbd_inhibitor)
++		zwp_keyboard_shortcuts_inhibitor_v1_destroy((*self)->kbd_inhibitor);
+ 	if ((*self)->decoration)
+ 		zxdg_toplevel_decoration_v1_destroy((*self)->decoration);
+ 	if ((*self)->xdg_toplevel)
+-- 
+2.43.0
+

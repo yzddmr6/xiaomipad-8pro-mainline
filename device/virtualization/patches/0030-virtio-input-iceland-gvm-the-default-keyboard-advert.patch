@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mzak <mzak.amin@gmail.com>
+Date: Mon, 26 Oct 2026 21:31:33 +0300
+Subject: [PATCH 30/30] virtio input: iceland gvm: the default keyboard
+ advertises Super (LEFTMETA / RIGHTMETA) and Compose
+
+kit-vm22 K-3: with the keyboard grab active KWin passed Super to the VM window, but the guest never saw it: the
+virtio keyboard's key bitmap had no KEY_LEFTMETA, and the guest's input core drops keys a device does not
+advertise. Alt+Tab and Escape (advertised) arrived.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Signed-off-by: mzak <mzak.amin@gmail.com>
+(cherry picked from commit e9ef261056ec22418e9e81dcac96cdcb766eed6d)
+---
+ devices/src/virtio/input/defaults.rs | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/devices/src/virtio/input/defaults.rs b/devices/src/virtio/input/defaults.rs
+index 410c1b5..ba8e59c 100644
+--- a/devices/src/virtio/input/defaults.rs
++++ b/devices/src/virtio/input/defaults.rs
+@@ -448,6 +448,11 @@ fn default_keyboard_events() -> BTreeMap<u16, virtio_input_bitmap> {
+             KEY_INSERT,
+             KEY_DELETE,
+             KEY_PAUSE,
++            // iceland gvm (kbd grab, kit-vm22 K-3): Super / Menu reach the guest (the guest kernel drops keys the
++            // device does not advertise)
++            KEY_LEFTMETA,
++            KEY_RIGHTMETA,
++            KEY_COMPOSE,
+             KEY_MENU,
+             KEY_PRINT,
+             KEY_POWER,
+-- 
+2.43.0
+

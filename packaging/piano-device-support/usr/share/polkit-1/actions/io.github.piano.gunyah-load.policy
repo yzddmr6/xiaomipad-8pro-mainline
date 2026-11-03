@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<!-- SPDX-License-Identifier: MIT -->
+<policyconfig>
+  <vendor>xiaomipad-8pro-mainline</vendor>
+  <action id="io.github.piano.gunyah-load">
+    <description>Enable Gunyah virtual machines for this boot</description>
+    <description xml:lang="zh_CN">在本次启动中启用 Gunyah 虚拟机</description>
+    <message>Administrator authentication is required to enable virtual machines</message>
+    <message xml:lang="zh_CN">启用虚拟机需要管理员认证</message>
+    <defaults>
+      <allow_any>no</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/libexec/piano/piano-gunyah-load</annotate>
+  </action>
+</policyconfig>
