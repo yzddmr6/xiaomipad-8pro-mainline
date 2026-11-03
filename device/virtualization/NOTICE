@@ -10,3 +10,8 @@ minijail: ChromiumOS Authors, BSD-3-Clause, commit
 Rust dependencies retain their individual source licences and notices.
 The corresponding-source archive contains source archives, Cargo.lock,
 registry source packages, patches and the build/packaging scripts.
+The simple-framebuffer and VNC additions derive from DroidVM dvm-crosvm 849e05f,
+GPL-2.0-or-later with ADDITIONAL-PERMISSIONS, as detailed in the patched source's
+CREDITS and LICENSE.GPL-2.0. The VNC build links Ubuntu's GPL LibVNCServer.
+Windows preparation and display integration: Piano mainline contributors, MIT;
+firmware and signed drivers keep their separate licences (windows/NOTICE).

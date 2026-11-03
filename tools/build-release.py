@@ -123,16 +123,16 @@ def stage_virtualization(packages, source, out, root_packages):
         fields = dict(line.split(': ', 1) for line in control.splitlines()
                       if ': ' in line and not line.startswith(' '))
         name = fields['Package']
-        if name not in ('piano-vm', 'piano-crosvm') or name in found:
+        if name not in ('piano-vm', 'piano-crosvm', 'piano-vm-windows') or name in found:
             raise ValueError('unexpected or duplicate optional VM package')
         if fields['Architecture'] != 'arm64':
             raise ValueError('VM packages must be arm64')
         found[name] = (path, fields['Version'])
-    if set(found) != {'piano-vm', 'piano-crosvm'}:
+    if not {'piano-vm', 'piano-crosvm'} <= set(found):
         raise ValueError('both VM packages are required')
     version = found['piano-vm'][1]
     support = next((x for x in root_packages if x['package'] == 'piano-device-support'), None)
-    if found['piano-crosvm'][1] != version or support is None:
+    if any(ver != version for _, ver in found.values()) or support is None:
         raise ValueError('VM package versions or device support do not match')
     subprocess.run(['dpkg', '--compare-versions', support['version'], 'ge', version], check=True)
     dest = out / 'optional/virtualization'
@@ -160,7 +160,7 @@ def main():
     ap.add_argument('--output', type=Path, required=True, help='New release directory')
     ap.add_argument('--changes', type=Path, required=True,
                     help='Bilingual summary, updates and known limitations (UTF-8)')
-    ap.add_argument('--virtualization-packages', type=Path, help='Optional piano-vm and piano-crosvm deb directory')
+    ap.add_argument('--virtualization-packages', type=Path, help='Optional VM deb directory, including piano-vm-windows when built')
     ap.add_argument('--virtualization-source', type=Path, help='Matching corresponding-source archive')
     a = ap.parse_args()
     changes = a.changes.read_text(encoding='utf-8')

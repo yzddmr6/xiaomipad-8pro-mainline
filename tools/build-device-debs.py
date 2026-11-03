@@ -74,13 +74,15 @@ def main():
     select.add_argument('--mipps-auth-only', action='store_true', help='Build only the pinned MiPPS authentication package')
     select.add_argument('--virtualization-only', action='store_true', help='Build optional VM userspace packages')
     ap.add_argument('--crosvm-build', type=Path)
+    ap.add_argument('--windows-build', type=Path)
     a = ap.parse_args()
     if a.virtualization_only:
         if a.crosvm_build is None:
             ap.error('--virtualization-only requires --crosvm-build')
         subprocess.run(['python3', str(Path(__file__).resolve().parent / 'build-virtualization-debs.py'),
                         '--output', str(a.output), '--version', a.version,
-                        '--crosvm-build', str(a.crosvm_build)], check=True)
+                        '--crosvm-build', str(a.crosvm_build),
+                        *(['--windows-build', str(a.windows_build)] if a.windows_build else [])], check=True)
         return
     if a.snap_graphics_only and not a.snap_graphics_build:
         ap.error('--snap-graphics-only requires --snap-graphics-build')

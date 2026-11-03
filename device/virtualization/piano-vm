@@ -28,6 +28,13 @@ CROSVM = Path("/usr/lib/piano/crosvm/crosvm")
 MODS = ["gunyah_rsc_mgr", "gunyah_vcpu", "gunyah_irqfd", "gunyah_ioeventfd"]
 THP = Path("/sys/kernel/mm/transparent_hugepage/shmem_enabled")
 HOST_RESERVE_MIB = 1024
+MAX_MEMORY_MIB = 5120
+sys.path.insert(0, str(BUNDLE))
+import windows_vm
+
+
+def dma_pool_mib(cfg):
+    return 256 if cfg.get("os") == "windows11" else 128
 
 
 class Failure(RuntimeError):
@@ -91,9 +98,16 @@ def owned_vm(store, name, uid, inputs=True):
         or cfg["connection"] != f'piano-vm-{uid}-{cfg["id"][:8]}'
     ):
         raise Failure("network identity mismatch")
-    if not 1 <= cfg["cpus"] <= 64 or not 512 <= cfg["memory_mib"] <= 16384:
+    if not 1 <= cfg["cpus"] <= 64 or not 512 <= cfg["memory_mib"] <= MAX_MEMORY_MIB:
         raise Failure("invalid VM resource limits")
-    for name in ["disk.raw", "seed.iso", "boot/Image", "boot/initrd.img"] if inputs else []:
+    required = ["disk.raw", "seed.iso", "boot/Image", "boot/initrd.img"]
+    if cfg.get("os") == "windows11":
+        if not 4608 <= cfg["memory_mib"] <= MAX_MEMORY_MIB or not 1024 <= cfg["vnc_port"] <= 65535:
+            raise Failure("invalid Windows memory or VNC port")
+        required = ["disk.raw", "firmware.fd"]
+        if cfg["install_media"]:
+            required += ["install/boot.raw", "install/install.raw", "install/drivers.raw"]
+    for name in required if inputs else []:
         p = vm / name
         if not p.is_file() or p.is_symlink() or not p.resolve().is_relative_to(vm):
             raise Failure("invalid VM input " + name)
@@ -167,6 +181,8 @@ def nm_commands(cfg):
 
 
 def crosvm_argv(vm, cfg, rd):
+    if cfg.get("os") == "windows11":
+        return windows_vm.arguments(vm, cfg, rd, CROSVM)
     net = f'tap-name={cfg["tap"]},mac={cfg["mac"]}' + (",vhost-net" if cfg["vhost_net"] else "")
     boot = (vm / "boot").resolve(strict=True)
     params = (boot / "cmdline").read_text().strip()
@@ -297,6 +313,11 @@ def seed(vm, cfg, key):
 
 
 def create(args):
+    if args.os == "windows11":
+        return create_windows(args)
+    args.cpus = 2 if args.cpus is None else args.cpus
+    args.memory_mib = 2048 if args.memory_mib is None else args.memory_mib
+    args.disk_gib = 8 if args.disk_gib is None else args.disk_gib
     if os.geteuid() == 0:
         raise Failure("create as the ordinary owner, not root")
     if args.boot_dir and not args.image:
@@ -312,7 +333,11 @@ def create(args):
         raise Failure("VM already exists")
     image = Path(args.image).expanduser().resolve() if args.image else None
     size = args.disk_gib * 1024**3
-    if not 1 <= args.cpus <= 64 or not 512 <= args.memory_mib <= 16384 or args.disk_gib < 1:
+    if (
+        not 1 <= args.cpus <= 64
+        or not 512 <= args.memory_mib <= MAX_MEMORY_MIB
+        or args.disk_gib < 1
+    ):
         raise Failure("invalid resource size")
     info = json.loads(output(["qemu-img", "info", "--output=json", image])) if image else None
     if info and info.get("backing-filename"):
@@ -458,7 +483,7 @@ def access_limits(cfg, check_vhost=True):
         raise Failure(
             "no read/write access to /dev/gunyah; require root:gunyah 0660 and an authorized group session"
         )
-    required = (cfg["memory_mib"] + 128) * 1024**2
+    required = (cfg["memory_mib"] + dma_pool_mib(cfg)) * 1024**2
     soft, hard = resource.getrlimit(resource.RLIMIT_MEMLOCK)
     if soft != resource.RLIM_INFINITY and soft < required:
         raise Failure(
@@ -504,7 +529,7 @@ def exit_reason(returncode):
     }.get(returncode, "error")
 
 
-def supervise(vm, cfg, lock_fd):
+def supervise_run(vm, cfg, lock_fd):
     uid, gid = cfg["uid"], cfg["gid"]
     lock = os.fdopen(lock_fd, "a")  # inherited flock from the ordinary-user start process
     rd = vm / "runs" / str(time.time_ns())
@@ -553,7 +578,7 @@ def supervise(vm, cfg, lock_fd):
         if cfg["cpus"] > len(os.sched_getaffinity(0)):
             raise Failure("requested vCPUs exceed online CPUs")
         avail = host_mem()["MemAvailable"] // 1024
-        required = cfg["memory_mib"] + 128 + HOST_RESERVE_MIB
+        required = cfg["memory_mib"] + dma_pool_mib(cfg) + HOST_RESERVE_MIB
         if avail < required:
             raise Failure(
                 f"MemAvailable {avail} MiB < guest + SWIOTLB allowance + host reserve = {required} MiB"
@@ -582,6 +607,10 @@ def supervise(vm, cfg, lock_fd):
         env = dict(os.environ)
         env.pop("LD_LIBRARY_PATH", None)
         env.pop("CROSVM_GVM_ACCEPT", None)
+        env.pop("CROSVM_GVM_PCI_ECAM", None)
+        if cfg.get("os") == "windows11":
+            windows_vm.display_available(cfg)
+            env["CROSVM_GVM_PCI_ECAM"] = "1"
         env.pop("LD_PRELOAD", None)
         with (rd / "crosvm.stdout").open("w") as out, (rd / "crosvm.stderr").open("w") as err:
             proc = subprocess.Popen(argv, stdout=out, stderr=err, env=env, close_fds=True)
@@ -626,6 +655,15 @@ def supervise(vm, cfg, lock_fd):
                         record()
 
             while proc.poll() is None:
+                if (
+                    cfg.get("os") == "windows11"
+                    and (vm / "force-stop.requested").exists()
+                    and (rd / "control.sock").is_socket()
+                    and not requested
+                ):
+                    (rd / "force.requested").touch(mode=0o600)
+                    run([CROSVM, "stop", rd / "control.sock"], env=env)
+                    requested = True
                 if stopping and not requested and state.get("guest_ready"):
                     send_poweroff(rd)
                     requested = True
@@ -736,7 +774,7 @@ def start_vm(store, name):
         raise Failure("requested vCPUs exceed online CPUs")
     if THP.exists() and re.search(r"\[(never|deny)\]", THP.read_text()):
         raise Failure("host shmem THP is disabled; administrator/test setup must enable it")
-    required = cfg["memory_mib"] + 128 + HOST_RESERVE_MIB
+    required = cfg["memory_mib"] + dma_pool_mib(cfg) + HOST_RESERVE_MIB
     if host_mem()["MemAvailable"] // 1024 < required:
         raise Failure(f"need MemAvailable >= {required} MiB")
     runtime = Path(f"/run/user/{os.getuid()}") / "piano-vm"
@@ -746,6 +784,7 @@ def start_vm(store, name):
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             raise Failure("another VM owned by this user is running")
+        (vm / "force-stop.requested").unlink(missing_ok=True)
         previous = read_json(vm / "state.json")
         previous["network_cleanup_needed"] = True
         atomic_json(vm / "state.json", previous)
@@ -786,7 +825,11 @@ def start_vm(store, name):
                     + name
                     + " as uid "
                     + str(os.getuid())
-                    + "; use list/console for cloud-init"
+                    + (
+                        "; use view for Windows installation/OOBE"
+                        if cfg.get("os") == "windows11"
+                        else "; use list/console for cloud-init"
+                    )
                 )
                 return
             if proc.poll() is not None:
@@ -797,6 +840,11 @@ def start_vm(store, name):
 
 
 def stop_vm(vm, cfg, force=False):
+    if cfg.get("os") == "windows11" and not force:
+        if vmm_active(read_json(vm / "state.json")):
+            raise Failure(
+                "Shut down inside Windows using view, then run stop to clean the network; --force is a crash stop"
+            )
     state = read_json(vm / "state.json")
     if monitor_active(state) or vmm_active(state):
         if not force and not state.get("guest_ready"):
@@ -808,8 +856,11 @@ def stop_vm(vm, cfg, force=False):
             raise Failure("invalid run directory")
         if force:
             # Stop also returns zero: preserve this intent independently of supervisor writes.
-            (rd / "force.requested").touch(mode=0o600)
-            run([CROSVM, "stop", rd / "control.sock"])
+            if cfg.get("os") == "windows11" and monitor_active(state):
+                (vm / "force-stop.requested").touch(mode=0o600)
+            else:
+                (rd / "force.requested").touch(mode=0o600)
+                run([CROSVM, "stop", rd / "control.sock"])
         else:
             send_poweroff(rd)
         deadline = time.monotonic() + 120
@@ -831,6 +882,9 @@ def stop_vm(vm, cfg, force=False):
 
 def status(vm, cfg):
     state = read_json(vm / "state.json")
+    if cfg.get("os") == "windows11":
+        state["display_uri"] = f"vnc://127.0.0.1:{cfg['vnc_port']}"
+        state["install_media"] = cfg["install_media"]
     if state["state"] in ("starting", "running") and not monitor_active(state):
         state["state"] = "interrupted"
     return state
@@ -869,6 +923,99 @@ def console(vm, cfg, interactive):
         os.close(fd)
 
 
+def create_windows(args):
+    if os.geteuid() == 0:
+        raise Failure("create as the ordinary owner")
+    if args.image or args.boot_dir or args.ssh_key or args.vhost_net:
+        raise Failure("Windows uses --iso and userspace virtio-net")
+    memory = 4608 if args.memory_mib is None else args.memory_mib
+    cpus = 4 if args.cpus is None else args.cpus
+    disk = 64 if args.disk_gib is None else args.disk_gib
+    if not 4608 <= memory <= MAX_MEMORY_MIB or not 1 <= cpus <= 64 or disk < 64:
+        raise Failure("Windows requires 4608..5120 MiB RAM, 1..64 vCPUs and at least 64 GiB disk")
+    if not 1024 <= args.vnc_port <= 65535:
+        raise Failure("VNC needs an unprivileged TCP port")
+    store = args.store.expanduser().resolve()
+    if not store.is_relative_to(Path.home().resolve()):
+        raise Failure("VM storage must be inside the owner home directory")
+    ident = str(uuid.uuid4())
+    subnet = ipaddress.ip_network(args.subnet or f"10.203.{int(ident[:8],16)%250+1}.0/24")
+    if subnet.version != 4 or subnet.prefixlen != 24 or not subnet.is_private:
+        raise Failure("subnet must be a private IPv4 /24")
+    cfg = {
+        "schema": 1,
+        "os": "windows11",
+        "id": ident,
+        "uid": os.getuid(),
+        "gid": os.getgid(),
+        "name": args.name,
+        "cpus": cpus,
+        "memory_mib": memory,
+        "disk_gib": disk,
+        "boot_managed": False,
+        "install_media": True,
+        "tap": "pvm" + ident.replace("-", "")[:10],
+        "connection": f"piano-vm-{os.getuid()}-{ident[:8]}",
+        "connection_uuid": str(uuid.uuid5(uuid.UUID(ident), "network-" + str(os.getuid()))),
+        "subnet": str(subnet),
+        "mac": "02:" + ":".join(ident.replace("-", "")[i : i + 2] for i in range(0, 10, 2)),
+        "vhost_net": False,
+        "vnc_port": args.vnc_port,
+    }
+    vm = store / "vms" / args.name
+    vm.mkdir(parents=True, mode=0o700, exist_ok=False)
+    try:
+        windows_vm.prepare(vm, cfg, args, BUNDLE)
+        atomic_json(vm / "config.json", cfg)
+        atomic_json(
+            vm / "state.json",
+            {"state": "created", "exit_code": None, "exit_reason": None, "clean_shutdown": None},
+        )
+    except BaseException:
+        shutil.rmtree(vm)
+        raise
+    print("created " + str(vm))
+    if args.start:
+        start_vm(store, args.name)
+
+
+def supervise(vm, cfg, lock_fd):
+    if cfg.get("os") != "windows11":
+        return supervise_run(vm, cfg, lock_fd)
+    # Keep the same owner's lock and network across guest-requested resets.
+    with os.fdopen(lock_fd, "a") as lock:
+        while True:
+            result = supervise_run(vm, cfg, os.dup(lock.fileno()))
+            state = read_json(vm / "state.json")
+            if (vm / "force-stop.requested").exists():
+                state.update(state="failed", forced_stop=True, clean_shutdown=False)
+                atomic_json(vm / "state.json", state)
+                return 1
+            if state.get("errors") or state.get("forced_stop"):
+                return result
+            if cfg["install_media"] and state.get("clean_shutdown"):
+                if not windows_vm.deployment_complete(vm, cfg):
+                    state.update(
+                        state="failed",
+                        error="Windows deployment did not finish; inspect view and deployment logs",
+                    )
+                    atomic_json(vm / "state.json", state)
+                    return 1
+                windows_vm.save_deployment_logs(vm)
+                cfg["install_media"] = False
+                atomic_json(vm / "config.json", cfg)
+                shutil.rmtree(vm / "install")
+                # The next boot is from the deployed disk and enters ordinary OOBE.
+                state.update(state="restarting", deployment_complete=True)
+                atomic_json(vm / "state.json", state)
+                continue
+            if not cfg["install_media"] and state.get("exit_reason") == "reset":
+                state["state"] = "restarting"
+                atomic_json(vm / "state.json", state)
+                continue
+            return result
+
+
 def main():
     if os.geteuid() == 0:
         raise Failure(
@@ -893,13 +1040,18 @@ def main():
     c.add_argument("--boot-dir")
     c.add_argument("--ssh-key")
     c.add_argument("--username", type=guest_username, default="ubuntu")
-    c.add_argument("--disk-gib", type=int, default=8)
-    c.add_argument("--cpus", type=int, default=2)
-    c.add_argument("--memory-mib", type=int, default=2048)
+    c.add_argument("--disk-gib", type=int, default=None)
+    c.add_argument("--cpus", type=int, default=None)
+    c.add_argument("--memory-mib", type=int, default=None)
     c.add_argument("--subnet")
     c.add_argument("--vhost-net", action="store_true")
     c.add_argument("--start", action="store_true")
-    for action in ["start", "stop", "console", "ssh", "delete", "plan"]:
+    c.add_argument("--os", choices=["linux", "windows11"], default="linux")
+    c.add_argument("--iso", type=Path)
+    c.add_argument("--edition")
+    c.add_argument("--local-user")
+    c.add_argument("--vnc-port", type=int, default=5900)
+    for action in ["start", "stop", "console", "ssh", "delete", "plan", "view"]:
         sub = subs.add_parser(action)
         sub.add_argument("name", type=vm_name)
         if action == "stop":
@@ -954,19 +1106,29 @@ def main():
                     "module_loader": ["pkexec", "/usr/libexec/piano/piano-gunyah-load"],
                     "modules": MODS,
                     "vmm_uid": os.getuid(),
-                    "required_memlock_bytes": (cfg["memory_mib"] + 128) * 1024**2,
-                    "required_available_mib": cfg["memory_mib"] + 128 + HOST_RESERVE_MIB,
+                    "required_memlock_bytes": (cfg["memory_mib"] + dma_pool_mib(cfg)) * 1024**2,
+                    "required_available_mib": cfg["memory_mib"]
+                    + dma_pool_mib(cfg)
+                    + HOST_RESERVE_MIB,
                     "network": nm_commands(cfg),
                     "crosvm": crosvm_argv(vm, cfg, vm / "runs/PLAN"),
+                    "env": {"CROSVM_GVM_PCI_ECAM": "1"} if cfg.get("os") == "windows11" else {},
                 },
                 indent=2,
             )
         )
         return 0
+    if a.action == "view":
+        if cfg.get("os") != "windows11" or not vmm_active(read_json(vm / "state.json")):
+            raise Failure("view requires a running Windows VM")
+        windows_vm.view(vm, cfg)
+        return 0
     if a.action == "console":
         console(vm, cfg, a.interactive)
         return 0
     if a.action == "ssh":
+        if cfg.get("os") == "windows11":
+            raise Failure("Use view; Windows SSH and RDP are not enabled by this tool")
         s = status(vm, cfg)
         if s["state"] != "running" or not s.get("ipv4"):
             raise Failure("guest has not reported a DHCP address after cloud-init; inspect console")
@@ -1006,7 +1168,7 @@ def main():
 if __name__ == "__main__":
     try:
         sys.exit(main())
-    except (Failure, OSError, ValueError, subprocess.CalledProcessError) as ex:
+    except (RuntimeError, OSError, ValueError, subprocess.CalledProcessError) as ex:
         detail = getattr(ex, "stderr", None) or ""
         if isinstance(detail, bytes):
             detail = detail.decode(errors="replace")

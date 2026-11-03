@@ -376,3 +376,8 @@ piano-vm and guest/network control adapt iceland-gvm under GPL-2.0-only.
 crosvm and minijail retain their BSD notices; Rust dependencies retain their
 individual licences. See device/virtualization/NOTICE and the corresponding
 source archive distributed with the optional packages.
+The optional Windows VM package provides owner-ISO preparation tools (MIT),
+edk2-gunyah firmware (BSD-2-Clause-Patent) and selected signed DroidVM guest
+drivers with their original BSD notices. The VNC/simplefb crosvm additions
+retain DroidVM's GPL-2.0-or-later notices and additional permissions.
+See device/virtualization/windows/NOTICE and the packaged per-file notices.
