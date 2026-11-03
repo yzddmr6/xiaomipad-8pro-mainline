@@ -224,7 +224,7 @@ def capture(name, output, table, logpath):
     result = {'status': 'FAIL', 'frames': [], 'width': WIDTH, 'height': HEIGHT,
               'format': 'NV12', 'luma_range': 'full (community JPEG colorspace)',
               'metadata_scope': 'controls sampled after receipt; not frame-synchronous sensor metadata',
-              'analogue_gain_unity': 1 if name == 'rear' else 256,
+              'analogue_gain_unity': 32 if name == 'rear' else 256,
               'isp_digital_gain_unity': 1024,
               'bootstrap_frames_discarded': 0}
     proc = None

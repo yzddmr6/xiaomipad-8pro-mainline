@@ -89,7 +89,7 @@ static const struct cam_cfg cam_cfgs[] = {
 		.csid = "msm_csid0", .vfe = "msm_vfe0_pix",
 		.video = "msm_vfe0_video3", .vcm = "dw9768",
 		.in_w = 4080, .in_h = 3072, .out_w = 1920, .out_h = 1440,
-		.vflip = true, .again_unit = 1, .fps = 30,
+		.vflip = true, .again_unit = 32, .fps = 30,
 		/* mean of the stock tuning matrices */
 		.ccm = { 1732, -667, -40, -230, 1337, -82, -93, -989, 2106 },
 	},
