@@ -122,6 +122,15 @@ def process_ticks(pid):
         return None
 
 
+def spawn_vmm(argv, out, err, env):
+    # When device processes outlive a stop, crosvm's exit cleanup SIGKILLs its
+    # whole process group. Give it its own group so that cannot reach the
+    # supervisor, which must still record how the VM stopped.
+    return subprocess.Popen(
+        argv, stdout=out, stderr=err, env=env, close_fds=True, start_new_session=True
+    )
+
+
 def monitor_active(state):
     pid = state.get("supervisor_pid")
     return bool(
@@ -613,7 +622,7 @@ def supervise_run(vm, cfg, lock_fd):
             env["CROSVM_GVM_PCI_ECAM"] = "1"
         env.pop("LD_PRELOAD", None)
         with (rd / "crosvm.stdout").open("w") as out, (rd / "crosvm.stderr").open("w") as err:
-            proc = subprocess.Popen(argv, stdout=out, stderr=err, env=env, close_fds=True)
+            proc = spawn_vmm(argv, out, err, env)
             state.update(state="running", pid=proc.pid, vmm_ticks=process_ticks(proc.pid))
             record()
             requested = False
@@ -874,6 +883,11 @@ def stop_vm(vm, cfg, force=False):
         network_action("down", cfg)
     state = read_json(vm / "state.json")
     state["network_cleanup_needed"] = False
+    if state.get("state") in ("starting", "running"):
+        # The supervisor exited without recording an outcome; keep what is known.
+        state["state"] = "interrupted"
+        state["clean_shutdown"] = False
+        state["forced_stop"] = state.get("forced_stop") or force
     atomic_json(vm / "state.json", state)
     if state.get("supervisor_pid") and not state.get("clean_shutdown") and not force:
         raise Failure("VMM stopped without the normal poweroff reason; see state.json")
