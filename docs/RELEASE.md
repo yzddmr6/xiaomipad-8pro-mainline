@@ -12,7 +12,7 @@ a repackaging of exactly these files (see [Publishing](#publishing)).
 |---|---|
 | `boot/boot.img`, `boot/init_boot.img`, `boot/vendor_boot.img` | Ubuntu boot image set for slot A, AVB-signed with a release key; `boot/SHA256SUMS` lists them |
 | `boot/boot-ram-check.img` | same kernel, initrd, DTB and command line as the set, for `fastboot boot` before writing slot A |
-| `boot/boot-ram-maintenance.img` | RAM-only maintenance system: a root shell over USB with nothing mounted, for writing the partition table ([INSTALL.md step 6](INSTALL.md#6-write-the-partition-table-on-the-tablet)) |
+| `boot/boot-ram-maintenance.img` | RAM-only maintenance system: a root shell over USB with nothing mounted, for writing the partition table ([INSTALL.en.md step 6](INSTALL.en.md#6-write-the-partition-table-on-the-tablet)) |
 | `boot/manifest.json`, `boot/boot-profile.json`, `boot/piano-boot.dtb`, `boot/maintenance-manifest.json` | inputs and outputs of the set; the boot profile holds only stock-build fields; the DTB the set carries |
 | `rootfs/root.sparse.img` | the 60 GiB `linux_rootfs` ext4 as an Android sparse image, for `fastboot flash linux_rootfs` |
 | `rootfs/manifest.json`, `rootfs/verification.json` | every input hash and package version; the offline checks |
@@ -21,15 +21,15 @@ a repackaging of exactly these files (see [Publishing](#publishing)).
 | `RELEASE-NOTES.md`, `release-manifest.json`, `SHA256SUMS` | the release notes (also the GitHub release body); identity and checks of every input; every file's hash |
 
 The `linux_data` (`/home`) filesystem is not shipped; it is created at install time
-([INSTALL.md step 7](INSTALL.md#7-write-the-filesystems-fastboot)).
+([INSTALL.en.md step 7](INSTALL.en.md#7-write-the-filesystems-fastboot)).
 
 ## What the image contains
 
-- Ubuntu 26.04 Desktop ARM64 (the two official ISO layers merged unchanged, [BUILD.md](BUILD.md)),
+- Ubuntu 26.04 Desktop ARM64 (the two official ISO layers merged unchanged, [BUILD.en.md](BUILD.en.md)),
   with the APT sources of [ubuntu/26.04.sources](../ubuntu/26.04.sources), cloud-init disabled and
   the CD-ROM source removed.
 - The project packages above, `openssh-server` for developer mode, and the updated `dracut`,
-  installed in a chroot ([AGENT-GUIDE.md](AGENT-GUIDE.md) §4.4). Only the project kernel is
+  installed in a chroot ([AGENT-GUIDE.en.md](AGENT-GUIDE.en.md) §4.4). Only the project kernel is
   installed: Ubuntu's generic kernel, its headers and `kdump-tools` are purged so that updates do
   not fetch kernels that cannot boot (this also removes `libc6-dev`; install `build-essential`
   before compiling). `linux-firmware` stays.
@@ -72,7 +72,7 @@ size and load addresses).
 | Android set (`boot_a`, root-patched `init_boot_a`, `vendor_boot_a`) | this unit | `/var/lib/piano/switch/android/` | switching to Android from Ubuntu is refused; use Fastboot |
 | stock base DTB (`vendor_boot_a`) and DTBO entry (`dtbo_a`) | the stock build | `prepare-boot-dtb.py`, then the kernel package | needed only to build a kernel package |
 
-[AGENT-GUIDE.md](AGENT-GUIDE.md) §4.3 shows how to obtain each one. The prebuilt set and the
+[AGENT-GUIDE.en.md](AGENT-GUIDE.en.md) §4.3 shows how to obtain each one. The prebuilt set and the
 `piano-boot.dtb` in the kernel package were made from the stock build OS3.0.303.0.WPYCNXM; with
 another stock build, prepare the DTB and the set from your own images.
 
@@ -91,7 +91,7 @@ toolchain changes, including DTS-only changes; `CONFIG_MODVERSIONS` is off.
 1. Select the reviewed kernel commit and ordered `release_config_fragments` in
    [kernel/source.json](../kernel/source.json). Set `kernel_release` to the new release name;
    the builder applies its suffix to `CONFIG_LOCALVERSION` after merging the kernel fragments.
-2. Build with [BUILD.md](BUILD.md#1-kernel). Record the commit, compiler and final `.config`
+2. Build with [BUILD.en.md](BUILD.en.md#1-kernel). Record the commit, compiler and final `.config`
    SHA-256 from `build-result.json`.
 3. Append the release, `kernel_commit`, `config_sha256` and `"upload": 1` to `kernel/abi.json`.
    Commit both locks together, then package the recorded build. An existing release with a
@@ -99,7 +99,7 @@ toolchain changes, including DTS-only changes; `CONFIG_MODVERSIONS` is off.
    build with changed package content.
 
 Rebuilding an allocated build leaves its committed locks unchanged. Local development builds
-are described in [BUILD.md](BUILD.md#local-kernel-development).
+are described in [BUILD.en.md](BUILD.en.md#local-kernel-development).
 
 ## Release preparation (maintainers)
 
@@ -114,7 +114,7 @@ Host tools (the chroot image backend requires root; other stages run unprivilege
 `zstd`, QEMU `qemu-system-aarch64` (TCG), squashfs-tools-ng 1.2 `sqfs2tar`, and e2fsprogs 1.47.4
 `mke2fs`/`e2fsck`/`debugfs`/`dumpe2fs` built with libarchive (the identity is recorded in the
 manifests). A full root image build takes about 30 minutes in the QEMU guest on an eight-core
-host; as root, the chroot backend and `--base-cache` shorten it ([BUILD.md](BUILD.md#root-image-backends)).
+host; as root, the chroot backend and `--base-cache` shorten it ([BUILD.en.md](BUILD.en.md#root-image-backends)).
 
 ```bash
 # 1. Ubuntu packages added to the base, from a signed snapshot
@@ -123,7 +123,7 @@ python3 tools/prepare-ubuntu-apt.py --rootfs out/ubuntu-desktop-pristine/ubuntu-
   --download dracut device-tree-compiler openssh-server fake-hwclock systemd-zram-generator \
   tuned-ppd showtime gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
   gstreamer1.0-plugins-bad gstreamer1.0-libav
-# 2. The project packages (AGENT-GUIDE.md §3.4, §3.5)
+# 2. The project packages (AGENT-GUIDE.en.md §3.4, §3.5)
 #    Verify the four patched Ubuntu debs with ubuntu/power-button-lock.SHA256SUMS
 #    (ubuntu/README.md); include all four below as explicit --deb inputs.
 # 3. The root image and the boot set
@@ -139,7 +139,7 @@ python3 tools/build-rootfs-image.py \
 # 4. Boot the image in QEMU towards multi-user.target (optional; slow under TCG)
 python3 tools/check-rootfs-boot.py --rootfs-build out/rootfs-<version> --qemu <qemu-system-aarch64> \
   --debugfs <debugfs> --mke2fs <mke2fs> --output out/rootfs-<version>-boot
-# 5. The maintenance RAM image of the same kernel package (AGENT-GUIDE.md §4.6), address-free
+# 5. The maintenance RAM image of the same kernel package (AGENT-GUIDE.en.md §4.6), address-free
 python3 tools/build-persistent-boot.py --maintenance --no-serial --kernel <vmlinuz-<release>> \
   --kernel-release <release> --dtb <piano-boot.dtb of the package> --initrd out/maintenance-initramfs/initramfs.cpio.gz \
   --profile out/rootfs-<version>/boot-profile.json --mkbootimg tools/local/aosp-mkbootimg/mkbootimg.py \
@@ -163,7 +163,7 @@ Omit `--boot-check` when step 4 was not run, and list QEMU boot as untested.
   ownership are described in [device/power/tuned](../device/power/tuned/README.md).
 - `build-rootfs-image.py` streams the SquashFS into `mke2fs -d -` at the full partition size,
   then installs packages with the selected chroot or QEMU guest backend
-  ([BUILD.md](BUILD.md#root-image-backends)). In guest mode the release key reaches the
+  ([BUILD.en.md](BUILD.en.md#root-image-backends)). In guest mode the release key reaches the
   guest only on a temporary input disk that is deleted afterwards. The boot profile is reduced to
   the stock-build fields; the unit's serial and observations are dropped.
 - The tool runs `e2fsck -fn`, checks the finished image with `debugfs` (`verification.json`:
@@ -186,7 +186,7 @@ untested paths. Bind each result to the candidate image/integration commit, kern
 commit, device/panel variant and stock build, following
 [CONTRIBUTING.md](../CONTRIBUTING.md#evidence). Keep the evidence summary in
 [STATUS.md](STATUS.md); a previous release's result does not validate a new candidate.
-Use the current cold-boot procedure in [AGENT-GUIDE.md §8.4](AGENT-GUIDE.md#84-release-cold-boot).
+Use the current cold-boot procedure in [AGENT-GUIDE.en.md §8.4](AGENT-GUIDE.en.md#84-release-cold-boot).
 
 ## Publishing
 
@@ -199,7 +199,7 @@ assets by `tools/package-release-assets.py`:
 |---|---|
 | `piano-ubuntu-<version>-boot.zip` | `boot/` (the slot-A set, the RAM check and maintenance images, manifests) and the directory's `SHA256SUMS` |
 | `piano-ubuntu-<version>-tools.zip` | `tools/` (`piano-switch.py`, the KernelSU module) |
-| `piano-ubuntu-<version>-packages.zip` | `debs/` (the upgrade package, see [UPGRADE.md](UPGRADE.md)) |
+| `piano-ubuntu-<version>-packages.zip` | `debs/` (the upgrade package, see [UPGRADE.en.md](UPGRADE.en.md)) |
 | `piano-ubuntu-<version>-rootfs.img.zst.part0`, `.part1`, … | `rootfs/root.sparse.img`, zstd-compressed and split below 2 GiB |
 | `SHA256SUMS.assets` | hashes of the assets above |
 

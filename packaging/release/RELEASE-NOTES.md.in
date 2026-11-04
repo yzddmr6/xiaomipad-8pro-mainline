@@ -32,14 +32,14 @@ $updates_en
 
 ## Get, install and upgrade
 
-[Fresh installation]($repo_url/blob/$release_name/docs/INSTALL.md) · [Upgrade an existing installation]($repo_url/blob/$release_name/docs/UPGRADE.md) · [Build guide]($repo_url/blob/$release_name/docs/BUILD.md) · [Kernel source]($kernel_url/tree/$release_name)
+[Fresh installation]($repo_url/blob/$release_name/docs/INSTALL.en.md) · [Upgrade an existing installation]($repo_url/blob/$release_name/docs/UPGRADE.en.md) · [Build guide]($repo_url/blob/$release_name/docs/BUILD.en.md) · [Kernel source]($kernel_url/tree/$release_name)
 
-Attachments include `$prefix-boot.zip` boot images, `$prefix-tools.zip` switching and recovery tools, `$prefix-packages.zip` upgrade packages, and split system image files. Download every image part, concatenate them in filename order and decompress, and verify with `SHA256SUMS.assets`. Existing users should install the complete `packages.zip` set and reboot, retaining the previous kernel and rollback boot set. Installation erases Android data; read [README Before Installing]($repo_url/blob/$release_name/README.md#️-read-before-installing) first.
+Attachments include `$prefix-boot.zip` boot images, `$prefix-tools.zip` switching and recovery tools, `$prefix-packages.zip` upgrade packages, and split system image files. Download every image part, concatenate them in filename order and decompress, and verify with `SHA256SUMS.assets`. Existing users should install the complete `packages.zip` set and reboot, retaining the previous kernel and rollback boot set. Installation erases Android data; read [README Before Installing]($repo_url/blob/$release_name/README.en.md#️-read-before-installing) first.
 
 ## Known limitations
 
 $limits_en
 
-Kernel: Linux $kernel_version; stock baseline: `$stock_build` (slot A). Full hardware support is listed in the [README hardware support table]($repo_url/blob/$release_name/README.md#hardware-support).
+Kernel: Linux $kernel_version; stock baseline: `$stock_build` (slot A). Full hardware support is listed in the [README hardware support table]($repo_url/blob/$release_name/README.en.md#hardware-support).
 
-Sources and licensing: see [README acknowledgments and licensing]($repo_url/blob/$release_name/README.md#acknowledgments-and-licensing); the maintenance image's BusyBox $busybox_version source is available as an [Ubuntu source package](https://launchpad.net/ubuntu/+source/busybox/$busybox_version).
+Sources and licensing: see [README acknowledgments and licensing]($repo_url/blob/$release_name/README.en.md#acknowledgments-and-licensing); the maintenance image's BusyBox $busybox_version source is available as an [Ubuntu source package](https://launchpad.net/ubuntu/+source/busybox/$busybox_version).

@@ -50,7 +50,7 @@ A hardware report includes:
 Apply the [privacy boundary](AGENTS.md) before attaching evidence. Compilation, QEMU, a probe or
 an active service does not establish hardware support. Results from another variant do not
 establish support for this one. Current tested behavior belongs in
-[STATUS.md](docs/STATUS.md) and the [support matrix](README.md#hardware-support).
+[STATUS.md](docs/STATUS.md) and the [support matrix](README.en.md#hardware-support).
 
 Optional hardware must not disrupt boot, touch or suspend when absent or failing. Do not add
 periodic polling or wakeups without protocol evidence and device tests. Keep an unverified

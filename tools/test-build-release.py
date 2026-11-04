@@ -99,7 +99,7 @@ class Release(unittest.TestCase):
                        'Packages installed in the image', 'a-package-not-for-the-notes'):
             self.assertNotIn(absent, notes)
         for doc in ('INSTALL', 'UPGRADE'):
-            for suffix in ('.md', '.zh-CN.md'):
+            for suffix in ('.en.md', '.zh-CN.md'):
                 self.assertIn(f'/docs/{doc}{suffix}', notes)
         validate_notes(notes, 'v9.8.7')
         self.assertNotIn('|', notes)

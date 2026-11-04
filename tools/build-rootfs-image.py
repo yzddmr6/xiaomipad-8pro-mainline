@@ -6,7 +6,7 @@ sqfs2tar streams the pristine Desktop SquashFS into upstream
 mke2fs -d (libarchive), creating the ext4 at the full partition size.  A
 disposable QEMU ARM64 guest, whose own root is that SquashFS mounted
 read-only, then runs rootfs-image-guest.sh as root: the steps of
-docs/AGENT-GUIDE.md section 4.4 in a chroot of the target (policy-rc.d,
+docs/AGENT-GUIDE.en.md section 4.4 in a chroot of the target (policy-rc.d,
 SYSTEMD_OFFLINE=1 dpkg --install). Userspace packages are installed first,
 then the base's generic kernels and kdump are purged before the piano kernel
 runs dracut. As root, the same steps run in a loop-mounted chroot instead: natively on

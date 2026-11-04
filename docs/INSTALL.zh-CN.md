@@ -1,6 +1,6 @@
 # 全新安装
 
-[English](INSTALL.md) ｜ [项目首页](../README.zh-CN.md) ｜ [Fastboot、切换与恢复](FLASHING.zh-CN.md)
+[English](INSTALL.en.md) ｜ [项目首页](../README.zh-CN.md) ｜ [Fastboot、切换与恢复](FLASHING.zh-CN.md)
 
 本指南把发布版本安装到小米平板 8 Pro（`piano`）的 Android 旁边。目前没有图形安装器：可以自己按本文操作，也可以按[项目首页](../README.zh-CN.md#推荐让-ai-帮你安装)把它交给 AI 助手执行。写入新分区表（[第 6 步](#6-写入分区表平板上)）在发布目录的维护 RAM 镜像中进行。开始前请通读全文。本流程已在测试机上按 v0.2.0 完整执行过一次。
 

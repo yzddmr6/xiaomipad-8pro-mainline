@@ -1,6 +1,6 @@
 # Fastboot、切换与恢复
 
-[English](FLASHING.md) ｜ [项目首页](../README.zh-CN.md) ｜ [安装](INSTALL.zh-CN.md)
+[English](FLASHING.en.md) ｜ [项目首页](../README.zh-CN.md) ｜ [安装](INSTALL.zh-CN.md)
 
 Android 和 Ubuntu 都从 A 槽启动。切换就是把另一个系统的镜像组写入 `init_boot_a`、`vendor_boot_a`
 和 `boot_a`，活动槽始终不变。本页说明切换工具、槽属性、Fastboot 恢复以及绝不能写入的分区。

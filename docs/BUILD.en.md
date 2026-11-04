@@ -1,11 +1,11 @@
 # Building
 
-[中文](build.zh-CN.md) | [Project overview](../README.md) | [Release artefacts](RELEASE.md)
+[中文](build.zh-CN.md) | [Project overview](../README.en.md) | [Release artefacts](RELEASE.md)
 
 How the release is built from pinned inputs: kernel → installable build record → kernel package → device and
 firmware packages → boot image set → root image → release directory. The root-image chroot backend
 requires root; the other tools run unprivileged. No build tool accesses a tablet. A successful build is not a hardware result. Each step's expected output and
-the identities to record are in [AGENT-GUIDE.md](AGENT-GUIDE.md) §3.
+the identities to record are in [AGENT-GUIDE.en.md](AGENT-GUIDE.en.md) §3.
 
 ## Host
 
@@ -39,7 +39,7 @@ sh tools/fetch-busybox-arm64.sh        # expect ".../usr/bin/busybox: OK"
 | Device userspace | `device/*/source.json` |
 
 Private build inputs come from your own tablet: the stock base DTB and DTBO entry,
-the boot profile and the signing key ([INSTALL.md](INSTALL.md#3-collect-your-units-files)).
+the boot profile and the signing key ([INSTALL.en.md](INSTALL.en.md#3-collect-your-units-files)).
 
 ## 1. Kernel
 
@@ -195,10 +195,10 @@ python3 tools/build-persistent-boot.py \
 - The release set is unit-independent: `--root-partlabel linux_rootfs --no-serial` and no address
   files. `build-rootfs-image.py` builds it in step 7.
 - `--debug` and the other debug options add an unauthenticated root shell over USB; never write a
-  debug set to slot A for normal use ([AGENT-GUIDE.md](AGENT-GUIDE.md) §3.6, §7.2).
+  debug set to slot A for normal use ([AGENT-GUIDE.en.md](AGENT-GUIDE.en.md) §3.6, §7.2).
 - `--maintenance` builds only `boot-ram-maintenance.img`, the RAM image for writing the partition
   table, from a maintenance initramfs (`tools/prepare-maintenance-payload.py` and
-  `build-initramfs.sh` with `MAINTENANCE_DIR`); the commands are in [AGENT-GUIDE.md](AGENT-GUIDE.md) §4.6.
+  `build-initramfs.sh` with `MAINTENANCE_DIR`); the commands are in [AGENT-GUIDE.en.md](AGENT-GUIDE.en.md) §4.6.
 
 ## 7. Ubuntu base and root image
 
@@ -297,7 +297,7 @@ run, and record that untested path in release validation.
 
 `--forbid-file` scans every output for identifiers of your unit. The release must be on the same
 filesystem as the root image build. Layout, contents and installation: [RELEASE.md](RELEASE.md) and
-[INSTALL.md](INSTALL.md).
+[INSTALL.en.md](INSTALL.en.md).
 
 ## Graphics for core24 snaps
 

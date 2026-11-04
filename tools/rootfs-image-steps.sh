@@ -181,7 +181,7 @@ grep -Fx "dracut: Generating /boot/initrd.img-$RELEASE" "$OUT/install.log" >/dev
 
 step services
 # OpenSSH stays installed for developer mode, which is off; its own socket is
-# disabled as on the test unit (docs/AGENT-GUIDE.md section 7.1).
+# disabled as on the test unit (docs/AGENT-GUIDE.en.md section 7.1).
 systemctl --root="$T" disable ssh.socket ssh.service
 
 step release boot set

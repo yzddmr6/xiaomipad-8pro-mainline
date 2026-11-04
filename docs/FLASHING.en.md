@@ -1,6 +1,6 @@
 # Fastboot, Switching and Recovery
 
-[中文](FLASHING.zh-CN.md) | [Project overview](../README.md) | [Installation](INSTALL.md)
+[中文](FLASHING.zh-CN.md) | [Project overview](../README.en.md) | [Installation](INSTALL.en.md)
 
 Android and Ubuntu both boot from slot A. Switching writes the other system's image set into
 `init_boot_a`, `vendor_boot_a` and `boot_a`; the active slot never changes. This page covers the
@@ -19,14 +19,14 @@ Bind every command to your tablet (`adb -s <SERIAL>`, `fastboot -s <SERIAL>`,
 least 40 % battery before partition work. Current charging support and limitations are in
 [STATUS.md](STATUS.md); the early diagnostic kernel's lack of charging is historical.
 
-Before writing, [back up](INSTALL.md#2-back-up) and keep both boot sets on the host.
+Before writing, [back up](INSTALL.en.md#2-back-up) and keep both boot sets on the host.
 Attend installation; release images have no debug console. Do not overlap boots, writes or
 captures with another session. On failure, stop at the earliest failing step: do not repeat a
 write after one failed status query, re-flash a completed filesystem write or interrupt a write
-still in progress. Check a new image with the [debug RAM procedure](AGENT-GUIDE.md#72-debug-ram-boot)
+still in progress. Check a new image with the [debug RAM procedure](AGENT-GUIDE.en.md#72-debug-ram-boot)
 before writing slot A; debug sets are not for normal persistent use.
 
-For host commands, set REPO, RELEASE and WORK as in [INSTALL.md](INSTALL.md#what-you-need):
+For host commands, set REPO, RELEASE and WORK as in [INSTALL.en.md](INSTALL.en.md#what-you-need):
 REPO is the absolute path to the checkout at the release's recorded integration commit, RELEASE is
 the extracted release directory, and WORK is your private installation directory outside the checkout.
 Run host commands from WORK; source tools use `"$REPO/tools/NAME"` and release files use `"$RELEASE/PATH"`.
@@ -47,8 +47,8 @@ fastboot -s <SERIAL> getvar battery-soc-ok        # expect "battery-soc-ok: yes"
 
 `boot/boot-ram-maintenance.img` of the release is a RAM-only Linux for work on the UFS disks that
 must not run from a mounted system, such as the partition table write of
-[INSTALL.md step 6](INSTALL.md#6-write-the-partition-table-on-the-tablet). It mounts no UFS partition and writes nothing automatically; slot A is unchanged.
-[INSTALL.md step 8a](INSTALL.md#8a-recommended-install-your-units-files-before-the-first-boot)
+[INSTALL.en.md step 6](INSTALL.en.md#6-write-the-partition-table-on-the-tablet). It mounts no UFS partition and writes nothing automatically; slot A is unchanged.
+[INSTALL.en.md step 8a](INSTALL.en.md#8a-recommended-install-your-units-files-before-the-first-boot)
 explicitly mounts the new root to install your unit’s files.
 
 ```bash
@@ -79,7 +79,7 @@ partition size) and a `SHA256SUMS` file listing the three.
 
 | Set | Where |
 |---|---|
-| Android | your backup of slot A ([INSTALL.md](INSTALL.md#2-back-up)); `init_boot` is the root-patched image in use |
+| Android | your backup of slot A ([INSTALL.en.md](INSTALL.en.md#2-back-up)); `init_boot` is the root-patched image in use |
 | Ubuntu | the release's `boot/`; after `piano-boot-update`, the store's `ubuntu/` |
 
 On the tablet the store `/var/lib/piano/switch/` holds `android/`, `ubuntu/` and `ubuntu.prev/`
@@ -122,7 +122,7 @@ Android set from the current slot A images and store it with
 | `sudo piano-boot-switch import-android --from DIR` | store | `"result": "imported"`; replaces `android/` |
 | `sudo piano-boot-switch import-ubuntu [--from DIR]` | store | `imported`; the old `ubuntu/` becomes `ubuntu.prev/` |
 
-- Complete [INSTALL.md step 10](INSTALL.md#10-install-your-units-files) first to install your unit's files.
+- Complete [INSTALL.en.md step 10](INSTALL.en.md#10-install-your-units-files) first to install your unit's files.
 - It needs your `boot-profile.json` and `boot-partitions.json` in `/etc/piano/`, and writes only
   when slot A holds a known set, which serves as the rollback. Each partition is written and read
   back in full; on a failure the previous set is written back.
@@ -210,5 +210,5 @@ not answer.
 ## Restoring the original layout
 
 Removing Ubuntu and restoring the original partition table has no tool and no verified procedure yet; the [maintenance RAM image](#maintenance-ram-image) is the environment such a write would
-need. Keep the partition table backups of [INSTALL.md](INSTALL.md#2-back-up) and the full
+need. Keep the partition table backups of [INSTALL.en.md](INSTALL.en.md#2-back-up) and the full
 partition backup.

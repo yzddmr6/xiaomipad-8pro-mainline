@@ -1,6 +1,6 @@
 # 升级已安装的系统
 
-[English](UPGRADE.md) ｜ [项目首页](../README.zh-CN.md) ｜ [全新安装](INSTALL.zh-CN.md) ｜ [切换与恢复](FLASHING.zh-CN.md)
+[English](UPGRADE.en.md) ｜ [项目首页](../README.zh-CN.md) ｜ [全新安装](INSTALL.zh-CN.md) ｜ [切换与恢复](FLASHING.zh-CN.md)
 
 本页说明如何把已经装好的 Ubuntu 升级到新版本的内核和配套软件包，不重装、不动分区、不清数据。
 升级前提：已按 [INSTALL.zh-CN.md](INSTALL.zh-CN.md) 做完最后一步（`/etc/piano` 中有 `boot-profile.json`、`boot-signing.pem` 和 `boot-partitions.json`），能开启开发者模式，电量不低于 40%。

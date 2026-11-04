@@ -74,10 +74,10 @@ I want to install Ubuntu on a Xiaomi Pad 8 Pro (codename piano), dual-booting wi
 
 Project: https://github.com/yzddmr6/xiaomipad-8pro-mainline , latest release (the one marked Latest at https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/latest).
 
-1. First git clone the repository and check out the tag of the latest release. Read README.md "Read Before Installing", docs/INSTALL.md, docs/FLASHING.md and the safety rules in section 1 of docs/AGENT-GUIDE.md before doing anything.
+1. First git clone the repository and check out the tag of the latest release. Read README.en.md "Read Before Installing", docs/INSTALL.en.md, docs/FLASHING.en.md and the safety rules in section 1 of docs/AGENT-GUIDE.en.md before doing anything.
 2. Download every asset of that GitHub release into one empty directory, run sha256sum -c SHA256SUMS.assets first, then restore the release directory as the release notes describe and verify it again.
 3. Check the host tools (adb, fastboot, python3, zstd, sgdisk, sfdisk, img2simg and the rest of the "Prerequisites" table in INSTALL) and the tablet (product piano, stock build OS3.0.303.0.WPYCNXM, current slot a, unlocked, rooted, battery at least 40 %). If anything does not match, stop and tell me; do not work around it.
-4. Follow docs/INSTALL.md strictly in order and explicitly select my tablet with -s or --serial in every device command. Before each step, tell me in a sentence or two what it does and where it writes. For every operation that writes to the tablet (partition table, erase, flash, slot A), list the exact commands and wait for me to reply "confirm" before running them.
+4. Follow docs/INSTALL.en.md strictly in order and explicitly select my tablet with -s or --serial in every device command. Before each step, tell me in a sentence or two what it does and where it writes. For every operation that writes to the tablet (partition table, erase, flash, slot A), list the exact commands and wait for me to reply "confirm" before running them.
 5. Never write vbmeta, dtbo, any _b partition, persist or any other calibration, modem or firmware partition; never run fastboot --set-active=b; never use calibration, per-unit configuration or images from another tablet.
 6. No write step before the backup is complete and its hashes verified. Keep the backup and my per-unit files outside the repository; never commit or upload them anywhere.
 7. Stop on any error: if a command fails or its output differs from the documented "expect" line, stop and show me the full output. Do not retry write commands on your own and do not interrupt a write in progress.
@@ -96,15 +96,15 @@ Project: https://github.com/yzddmr6/xiaomipad-8pro-mainline , latest release (th
    sha256sum -c SHA256SUMS
    ```
 
-2. Follow [docs/INSTALL.md](docs/INSTALL.md) step by step. Switching, Fastboot recovery and the partitions that must never be written are in [docs/FLASHING.md](docs/FLASHING.md).
+2. Follow [docs/INSTALL.en.md](docs/INSTALL.en.md) step by step. Switching, Fastboot recovery and the partitions that must never be written are in [docs/FLASHING.en.md](docs/FLASHING.en.md).
 
 ### Upgrading an existing installation
 
-Follow [docs/UPGRADE.md](docs/UPGRADE.md) to upgrade the kernel and the device packages from the release's `packages.zip`; the upgrade keeps a rollback boot set.
+Follow [docs/UPGRADE.en.md](docs/UPGRADE.en.md) to upgrade the kernel and the device packages from the release's `packages.zip`; the upgrade keeps a rollback boot set.
 
 ### Building from source
 
-The kernel, Mesa, the device packages, the root image and the signed boot set are all built on the host without root privileges, from inputs pinned in `kernel/source.json`, `mesa/source.json`, `ubuntu/` and `device/*/source.json`. See [docs/BUILD.md](docs/BUILD.md).
+The kernel, Mesa, the device packages, the root image and the signed boot set are all built on the host without root privileges, from inputs pinned in `kernel/source.json`, `mesa/source.json`, `ubuntu/` and `device/*/source.json`. See [docs/BUILD.en.md](docs/BUILD.en.md).
 
 <a id="support-matrix"></a>
 
@@ -169,7 +169,7 @@ Not yet supported: disk hibernation, hardware clock writes (time is set from the
 
 ## Usage and Maintenance
 
-Host commands use the REPO, RELEASE and WORK variables from [INSTALL.md "What you need"](docs/INSTALL.md#what-you-need) and run in WORK. Details are in [docs/FLASHING.md](docs/FLASHING.md).
+Host commands use the REPO, RELEASE and WORK variables from [INSTALL.md "What you need"](docs/INSTALL.en.md#what-you-need) and run in WORK. Details are in [docs/FLASHING.en.md](docs/FLASHING.en.md).
 
 **Switching.** In Ubuntu, `sudo piano-boot-switch to-android --reboot` writes the stored Android image set to slot A, reads it back and reboots. In Android, the [KernelSU switch module](device/android/piano-switch-ksu/README.md) switches to Ubuntu. Switching from within either system does not change the slot attributes.
 
@@ -184,11 +184,11 @@ A host write resets slot A's retry counter; the next Ubuntu boot marks the slot 
 
 **Developer mode.** `sudo piano-devmode on` enables SSH over the USB cable; it is off by default. Connect from the host with `python3 "$REPO/tools/piano-devmode-ssh.py" --serial <serial> <user>`, and turn it off afterwards with `sudo piano-devmode off`. See [device/devmode](device/devmode/README.md).
 
-**Upgrades.** See [docs/UPGRADE.md](docs/UPGRADE.md). Installing a kernel package rebuilds the boot set and rewrites slot A; the previous set is kept for rollback.
+**Upgrades.** See [docs/UPGRADE.en.md](docs/UPGRADE.en.md). Installing a kernel package rebuilds the boot set and rewrites slot A; the previous set is kept for rollback.
 
 **Time.** The hardware clock is not writable; the time is set from the network after boot. Without a network, set it with `sudo date -s 'YYYY-MM-DD HH:MM'`.
 
-**Sensor calibration.** The image ships default calibration only. Installing your own tablet's stock calibration is recommended: prepare it from your own backup as described in [INSTALL](docs/INSTALL.md#recommended-prepare-your-sensor-registry) or the [sensor instructions](device/sensors/README.zh-CN.md) (Chinese); never use another tablet's.
+**Sensor calibration.** The image ships default calibration only. Installing your own tablet's stock calibration is recommended: prepare it from your own backup as described in [INSTALL](docs/INSTALL.en.md#recommended-prepare-your-sensor-registry) or the [sensor instructions](device/sensors/README.zh-CN.md) (Chinese); never use another tablet's.
 
 **After Initial Setup.** Initial Setup sets the hostname from its *Computer* field; change it later with `sudo hostnamectl hostname --static <name>`. Run `sudo apt update` before the first `apt install`: the image ships without package indexes.
 
@@ -201,9 +201,9 @@ A host write resets slot A's retry counter; the next Ubuntu boot marks the slot 
 | xiaomipad-8pro-mainline | Device userspace, Ubuntu integration, build/packaging/switching tools, firmware, documentation |
 | [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano) | Linux kernel: drivers, devicetree and configuration maintained on top of upstream Linux 7.2 stable, release commit pinned in the input lock |
 
-See [docs/BUILD.md](docs/BUILD.md) to build the kernel, Mesa, device packages and images; [kernel/source.json](kernel/source.json) pins the kernel commit and configuration fragments.
+See [docs/BUILD.en.md](docs/BUILD.en.md) to build the kernel, Mesa, device packages and images; [kernel/source.json](kernel/source.json) pins the kernel commit and configuration fragments.
 
-Before operating on a device, read [docs/AGENT-GUIDE.md](docs/AGENT-GUIDE.md), written for human operators and AI assistants; contribution rules are in [CONTRIBUTING.md](CONTRIBUTING.md).
+Before operating on a device, read [docs/AGENT-GUIDE.en.md](docs/AGENT-GUIDE.en.md), written for human operators and AI assistants; contribution rules are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Report problems through [GitHub Issues](https://github.com/yzddmr6/xiaomipad-8pro-mainline/issues) with the device model, stock build and project release; strip serial numbers, Bluetooth addresses, calibration data and personal information first.
 

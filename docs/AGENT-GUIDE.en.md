@@ -18,8 +18,8 @@ Conventions:
 ## 1. Scope and operation boundaries
 
 Read [AGENTS.md](../AGENTS.md) for execution and privacy boundaries.
-[FLASHING.md](FLASHING.md#never-write) defines device selection, battery checks, write boundaries
-and recovery; [INSTALL.md](INSTALL.md#2-back-up) defines installation backups.
+[FLASHING.en.md](FLASHING.en.md#never-write) defines device selection, battery checks, write boundaries
+and recovery; [INSTALL.en.md](INSTALL.en.md#2-back-up) defines installation backups.
 Current hardware behavior and charging limitations are in [STATUS.md](STATUS.md).
 Use the procedures below for the selected operation. Prepare the developer connection in §7.1
 before an unattended cold boot.
@@ -75,12 +75,12 @@ python3 -S tools/stage-firmware.py --firmware-dir <stock modem_a image/ director
 
 Order: kernel (§3.1) → installable build record (§3.2) → boot DTB (§3.3) → kernel package (§3.4) → device and
 firmware packages (§3.5) → root filesystem (§4.4) → boot image set (§3.6). Host tools are listed in
-[BUILD.md](BUILD.md); additionally `dpkg-deb`, `python3-debian`, `device-tree-compiler`
+[BUILD.en.md](BUILD.en.md); additionally `dpkg-deb`, `python3-debian`, `device-tree-compiler`
 (`fdtget`/`fdtput`), `python3-libfdt`, AOSP libufdt's `ufdt_apply_overlay`, `m4` and `alsatplg`.
 
 ### 3.1 Kernel
 
-Build with [BUILD.md §1](BUILD.md#1-kernel); release fragments are merged automatically and product
+Build with [BUILD.en.md §1](BUILD.en.md#1-kernel); release fragments are merged automatically and product
 builds use `BUILD_MODULES=1`. Use `--config-only` to check configuration alone. After a full build,
 compare its recorded release with the lock:
 
@@ -94,7 +94,7 @@ python3 -c 'import json; print(json.load(open("kernel/source.json"))["kernel_rel
 
 Installable-build ABI allocation (including candidates) and kernel pins are defined in
 [RELEASE.md](RELEASE.md#installable-kernel-packaging-maintainers). Rebuilding a release does not change its
-locks; see [BUILD.md](BUILD.md#local-kernel-development) for local development.
+locks; see [BUILD.en.md](BUILD.en.md#local-kernel-development) for local development.
 
 ### 3.3 Boot DTB
 
@@ -133,14 +133,14 @@ cannot build an image set.
 
 ```bash
 # Touch processing, ARM64 with dynamic glibc and a static C++ runtime (toolchain and checks:
-# BUILD.md §5); the JSON headers get their own include directory so that host headers do not
+# BUILD.en.md §5); the JSON headers get their own include directory so that host headers do not
 # enter the cross build
 mkdir -p out/json-include && cp -r /usr/include/nlohmann out/json-include/
 make -C device/piano-thp OUT="$PWD/out/piano-thp-arm64" CXX=aarch64-linux-gnu-g++-13 \
   JSON_INCLUDE="$PWD/out/json-include" LDFLAGS='-static-libstdc++ -static-libgcc -Wl,-z,relro,-z,now' \
   all test RUNNER='qemu-aarch64-static -L /usr/aarch64-linux-gnu'
 file out/piano-thp-arm64/piano-thp-live      # expect "ARM aarch64 ... dynamically linked, interpreter /lib/ld-linux-aarch64.so.1"
-# Mesa 26.2.0 with the A830 patch (cross file and sysroot: BUILD.md)
+# Mesa 26.2.0 with the A830 patch (cross file and sysroot: BUILD.en.md)
 MESA_SOURCE=<Mesa checkout at mesa/source.json> CROSS_FILE=<arm64 cross file> \
   OUT_DIR="$PWD/out/mesa" bash tools/build-mesa.sh
 
@@ -227,7 +227,7 @@ initrds are not reproducible, so `vendor_boot.img` differs between builds with o
 The partitioning and root filesystem installer is not yet available. These steps reproduce the
 installation of the test unit (512 GB UFS) with standard commands; §4.5 gives the 256 GB values. With a release directory, the
 release root image and boot set replace §4.4 and the set of §3.6; the changes are listed in
-[INSTALL.md](INSTALL.md).
+[INSTALL.en.md](INSTALL.en.md).
 
 ### 4.1 Prerequisites
 
@@ -311,7 +311,7 @@ properties, ABL marks the slot unbootable.
 
 ### 4.4 Root and data filesystems (host)
 
-Build the pristine Desktop TAR as in [BUILD.md](BUILD.md) (`prepare-ubuntu-desktop.sh`,
+Build the pristine Desktop TAR as in [BUILD.en.md](BUILD.en.md) (`prepare-ubuntu-desktop.sh`,
 `sqfs2tar`, `merge-desktop-tars.py`), then:
 
 ```bash
@@ -736,13 +736,13 @@ sudo apt-get purge linux-image-<old release>    # removes the leftover depmod in
   /usr/sbin/piano-boot-switch to-android --desktop --force`) and the rollback after a failed write.
   The current desktop entry explicitly ignores reboot inhibitors;
   save work first. The CLI respects them unless `--force` is given with `--reboot`.
-  See [reboot failures and the next boot's OS](FLASHING.md#from-ubuntu-piano-boot-switch).
+  See [reboot failures and the next boot's OS](FLASHING.en.md#from-ubuntu-piano-boot-switch).
 
 ### 6.2 From Android: KernelSU module
 
 Installation, `--check` and switching results are recorded in the
 [module documentation](../device/android/piano-switch-ksu/README.md).
-Follow [FLASHING.md](FLASHING.md#from-android-kernelsu-module) to install and run it.
+Follow [FLASHING.en.md](FLASHING.en.md#from-android-kernelsu-module) to install and run it.
 A local build takes its version from module metadata:
 
 ```bash
@@ -860,7 +860,7 @@ python3 tools/piano-devmode-ssh.py -t <USER> sudo piano-reboot-bootloader
 - `piano-reboot-bootloader` loads `nvmem_qcom-spmi-sdam` and `nvmem-reboot-mode` and refuses to
   reboot when no reboot-mode device is bound, since the tablet would restart into slot A instead.
 - Verified on the test unit in a release cold boot.
-- Default: off in the release image. The installation turns it on ([INSTALL.md](INSTALL.md) step 8a
+- Default: off in the release image. The installation turns it on ([INSTALL.en.md](INSTALL.en.md) step 8a
   or 10) and step 10 ends with `sudo piano-devmode off`, the release default.
 - The current device support package socket has `BindToDevice=usb0` (the NCM function's
   network device) and starts after `sys-subsystem-net-devices-usb0.device`: the address alone also
@@ -1024,5 +1024,5 @@ Follow [CONTRIBUTING.md](../CONTRIBUTING.md#commits-and-attribution) for attribu
 `Fixes:` / `Link:` / `Reported-by:` and the restrictions on assistants adding human attestations.
 Record results using its
 [evidence requirements](../CONTRIBUTING.md#evidence).
-Public hardware status lives in the [README support matrix](../README.md#hardware-support)
+Public hardware status lives in the [README support matrix](../README.en.md#hardware-support)
 and [STATUS.md](STATUS.md).

@@ -1,10 +1,10 @@
 # Upgrading an Existing Installation
 
-[中文](UPGRADE.zh-CN.md) ｜ [Project home](../README.md) ｜ [Fresh installation](INSTALL.md) ｜ [Switching and recovery](FLASHING.md)
+[中文](UPGRADE.zh-CN.md) ｜ [Project home](../README.en.md) ｜ [Fresh installation](INSTALL.en.md) ｜ [Switching and recovery](FLASHING.en.md)
 
 This page upgrades an installed Ubuntu to a new release's kernel and device packages without
 reinstalling, repartitioning or erasing data. Prerequisites: the final step of
-[INSTALL.md](INSTALL.md) is done (`/etc/piano` holds `boot-profile.json`, `boot-signing.pem` and
+[INSTALL.en.md](INSTALL.en.md) is done (`/etc/piano` holds `boot-profile.json`, `boot-signing.pem` and
 `boot-partitions.json`), developer mode can be enabled, and the battery is at 40 % or more.
 
 The release asset `piano-ubuntu-<version>-packages.zip` is the upgrade package: its `debs/`
@@ -118,7 +118,7 @@ sudo cp -a /var/lib/piano/switch/ubuntu /var/lib/piano/rollback-$(uname -r)
 ```
 
 Also keep copies of the current Ubuntu set and the Android set on the host as described in
-[FLASHING.md "Image sets"](FLASHING.md#image-sets); they are the basis for recovery from Fastboot.
+[FLASHING.en.md "Image sets"](FLASHING.en.md#image-sets); they are the basis for recovery from Fastboot.
 
 ## 3. Copy to the tablet
 

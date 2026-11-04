@@ -1,6 +1,6 @@
 # 代理与操作者指南
 
-[English](AGENT-GUIDE.md)
+[English](AGENT-GUIDE.en.md)
 
 说明如何在小米平板 8 Pro（`piano`）上构建、安装、更新、切换和恢复 Ubuntu。
 面向 AI 代理和工程师；每一步给出命令及其预期结果。

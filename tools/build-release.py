@@ -13,7 +13,7 @@ Layout of the output directory:
            firmware, Mesa, desktop defaults)
   tools/   piano-switch.py and the KernelSU module zip
   RELEASE-NOTES.md, release-manifest.json, SHA256SUMS
-The data partition is not shipped; follow docs/INSTALL.md to create it.
+The data partition is not shipped; follow docs/INSTALL.en.md to create it.
 --changes supplies a bilingual summary, updates and known limitations; a line of
 '---' separates Chinese from English. The note template adds installation and
 licensing links. Package this directory with package-release-assets.py; it keeps

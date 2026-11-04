@@ -1,6 +1,6 @@
 # 构建指南
 
-[English](BUILD.md) | [项目概览](../README.zh-CN.md) | [发布产物](RELEASE.md)
+[English](BUILD.en.md) | [项目概览](../README.zh-CN.md) | [发布产物](RELEASE.md)
 
 本指南说明如何从固定输入构建发布产物：内核 → 可安装构建记录 → 内核包 → 设备包与固件包 →
 启动镜像组 → 根镜像 → 发布目录。根镜像 chroot 后端需要 root，其余工具以普通用户运行。

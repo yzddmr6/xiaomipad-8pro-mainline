@@ -1,10 +1,10 @@
 # Fresh Installation
 
-[中文](INSTALL.zh-CN.md) | [Project overview](../README.md) | [Fastboot, switching and recovery](FLASHING.md)
+[中文](INSTALL.zh-CN.md) | [Project overview](../README.en.md) | [Fastboot, switching and recovery](FLASHING.en.md)
 
-This guide installs the release next to Android on a Xiaomi Pad 8 Pro (`piano`). There is no graphical installer yet: follow this guide yourself, or hand it to an AI assistant as described on the [project page](../README.md#recommended-let-an-ai-assistant-install-it). The new partition table ([step 6](#6-write-the-partition-table-on-the-tablet)) is written from the maintenance RAM image of the release directory. Read the whole guide before starting. This procedure was carried out once in full on the test unit with v0.2.0.
+This guide installs the release next to Android on a Xiaomi Pad 8 Pro (`piano`). There is no graphical installer yet: follow this guide yourself, or hand it to an AI assistant as described on the [project page](../README.en.md#recommended-let-an-ai-assistant-install-it). The new partition table ([step 6](#6-write-the-partition-table-on-the-tablet)) is written from the maintenance RAM image of the release directory. Read the whole guide before starting. This procedure was carried out once in full on the test unit with v0.2.0.
 
-Every release uses this installation procedure. Existing installations should follow [the upgrade guide](UPGRADE.md), without repartitioning or flashing the root image.
+Every release uses this installation procedure. Existing installations should follow [the upgrade guide](UPGRADE.en.md), without repartitioning or flashing the root image.
 
 ## Read first
 
@@ -14,7 +14,7 @@ Every release uses this installation procedure. Existing installations should fo
   `OS3.0.303.0.WPYCNXM` only.
 - **The bootloader must be unlocked** through Xiaomi's official process.
 - **Back up first** ([step 2](#2-back-up)). Your stock slot A images are your way back to Android.
-- Follow [device-operation boundaries](FLASHING.md#never-write) for battery checks, device
+- Follow [device-operation boundaries](FLASHING.en.md#never-write) for battery checks, device
   selection, write restrictions and failure handling. Current charging support is in [STATUS.md](STATUS.md).
 
 Steps that use standard commands because no project tool exists yet are marked *manual*.
@@ -32,7 +32,7 @@ Steps that use standard commands because no project tool exists yet are marked *
 | The release directory | every file of one release, not mixed with other releases |
 | Free host space | about 40 GB: the backup (16 GB on the test unit), the release (about 9 GB) and the data image |
 
-Restore the release directory from the release assets as in the [README's manual installation](../README.md#manual-installation); use only the complete directory of one version and never mix in files of another.
+Restore the release directory from the release assets as in the [README's manual installation](../README.en.md#manual-installation); use only the complete directory of one version and never mix in files of another.
 
 REPO is the absolute path to the integration checkout at the release’s recorded commit. RELEASE is the extracted release directory. WORK is a private installation directory outside the checkout. Run subsequent host commands from WORK; use `"$REPO/tools/NAME"` for source tools and `"$RELEASE/PATH"` for release files.
 Set these paths in each host terminal you use. The next check validates every file in RELEASE.
@@ -112,7 +112,7 @@ cp backup/vendor_boot_a.img android-set/vendor_boot.img
 ```
 
 Keep `android-set/` and a copy of the release's `boot/` on the host: they are the two sets used for
-switching and recovery ([FLASHING.md](FLASHING.md)).
+switching and recovery ([FLASHING.en.md](FLASHING.en.md)).
 
 ## 3. Collect your unit's files
 
@@ -548,17 +548,17 @@ every local account with a password over the USB cable; see [device/devmode](../
 to restrict it to SSH keys. It listens only on the USB network address `192.168.88.2`.
 
 If the rebuilt set does not boot: Power + Volume Down, then write the release `boot/` set back from
-the host ([FLASHING.md](FLASHING.md#from-the-host-piano-switchpy)).
+the host ([FLASHING.en.md](FLASHING.en.md#from-the-host-piano-switchpy)).
 
 ## After installation
 
-- **Switching and recovery:** [FLASHING.md](FLASHING.md).
+- **Switching and recovery:** [FLASHING.en.md](FLASHING.en.md).
 - **Packages:** run `sudo apt update` before the first `apt install`; the image ships without package indexes. Only the project kernel is installed, without Ubuntu's generic kernel and the C library headers: install `build-essential` before compiling software.
-- **Kernel updates:** see [UPGRADE.md](UPGRADE.md).
+- **Kernel updates:** see [UPGRADE.en.md](UPGRADE.en.md).
 - **Android:** the first Android boot re-creates its data and takes several minutes. Reinstall the
   root manager app if you need root; the root-patched `init_boot_a` is unchanged. After changing the
-  root patch in slot A, refresh the stored Android set ([FLASHING.md](FLASHING.md#image-sets)).
-- **Known issues and support status:** [README](../README.md#hardware-support), the release's
+  root patch in slot A, refresh the stored Android set ([FLASHING.en.md](FLASHING.en.md#image-sets)).
+- **Known issues and support status:** [README](../README.en.md#hardware-support), the release's
   `RELEASE-NOTES.md`.
 
 ## Troubleshooting
