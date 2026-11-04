@@ -2,7 +2,7 @@
 
 ## 更新
 
-- **Windows 11 ARM**：从自备官方 ISO 创建 Windows 虚拟机，通过本地 VNC 完成 OOBE 和日常操作；固件、签名驱动及介质工具独立可选安装。
+- **Windows 11 ARM**：从自备官方 ISO 创建 Windows 虚拟机，通过本地 VNC 完成 OOBE 和日常操作；固件、测试签名驱动及介质工具独立可选安装。
 - **Ubuntu 虚拟机**：普通用户可创建和管理 ARM64 客体，支持 SSH、NAT 上网、持久磁盘和正常关机后重新启动。
 - **按需启用**：虚拟机工具单独安装，虚拟化模块按需加载；设备与网络操作分别请求管理员认证。
 - **使用指南**：[命令行虚拟机](https://github.com/yzddmr6/xiaomipad-8pro-mainline/blob/main/docs/VIRTUALIZATION.zh-CN.md) 包含安装、创建、使用和卸载步骤。
@@ -24,7 +24,7 @@ Optional virtual machine tools run independent Ubuntu and Windows ARM guests on 
 
 ## Changes
 
-- **Windows 11 ARM**: create a VM from your official ISO and use local VNC for OOBE and daily operation. Firmware, signed drivers and media tools are a separate optional installation.
+- **Windows 11 ARM**: create a VM from your official ISO and use local VNC for OOBE and daily operation. Firmware, test-signed drivers and media tools are a separate optional installation.
 - **Ubuntu virtual machines**: ordinary users can create and manage ARM64 guests with SSH, NAT networking, persistent disks, clean shutdown and restart.
 - **Enable on demand**: install the VM tools separately and load virtualization modules when needed; device and network operations request administrator authentication separately.
 - **User guide**: [Command-line virtual machines](https://github.com/yzddmr6/xiaomipad-8pro-mainline/blob/main/docs/VIRTUALIZATION.md) covers installation, creation, use and removal.
