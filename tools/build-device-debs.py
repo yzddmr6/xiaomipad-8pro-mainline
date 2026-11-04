@@ -317,8 +317,16 @@ def main():
         subprocess.run(['python3', str(repo / 'tools/prepare-mesa-initramfs.py'), '--mesa-build', str(a.mesa_build),
                         '--stage', str(mesa)], stdout=subprocess.DEVNULL, check=True)
         mesa_source = json.loads((repo / 'mesa/source.json').read_text())
+        # Register the prefix with the dynamic linker, ahead of the distribution
+        # directories: every process, including setuid programs and those that start
+        # with a cleared environment, then resolves Mesa's sonames to this A830 build.
+        ldconf = mesa / 'etc/ld.so.conf.d/00-piano-mesa.conf'
+        ldconf.parent.mkdir(parents=True)
+        ldconf.write_text(mesa_source['prefix'] + '/lib\n')
         package('piano-mesa', mesa, 'libc6, libdrm2, libexpat1, libzstd1, zlib1g',
-                'Isolated Mesa 26.2 with piano A830 input lock',
+                'Mesa 26.2 with piano A830 input lock, preferred by the dynamic linker',
+                postinst='#!/bin/sh\nset -e\nif [ "$1" = configure ]; then ldconfig; fi\n',
+                postrm='#!/bin/sh\nset -e\nif [ "$1" = remove ] || [ "$1" = purge ]; then ldconfig; fi\n',
                 third_party=[((mesa_source['prefix'].lstrip('/') + '/*',), 'Mesa contributors (per-file notices)',
                               'MIT', f'Mesa {mesa_source["tag"]} ({mesa_source["url"]}, commit {mesa_source["commit"]})\n'
                               f'with {mesa_source["patch"]} from this repository. Most of Mesa is MIT; some files\n'
@@ -343,13 +351,6 @@ def main():
     # its conf.d entry is a relative symlink, kept as one.
     shutil.copytree(repo / 'device/audio/ucm2', desktop / 'usr/share/alsa/ucm2', symlinks=True)
     tree(repo / 'device/audio/ucm2', desktop, 'usr/share/alsa/ucm2')
-    env = desktop / 'etc/environment.d/50-piano-mesa.conf'
-    env.parent.mkdir(parents=True)
-    prefix = json.loads((repo / 'mesa/source.json').read_text())['prefix']
-    env.write_text(f'LD_LIBRARY_PATH={prefix}/lib\nLIBGL_DRIVERS_PATH={prefix}/lib/dri\n')
-    dropin = desktop / 'etc/systemd/system/gdm.service.d/50-piano-mesa.conf'
-    dropin.parent.mkdir(parents=True)
-    dropin.write_text('[Service]\n' + ''.join('Environment=' + l + '\n' for l in env.read_text().splitlines()))
     # The speaker up-mix is a stream property: the same file for PulseAudio and native PipeWire clients.
     upmix = 'usr/share/pipewire/pipewire-pulse.conf.d/50-piano-speaker-upmix.conf'
     copy(repo / 'packaging/piano-ubuntu-desktop' / upmix, desktop,

@@ -23,6 +23,11 @@ lifetimes. This is a concurrency regression, not complete GPU or suspend
 coverage. A new process must load the updated libraries; an existing desktop
 session retains its old mapped libraries until logout or reboot.
 
+The installed package needs no environment: it registers its prefix with the
+dynamic linker in `/etc/ld.so.conf.d/00-piano-mesa.conf`, ahead of the
+distribution directories, so every process resolves Mesa's libraries to this
+build. The variables above only select a candidate build that is not installed.
+
 Build only the desktop package with `tools/build-device-debs.py --mesa-only
 --mesa-build BUILD --output OUTPUT --version VERSION`. The builder validates
 the source lock and every payload file. The snap provider must be rebuilt
