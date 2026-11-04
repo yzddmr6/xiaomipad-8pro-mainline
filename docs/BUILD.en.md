@@ -1,6 +1,6 @@
 # Building
 
-[中文](build.zh-CN.md) | [Project overview](../README.en.md) | [Release artefacts](RELEASE.md)
+[中文](BUILD.md) | [Project overview](../README.en.md) | [Release artefacts](RELEASE.md)
 
 How the release is built from pinned inputs: kernel → installable build record → kernel package → device and
 firmware packages → boot image set → root image → release directory. The root-image chroot backend

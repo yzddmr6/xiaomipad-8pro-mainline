@@ -1,6 +1,6 @@
 # Fresh Installation
 
-[中文](INSTALL.zh-CN.md) | [Project overview](../README.en.md) | [Fastboot, switching and recovery](FLASHING.en.md)
+[中文](INSTALL.md) | [Project overview](../README.en.md) | [Fastboot, switching and recovery](FLASHING.en.md)
 
 This guide installs the release next to Android on a Xiaomi Pad 8 Pro (`piano`). There is no graphical installer yet: follow this guide yourself, or hand it to an AI assistant as described on the [project page](../README.en.md#recommended-let-an-ai-assistant-install-it). The new partition table ([step 6](#6-write-the-partition-table-on-the-tablet)) is written from the maintenance RAM image of the release directory. Read the whole guide before starting. This procedure was carried out once in full on the test unit with v0.2.0.
 

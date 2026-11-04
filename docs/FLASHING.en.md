@@ -1,6 +1,6 @@
 # Fastboot, Switching and Recovery
 
-[中文](FLASHING.zh-CN.md) | [Project overview](../README.en.md) | [Installation](INSTALL.en.md)
+[中文](FLASHING.md) | [Project overview](../README.en.md) | [Installation](INSTALL.en.md)
 
 Android and Ubuntu both boot from slot A. Switching writes the other system's image set into
 `init_boot_a`, `vendor_boot_a` and `boot_a`; the active slot never changes. This page covers the

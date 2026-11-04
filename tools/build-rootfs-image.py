@@ -377,7 +377,7 @@ def verify(fs, scratch, expected_packages, release, caps, set_hashes, boot_hashe
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--squashfs', type=Path, required=True, help='Pristine Desktop SquashFS (build.zh-CN.md)')
+    ap.add_argument('--squashfs', type=Path, required=True, help='Pristine Desktop SquashFS (BUILD.md)')
     ap.add_argument('--squashfs-sha256', required=True)
     ap.add_argument('--sqfs2tar', type=Path, required=True, help='squashfs-tools-ng 1.2 sqfs2tar')
     ap.add_argument('--mke2fs', type=Path, required=True, help='mke2fs 1.47.4 with libarchive')

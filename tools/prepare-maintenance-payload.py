@@ -319,7 +319,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest='command', required=True)
     b = sub.add_parser('build')
-    b.add_argument('--squashfs', type=Path, required=True, help='Ubuntu 26.04 desktop SquashFS (build.zh-CN.md)')
+    b.add_argument('--squashfs', type=Path, required=True, help='Ubuntu 26.04 desktop SquashFS (BUILD.md)')
     b.add_argument('--squashfs-sha256', required=True)
     b.add_argument('--kernel-deb', type=Path, required=True, help='linux-image-<release> package')
     b.add_argument('--nolibc', type=Path, required=True, help='tools/include/nolibc of the pinned kernel tree')

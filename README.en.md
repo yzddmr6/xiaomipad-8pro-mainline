@@ -1,6 +1,6 @@
 # Ubuntu for Xiaomi Pad 8 Pro
 
-Native Ubuntu 26.04 LTS with the GNOME desktop on the Xiaomi Pad 8 Pro (codename `piano`, Snapdragon 8 Elite), dual-booting with Android, on a device-adapted kernel based on upstream Linux 7.2. Not a container, not a remote desktop. [中文](README.zh-CN.md)
+Native Ubuntu 26.04 LTS with the GNOME desktop on the Xiaomi Pad 8 Pro (codename `piano`, Snapdragon 8 Elite), dual-booting with Android, on a device-adapted kernel based on upstream Linux 7.2. Not a container, not a remote desktop. [中文](README.md)
 
 **Latest release: see [Releases](https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/latest). Official builds are published only in this repository's Releases, free of charge.** What works is in [Hardware Support](#hardware-support).
 
@@ -169,7 +169,7 @@ Not yet supported: disk hibernation, hardware clock writes (time is set from the
 
 ## Usage and Maintenance
 
-Host commands use the REPO, RELEASE and WORK variables from [INSTALL.md "What you need"](docs/INSTALL.en.md#what-you-need) and run in WORK. Details are in [docs/FLASHING.en.md](docs/FLASHING.en.md).
+Host commands use the REPO, RELEASE and WORK variables from [INSTALL.en.md "What you need"](docs/INSTALL.en.md#what-you-need) and run in WORK. Details are in [docs/FLASHING.en.md](docs/FLASHING.en.md).
 
 **Switching.** In Ubuntu, `sudo piano-boot-switch to-android --reboot` writes the stored Android image set to slot A, reads it back and reboots. In Android, the [KernelSU switch module](device/android/piano-switch-ksu/README.md) switches to Ubuntu. Switching from within either system does not change the slot attributes.
 

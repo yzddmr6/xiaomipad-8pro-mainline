@@ -1,7 +1,7 @@
 # Release history and current support
 
 Current release: **v0.10.0**. See the [README](../README.en.md#hardware-support) or
-[中文 README](../README.zh-CN.md#硬件支持) for the hardware support tables and usage instructions.
+[中文 README](../README.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
 

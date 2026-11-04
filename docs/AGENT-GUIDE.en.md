@@ -1,6 +1,6 @@
 # Agent and Operator Guide
 
-[中文](AGENT-GUIDE.zh-CN.md)
+[中文](AGENT-GUIDE.md)
 
 How to build, install, update, switch and recover Ubuntu on the Xiaomi Pad 8 Pro (`piano`).
 Written for AI agents and engineers; every step is a command and its expected result.

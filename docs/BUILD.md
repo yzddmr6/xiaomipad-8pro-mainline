@@ -1,11 +1,11 @@
 # 构建指南
 
-[English](BUILD.en.md) | [项目概览](../README.zh-CN.md) | [发布产物](RELEASE.md)
+[English](BUILD.en.md) | [项目概览](../README.md) | [发布产物](RELEASE.md)
 
 本指南说明如何从固定输入构建发布产物：内核 → 可安装构建记录 → 内核包 → 设备包与固件包 →
 启动镜像组 → 根镜像 → 发布目录。根镜像 chroot 后端需要 root，其余工具以普通用户运行。
 构建工具不访问平板；构建成功不代表硬件验证通过。各阶段预期输出及需记录的身份见
-[代理与操作者指南](AGENT-GUIDE.zh-CN.md) §3。
+[代理与操作者指南](AGENT-GUIDE.md) §3。
 
 ## 主机前提
 
@@ -39,7 +39,7 @@ sh tools/fetch-busybox-arm64.sh        # 预期 ".../usr/bin/busybox: OK"
 | 设备用户态 | `device/*/source.json` |
 
 原厂基础 DTB、DTBO 条目、boot profile 和签名密钥由你提供，隐私边界见 [AGENTS.md](../AGENTS.md)。
-原厂输入须来自自己的平板，采集方法见[安装指南](INSTALL.zh-CN.md)。
+原厂输入须来自自己的平板，采集方法见[安装指南](INSTALL.md)。
 
 ## 1. 内核
 
@@ -185,10 +185,10 @@ python3 tools/build-persistent-boot.py \
 - 发布镜像组不绑定单机：使用 `--root-partlabel linux_rootfs --no-serial`，不传入地址文件。
   第 7 步的 `build-rootfs-image.py` 会生成该镜像组。
 - `--debug` 等调试选项增加经 USB 提供的无认证 root shell；调试镜像组不得写入 A 槽作日常使用，
-  见[代理与操作者指南](AGENT-GUIDE.zh-CN.md) §3.6、§7.2。
+  见[代理与操作者指南](AGENT-GUIDE.md) §3.6、§7.2。
 - `--maintenance` 从维护 initramfs 只生成 `boot-ram-maintenance.img`，用于分区表维护。
   维护载荷由 `tools/prepare-maintenance-payload.py` 与设置了 `MAINTENANCE_DIR` 的
-  `build-initramfs.sh` 构建，命令见[代理与操作者指南](AGENT-GUIDE.zh-CN.md) §4.6。
+  `build-initramfs.sh` 构建，命令见[代理与操作者指南](AGENT-GUIDE.md) §4.6。
 
 ## 7. Ubuntu 基础系统与根镜像
 
@@ -275,7 +275,7 @@ python3 tools/build-release.py --rootfs-build out/rootfs-<version> \
 若未执行可选的 QEMU 启动检查，省略 `--boot-check`，并按发布验证要求记录未测项。
 
 `--forbid-file` 在全部输出中扫描本机标识。发布目录须与根镜像构建目录处于同一文件系统。
-目录布局、内容与安装步骤见[发布说明](RELEASE.md)和[安装指南](INSTALL.zh-CN.md)。
+目录布局、内容与安装步骤见[发布说明](RELEASE.md)和[安装指南](INSTALL.md)。
 
 ## core24 snap 图形支持
 

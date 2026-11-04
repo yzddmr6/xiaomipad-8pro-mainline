@@ -74,10 +74,10 @@
 
 项目：https://github.com/yzddmr6/xiaomipad-8pro-mainline ，使用最新发布版本（https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/latest 上标为 Latest 的版本）。
 
-1. 先 git clone 该仓库并检出最新发布版本对应的标签，通读 README.zh-CN.md 的「安装前请阅读」、docs/INSTALL.zh-CN.md、docs/FLASHING.zh-CN.md，以及 docs/AGENT-GUIDE.zh-CN.md 第 1 节的安全规则，然后再开始。
+1. 先 git clone 该仓库并检出最新发布版本对应的标签，通读 README.md 的「安装前请阅读」、docs/INSTALL.md、docs/FLASHING.md，以及 docs/AGENT-GUIDE.md 第 1 节的安全规则，然后再开始。
 2. 从该版本的 GitHub Release 把全部附件下载到一个空目录，先执行 sha256sum -c SHA256SUMS.assets，再按 Release 说明还原发布目录并再次校验。
 3. 检查主机工具（adb、fastboot、python3、zstd、sgdisk、sfdisk、img2simg 等，以 INSTALL 的「准备」表为准）和平板状态（型号 piano、原厂版本 OS3.0.303.0.WPYCNXM、当前 A 槽、已解锁、已 root、电量不低于 40%）。任何一项不符就停下来告诉我，不要绕过。
-4. 严格按 docs/INSTALL.zh-CN.md 的步骤顺序执行，每条设备命令都用 -s 或 --serial 明确指定我的平板。每一步开始前用一两句话告诉我这步做什么、会写哪里；凡是写入平板的操作（分区表、擦除、flash、写 A 槽），先列出将要执行的命令，等我回复「确认」再执行。
+4. 严格按 docs/INSTALL.md 的步骤顺序执行，每条设备命令都用 -s 或 --serial 明确指定我的平板。每一步开始前用一两句话告诉我这步做什么、会写哪里；凡是写入平板的操作（分区表、擦除、flash、写 A 槽），先列出将要执行的命令，等我回复「确认」再执行。
 5. 绝不写入 vbmeta、dtbo、任何 _b 分区、persist 或其他校准、基带、固件分区；绝不执行 fastboot --set-active=b；绝不使用别的平板的标定、设备专属配置或镜像。
 6. 备份完成并校验哈希之后才能进入任何写入步骤。备份和本机文件放在仓库之外的目录，不要提交，不要上传到任何地方。
 7. 出错就停：任何命令返回错误，或输出与文档中的「预期」不符，立即停止并把完整输出给我看；不要自行重试写入命令，不要中断正在进行的写入。
@@ -96,15 +96,15 @@
    sha256sum -c SHA256SUMS
    ```
 
-2. 按 [docs/INSTALL.zh-CN.md](docs/INSTALL.zh-CN.md) 逐步操作。切换、Fastboot 恢复和绝不能写入的分区见 [docs/FLASHING.zh-CN.md](docs/FLASHING.zh-CN.md)。
+2. 按 [docs/INSTALL.md](docs/INSTALL.md) 逐步操作。切换、Fastboot 恢复和绝不能写入的分区见 [docs/FLASHING.md](docs/FLASHING.md)。
 
 ### 已安装用户升级
 
-按 [docs/UPGRADE.zh-CN.md](docs/UPGRADE.zh-CN.md) 用发布页的 `packages.zip` 升级内核和配套软件包，升级会保留回退镜像组。
+按 [docs/UPGRADE.md](docs/UPGRADE.md) 用发布页的 `packages.zip` 升级内核和配套软件包，升级会保留回退镜像组。
 
 ### 从源码构建
 
-内核、Mesa、设备软件包、根镜像和启动镜像组都能在主机上无 root 权限构建，输入锁定在 `kernel/source.json`、`mesa/source.json`、`ubuntu/` 和 `device/*/source.json`。见 [docs/build.zh-CN.md](docs/build.zh-CN.md)。
+内核、Mesa、设备软件包、根镜像和启动镜像组都能在主机上无 root 权限构建，输入锁定在 `kernel/source.json`、`mesa/source.json`、`ubuntu/` 和 `device/*/source.json`。见 [docs/BUILD.md](docs/BUILD.md)。
 
 ## 硬件支持
 
@@ -167,7 +167,7 @@ Firefox 播放部分 HEVC 视频可能有轻微丢帧。Chromium snap 不支持�
 
 ## 使用与维护
 
-主机命令按 [INSTALL.zh-CN.md 的「准备」](docs/INSTALL.zh-CN.md#准备)设置 REPO、RELEASE 和 WORK，在 WORK 中执行。详细说明见 [docs/FLASHING.zh-CN.md](docs/FLASHING.zh-CN.md)。
+主机命令按 [INSTALL.md 的「准备」](docs/INSTALL.md#准备)设置 REPO、RELEASE 和 WORK，在 WORK 中执行。详细说明见 [docs/FLASHING.md](docs/FLASHING.md)。
 
 **切换系统。** 在 Ubuntu 中运行 `sudo piano-boot-switch to-android --reboot`，它把保存的 Android 镜像组写入 A 槽、读回校验后重启。在 Android 中用 [KernelSU 切换模块](device/android/piano-switch-ksu/README.md)切到 Ubuntu。在系统内切换不改变槽属性。
 
@@ -182,11 +182,11 @@ fastboot -s <serial> reboot
 
 **开发者模式。** `sudo piano-devmode on` 开启经 USB 线的 SSH；默认关闭。主机上用 `python3 "$REPO/tools/piano-devmode-ssh.py" --serial <serial> <user>` 连接。装完后用 `sudo piano-devmode off` 关闭。详见 [device/devmode](device/devmode/README.md)。
 
-**升级。** 见 [docs/UPGRADE.zh-CN.md](docs/UPGRADE.zh-CN.md)。内核包安装后会自动重建启动镜像组并改写 A 槽，旧镜像组保留为回退。
+**升级。** 见 [docs/UPGRADE.md](docs/UPGRADE.md)。内核包安装后会自动重建启动镜像组并改写 A 槽，旧镜像组保留为回退。
 
 **时间。** 硬件时钟不可写，启动后联网自动校时；没有网络时用 `sudo date -s 'YYYY-MM-DD HH:MM'` 手动设置。
 
-**传感器标定。** 镜像只带默认标定。推荐安装你自己平板的原厂标定：按[安装指南](docs/INSTALL.zh-CN.md#推荐准备本机传感器-registry)或[传感器说明](device/sensors/README.zh-CN.md)从自己的备份准备，不要用别人的。
+**传感器标定。** 镜像只带默认标定。推荐安装你自己平板的原厂标定：按[安装指南](docs/INSTALL.md#推荐准备本机传感器-registry)或[传感器说明](device/sensors/README.zh-CN.md)从自己的备份准备，不要用别人的。
 
 **初始设置之后。** 初始设置会把「计算机」栏设为主机名，之后可用 `sudo hostnamectl hostname --static <名字>` 修改。第一次 `apt install` 之前先 `sudo apt update`，镜像不带软件包索引。
 
@@ -199,9 +199,9 @@ fastboot -s <serial> reboot
 | xiaomipad-8pro-mainline | 设备用户态、Ubuntu 集成、构建/打包/切换工具、固件、文档 |
 | [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano) | Linux 内核：在上游 Linux 7.2 stable 之上维护驱动、设备树与配置；发布提交见输入锁 |
 
-构建内核、Mesa、设备软件包与镜像见 [docs/build.zh-CN.md](docs/build.zh-CN.md)；[kernel/source.json](kernel/source.json) 锁定内核提交与配置片段。
+构建内核、Mesa、设备软件包与镜像见 [docs/BUILD.md](docs/BUILD.md)；[kernel/source.json](kernel/source.json) 锁定内核提交与配置片段。
 
-在设备上操作前，请先阅读面向人工操作者和 AI 助手的 [docs/AGENT-GUIDE.zh-CN.md](docs/AGENT-GUIDE.zh-CN.md)；贡献规则见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+在设备上操作前，请先阅读面向人工操作者和 AI 助手的 [docs/AGENT-GUIDE.md](docs/AGENT-GUIDE.md)；贡献规则见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 问题请通过 [GitHub Issues](https://github.com/yzddmr6/xiaomipad-8pro-mainline/issues) 反馈，注明设备型号、原厂版本和项目版本；提交前去除序列号、蓝牙地址、标定数据和个人信息。
 

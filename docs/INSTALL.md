@@ -1,10 +1,10 @@
 # 全新安装
 
-[English](INSTALL.en.md) ｜ [项目首页](../README.zh-CN.md) ｜ [Fastboot、切换与恢复](FLASHING.zh-CN.md)
+[English](INSTALL.en.md) ｜ [项目首页](../README.md) ｜ [Fastboot、切换与恢复](FLASHING.md)
 
-本指南把发布版本安装到小米平板 8 Pro（`piano`）的 Android 旁边。目前没有图形安装器：可以自己按本文操作，也可以按[项目首页](../README.zh-CN.md#推荐让-ai-帮你安装)把它交给 AI 助手执行。写入新分区表（[第 6 步](#6-写入分区表平板上)）在发布目录的维护 RAM 镜像中进行。开始前请通读全文。本流程已在测试机上按 v0.2.0 完整执行过一次。
+本指南把发布版本安装到小米平板 8 Pro（`piano`）的 Android 旁边。目前没有图形安装器：可以自己按本文操作，也可以按[项目首页](../README.md#推荐让-ai-帮你安装)把它交给 AI 助手执行。写入新分区表（[第 6 步](#6-写入分区表平板上)）在发布目录的维护 RAM 镜像中进行。开始前请通读全文。本流程已在测试机上按 v0.2.0 完整执行过一次。
 
-每个版本都沿用此安装流程。已经安装过的系统请按[升级指南](UPGRADE.zh-CN.md)升级，不要重新分区或刷根镜像。
+每个版本都沿用此安装流程。已经安装过的系统请按[升级指南](UPGRADE.md)升级，不要重新分区或刷根镜像。
 
 ## 先读
 
@@ -14,7 +14,7 @@
 - **Bootloader 必须已解锁**，通过小米官方流程。
 - **先备份**（[第 2 步](#2-备份)）。原厂 A 槽镜像是回到 Android 的依据。
 - 操作边界、电量检查、设备绑定与失败后的处理统一见
-  [Fastboot、切换与恢复](FLASHING.zh-CN.md#绝不写入)；当前充电支持见 [STATUS.md](STATUS.md)。
+  [Fastboot、切换与恢复](FLASHING.md#绝不写入)；当前充电支持见 [STATUS.md](STATUS.md)。
 
 因尚无项目工具而使用标准命令的步骤标为*手工*。
 
@@ -31,7 +31,7 @@
 | 发布目录 | 同一版本的全部文件，不与其他版本混用 |
 | 主机可用空间 | 约 40 GB：备份（测试机 16 GB）、发布目录（约 9 GB）与数据镜像 |
 
-发布目录按[项目首页「手动安装」](../README.zh-CN.md#手动安装)从发布附件还原；只用同一版本的完整目录，不要混入其他版本的文件。
+发布目录按[项目首页「手动安装」](../README.md#手动安装)从发布附件还原；只用同一版本的完整目录，不要混入其他版本的文件。
 
 REPO 为发布记录提交的集成仓检出目录的绝对路径，RELEASE 为解压后的发布目录，WORK 为仓库之外的私有安装工作目录。后续主机命令均在 WORK 中执行；源码工具使用 `"$REPO/tools/NAME"`，发布文件使用 `"$RELEASE/PATH"`。
 每个使用的主机终端都需设置这些路径。下一次校验检查 RELEASE 中的全部文件。
@@ -105,7 +105,7 @@ cp backup/vendor_boot_a.img android-set/vendor_boot.img
 (cd android-set && sha256sum boot.img init_boot.img vendor_boot.img > SHA256SUMS)
 ```
 
-在主机上保留 `android-set/` 和发布目录 `boot/` 的副本：切换与恢复都用这两组镜像（[FLASHING.zh-CN.md](FLASHING.zh-CN.md)）。
+在主机上保留 `android-set/` 和发布目录 `boot/` 的副本：切换与恢复都用这两组镜像（[FLASHING.md](FLASHING.md)）。
 
 ## 3. 收集本机文件
 
@@ -500,16 +500,16 @@ piano-devmode status       # 预期 "developer mode: disabled, inactive"
 
 需要主机连接时用 `sudo piano-devmode on` 再次打开。开启期间它经 USB 线接受所有设有密码的本地账户，如需仅允许 SSH 密钥，见 [device/devmode](../device/devmode/README.md)。它只监听 USB 网络地址 `192.168.88.2`。
 
-如果重建的镜像组无法启动：按电源 + 音量下，从主机写回发布目录的 `boot/` 镜像组（[FLASHING.zh-CN.md](FLASHING.zh-CN.md#从主机piano-switchpy)）。
+如果重建的镜像组无法启动：按电源 + 音量下，从主机写回发布目录的 `boot/` 镜像组（[FLASHING.md](FLASHING.md#从主机piano-switchpy)）。
 
 ## 安装之后
 
-- **切换与恢复：**[FLASHING.zh-CN.md](FLASHING.zh-CN.md)。
+- **切换与恢复：**[FLASHING.md](FLASHING.md)。
 - **软件包：**第一次 `apt install` 之前先运行 `sudo apt update`，镜像不带软件源索引。镜像只装项目内核，没有 Ubuntu 通用内核和 C 库头文件；编译软件前先安装 `build-essential`。
-- **内核更新：**见 [UPGRADE.zh-CN.md](UPGRADE.zh-CN.md)。
+- **内核更新：**见 [UPGRADE.md](UPGRADE.md)。
 - **Android：**首次启动 Android 会重建数据，需要几分钟。如需 root，请重新安装 root 管理器应用；
-  A 槽中已打补丁的 `init_boot_a` 不变。更换 A 槽的 root 补丁后，要刷新存储的 Android 镜像组（[FLASHING.zh-CN.md](FLASHING.zh-CN.md#镜像组)）。
-- **已知问题与支持状态：**[README](../README.zh-CN.md#硬件支持)及发布目录中的 `RELEASE-NOTES.md`。
+  A 槽中已打补丁的 `init_boot_a` 不变。更换 A 槽的 root 补丁后，要刷新存储的 Android 镜像组（[FLASHING.md](FLASHING.md#镜像组)）。
+- **已知问题与支持状态：**[README](../README.md#硬件支持)及发布目录中的 `RELEASE-NOTES.md`。
 
 ## 排障
 

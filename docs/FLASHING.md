@@ -1,6 +1,6 @@
 # Fastboot、切换与恢复
 
-[English](FLASHING.en.md) ｜ [项目首页](../README.zh-CN.md) ｜ [安装](INSTALL.zh-CN.md)
+[English](FLASHING.en.md) ｜ [项目首页](../README.md) ｜ [安装](INSTALL.md)
 
 Android 和 Ubuntu 都从 A 槽启动。切换就是把另一个系统的镜像组写入 `init_boot_a`、`vendor_boot_a`
 和 `boot_a`，活动槽始终不变。本页说明切换工具、槽属性、Fastboot 恢复以及绝不能写入的分区。
@@ -16,13 +16,13 @@ Android 和 Ubuntu 都从 A 槽启动。切换就是把另一个系统的镜像�
 同一时间只用一个工具操作。分区操作前确认电量至少 40%；当前充电支持与限制见
 [硬件状态](STATUS.md)，不再沿用早期诊断内核不充电的结论。
 
-写入前按[安装指南](INSTALL.zh-CN.md#2-备份)备份，保留主机上的两套启动镜像。
+写入前按[安装指南](INSTALL.md#2-备份)备份，保留主机上的两套启动镜像。
 安装时保持有人照看；正式镜像没有调试控制台。启动、写入和采集不要与其他会话重叠。
 出现失败时停下并定位最早失败的步骤：不要因一次状态查询失败而重写，不要重刷已经写好的文件系统，
-也不要中断仍在执行的写入。新镜像先按[调试启动流程](AGENT-GUIDE.zh-CN.md#72-调试-ram-启动)检查，
+也不要中断仍在执行的写入。新镜像先按[调试启动流程](AGENT-GUIDE.md#72-调试-ram-启动)检查，
 再写 A 槽；调试镜像不用于日常持久启动。
 
-主机命令使用 [INSTALL.zh-CN.md](INSTALL.zh-CN.md#准备) 中的 REPO、RELEASE 和 WORK 设置：
+主机命令使用 [INSTALL.md](INSTALL.md#准备) 中的 REPO、RELEASE 和 WORK 设置：
 REPO 为发布记录提交的集成仓检出目录绝对路径，RELEASE 为解压后的发布目录，WORK 为仓库之外的私有安装工作目录。
 主机命令在 WORK 中执行；源码工具使用 `"$REPO/tools/NAME"`，发布文件使用 `"$RELEASE/PATH"`。
 
@@ -40,8 +40,8 @@ fastboot -s <SERIAL> getvar battery-soc-ok        # 预期 "battery-soc-ok: yes"
 ## 维护 RAM 镜像
 
 发布目录的 `boot/boot-ram-maintenance.img` 是只在 RAM 中运行的 Linux，用于不能在已挂载系统中进行的 UFS 盘操作，
-例如 [INSTALL.zh-CN.md 第 6 步](INSTALL.zh-CN.md#6-写入分区表平板上)的分区表写入。它不自动挂载 UFS 分区或写入任何内容，A 槽保持不变。
-[INSTALL.zh-CN.md 第 8a 步](INSTALL.zh-CN.md#8a-推荐首次启动前安装本机文件)会显式挂载新根以安装本机文件。
+例如 [INSTALL.md 第 6 步](INSTALL.md#6-写入分区表平板上)的分区表写入。它不自动挂载 UFS 分区或写入任何内容，A 槽保持不变。
+[INSTALL.md 第 8a 步](INSTALL.md#8a-推荐首次启动前安装本机文件)会显式挂载新根以安装本机文件。
 
 ```bash
 fastboot -s <SERIAL> boot "$RELEASE/boot/boot-ram-maintenance.img"    # 预期 "Booting OKAY"
@@ -68,7 +68,7 @@ telnet 192.168.88.2 2323                                              # root she
 
 | 镜像组 | 位置 |
 |---|---|
-| Android | 你的 A 槽备份（[INSTALL.zh-CN.md](INSTALL.zh-CN.md#2-备份)）；`init_boot` 为正在使用的、已打 root 补丁的镜像 |
+| Android | 你的 A 槽备份（[INSTALL.md](INSTALL.md#2-备份)）；`init_boot` 为正在使用的、已打 root 补丁的镜像 |
 | Ubuntu | 发布目录的 `boot/`；运行 `piano-boot-update` 之后为存储中的 `ubuntu/` |
 
 平板上的存储目录 `/var/lib/piano/switch/` 保存 `android/`、`ubuntu/` 和 `ubuntu.prev/`（当前之前的 Ubuntu 镜像组）。
@@ -109,7 +109,7 @@ A 槽的 Android root 补丁变化后（例如从 Magisk 换成 KernelSU），�
 | `sudo piano-boot-switch import-android --from DIR` | 存储 | `"result": "imported"`；替换 `android/` |
 | `sudo piano-boot-switch import-ubuntu [--from DIR]` | 存储 | `imported`；原 `ubuntu/` 变为 `ubuntu.prev/` |
 
-- 需要先完成 [INSTALL.zh-CN.md 第 10 步](INSTALL.zh-CN.md#10-安装本机文件)，装入本机文件。
+- 需要先完成 [INSTALL.md 第 10 步](INSTALL.md#10-安装本机文件)，装入本机文件。
 - 需要 `/etc/piano/` 中有本机的 `boot-profile.json` 和 `boot-partitions.json`；只在 A 槽为已知镜像组时写入，
   该镜像组同时作为回滚。每个分区都完整写入并读回；失败时写回原镜像组。
 - `"result": "refused"` 表示什么都没写，`code` 与 `message` 说明原因。
@@ -190,5 +190,5 @@ fastboot -s <SERIAL> getvar slot-retry-count:a    # 主机写入后为 7，每�
 
 ## 恢复原布局
 
-移除 Ubuntu 并恢复原分区表目前既无工具，也无已验证的流程；这类写入所需的环境是[维护 RAM 镜像](#维护-ram-镜像)。请保留 [INSTALL.zh-CN.md](INSTALL.zh-CN.md#2-备份)
+移除 Ubuntu 并恢复原分区表目前既无工具，也无已验证的流程；这类写入所需的环境是[维护 RAM 镜像](#维护-ram-镜像)。请保留 [INSTALL.md](INSTALL.md#2-备份)
 中的分区表备份和完整分区备份。

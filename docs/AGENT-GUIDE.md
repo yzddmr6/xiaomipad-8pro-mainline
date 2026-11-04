@@ -17,8 +17,8 @@
 ## 1. 范围与操作边界
 
 执行边界与隐私要求见 [AGENTS.md](../AGENTS.md)。设备写入范围、电量检查、设备绑定及恢复要求
-统一见 [FLASHING.zh-CN.md](FLASHING.zh-CN.md#绝不写入)，安装备份见
-[INSTALL.zh-CN.md](INSTALL.zh-CN.md#2-备份)。当前硬件行为与充电限制以 [STATUS.md](STATUS.md) 为准。
+统一见 [FLASHING.md](FLASHING.md#绝不写入)，安装备份见
+[INSTALL.md](INSTALL.md#2-备份)。当前硬件行为与充电限制以 [STATUS.md](STATUS.md) 为准。
 以下按已选定的操作给出命令；无人值守的冷启动需要预先准备 §7.1 的开发者连接。
 
 ## 2. 仓库与版本锁定
@@ -69,13 +69,13 @@ python3 -S tools/stage-firmware.py --firmware-dir <stock modem_a image/ director
 ## 3. 构建流程
 
 顺序：内核（§3.1）→ 可安装构建记录（§3.2）→ 启动 DTB（§3.3）→ 内核包（§3.4）→ 设备包与固件包（§3.5）→
-根文件系统（§4.4）→ 启动镜像组（§3.6）。主机工具见 [build.zh-CN.md](build.zh-CN.md)；另需 `dpkg-deb`、
+根文件系统（§4.4）→ 启动镜像组（§3.6）。主机工具见 [BUILD.md](BUILD.md)；另需 `dpkg-deb`、
 `python3-debian`、`device-tree-compiler`（`fdtget`/`fdtput`）、`python3-libfdt`、AOSP libufdt 的
 `ufdt_apply_overlay`、`m4` 和 `alsatplg`。
 
 ### 3.1 内核
 
-按[构建指南 §1](build.zh-CN.md#1-内核)构建；发布片段自动合并，产品构建使用 `BUILD_MODULES=1`。
+按[构建指南 §1](BUILD.md#1-内核)构建；发布片段自动合并，产品构建使用 `BUILD_MODULES=1`。
 只需检查配置时用 `--config-only`。构建完成后，读取记录并与锁文件比较：
 
 ```bash
@@ -87,7 +87,7 @@ python3 -c 'import json; print(json.load(open("kernel/source.json"))["kernel_rel
 ### 3.2 可安装构建记录
 
 所有可安装打包构建（含候选）的 ABI 与内核 pin 维护流程只在 [RELEASE.md](RELEASE.md#installable-kernel-packaging-maintainers)
-定义。复现发布版本不改锁文件；本地开发见[构建指南](build.zh-CN.md#本地内核开发)。
+定义。复现发布版本不改锁文件；本地开发见[构建指南](BUILD.md#本地内核开发)。
 
 ### 3.3 启动 DTB
 
@@ -121,14 +121,14 @@ python3 tools/build-kernel-deb.py --kernel-source ../linux --kernel-out out/kern
 ### 3.5 设备包与固件包
 
 ```bash
-# 触控处理，ARM64，动态链接 glibc、静态链接 C++ 运行库（工具链与检查见 build.zh-CN.md 第 5 节）；
+# 触控处理，ARM64，动态链接 glibc、静态链接 C++ 运行库（工具链与检查见 BUILD.md 第 5 节）；
 # JSON 头文件单独放一个 include 目录，避免主机头文件混入交叉编译
 mkdir -p out/json-include && cp -r /usr/include/nlohmann out/json-include/
 make -C device/piano-thp OUT="$PWD/out/piano-thp-arm64" CXX=aarch64-linux-gnu-g++-13 \
   JSON_INCLUDE="$PWD/out/json-include" LDFLAGS='-static-libstdc++ -static-libgcc -Wl,-z,relro,-z,now' \
   all test RUNNER='qemu-aarch64-static -L /usr/aarch64-linux-gnu'
 file out/piano-thp-arm64/piano-thp-live      # 预期 "ARM aarch64 ... dynamically linked, interpreter /lib/ld-linux-aarch64.so.1"
-# Mesa 26.2.0 加 A830 补丁（cross file 与 sysroot 见 build.zh-CN.md）
+# Mesa 26.2.0 加 A830 补丁（cross file 与 sysroot 见 BUILD.md）
 MESA_SOURCE=<Mesa checkout at mesa/source.json> CROSS_FILE=<arm64 cross file> \
   OUT_DIR="$PWD/out/mesa" bash tools/build-mesa.sh
 
@@ -207,7 +207,7 @@ Mesa 构建 manifest；镜像组的 `manifest.json` 与 `SHA256SUMS`；initrd �
 
 ## 4. 全新安装（手工步骤）
 
-分区与根文件系统安装器尚不可用。以下步骤用标准命令复现测试机（512 GB UFS）的安装，256 GB 对应值见 §4.5。使用发布目录时，发布的根文件系统镜像与启动镜像组代替 §4.4 和 §3.6 的镜像组，改动见 [INSTALL.zh-CN.md](INSTALL.zh-CN.md)。
+分区与根文件系统安装器尚不可用。以下步骤用标准命令复现测试机（512 GB UFS）的安装，256 GB 对应值见 §4.5。使用发布目录时，发布的根文件系统镜像与启动镜像组代替 §4.4 和 §3.6 的镜像组，改动见 [INSTALL.md](INSTALL.md)。
 
 ### 4.1 前提
 
@@ -288,7 +288,7 @@ index 与 AVB 属性时，ABL 会把该槽标为不可启动。
 
 ### 4.4 根与数据文件系统（主机）
 
-按 [build.zh-CN.md](build.zh-CN.md) 构建原始 Desktop TAR（`prepare-ubuntu-desktop.sh`、`sqfs2tar`、
+按 [BUILD.md](BUILD.md) 构建原始 Desktop TAR（`prepare-ubuntu-desktop.sh`、`sqfs2tar`、
 `merge-desktop-tars.py`），然后：
 
 ```bash
@@ -677,12 +677,12 @@ sudo apt-get purge linux-image-<old release>    # 删除残留的 depmod 索引�
 - 已在测试机上验证：`status`、`verify`、两种 import、`to-ubuntu`、`to-android --reboot`。尚未在设备上验证：
   应用网格中的 **切换到 Android**（`pkexec /usr/sbin/piano-boot-switch to-android --desktop --force`）以及写入失败后的回退。
   当前桌面入口显式忽略重启 inhibitor，请先保存工作；CLI 默认尊重 inhibitor，
-  仅 `--reboot --force` 忽略。重启失败与下一次启动目标见[切换说明](FLASHING.zh-CN.md#在-ubuntu-中piano-boot-switch)。
+  仅 `--reboot --force` 忽略。重启失败与下一次启动目标见[切换说明](FLASHING.md#在-ubuntu-中piano-boot-switch)。
 
 ### 6.2 在 Android 中：KernelSU 模块
 
 安装、`--check` 和切换的设备验证记录见[模块说明](../device/android/piano-switch-ksu/README.md)。
-安装与执行步骤统一见 [FLASHING.zh-CN.md](FLASHING.zh-CN.md#在-android-中kernelsu-模块)。
+安装与执行步骤统一见 [FLASHING.md](FLASHING.md#在-android-中kernelsu-模块)。
 本地构建使用模块元数据中的版本：
 
 ```bash
@@ -791,7 +791,7 @@ python3 tools/piano-devmode-ssh.py -t <USER> sudo piano-reboot-bootloader
 - `piano-reboot-bootloader` 加载 `nvmem_qcom-spmi-sdam` 与 `nvmem-reboot-mode`；没有绑定的 reboot-mode 设备时拒绝重启，
   因为那样平板会重新从 A 槽启动。
 - 已在测试机的正式冷启动中验证。
-- 默认：发布镜像中关闭。安装过程打开它（[INSTALL.zh-CN.md](INSTALL.zh-CN.md) 第 8a 或 10 步），第 10 步最后执行
+- 默认：发布镜像中关闭。安装过程打开它（[INSTALL.md](INSTALL.md) 第 8a 或 10 步），第 10 步最后执行
   `sudo piano-devmode off`，这是发布版的默认做法。
 - 当前设备支持包的套接字带 `BindToDevice=usb0`（NCM 功能的网络设备），并在
   `sys-subsystem-net-devices-usb0.device` 之后启动：仅凭地址时，经 Wi-Fi 到达 192.168.88.2 的连接也会被接受。
@@ -935,4 +935,4 @@ echo "INTF1 $a $($bb devmem 0x0ae360ac 32)  INTF2 $b $($bb devmem 0x0ae370ac 32)
 提交归属、`Fixes:` / `Link:` / `Reported-by:` 和人工签署要求见
 [CONTRIBUTING.md](../CONTRIBUTING.md#commits-and-attribution)，其中也规定代理代签的限制。
 按同一文件的[证据要求](../CONTRIBUTING.md#evidence)记录结果。
-公开硬件状态维护在 [README 支持矩阵](../README.zh-CN.md#硬件支持) 和 [STATUS.md](STATUS.md)。
+公开硬件状态维护在 [README 支持矩阵](../README.md#硬件支持) 和 [STATUS.md](STATUS.md)。

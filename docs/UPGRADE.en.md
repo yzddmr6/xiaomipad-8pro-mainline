@@ -1,6 +1,6 @@
 # Upgrading an Existing Installation
 
-[中文](UPGRADE.zh-CN.md) ｜ [Project home](../README.en.md) ｜ [Fresh installation](INSTALL.en.md) ｜ [Switching and recovery](FLASHING.en.md)
+[中文](UPGRADE.md) ｜ [Project home](../README.en.md) ｜ [Fresh installation](INSTALL.en.md) ｜ [Switching and recovery](FLASHING.en.md)
 
 This page upgrades an installed Ubuntu to a new release's kernel and device packages without
 reinstalling, repartitioning or erasing data. Prerequisites: the final step of
