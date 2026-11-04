@@ -1,6 +1,6 @@
 # Building the optional VM packages
 
-The build is an unprivileged, offline cross-build after input preparation. It does not use a device or install host packages. `tools/crosvm.lock.json` pins the crosvm/minijail commits, the unchanged 30-patch iceland-gvm queue, the separate shutdown-log patch, Cargo.lock, target sysroot packages, host compiler packages, Rust 1.88.0 and resulting ELF hashes.
+The build is an unprivileged, offline cross-build after input preparation. It does not use a device or install host packages. `tools/crosvm.lock.json` pins the crosvm/minijail commits, the unchanged 30-patch iceland-gvm queue, the separate shutdown-log and bounded child-exit patches, Cargo.lock, target sysroot packages, host compiler packages, Rust 1.88.0 and resulting ELF hashes.
 
 Prepare the exact host package versions listed under host_packages and a Rust 1.88.0 toolchain containing the aarch64-unknown-linux-gnu standard library. Use an existing Cargo registry cache matching Cargo.lock, or the public registry cache included in the corresponding-source archive. The cache contains source crates and registry metadata, never credentials. Populate the download cache using:
 

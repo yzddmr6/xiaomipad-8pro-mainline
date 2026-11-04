@@ -34,6 +34,7 @@
     "device/virtualization/patches/0028-gunyah-iceland-gvm-request-the-RM-RPC-queue-in-the-s.patch",
     "device/virtualization/patches/0029-gpu_display-iceland-gvm-keyboard-grab-keyboard-short.patch",
     "device/virtualization/patches/0030-virtio-input-iceland-gvm-the-default-keyboard-advert.patch",
-    "device/virtualization/patches/0031-crosvm-quiet-closed-shutdown-channel.patch"
+    "device/virtualization/patches/0031-crosvm-quiet-closed-shutdown-channel.patch",
+    "device/virtualization/patches/0032-crosvm-bound-device-child-exit-wait.patch"
   ]
 }

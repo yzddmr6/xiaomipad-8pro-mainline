@@ -4,7 +4,7 @@ The CLI and guest/network control programs retain their GPL-2.0-only headers.
 vm-image.py: Piano mainline contributors; MIT.
 crosvm: ChromiumOS Authors, BSD-3-Clause; upstream commit
 96e84c3f680e34e82e932ef911ae97d734121758 plus the original iceland-gvm
-patch queue and the separately numbered Piano patch in patches/.
+patch queue and the separately numbered Piano patches in patches/.
 minijail: ChromiumOS Authors, BSD-3-Clause, commit
 7845d89927a82dbdcdee6276837cd0978f69ba19.
 Rust dependencies retain their individual source licences and notices.
