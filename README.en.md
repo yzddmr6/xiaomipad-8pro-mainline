@@ -207,6 +207,22 @@ Before operating on a device, read [docs/AGENT-GUIDE.en.md](docs/AGENT-GUIDE.en.
 
 Report problems through [GitHub Issues](https://github.com/yzddmr6/xiaomipad-8pro-mainline/issues) with the device model, stock build and project release; strip serial numbers, Bluetooth addresses, calibration data and personal information first.
 
+## Sponsors
+
+This project is maintained by one person. Porting, debugging and testing every release on real hardware take a lot of time and effort, and development also needs a steady supply of AI coding tool tokens.
+
+The project is free and open source, and every feature works without sponsoring. If it helps you, sponsorship is welcome; the funds go to tokens and ongoing development and maintenance. Sponsorship is voluntary support and does not come with any service or commitment.
+
+- Xiaohongshu: the 「致谢名单」 (acknowledgment list) item in the shop (scan the Xiaohongshu QR code above to open the profile)
+
+When sponsoring, leave your GitHub ID or the name you want shown, and it will be added to the list below; without one, nothing is published.
+
+Thanks to these sponsors (sorted by total amount; amounts shown from ¥50):
+
+| Sponsor | Amount |
+|---|---|
+| [@pidbid](https://github.com/pidbid) | ¥100 |
+
 ## Acknowledgments and Licensing
 
 This project reuses and adapts the following work:
