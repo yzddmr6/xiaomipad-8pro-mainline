@@ -87,7 +87,10 @@ def arguments(vm, cfg, rd, crosvm):
 
 
 def display_available(cfg):
+    # Match the VNC listener: SO_REUSEADDR lets a previous run's closing
+    # connections be ignored, while an active listener still blocks bind().
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             probe.bind(("127.0.0.1", cfg["vnc_port"]))
         except OSError as error:
