@@ -17,6 +17,34 @@ spec.loader.exec_module(check)
 
 
 class ParsingAndCleanup(unittest.TestCase):
+    def test_connected_charger_recovery(self):
+        before = {'supplies': {
+            'xiaomi-mca-usb': {'type': 'USB', 'online': '1', 'usb_type': 'PD'},
+            'bq27z561-0': {'type': 'Battery', 'capacity': '65',
+                           'status': 'Charging', 'current_now': '200000'},
+            'bq27z561-1': {'type': 'Battery', 'capacity': '66',
+                           'status': 'Charging', 'current_now': '150000'},
+        }}
+        def sample(online='1', current='200000', capacity='65', status='Charging'):
+            return {'supplies': {
+                'xiaomi-mca-usb': {'type': 'USB', 'online': online, 'usb_type': 'PD'},
+                **{n: p | {'current_now': current, 'capacity': capacity, 'status': status}
+                   for n, p in before['supplies'].items() if p['type'] == 'Battery'},
+            }}
+        self.assertTrue(all(check.charging_recovery_checks(before, sample()).values()))
+        # Both readings are valid, but the source disappeared after sleep.
+        self.assertFalse(all(check.charging_recovery_checks(before, sample(online='0')).values()))
+        for current in ('-100000', '0', None, 'invalid'):
+            self.assertFalse(all(check.charging_recovery_checks(before, sample(current=current)).values()))
+        self.assertTrue(all(check.charging_recovery_checks(
+            before, sample(current='0', capacity='100', status='Full')).values()))
+        self.assertFalse(all(check.charging_recovery_checks(
+            before, sample(online='0', current='0', capacity='100', status='Full')).values()))
+        self.assertFalse(all(check.charging_recovery_checks(before, sample(capacity='invalid')).values()))
+        self.assertFalse(all(check.charging_recovery_checks(before, {'supplies': {}}).values()))
+        unplugged = sample(online='0')
+        self.assertFalse(all(check.charging_recovery_checks(unplugged, sample()).values()))
+
     def test_suspend_stats_text(self):
         # Individual suspend_stats files are stripped sysfs text, not log lines.
         before = {'success': '4', 'fail': '1', 'failed_suspend': '1',

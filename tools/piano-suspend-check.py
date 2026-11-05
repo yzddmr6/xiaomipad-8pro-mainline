@@ -307,7 +307,9 @@ def read_snapshot(thp_pid, rtc):
     for path in sorted(Path('/sys/class/power_supply').glob('*')):
         kind = read(path / 'type')
         if kind == 'Battery':
-            supplies[path.name] = {'type': kind, 'capacity': read(path / 'capacity')}
+            supplies[path.name] = {'type': kind, 'capacity': read(path / 'capacity'),
+                                   'status': read(path / 'status'),
+                                   'current_now': read(path / 'current_now')}
         elif path.name == 'xiaomi-mca-usb':
             supplies[path.name] = {'type': kind, 'online': read(path / 'online'),
                                    'usb_type': read(path / 'usb_type')}
@@ -582,6 +584,28 @@ def peripheral_checks(before, after):
     }
 
 
+def charging_recovery_checks(before, after):
+    """Opt-in: the charger stays connected and battery protection is off.
+
+    Positive BQ27xxx current means net charging. Full batteries need not
+    draw current; a readable offline charger never counts as recovery.
+    """
+    batteries = {n: p for n, p in before['supplies'].items() if p['type'] == 'Battery'}
+    checks = {
+        'charging_source_before': before['supplies'].get('xiaomi-mca-usb', {}).get('online') == '1',
+        'charging_source_restored': after['supplies'].get('xiaomi-mca-usb', {}).get('online') == '1',
+    }
+    cells = [after['supplies'].get(n, {}) for n in batteries]
+    valid = bool(cells) and all(str(p.get('capacity', '')).isdigit() and
+                               0 <= int(p['capacity']) <= 100 for p in cells)
+    full = valid and all(p.get('status') == 'Full' or p['capacity'] == '100' for p in cells)
+    currents = [p.get('current_now') for p in cells]
+    readable = all(re.fullmatch(r'-?[0-9]+', v or '') for v in currents)
+    checks['battery_net_charging_or_full'] = valid and (full or
+        (readable and sum(int(v) for v in currents) > 0))
+    return checks
+
+
 def run_round(check, number):
     a = check.a
     row = {'number': number, 'status': 'RUNNING', 'stage': 'before'}
@@ -590,6 +614,8 @@ def run_round(check, number):
     row['kernel_cursor'] = check.journal_cursor()
     before = row['before'] = check.snapshot()
     baseline = row['baseline_checks'] = peripheral_checks(before, before)
+    if a.charging_source_connected:
+        baseline.update(charging_recovery_checks(before, before))
     baseline['clean_suspend_history'] = before['stats'].get('last_failed_dev') == ''
     baseline['rtc_available'] = bool(before['rtc']['name']) and before['rtc']['wakealarm'] in ('', '0')
     baseline['success_counter'] = str(before['stats'].get('success', '')).isdigit()
@@ -665,11 +691,15 @@ def run_round(check, number):
         row['recovery_samples'].append(after)
         display_ok = bool(after['display']) and all(d == {'enabled': 'enabled', 'dpms': 'On'} for d in after['display'].values())
         wifi_ok = all(not w['connected'] or after['wifi'].get(n, {}).get('connected') for n, w in before['wifi'].items())
-        if (display_ok and wifi_ok) or time.monotonic() >= deadline:
+        charging_ok = (not a.charging_source_connected or
+                       all(charging_recovery_checks(before, after).values()))
+        if (display_ok and wifi_ok and charging_ok) or time.monotonic() >= deadline:
             break
         time.sleep(1)
     row['counters'] = suspend_delta(before['stats'], after['stats'])
     checks = row['checks'] = peripheral_checks(before, after)
+    if a.charging_source_connected:
+        checks.update(charging_recovery_checks(before, after))
     checks.update(same_boot=before['boot_id'] == after['boot_id'], success_and_failures=row['counters']['pass'],
                   actual_sleep=row['sleep']['pass'], suspend_command=code == 0,
                   resume_before_deadline=row['resume_wait']['success_increased'],
@@ -710,6 +740,9 @@ def main():
     ap.add_argument('--output', required=True, type=Path, help='new private results directory on the tablet')
     ap.add_argument('--rounds', type=int, default=3)
     ap.add_argument('--seconds', type=int, default=30, help='automatic RTC sleep interval')
+    ap.add_argument('--charging-source-connected', action='store_true',
+                    help='require source online and net charging after wake (full exempt); '
+                         'use with battery protection off and no unplug during sleep')
     ap.add_argument('--physical', action='store_true')
     ap.add_argument('--safety-seconds', type=int, default=180, help='physical mode fallback RTC interval')
     ap.add_argument('--expect-wake', choices=tuple(WAKE_NAMES), help='physical mode IRQ-name check')
