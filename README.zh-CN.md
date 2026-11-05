@@ -177,6 +177,8 @@ Firefox 播放部分 HEVC 视频可能有轻微丢帧。Chromium snap 不支持�
 
 **切换系统。** 在 Ubuntu 中运行 `sudo piano-boot-switch to-android --reboot`，它把保存的 Android 镜像组写入 A 槽、读回校验后重启。在 Android 中用 [KernelSU 切换模块](device/android/piano-switch-ksu/README.md)切到 Ubuntu。在系统内切换不改变槽属性。
 
+**紧急回 Android。** Ubuntu 无响应时，打开键盘盖，同时按住音量上、下键 10 秒；镜像组校验成功后切回 Android 并重启，未保存的内容会丢失，合盖时不响应；若仍无响应，使用下面的 Fastboot 恢复方法。
+
 **从主机恢复。** 平板处于 Fastboot（电源 + 音量下）时，`tools/piano-switch.py` 先核对设备与两组镜像，再写入 A 槽，任一步失败即写回原镜像组：
 
 ```bash
@@ -208,6 +210,8 @@ fastboot -s <serial> reboot
 构建内核、Mesa、设备软件包与镜像见 [docs/build.zh-CN.md](docs/build.zh-CN.md)；[kernel/source.json](kernel/source.json) 锁定内核提交与配置片段。
 
 在设备上操作前，请先阅读面向人工操作者和 AI 助手的 [docs/AGENT-GUIDE.zh-CN.md](docs/AGENT-GUIDE.zh-CN.md)；贡献规则见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+运行 `piano-check` 查看本地状态，或运行 `piano-check --markdown` 生成可贴入 issue 的自检摘要；不需要 root，摘要不含设备序列号、无线地址、网络名或用户名。
 
 问题请通过 [GitHub Issues](https://github.com/yzddmr6/xiaomipad-8pro-mainline/issues) 反馈，注明设备型号、原厂版本和项目版本；提交前去除序列号、蓝牙地址、标定数据和个人信息。
 

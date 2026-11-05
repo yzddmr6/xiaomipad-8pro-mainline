@@ -1,0 +1,233 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: MIT
+"""Read-only, identity-free summary of piano's local hardware interfaces.
+
+PASS describes the named observation, not a display, audio or input exercise.
+No logs, command lines, device profiles, addresses or account names are printed.
+"""
+import argparse
+import json
+import os
+from pathlib import Path
+import re
+import stat
+import subprocess
+
+GENERAL_HINT = 'See the hardware support and troubleshooting notes.'
+DOC = 'https://github.com/yzddmr6/xiaomipad-8pro-mainline/blob/main/'
+PACKAGES = ('piano-device-support', 'piano-ubuntu-desktop', 'piano-local-firmware',
+            'piano-mesa', 'piano-snap-graphics', 'piano-sensors', 'piano-iio-sensor-proxy',
+            'piano-camerad', 'piano-mipps-auth', 'piano-iris-vaapi', 'piano-crosvm',
+            'piano-vm', 'piano-vm-windows')
+SERVICES = ('piano-thp.service', 'piano-hexagonrpcd-sns.service', 'iio-sensor-proxy.service',
+            'piano-camerad.service', 'piano-emergency-android.service')
+SAFE_UNITS = set(SERVICES) | {
+    'gdm.service', 'gdm3.service', 'NetworkManager.service', 'bluetooth.service',
+    'piano-charging.service', 'piano-devmode.service', 'piano-devmode-ssh.socket',
+    'piano-slot-success.service', 'piano-debug.service', 'piano-debug-timeout.service',
+    'piano-mipps-auth.service', 'systemd-udevd.service', 'systemd-logind.service'}
+
+
+class Local:
+    def read(self, path):
+        try:
+            return Path(path).read_text().strip()
+        except (OSError, UnicodeError):
+            return None
+
+    def glob(self, pattern):
+        return sorted(Path('/').glob(pattern.lstrip('/')))
+
+    def exists(self, path):
+        return Path(path).exists()
+
+    def char(self, path):
+        try:
+            return stat.S_ISCHR(Path(path).stat().st_mode)
+        except OSError:
+            return False
+
+    def run(self, argv):
+        try:
+            p = subprocess.run(argv, capture_output=True, text=True, timeout=4,
+                               env={**os.environ, 'LC_ALL': 'C', 'SYSTEMD_COLORS': '0',
+                                    'SYSTEMD_PAGER': 'cat'})
+            return p.returncode, p.stdout
+        except (OSError, subprocess.TimeoutExpired, UnicodeError):
+            return 127, ''
+
+
+def collect(local):
+    rows = []
+
+    def add(status, name, detail, hint=GENERAL_HINT, doc='README.md'):
+        rows.append((status, name, detail, hint, DOC + doc))
+
+    def observed(name, ok, yes, no, doc='README.md'):
+        add('PASS' if ok else 'WARN', name, yes if ok else no, doc=doc)
+
+    kernel = local.read('/proc/sys/kernel/osrelease') or ''
+    # Custom release suffixes can contain a builder's account or machine name.
+    if re.fullmatch(r'\d+\.\d+\.\d+-piano\d+', kernel):
+        add('PASS', 'Kernel', kernel)
+    else:
+        add('WARN', 'Kernel', 'not a recognized piano release (custom suffix withheld)')
+    packages = PACKAGES + (('piano-camera-loopback-' + kernel,)
+                           if re.fullmatch(r'\d+\.\d+\.\d+-piano\d+', kernel) else ())
+    for package in packages:
+        rc, value = local.run(['dpkg-query', '-W', '-f=${db:Status-Status} ${Version}', package])
+        words = value.split()
+        if rc or len(words) != 2 or words[0] != 'installed':
+            add('SKIP' if package in ('piano-crosvm', 'piano-vm', 'piano-vm-windows') else 'WARN', package, 'not installed')
+        elif re.fullmatch(r'\d[\d.+:~\-]*(?:(?:piano|os|git\.[0-9a-f]+)[\d.+:~\-]*)*', words[1]):
+            add('PASS', package, words[1])
+        else:
+            add('WARN', package, 'installed; non-release version withheld')
+
+    vendors = [local.read(p) for p in local.glob('/sys/class/misc/nvt-thp-*/device/panel_vendor')]
+    vendor = next((v for v in vendors if v in ('csot', 'boe')), None)
+    add('PASS' if vendor else 'SKIP', 'Panel detection', vendor or 'kernel panel_vendor unavailable',
+        doc='device/piano-thp/README.md#live-input')
+
+    rc, value = local.run(['systemctl', '--system', '--failed', '--plain', '--no-legend', '--no-pager'])
+    if rc:
+        add('SKIP', 'Failed system units', 'system manager unavailable')
+    else:
+        names = [line.split()[0] for line in value.splitlines() if line.split()]
+        safe = sorted({n for n in names if n in SAFE_UNITS})
+        hidden = sum(n not in SAFE_UNITS for n in names)
+        detail = ', '.join(safe) + (f'; {hidden} other unit name(s) withheld' if hidden else '')
+        add('FAIL' if names else 'PASS', 'Failed system units', detail.lstrip('; ') or 'none',
+            'Inspect failed units locally with systemctl --failed; do not paste unfiltered logs.')
+    for service in SERVICES:
+        rc, value = local.run(['systemctl', '--system', 'show', '-p', 'ActiveState', '--value', service])
+        state = value.strip()
+        if rc or state not in ('active', 'activating', 'deactivating', 'inactive', 'failed', 'reloading'):
+            add('SKIP', service, 'state unavailable')
+        else:
+            add('PASS' if state == 'active' else 'FAIL' if state == 'failed' else 'WARN', service,
+                state + ' (service state only)')
+
+    adsp = [p for p in local.glob('/sys/class/remoteproc/remoteproc*')
+            if local.read(p / 'name') in ('3000000.remoteproc', 'adsp')]
+    observed('ADSP', bool(adsp) and all(local.read(p / 'state') == 'running' for p in adsp),
+             'remote processor running', 'remote processor absent or not running')
+    gpu = any(local.char(p) for p in local.glob('/dev/dri/renderD*'))
+    observed('GPU', gpu, 'render node present (rendering not exercised)', 'no render node')
+    inputs = [local.read(p / 'device/name') for p in local.glob('/sys/class/input/event*')]
+    observed('Touch', local.exists('/dev/piano-touch') and any(n and 'piano' in n.lower() and
+             ('touch' in n.lower() or 'thp' in n.lower()) for n in inputs),
+             'THP transport and input interface present (touch not exercised)', 'touch interface missing',
+             'device/piano-thp/README.md#live-input')
+    observed('Sound', bool(local.glob('/sys/class/sound/card*')), 'ALSA card present (audio not exercised)',
+             'no ALSA card')
+    rc, value = local.run(['busctl', '--system', '--auto-start=no', 'get-property',
+                          'net.hadess.SensorProxy', '/net/hadess/SensorProxy',
+                          'net.hadess.SensorProxy', 'HasAccelerometer'])
+    add('SKIP' if rc else 'PASS' if value.strip() == 'b true' else 'WARN', 'Sensors',
+        'accelerometer advertised (motion not exercised)' if not rc and value.strip() == 'b true'
+        else 'accelerometer state unavailable', doc='device/sensors/README.zh-CN.md#升级与检查脚本')
+    cameras = [p for p in local.glob('/sys/class/video4linux/video*')
+               if local.read(p / 'name') in ('Rear Camera', 'Front Camera')]
+    observed('Camera', len(cameras) == 2 and all(local.char('/dev/' + p.name) for p in cameras),
+             'both camera interfaces present (capture not exercised)', 'camera interfaces missing')
+    wifi = [p for p in local.glob('/sys/class/net/*')
+            if local.exists(p / 'wireless') or local.exists(p / 'phy80211')]
+    observed('Wi-Fi controller', bool(wifi), 'wireless interface present', 'no wireless interface')
+    if wifi:
+        connected = False
+        available = False
+        for p in wifi:
+            rc, value = local.run(['iw', 'dev', p.name, 'link'])
+            available |= rc == 0
+            connected |= not rc and bool(re.search(r'^Connected to ', value, re.M))
+        add('PASS' if connected else 'WARN' if available else 'SKIP', 'Wi-Fi link',
+            'connected' if connected else 'disconnected' if available else 'link query unavailable')
+    rc, value = local.run(['busctl', '--system', '--auto-start=no', '--list', 'tree', 'org.bluez'])
+    controllers = re.findall(r'^/org/bluez/hci\d+$', value, re.M) if not rc else []
+    states = [local.run(['busctl', '--system', '--auto-start=no', 'get-property', 'org.bluez', p,
+                        'org.bluez.Adapter1', 'Powered']) for p in controllers]
+    add('SKIP' if rc else 'PASS' if states and all(not r and v.strip() == 'b true' for r, v in states)
+        else 'WARN', 'Bluetooth controller', 'powered' if states and all(not r and v.strip() == 'b true'
+        for r, v in states) else 'absent, off or state unavailable')
+
+    batteries = [p for p in local.glob('/sys/class/power_supply/*') if local.read(p / 'type') == 'Battery']
+    capacities = [local.read(p / 'capacity') or '' for p in batteries]
+    valid = bool(capacities) and all(v.isdigit() and 0 <= int(v) <= 100 for v in capacities)
+    add('PASS' if valid else 'WARN', 'Battery', ', '.join(str(int(v)) + '%' for v in capacities)
+        if valid else 'capacity unavailable or invalid')
+    usb = local.read('/sys/class/power_supply/xiaomi-mca-usb/online')
+    add('PASS' if usb in ('0', '1') else 'SKIP', 'Charger',
+        {'0': 'unplugged', '1': 'external power present'}.get(usb, 'state unavailable'))
+    charge = [local.read(p / 'status') for p in batteries]
+    allowed = {'Charging', 'Discharging', 'Not charging', 'Full', 'Unknown'}
+    add('PASS' if charge and all(s in allowed - {'Unknown'} for s in charge) else 'SKIP',
+        'Charge state', ', '.join(s if s in allowed else 'unavailable' for s in charge) or 'unavailable')
+
+    displays = local.glob('/sys/class/drm/card*-DSI-1')
+    enabled = any(local.read(p / 'enabled') == 'enabled' for p in displays)
+    modes = sorted({v for p in displays for v in (local.read(p / 'modes') or '').splitlines()
+                    if re.fullmatch(r'\d{3,5}x\d{3,5}', v)})
+    add('PASS' if enabled else 'WARN', 'Display interface',
+        ('enabled' if enabled else 'disabled or absent') + '; advertised modes: ' + (', '.join(modes) or 'unavailable'))
+    # Mutter supplies the active refresh rate without privileged DRM/debugfs access.
+    rc, value = local.run(['busctl', '--user', '--json=short', 'call', 'org.gnome.Mutter.DisplayConfig',
+                          '/org/gnome/Mutter/DisplayConfig', 'org.gnome.Mutter.DisplayConfig', 'GetCurrentState'])
+    current = []
+    if not rc:
+        try:
+            for spec, modes, properties in json.loads(value)['data'][1]:
+                if not re.fullmatch(r'DSI-\d+', spec[0]):
+                    continue
+                for mode in modes:
+                    if mode[6].get('is-current', {}).get('data') is True:
+                        width, height, hz = mode[1:4]
+                        if (type(width) is int and type(height) is int and isinstance(hz, (int, float))
+                                and 0 < width <= 16384 and 0 < height <= 16384 and 0 < hz <= 1000):
+                            current.append(f'{width}x{height} @ {hz:.2f} Hz')
+        except (ValueError, TypeError, KeyError, IndexError):
+            pass
+    add('PASS' if current else 'SKIP', 'Current display mode', ', '.join(current) or 'no readable GNOME session',
+        'Run piano-check inside the GNOME session to read the current mode.')
+    rc, value = local.run(['systemctl', '--system', 'is-enabled', 'piano-devmode.service'])
+    state = value.strip()
+    add('PASS' if state in ('enabled', 'disabled', 'masked') else 'SKIP', 'Developer mode',
+        state if state in ('enabled', 'disabled', 'masked') else 'state unavailable', doc='device/devmode/README.md#turning-it-on-and-off')
+    add('SKIP', 'Boot slot and image sets', 'requires administrator access',
+        'Check locally with sudo piano-boot-switch status; its output contains device identity.',
+        'device/boot/README.md#piano-boot-switch')
+    return rows
+
+
+def render(rows, markdown=False):
+    print('Piano local status — PASS reports interface/state availability, not a hardware functional test.')
+    if markdown:
+        print('\n| State | Check | Observation |\n|---|---|---|')
+    for status, name, detail, hint, link in rows:
+        if markdown:
+            print(f'| {status} | {name} | {detail} |')
+            if status != 'PASS':
+                note = hint if hint != GENERAL_HINT else ''
+                if '#' in link:
+                    note += f' [Documentation]({link})'
+                if note:
+                    print(f'| | | {note.strip()} |')
+        else:
+            print(f'{status} {name}: {detail}')
+            if status != 'PASS':
+                print(f'  {hint} {link}')
+    if markdown:
+        print(f'\n{GENERAL_HINT} [Documentation]({DOC}README.md)')
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--markdown', action='store_true', help='format a report for an issue')
+    args = parser.parse_args()
+    rows = collect(Local())
+    render(rows, args.markdown)
+    return 1 if any(row[0] == 'FAIL' for row in rows) else 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

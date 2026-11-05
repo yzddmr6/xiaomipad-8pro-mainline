@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Hold both volume keys to recover piano to Android
+DefaultDependencies=no
+After=local-fs.target systemd-udevd.service
+Wants=systemd-udevd.service
+Conflicts=shutdown.target
+Before=sysinit.target shutdown.target
+ConditionPathExists=/etc/piano/boot-profile.json
+ConditionPathExists=/etc/piano/boot-partitions.json
+ConditionKernelCommandLine=piano.boot=persistent
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/piano/piano-emergency-android
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=sysinit.target

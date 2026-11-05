@@ -16,8 +16,8 @@ body:
   - type: textarea
     id: versions
     attributes:
-      label: Versions
-      description: Stock build, kernel release and commit, integration commit or release image.
+      label: Local status (piano-check)
+      description: Paste the output of piano-check --markdown (no sudo). If unavailable, give the kernel and project versions. Also include your stock build version.
     validations:
       required: true
   - type: textarea

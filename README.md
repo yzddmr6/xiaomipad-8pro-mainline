@@ -179,6 +179,8 @@ Host commands use the REPO, RELEASE and WORK variables from [INSTALL.md "What yo
 
 **Switching.** In Ubuntu, `sudo piano-boot-switch to-android --reboot` writes the stored Android image set to slot A, reads it back and reboots. In Android, the [KernelSU switch module](device/android/piano-switch-ksu/README.md) switches to Ubuntu. Switching from within either system does not change the slot attributes.
 
+**Emergency return to Android.** If Ubuntu is unresponsive, open the keyboard cover and hold both volume keys for 10 seconds; after checking the image set, the tablet switches to Android and restarts, losing unsaved work. The shortcut is ignored with the cover closed; if it does not respond, use Fastboot recovery below.
+
 **Recovery from the host.** With the tablet in Fastboot (Power + Volume Down), `tools/piano-switch.py` checks the device and both image sets, writes slot A and restores the previous set if any write fails:
 
 ```bash
@@ -199,6 +201,8 @@ A host write resets slot A's retry counter; the next Ubuntu boot marks the slot 
 **After Initial Setup.** Initial Setup sets the hostname from its *Computer* field; change it later with `sudo hostnamectl hostname --static <name>`. Run `sudo apt update` before the first `apt install`: the image ships without package indexes.
 
 **App Center.** Once online, run `sudo snap refresh snap-store gnome-46-2404` to update App Center.
+
+Run `piano-check` for local status, or `piano-check --markdown` for an issue-ready summary. It needs no root privileges and omits device serials, radio addresses, network names and account names.
 
 ## Development and Contributions
 

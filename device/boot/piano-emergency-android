@@ -1,0 +1,243 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: MIT
+"""Hold both tablet volume keys for ten seconds to recover to Android."""
+import errno
+import fcntl
+import os
+from pathlib import Path
+import select
+import struct
+import subprocess
+import time
+
+HOLD_SECONDS = 10.0
+REBOOT_SECONDS = 15.0
+EV_SYN, EV_KEY, EV_SW = 0, 1, 5
+SYN_REPORT, SYN_DROPPED = 0, 3
+KEY_VOLUMEDOWN, KEY_VOLUMEUP, SW_LID = 114, 115, 0
+# Linux's 64-bit input_event ABI (piano is arm64).
+INPUT_EVENT = struct.Struct('=qqHHi')
+
+
+def log(message):
+    print('piano-emergency-android: ' + message, flush=True)
+
+
+def sysrq_reboot():
+    # s/u queue asynchronous work. Wait for completion when possible, but a
+    # stalled filesystem must not disable the final emergency restart.
+    fd = None
+    outcomes = []
+    try:
+        try:
+            fd = os.open('/dev/kmsg', os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC)
+        except OSError:
+            pass
+        for command, completion in (('s', b'Emergency Sync complete'),
+                                    ('u', b'Emergency Remount complete')):
+            try:
+                if fd is not None:
+                    os.lseek(fd, 0, os.SEEK_END)
+                Path('/proc/sysrq-trigger').write_text(command)
+                deadline = time.monotonic() + REBOOT_SECONDS
+                if fd is None:
+                    time.sleep(REBOOT_SECONDS)
+                    raise TimeoutError
+                while True:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0 or not select.select([fd], [], [], remaining)[0]:
+                        raise TimeoutError
+                    try:
+                        record = os.read(fd, 8192)
+                    except OSError as error:
+                        if error.errno in (errno.EPIPE, errno.EAGAIN):
+                            continue
+                        raise
+                    if completion in record:
+                        break
+                outcomes.append(command + ': complete')
+            except TimeoutError:
+                outcomes.append(command + ': timed out')
+            except OSError:
+                outcomes.append(command + ': unavailable')
+        log('SysRq ' + ', '.join(outcomes) + '; issuing b even if a filesystem remains writable')
+        Path('/proc/sysrq-trigger').write_text('b')
+    finally:
+        if fd is not None:
+            os.close(fd)
+
+
+def reboot():
+    try:
+        result = subprocess.run(['/usr/bin/systemctl', 'reboot', '--force'],
+                                timeout=REBOOT_SECONDS, check=False)
+        if result.returncode == 0:
+            # PID 1 normally kills us during shutdown. If it has stopped making
+            # progress after accepting the request, retain the SysRq escape.
+            time.sleep(REBOOT_SECONDS)
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    log('systemd did not restart the system; syncing and remounting with SysRq')
+    sysrq_reboot()
+
+
+def recover(switch=None, restart=None):
+    # No timeout or kill of the writer: it must finish readback or rollback.
+    # Never request reboot from boot-switch; its normal --force means -i.
+    switch = switch or (lambda: subprocess.run(
+        ['/usr/sbin/piano-boot-switch', 'to-android'], check=False).returncode)
+    restart = restart or reboot
+    if switch() != 0:
+        log('Android switch refused or failed; not rebooting')
+        return False
+    log('Android set ready; restarting (unsaved work will be lost)')
+    restart()
+    return True
+
+
+def bitmap(path):
+    # sysfs prints unsigned long words, most significant word first.
+    return sum(int(word, 16) << (64 * i)
+               for i, word in enumerate(reversed(path.read_text().split())))
+
+
+def input_state(fd):
+    keys, switches = bytearray(96), bytearray(8)
+    fcntl.ioctl(fd, 0x80604518, keys)       # EVIOCGKEY(96)
+    fcntl.ioctl(fd, 0x8008451b, switches)   # EVIOCGSW(8)
+    return dict(up=bool(keys[KEY_VOLUMEUP // 8] & (1 << (KEY_VOLUMEUP % 8))),
+                down=bool(keys[KEY_VOLUMEDOWN // 8] & (1 << (KEY_VOLUMEDOWN % 8))),
+                lid=bool(switches[0] & (1 << SW_LID)), dropped=False)
+
+
+class Monitor:
+    def __init__(self, action=recover, paths=None):
+        self.action = action
+        self.paths = paths
+        self.devices = {}
+        self.states = {}
+        self.deadline = None
+        self.latched = False
+        self.rescan_at = 0
+        self.scan()
+
+    def scan(self):
+        self.close()
+        paths = self.paths if self.paths is not None else [
+            '/dev/input/' + p.name for p in Path('/sys/class/input').glob('event*')]
+        for path in paths:
+            fd = None
+            try:
+                device = Path('/sys/class/input') / Path(path).name / 'device'
+                name = (device / 'name').read_text().strip()
+                if name not in ('gpio-keys', 'pmic_resin'):
+                    continue
+                events = bitmap(device / 'capabilities/ev')
+                keys = bitmap(device / 'capabilities/key')
+                if name == 'gpio-keys':
+                    switches = bitmap(device / 'capabilities/sw')
+                    if not (events & (1 << EV_KEY) and events & (1 << EV_SW)
+                            and keys & (1 << KEY_VOLUMEUP) and switches & (1 << SW_LID)):
+                        continue
+                    roles = {'up', 'lid'}
+                else:
+                    if not (events & (1 << EV_KEY) and keys & (1 << KEY_VOLUMEDOWN)):
+                        continue
+                    roles = {'down'}
+                fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC)
+                state = input_state(fd)
+                self.devices[path] = fd
+                self.states[path] = dict(state, roles=roles)
+            except (OSError, ValueError):
+                if fd is not None:
+                    os.close(fd)
+        if not self.complete():
+            self.close()
+        elif not any(s['up'] or s['down'] for s in self.states.values()):
+            self.latched = False
+        self.rescan_at = time.monotonic() + 1.0
+
+    def complete(self):
+        return all(any(role in s['roles'] for s in self.states.values())
+                   for role in ('up', 'down', 'lid'))
+
+    def held(self):
+        states = list(self.states.values())
+        return (self.complete() and not any(s['dropped'] or s['lid'] for s in states)
+                and all(any(role in s['roles'] and s[role] for s in states) for role in ('up', 'down')))
+
+    def update(self, path, event):
+        _, _, kind, code, value = event
+        state = self.states[path]
+        if kind == EV_SYN and code == SYN_DROPPED:
+            state['dropped'] = True
+            self.deadline = None
+        elif state['dropped']:
+            if kind == EV_SYN and code == SYN_REPORT:
+                state.update(input_state(self.devices[path]))
+        elif kind == EV_KEY and value in (0, 1):
+            role = {KEY_VOLUMEUP: 'up', KEY_VOLUMEDOWN: 'down'}.get(code)
+            if role in state['roles']:
+                state[role] = bool(value)
+        elif kind == EV_SW and code == SW_LID and 'lid' in state['roles']:
+            state['lid'] = bool(value)
+        # Cancel even if release/repress arrives within a single read batch.
+        if not self.held():
+            self.deadline = None
+        if not any(s['up'] or s['down'] for s in self.states.values()):
+            self.latched = False
+
+    def step(self, max_wait=None):
+        if not self.complete():
+            if time.monotonic() >= self.rescan_at:
+                self.scan()
+            if not self.complete():
+                delay = max(0, self.rescan_at - time.monotonic())
+                time.sleep(min(delay, max_wait) if max_wait is not None else delay)
+                return
+        if self.held() and not self.latched and self.deadline is None:
+            self.deadline = time.monotonic() + HOLD_SECONDS
+        timeout = max(0, self.deadline - time.monotonic()) if self.deadline else None
+        if max_wait is not None:
+            timeout = min(timeout, max_wait) if timeout is not None else max_wait
+        try:
+            ready = select.select(list(self.devices.values()), [], [], timeout)[0]
+            for path, fd in self.devices.items():
+                if fd not in ready:
+                    continue
+                data = os.read(fd, INPUT_EVENT.size * 64)
+                if not data or len(data) % INPUT_EVENT.size:
+                    raise OSError('evdev read failed')
+                for event in INPUT_EVENT.iter_unpack(data):
+                    self.update(path, event)
+            if (self.deadline and time.monotonic() >= self.deadline and self.held()
+                    and not select.select(list(self.devices.values()), [], [], 0)[0]):
+                self.latched = True
+                self.deadline = None
+                try:
+                    self.action()
+                except OSError as error:
+                    log(str(error))
+                # A refusal requires releasing both keys before another attempt.
+        except OSError:
+            log('Volume-key input unavailable; rescanning platform inputs')
+            self.close()
+            self.rescan_at = time.monotonic() + 1.0
+
+    def close(self):
+        for fd in self.devices.values():
+            os.close(fd)
+        self.devices.clear()
+        self.states.clear()
+        self.deadline = None
+
+    def run(self):
+        try:
+            while True:
+                self.step()
+        finally:
+            self.close()
+
+
+if __name__ == '__main__':
+    Monitor().run()

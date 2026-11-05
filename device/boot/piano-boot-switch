@@ -202,6 +202,7 @@ def cmd_switch(host, args):
             report['result'] = 'skipped'
             say(host, 'Slot A holds Android; the new Ubuntu set stays in the store')
             return report
+        target_sums = slot.check_set(host, target, ctx.parts, KIND[target])
         if current == target:
             report['result'] = 'unchanged'
             say(host, f'Slot A already holds store/{target}')
@@ -210,7 +211,6 @@ def cmd_switch(host, args):
             raise slot.Refusal('occupant-unknown', 'Slot A holds no known store set; nothing was written. '
                                'Register Android content with `import-android` or the running Ubuntu set '
                                'with `import-ubuntu`')
-        target_sums = slot.check_set(host, target, ctx.parts, KIND[target])
         rollback_sums = slot.check_set(host, current, ctx.parts, KIND[current])
         report['rollback'] = current
         if args.dry_run:
