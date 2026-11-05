@@ -1,189 +1,177 @@
-# Upgrading an Existing Installation
+# 升级已安装的系统
 
-[中文](UPGRADE.zh-CN.md) ｜ [Project home](../README.md) ｜ [Fresh installation](INSTALL.md) ｜ [Switching and recovery](FLASHING.md)
+[English](UPGRADE.en.md) ｜ [项目首页](../README.md) ｜ [全新安装](INSTALL.md) ｜ [切换与恢复](FLASHING.md)
 
-This page upgrades an installed Ubuntu to a new release's kernel and device packages without
-reinstalling, repartitioning or erasing data. Prerequisites: the final step of
-[INSTALL.md](INSTALL.md) is done (`/etc/piano` holds `boot-profile.json`, `boot-signing.pem` and
-`boot-partitions.json`), developer mode can be enabled, and the battery is at 40 % or more.
+本页说明如何把已经装好的 Ubuntu 升级到新版本的内核和配套软件包，不重装、不动分区、不清数据。
+升级前提：已按 [INSTALL.md](INSTALL.md) 做完最后一步（`/etc/piano` 中有 `boot-profile.json`、`boot-signing.pem` 和 `boot-partitions.json`），能开启开发者模式，电量不低于 40%。
 
-The release asset `piano-ubuntu-<version>-packages.zip` is the upgrade package: its `debs/`
-directory holds every project package installed in that release's image. Always install the
-whole set together, never a single package.
+发布附件里的 `piano-ubuntu-<版本>-packages.zip` 就是升级包：解压后 `debs/` 下是该版本安装在镜像里的全部项目软件包。总是整组一起安装，不要只装其中一个。
 
-## Virtualization release (version pending)
+## 从 v0.10.0 升级到 v1.0.0
 
-Windows users also install the matching optional `piano-vm-windows` package. Device support raises the finite gunyah-group memlock limit to 6 GiB; log in again after upgrading, rebooting if needed before creating Windows VMs. Linux defaults remain unchanged.
+Windows 用户同时安装同批 `piano-vm-windows` 可选包。设备支持包将 gunyah 组的有限 memlock 调整为 6 GiB；更新后重新登录，必要时重启再创建 Windows VM。Linux 默认配置不变。
 
-Upgrade the complete kernel and device-support set below, reboot, and retain the previous kernel and rollback boot set. VM packages are optional. To enable them, open `optional/virtualization/` in the upgrade archive, install the matching piano-vm and piano-crosvm packages, and follow the [VM guide](VIRTUALIZATION.md) to authorize a user and log in again. Shut down existing guests before upgrading; their disks remain in your home directory and do not need recreation.
+按下方步骤整组升级内核和设备支持包并重启，保留旧内核与回退镜像组。不需要虚拟机的用户无需安装可选包。需要时进入升级包的 `optional/virtualization/`，安装同版 `piano-vm` 和 `piano-crosvm`，再按[虚拟机指南](VIRTUALIZATION.zh-CN.md)授权用户并重新登录。已有虚拟机在升级前正常关闭；家目录中的客体磁盘保留，不需要重新创建。
 
-## Upgrading from v0.9.2 to v0.10.0
+## 从 v0.9.2 升级到 v0.10.0
 
-Use `piano-ubuntu-v0.10.0-packages.zip` and install the complete package set with the same steps below. This release includes the new kernel (camera, video, external display and charging fixes) and its matching camera loopback package, the updated camera service, the rebuilt desktop Mesa and gpu-2404 snap provider, the updated device integration package, and `piano-ubuntu-desktop` 0.10.0. Reboot to apply the update. The previous kernel and rollback boot set are retained; no repartitioning or root image rewrite is needed.
+使用 `piano-ubuntu-v0.10.0-packages.zip`，按下方相同步骤整组安装全部软件包。本版包含新内核（相机、视频、外接显示器与充电修正）及配套的相机回环包、更新的相机服务、重建的桌面 Mesa 与 gpu-2404 snap 提供者、更新的设备集成包，以及 `piano-ubuntu-desktop` 0.10.0。重启后生效。保留旧内核与回退镜像组，无需重分区或重刷根镜像。
 
-## Upgrading from v0.9.1 to v0.9.2
+## 从 v0.9.1 升级到 v0.9.2
 
-Use `piano-ubuntu-v0.9.2-packages.zip` and install the complete package set with the same steps below. This release includes display initialization and resource-management fixes, the new kernel's matching camera loopback package, and System Settings with author information. Reboot to apply the update. The previous kernel and rollback boot set are retained; no repartitioning or root image rewrite is needed.
+使用 `piano-ubuntu-v0.9.2-packages.zip`，按下方相同步骤整组安装全部软件包。本版包含显示初始化与资源管理修复、新内核的配套相机回环包，以及新增作者信息的系统设置。重启后生效。保留旧内核与回退镜像组，无需重分区或重刷根镜像。
 
-### Touch orientation
+### 触摸方向校正
 
-Set `invert_y` at the top level of your tablet's `/etc/piano/thp-calibration.json`, then run `sudo systemctl restart piano-thp`. `true` reverses the Y coordinate produced by touch processing; `false` uses it directly. Omitting the field keeps the panel default (`false` for BOE, `true` for CSOT). For example, a BOE tablet with mirrored input under the default setting can use `"invert_y": true`; a CSOT tablet can use `false` to cancel its default reversal. No kernel, device-tree or boot image change is needed.
+在本机 `/etc/piano/thp-calibration.json` 的顶层设置 `invert_y`，然后运行 `sudo systemctl restart piano-thp`，即可校正上下方向。`true` 表示将触摸程序算出的 Y 坐标上下翻转；`false` 表示直接使用该坐标；不设置则沿用模组默认方向（BOE 为 `false`，CSOT 为 `true`）。例如，使用默认设置的 BOE 上下颠倒时，加入 `"invert_y": true`；CSOT 则可用 `false` 取消默认翻转。无需改内核、设备树或重新刷机。
 
-An existing libinput calibration that already works can be retained. When switching to this option, remove the Y reversal from that rule to avoid applying both corrections. Tablets with the correct orientation need no changes.
+如果已有 libinput 校准规则且方向正确，可以继续保留；改用上述选项时应撤掉旧规则中的 Y 翻转，避免重复校正。方向本来正常的设备无需操作。
 
-## Upgrading from v0.9.0 to v0.9.1
+## 从 v0.9.0 升级到 v0.9.1
 
-Use `piano-ubuntu-v0.9.1-packages.zip` and install the complete package set with the same steps below. It includes the new kernel (Linux 7.2.14 with the display link clock kept running) and its matching camera loopback package; the other packages are the same as in v0.9.0. Reboot to use the new kernel. The previous kernel and rollback boot set are retained; no repartitioning or root image rewrite is needed.
+使用 `piano-ubuntu-v0.9.1-packages.zip`，按下方相同步骤整组安装全部软件包，其中包括新内核（Linux 7.2.14，显示链路时钟常开）及配套的相机回环包；其余软件包与 v0.9.0 相同。重启后使用新内核。保留旧内核与回退镜像组，无需重分区或重刷根镜像。
 
-## Upgrading from v0.8.0 to v0.9.0
+## 从 v0.8.0 升级到 v0.9.0
 
-Use `piano-ubuntu-v0.9.0-packages.zip` and install the complete package set with the same steps below. It includes the new kernel (Linux 7.2.14) and its matching camera loopback package; the other packages are the same as in v0.8.0. Reboot to use the new kernel. The previous kernel and rollback boot set are retained; no repartitioning or root image rewrite is needed.
+使用 `piano-ubuntu-v0.9.0-packages.zip`，按下方相同步骤整组安装全部软件包，其中包括新内核（Linux 7.2.14）及配套的相机回环包；其余软件包与 v0.8.0 相同。重启后使用新内核。保留旧内核与回退镜像组，无需重分区或重刷根镜像。
 
-## Upgrading from v0.7.1 to v0.8.0
+## 从 v0.7.1 升级到 v0.8.0
 
-Use `piano-ubuntu-v0.8.0-packages.zip` with the same steps below and install the complete package set, including the new kernel (Linux 7.2.10) with its matching camera loopback package, the updated desktop Mesa and gpu-2404 snap provider, and `piano-ubuntu-desktop` 0.8.0. Reboot to use the new kernel. Keep the previous kernel and rollback boot set. No repartitioning or root image reflash is needed.
+使用 `piano-ubuntu-v0.8.0-packages.zip`，按下方相同步骤整组安装全部软件包，其中包括新内核（Linux 7.2.10）及配套的相机回环包、更新的桌面 Mesa 与 gpu-2404 snap 提供者，以及 `piano-ubuntu-desktop` 0.8.0。重启后使用新内核。保留旧内核与回退镜像组，无需重分区或重刷根镜像。
 
-## Upgrading from v0.7.0 to v0.7.1
+## 从 v0.7.0 升级到 v0.7.1
 
-Use `piano-ubuntu-v0.7.1-packages.zip` with the same steps below and install the complete package set. This updates Mesa for the desktop and the gpu-2404 snap provider. The kernel remains Linux 7.2.10-piano40, and `piano-ubuntu-desktop` remains 0.7.0. Reboot so the snap provider is refreshed and applications load the new driver. Keep the previous kernel and rollback boot set. No repartitioning or root image reflash is needed.
+使用 `piano-ubuntu-v0.7.1-packages.zip`，按下方相同步骤整组安装全部软件包。本版更新桌面 Mesa 与 gpu-2404 snap 提供者；内核仍为 Linux 7.2.10-piano40，`piano-ubuntu-desktop` 仍为 0.7.0。重启使 snap 提供者刷新、应用加载新驱动。保留旧内核与回退镜像组，无需重分区或重刷根镜像。
 
-## Upgrading from v0.6.2 to v0.7.0
+## 从 v0.6.2 升级到 v0.7.0
 
-Use `piano-ubuntu-v0.7.0-packages.zip` with the same steps below and install the complete package set, including Linux 7.2.10-piano40, its matching camera loopback package, the updated `resources` package and `piano-ubuntu-desktop` 0.7.0. Reboot to use the new kernel; the task manager then shows the Temperature page. Keep the installed previous kernel and its rollback boot set. No repartitioning or root image reflash is needed.
+按下方相同步骤使用 `piano-ubuntu-v0.7.0-packages.zip`，一起安装全部软件包，包括 Linux 7.2.10-piano40 及匹配的相机 loopback 包、更新的 `resources` 和 `piano-ubuntu-desktop` 0.7.0。安装后重启，使新内核生效；任务管理器随即出现“温度”页。保留已安装的旧内核及其回退启动镜像组。无需重分区或重刷根镜像。
 
-## Upgrading from v0.6.1 to v0.6.2
+## 从 v0.6.1 升级到 v0.6.2
 
-Use `piano-ubuntu-v0.6.2-packages.zip` with the same steps below and install the complete package set, including Linux 7.2.10-piano38, its matching camera loopback package, the new `resources` package and `piano-ubuntu-desktop` 0.6.2. Reboot to use the new kernel; reopen the task manager to see the new data. Keep the installed previous kernel and its rollback boot set. No repartitioning or root image reflash is needed.
+按下方相同步骤使用 `piano-ubuntu-v0.6.2-packages.zip`，一起安装全部软件包，包括 Linux 7.2.10-piano38 及匹配的相机 loopback 包、新增的 `resources` 和 `piano-ubuntu-desktop` 0.6.2。安装后重启，使新内核生效；任务管理器重新打开即可看到新增数据。保留已安装的旧内核及其回退启动镜像组。无需重分区或重刷根镜像。
 
-## Upgrading from v0.6.0 to v0.6.1
+## 从 v0.6.0 升级到 v0.6.1
 
-Use `piano-ubuntu-v0.6.1-packages.zip` with the same steps below and install the complete package set, including Linux 7.2.10-piano35 and its matching camera loopback package. Reboot to use the new kernel, touch firmware and sensor service. Keep the installed previous kernel and its rollback boot set. No repartitioning or root image reflash is needed.
+按下方相同步骤使用 `piano-ubuntu-v0.6.1-packages.zip`，一起安装全部软件包，包括 Linux 7.2.10-piano35 及匹配的相机 loopback 包。安装后重启，使新内核、触控固件和传感器服务生效。保留已安装的旧内核及其回退启动镜像组。无需重分区或重刷根镜像。
 
-## Upgrading from v0.5.1 to v0.6.0
+## 从 v0.5.1 升级到 v0.6.0
 
-Use `piano-ubuntu-v0.6.0-packages.zip` with the same steps below and install the complete package set, including Linux 7.2.10-piano32 and its matching camera loopback package. Reboot to use the new kernel and UTF-8 filename defaults. Keep the installed previous kernel and its rollback boot set. No repartitioning or root image reflash is needed.
+按下方相同步骤使用 `piano-ubuntu-v0.6.0-packages.zip`，一起安装全部软件包，包括 Linux 7.2.10-piano32 及匹配的相机 loopback 包。安装后重启，使新内核及 UTF-8 文件名默认值生效。保留已安装的旧内核及其回退启动镜像组。无需重分区或重刷根镜像。
 
-## Upgrading from v0.5.0 to v0.5.1
+## 从 v0.5.0 升级到 v0.5.1
 
-Follow the same steps below using `piano-ubuntu-v0.5.1-packages.zip`. Install the entire package set together, including Linux 7.2.10-piano28 and its matching camera loopback package. Reboot to activate the touch recovery and audio session-switch fixes. Keep the previous kernel installed and retain its rollback boot set. No repartitioning or root-image flash is needed.
+按下方相同步骤使用 `piano-ubuntu-v0.5.1-packages.zip`，一起安装全部软件包，包括 Linux 7.2.10-piano28 及匹配的相机 loopback 包。安装后重启，使触控恢复与音频会话切换修复生效。保留已安装的旧内核及其回退启动镜像组。无需重分区或重刷根镜像。
 
-## Upgrading from v0.4.0 to v0.5.0
+## 从 v0.4.0 升级到 v0.5.0
 
-Follow the same steps below using `piano-ubuntu-v0.5.0-packages.zip`. Install the entire package set together, including Linux 7.2.10-piano27, its matching camera loopback package and all four Ubuntu power-button packages (GSD/common and control-center/data). Keep the previous kernel installed and retain its rollback boot set. No repartitioning or root-image flash is needed. The desktop package depends on `tuned-ppd`; APT replaces `power-profiles-daemon` with this provider.
+按下方相同步骤使用 `piano-ubuntu-v0.5.0-packages.zip`，一起安装全部软件包，包括 Linux 7.2.10-piano27、匹配的相机 loopback 包，以及电源键的 GSD/common 和控制中心/data 四个 Ubuntu 补丁包。保留已安装的旧内核及其回退启动镜像组。无需重分区或重刷根镜像。新桌面包依赖 `tuned-ppd`，APT 会替换旧 `power-profiles-daemon`；软件包名称的变化是正常的。
 
-If these four packages were manually held, clear the old holds before installing the matched release set:
+若以前手工 hold 了上述四包，安装整组新包前先解除旧 hold：
 
 ```sh
 sudo apt-mark unhold gnome-settings-daemon gnome-settings-daemon-common gnome-control-center gnome-control-center-data
 ```
 
-The new desktop package supplies an APT pin and matched version dependencies to retain lock support. This also blocks direct Ubuntu security updates to these four packages: install the project's matched rebuilds promptly; see the [maintenance procedure](../ubuntu/README.md). Other Ubuntu packages update normally.
+新包的 APT pin 和配套版本依赖会防止 Ubuntu 更新覆盖锁屏支持；这也阻止这四包直接接收 Ubuntu 安全更新，必须及时安装项目重建的配套包，详见 [维护流程](../ubuntu/README.md)。其他 Ubuntu 软件包照常更新。
 
-Reboot, then select Lock Screen and a power mode in Settings → Power. Existing personal power-button choices are preserved. Use `tuned-adm` on the command line; if you previously copied `/usr/local/bin/powerprofilesctl` manually, remove that known manual copy during migration. See [power configuration](../device/power/tuned/README.md) for configuration ownership and commands.
+重启后，在“设置 → 电源”选择锁定屏幕及三档性能模式。个人电源键选择不会被覆盖。命令行使用 `tuned-adm`；若曾手工复制 `/usr/local/bin/powerprofilesctl`，迁移时删除这份已知手工副本。配置归属与命令见 [电源配置](../device/power/tuned/README.md)。
 
-If you manually tested Piano TuneD configuration, back up those test files first. After installation, remove the test overrides under `/etc/tuned/profiles/piano-*` so they no longer mask the packaged `/usr/lib/tuned/profiles/piano-*`; retain other intentional administrator configuration. If testing changed `/etc/tuned/ppd.conf`, restore the original file extracted from a `tuned-ppd` deb matching the installed version and inspect `dpkg --verify tuned-ppd`. The project configuration is `/etc/tuned/piano-ppd.conf`; after reboot, the service reads it through `BindReadOnlyPaths`.
+若曾手工测试 Piano 的 TuneD 配置，先备份这些测试文件。安装后移除测试用的 `/etc/tuned/profiles/piano-*`，避免它们遮蔽包内 `/usr/lib/tuned/profiles/piano-*`；保留有意维护的其他管理员配置。若测试改过 `/etc/tuned/ppd.conf`，从与已安装版本相同的 `tuned-ppd` deb 提取原文件并恢复，核对 `dpkg --verify tuned-ppd` 的结果。项目配置由 `/etc/tuned/piano-ppd.conf` 提供，重启后服务通过 `BindReadOnlyPaths` 读取它。
 
-## Upgrading from v0.3.2 to v0.4.0
+## 从 v0.3.2 升级到 v0.4.0
 
-Follow the same steps below using `piano-ubuntu-v0.4.0-packages.zip`. Install the entire package set together, including Linux 7.2.10-piano26 and its matching camera loopback package. Reboot to activate the touch fixes. Keep the previous kernel installed and retain its rollback boot set. No repartitioning or root-image flash is needed.
+按下方相同步骤使用 `piano-ubuntu-v0.4.0-packages.zip`，一起安装全部软件包，包括 Linux 7.2.10-piano26 及匹配的相机 loopback 包。安装后重启，使触控修复生效。保留已安装的旧内核及其回退启动镜像组。无需重分区或重刷根镜像。
 
-## Upgrading from v0.3.1 to v0.3.2
+## 从 v0.3.1 升级到 v0.3.2
 
-Follow the same steps below using `piano-ubuntu-v0.3.2-packages.zip` and install the entire package set together. The kernel remains Linux 7.2.10-piano25. Reboot so the snap graphics provider is refreshed and applications pick up the new driver. No repartitioning or root-image flash is needed.
+按下方相同步骤使用 `piano-ubuntu-v0.3.2-packages.zip`，一起安装全部软件包。内核仍为 Linux 7.2.10-piano25。安装后重启，以刷新 snap 图形提供程序并让应用加载新驱动。无需重分区或重刷根镜像。
 
-## Upgrading from v0.3.0 to v0.3.1
+## 从 v0.3.0 升级到 v0.3.1
 
-Follow the same steps below using `piano-ubuntu-v0.3.1-packages.zip`. Install the entire package set together, including Linux 7.2.10-piano25 and its matching camera loopback package; retain the previous kernel and rollback boot set. No repartitioning or root-image flash is needed.
+按下方相同步骤使用 `piano-ubuntu-v0.3.1-packages.zip`，一起安装全部软件包，包括 Linux 7.2.10-piano25 及匹配的相机 loopback 包；保留旧内核与回退启动镜像组。无需重分区或重刷根镜像。
 
-After reboot, the power-button action appears in Settings → Power. The default is suspend; a previously chosen personal power-button setting is kept. Camera apps now use the automatically started camera service.
+重启后，设置 → 电源中会出现电源键动作选项。默认动作为待机；此前自行选择的电源键设置会保留。相机服务自动启动，相机可供应用使用。
 
-## Upgrading from v0.2.0 to v0.3.0
+## 从 v0.2.0 升级到 v0.3.0
 
-Install the complete v0.3.0 `packages.zip` together: kernel, device support and desktop, Mesa and snap graphics, `piano-camerad`, and `piano-camera-loopback-*` matching the new kernel, plus the included firmware, sensor and authentication packages. No root-image flash, repartitioning or new per-unit extraction is required.
+使用 v0.3.0 的完整 `packages.zip`：一起安装内核包、设备支持/桌面包、Mesa 与 snap 图形包，以及 `piano-camerad` 和与新内核匹配的 `piano-camera-loopback-*`；其余随包提供的固件、传感器和认证包也按下文整组安装。无需重刷根镜像、重分区或重新提取本机文件。
 
-System suspend and GNOME's default idle policy are now enabled; disk hibernation remains disabled. Existing personal power settings are preserved and can be changed in Settings → Power. Reboot after installation to activate the new kernel, WirePlumber camera isolation and session color-profile unit. Rear focus is fixed. Keep the previous kernel and matching modules for rollback.
+本版启用系统待机并恢复 GNOME 默认空闲策略；休眠到磁盘仍关闭。原有个人电源设置不会被覆盖，可在“设置 → 电源”中调整。安装后重启，使新内核、WirePlumber 相机隔离和桌面颜色用户单元一起生效。相机后摄为固定焦距。保留旧内核及其匹配模块供回退。
 
-## 1. Download and verify
+## 1. 下载并校验
 
-On the host, download `piano-ubuntu-<version>-packages.zip` and `SHA256SUMS.assets` from the
-release page into an empty directory:
+在主机上，把发布页的 `piano-ubuntu-<版本>-packages.zip` 和 `SHA256SUMS.assets` 下载到一个空目录：
 
 ```bash
-sha256sum -c --ignore-missing SHA256SUMS.assets    # expect one "OK" line for packages.zip
-unzip piano-ubuntu-<version>-packages.zip            # yields debs/
+sha256sum -c --ignore-missing SHA256SUMS.assets    # 预期 packages.zip 一行 "OK"
+unzip piano-ubuntu-<版本>-packages.zip               # 得到 debs/
 ```
 
-## 2. Keep a rollback
+## 2. 保留回退
 
-The upgrade replaces the current boot set with one for the new kernel; the old set is kept
-automatically as `ubuntu.prev`. Save an independent copy as well, so that a later upgrade cannot
-rotate it away. On the tablet:
+升级会把当前启动镜像组换成新内核的，旧组自动保留为 `ubuntu.prev`。再额外保存一份独立副本，以防之后再次升级把 `ubuntu.prev` 也轮换掉。在平板上：
 
 ```bash
 sudo cp -a /var/lib/piano/switch/ubuntu /var/lib/piano/rollback-$(uname -r)
 ```
 
-Also keep copies of the current Ubuntu set and the Android set on the host as described in
-[FLASHING.md "Image sets"](FLASHING.md#image-sets); they are the basis for recovery from Fastboot.
+主机上也按 [FLASHING.md「镜像组」](FLASHING.md#镜像组)保留当前 Ubuntu 镜像组和 Android 镜像组的副本，这是从 Fastboot 恢复的依据。
 
-## 3. Copy to the tablet
+## 3. 传到平板
 
-Enable developer mode in a terminal on the tablet, then copy from the host:
+在平板终端打开开发者模式，再从主机复制：
 
 ```bash
-# tablet
+# 平板
 sudo piano-devmode on
-# host
-python3 "$REPO/tools/piano-devmode-ssh.py" --serial <SERIAL> --check     # expect "... ready"
+# 主机
+python3 "$REPO/tools/piano-devmode-ssh.py" --serial <SERIAL> --check     # 预期 "... ready"
 scp -r debs <USER>@192.168.88.2:
 ```
 
-## 4. Install
+## 4. 安装
 
-Run the installation in a transient unit so that a dropped SSH session cannot abort it; the
-kernel package rebuilds the initrd, which takes about 10 minutes.
+用临时单元运行安装，SSH 断开也不会中止；内核包的安装会重建 initrd，约 10 分钟。
 
 ```bash
 sudo apt update
 sudo systemd-run --unit=piano-upgrade --setenv=DEBIAN_FRONTEND=noninteractive \
   apt-get install -y /home/<USER>/debs/*.deb
 journalctl -f -u piano-upgrade
-# expect "Piano boot image set prepared for <new kernel>" and "Slot A now holds store/ubuntu",
-# finally "piano-upgrade.service: Deactivated successfully."
-sudo dpkg --audit                          # expect no output
-sudo piano-boot-switch verify              # expect exit code 0
+# 预期 "Piano boot image set prepared for <新版本内核>" 和 "Slot A now holds store/ubuntu"，
+# 最后 "piano-upgrade.service: Deactivated successfully."
+sudo dpkg --audit                          # 预期无输出
+sudo piano-boot-switch verify              # 预期退出码 0
 ```
 
-## 5. Reboot and check
+## 5. 重启并核对
 
 ```bash
 sudo systemctl reboot
 ```
 
-After logging in again:
+重新登录后：
 
 ```bash
-uname -r                                   # expect the new kernel
-sudo piano-boot-switch status              # expect "occupant": "ubuntu"
-sudo piano-slot-success --check            # expect "state": "already-successful"
-sudo piano-devmode off                     # once the host connection is no longer needed
+uname -r                                   # 预期新版本的内核
+sudo piano-boot-switch status              # 预期 "occupant": "ubuntu"
+sudo piano-slot-success --check            # 预期 "state": "already-successful"
+sudo piano-devmode off                     # 不再需要主机连接时关闭
 ```
 
-The previous kernel package stays installed; the rollback set needs it. Once the new release has
-proven itself, remove it with `sudo apt purge linux-image-<old version>`.
+旧内核包仍然装着，回退镜像组用得到它；确认新版本正常使用一段时间后，可用 `sudo apt purge linux-image-<旧版本>` 清理。
 
-## Rollback
+## 回退
 
-- **Ubuntu still boots:**
+- **系统能进 Ubuntu：**
   ```bash
-  sudo piano-boot-switch import-ubuntu --from /var/lib/piano/rollback-<old version>   # expect "result": "imported"
-  sudo piano-boot-switch to-ubuntu --reboot                                           # writes the old set back and reboots
+  sudo piano-boot-switch import-ubuntu --from /var/lib/piano/rollback-<旧版本>   # 预期 "result": "imported"
+  sudo piano-boot-switch to-ubuntu --reboot                                     # 写回旧组并重启
   ```
-- **Ubuntu does not boot:** hold Power + Volume Down for Fastboot and write the old Ubuntu set
-  saved on the host:
+- **系统进不去：** 长按电源 + 音量下进入 Fastboot，用主机上保存的旧 Ubuntu 镜像组写回：
   ```bash
-  python3 "$REPO/tools/piano-switch.py" --serial <SERIAL> --images <old ubuntu set> --rollback <android-set>
+  python3 "$REPO/tools/piano-switch.py" --serial <SERIAL> --images <旧 ubuntu 镜像组> --rollback <android-set>
   fastboot -s <SERIAL> reboot
   ```
-  Or switch to Android first (`--images <android-set> --rollback <old ubuntu set>`) and sort it
-  out from there.
+  或者先切回 Android（`--images <android-set> --rollback <旧 ubuntu 镜像组>`），再从容处理。

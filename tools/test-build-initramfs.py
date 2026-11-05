@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 """Private firmware injection in build-initramfs.sh and its build-boot.py record.
 
-Needs the pinned ARM64 BusyBox and gen_init_cpio (see docs/build.zh-CN.md):
+Needs the pinned ARM64 BusyBox and gen_init_cpio (see docs/BUILD.md):
 BUSYBOX=... GEN_INIT_CPIO=... python3 tools/test-build-initramfs.py
 Uses a synthetic fixture only; no firmware bytes are read.
 """

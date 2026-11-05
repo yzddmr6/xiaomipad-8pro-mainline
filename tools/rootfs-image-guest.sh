@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 # Guest half of build-rootfs-image.py: runs as root in a disposable QEMU ARM64
 # guest whose own root is the read-only pristine Desktop SquashFS.  It applies
-# docs/AGENT-GUIDE.md section 4.4 to the target ext4 on a second disk: image
+# docs/AGENT-GUIDE.en.md section 4.4 to the target ext4 on a second disk: image
 # policy, /etc/piano/layout.json and fstab, then dpkg --install in a chroot
 # with policy-rc.d and SYSTEMD_OFFLINE=1, so the distribution kernel hooks run
 # dracut and the piano hooks inside the target. The base's generic kernels

@@ -1,141 +1,127 @@
-# Fastboot, Switching and Recovery
+# Fastboot、切换与恢复
 
-[中文](FLASHING.zh-CN.md) | [Project overview](../README.md) | [Installation](INSTALL.md)
+[English](FLASHING.en.md) ｜ [项目首页](../README.md) ｜ [安装](INSTALL.md)
 
-Android and Ubuntu both boot from slot A. Switching writes the other system's image set into
-`init_boot_a`, `vendor_boot_a` and `boot_a`; the active slot never changes. This page covers the
-switching tools, the slot attributes, Fastboot recovery and what must never be written.
+Android 和 Ubuntu 都从 A 槽启动。切换就是把另一个系统的镜像组写入 `init_boot_a`、`vendor_boot_a`
+和 `boot_a`，活动槽始终不变。本页说明切换工具、槽属性、Fastboot 恢复以及绝不能写入的分区。
 
-## Never write
+## 绝不写入
 
-- `vbmeta` and `dtbo`;
-- any `_b` partition, and never `fastboot --set-active=b`: slot B on the test unit holds an older
-  stock chain that does not boot Android;
-- `persist` or other calibration, modem or firmware partitions;
-- another tablet's images, calibration or addresses.
+- `vbmeta` 与 `dtbo`；
+- 任何 `_b` 分区，也不要执行 `fastboot --set-active=b`：测试机的 B 槽是旧原厂链，无法启动 Android；
+- `persist` 或其他校准、基带、固件分区；
+- 其他平板的镜像、标定或地址。
 
-Bind every command to your tablet (`adb -s <SERIAL>`, `fastboot -s <SERIAL>`,
-`piano-switch.py --serial <SERIAL>`) and run one tool against it at a time. Leave Android with at
-least 40 % battery before partition work. Current charging support and limitations are in
-[STATUS.md](STATUS.md); the early diagnostic kernel's lack of charging is historical.
+每条命令都绑定到你的平板（`adb -s <SERIAL>`、`fastboot -s <SERIAL>`、`piano-switch.py --serial <SERIAL>`），
+同一时间只用一个工具操作。分区操作前确认电量至少 40%；当前充电支持与限制见
+[硬件状态](STATUS.md)，不再沿用早期诊断内核不充电的结论。
 
-Before writing, [back up](INSTALL.md#2-back-up) and keep both boot sets on the host.
-Attend installation; release images have no debug console. Do not overlap boots, writes or
-captures with another session. On failure, stop at the earliest failing step: do not repeat a
-write after one failed status query, re-flash a completed filesystem write or interrupt a write
-still in progress. Check a new image with the [debug RAM procedure](AGENT-GUIDE.md#72-debug-ram-boot)
-before writing slot A; debug sets are not for normal persistent use.
+写入前按[安装指南](INSTALL.md#2-备份)备份，保留主机上的两套启动镜像。
+安装时保持有人照看；正式镜像没有调试控制台。启动、写入和采集不要与其他会话重叠。
+出现失败时停下并定位最早失败的步骤：不要因一次状态查询失败而重写，不要重刷已经写好的文件系统，
+也不要中断仍在执行的写入。新镜像先按[调试启动流程](AGENT-GUIDE.md#72-调试-ram-启动)检查，
+再写 A 槽；调试镜像不用于日常持久启动。
 
-For host commands, set REPO, RELEASE and WORK as in [INSTALL.md](INSTALL.md#what-you-need):
-REPO is the absolute path to the checkout at the release's recorded integration commit, RELEASE is
-the extracted release directory, and WORK is your private installation directory outside the checkout.
-Run host commands from WORK; source tools use `"$REPO/tools/NAME"` and release files use `"$RELEASE/PATH"`.
+主机命令使用 [INSTALL.md](INSTALL.md#准备) 中的 REPO、RELEASE 和 WORK 设置：
+REPO 为发布记录提交的集成仓检出目录绝对路径，RELEASE 为解压后的发布目录，WORK 为仓库之外的私有安装工作目录。
+主机命令在 WORK 中执行；源码工具使用 `"$REPO/tools/NAME"`，发布文件使用 `"$RELEASE/PATH"`。
 
 ## Fastboot
 
-Hold **Power + Volume Down** until Fastboot appears; this works from any state, including a hang.
-From a running system: `adb -s <SERIAL> reboot bootloader` in Android,
-`sudo piano-reboot-bootloader` in Ubuntu.
+长按**电源 + 音量下**直到出现 Fastboot；任何状态（包括卡死）都有效。系统运行时也可以在 Android 中执行
+`adb -s <SERIAL> reboot bootloader`，在 Ubuntu 中执行 `sudo piano-reboot-bootloader`。
 
 ```bash
-fastboot devices                                  # expect your <SERIAL>
-fastboot -s <SERIAL> getvar current-slot          # expect "current-slot: a"
-fastboot -s <SERIAL> getvar battery-soc-ok        # expect "battery-soc-ok: yes"
+fastboot devices                                  # 预期列出你的 <SERIAL>
+fastboot -s <SERIAL> getvar current-slot          # 预期 "current-slot: a"
+fastboot -s <SERIAL> getvar battery-soc-ok        # 预期 "battery-soc-ok: yes"
 ```
 
-## Maintenance RAM image
+## 维护 RAM 镜像
 
-`boot/boot-ram-maintenance.img` of the release is a RAM-only Linux for work on the UFS disks that
-must not run from a mounted system, such as the partition table write of
-[INSTALL.md step 6](INSTALL.md#6-write-the-partition-table-on-the-tablet). It mounts no UFS partition and writes nothing automatically; slot A is unchanged.
-[INSTALL.md step 8a](INSTALL.md#8a-recommended-install-your-units-files-before-the-first-boot)
-explicitly mounts the new root to install your unit’s files.
+发布目录的 `boot/boot-ram-maintenance.img` 是只在 RAM 中运行的 Linux，用于不能在已挂载系统中进行的 UFS 盘操作，
+例如 [INSTALL.md 第 6 步](INSTALL.md#6-写入分区表平板上)的分区表写入。它不自动挂载 UFS 分区或写入任何内容，A 槽保持不变。
+[INSTALL.md 第 8a 步](INSTALL.md#8a-推荐首次启动前安装本机文件)会显式挂载新根以安装本机文件。
 
 ```bash
-fastboot -s <SERIAL> boot "$RELEASE/boot/boot-ram-maintenance.img"    # expect "Booting OKAY"
-python3 "$REPO/tools/piano-devmode-ssh.py" --serial <SERIAL> --check         # expect "... 192.168.88.10 -> 192.168.88.2 ready"
-telnet 192.168.88.2 2323                                              # root shell, no password
+fastboot -s <SERIAL> boot "$RELEASE/boot/boot-ram-maintenance.img"    # 预期 "Booting OKAY"
+python3 "$REPO/tools/piano-devmode-ssh.py" --serial <SERIAL> --check         # 预期 "... 192.168.88.10 -> 192.168.88.2 ready"
+telnet 192.168.88.2 2323                                              # root shell，无密码
 ```
 
-| In the session | Effect |
+| 会话中 | 作用 |
 |---|---|
-| (login) | prints the kernel, the LUN table, `Mounted from the UFS disks: none` and `sgdisk -p` of LUN 0 |
-| `piano-maint map` | the same table again |
-| `piano-maint status` | idle count and limit, open sessions, whether the Fastboot reboot is ready |
-| `piano-maint keepalive`, `piano-maint idle SECONDS` | restart the idle count; set the limit (30–3600 s) |
-| `piano-maint fastboot` | reboot into Fastboot now |
-| `wget -O /run/FILE http://192.168.88.10:8000/FILE` | copy a file from `python3 -m http.server --bind 192.168.88.10 8000` on the host |
+| （登录） | 打印内核、LUN 表、`Mounted from the UFS disks: none` 和 LUN 0 的 `sgdisk -p` |
+| `piano-maint map` | 再打印一次该表 |
+| `piano-maint status` | 空闲计数与时限、打开的会话、能否重启进入 Fastboot |
+| `piano-maint keepalive`、`piano-maint idle SECONDS` | 重新计数；设置时限（30–3600 s） |
+| `piano-maint fastboot` | 立即重启进入 Fastboot |
+| `wget -O /run/FILE http://192.168.88.10:8000/FILE` | 从主机上的 `python3 -m http.server --bind 192.168.88.10 8000` 复制文件 |
 
-With no open session for 10 minutes the tablet reboots into Fastboot by itself; a session counts
-only while the cable is connected. `fastboot -s <SERIAL> reboot` then starts slot A. Tools:
-`sgdisk`, `sfdisk`, `lsblk`, `partx`, `blockdev` (Ubuntu 26.04 binaries), BusyBox `dd`,
-`sha256sum` and `wget`. Every command runs as root: `dd`, `sgdisk` and `sfdisk` write the disk
-when you tell them to.
+10 分钟内没有打开的会话时，平板自行重启进入 Fastboot；会话只在连着线时计入。之后 `fastboot -s <SERIAL> reboot` 启动 A 槽。
+工具：`sgdisk`、`sfdisk`、`lsblk`、`partx`、`blockdev`（Ubuntu 26.04 二进制）、BusyBox `dd`、`sha256sum` 和 `wget`。
+所有命令以 root 运行：你让 `dd`、`sgdisk`、`sfdisk` 写盘时它们就会写盘。
 
-## Image sets
+## 镜像组
 
-An image set is a directory with `boot.img`, `init_boot.img`, `vendor_boot.img` (each the full
-partition size) and a `SHA256SUMS` file listing the three.
+镜像组是一个目录，含 `boot.img`、`init_boot.img`、`vendor_boot.img`（均为完整分区大小）和列出这三个文件的 `SHA256SUMS`。
 
-| Set | Where |
+| 镜像组 | 位置 |
 |---|---|
-| Android | your backup of slot A ([INSTALL.md](INSTALL.md#2-back-up)); `init_boot` is the root-patched image in use |
-| Ubuntu | the release's `boot/`; after `piano-boot-update`, the store's `ubuntu/` |
+| Android | 你的 A 槽备份（[INSTALL.md](INSTALL.md#2-备份)）；`init_boot` 为正在使用的、已打 root 补丁的镜像 |
+| Ubuntu | 发布目录的 `boot/`；运行 `piano-boot-update` 之后为存储中的 `ubuntu/` |
 
-On the tablet the store `/var/lib/piano/switch/` holds `android/`, `ubuntu/` and `ubuntu.prev/`
-(the Ubuntu set before the current one). Keep host copies of the Android set and of the current
-Ubuntu set. After each update, enable developer mode and choose a new SET_NAME, using the same name on the tablet and host. Do not reuse an existing destination.
+平板上的存储目录 `/var/lib/piano/switch/` 保存 `android/`、`ubuntu/` 和 `ubuntu.prev/`（当前之前的 Ubuntu 镜像组）。
+主机上保留 Android 镜像组和当前 Ubuntu 镜像组的副本。每次更新后打开开发者模式，选择一个新的 SET_NAME，在平板与主机上使用同一名称。不要复用已有目标目录。
 
 ```bash
-# Tablet: choose a new name for each update.
+# 平板：每次更新选择一个新名称。
 SET_NAME=ubuntu-set-update-001
 sudo piano-devmode on
 test ! -e "$HOME/$SET_NAME" &&
   sudo cp -a /var/lib/piano/switch/ubuntu "$HOME/$SET_NAME" &&
   sudo chown -R "$USER:" "$HOME/$SET_NAME"
 
-# Host: use the same name.
+# 主机：使用相同的名称。
 SET_NAME=ubuntu-set-update-001
 python3 "$REPO/tools/piano-devmode-ssh.py" --serial <SERIAL> --check
 test ! -e "$SET_NAME" &&
   scp -r <USER>@192.168.88.2:"$SET_NAME" . &&
   (cd "$SET_NAME" && sha256sum -c SHA256SUMS)
 
-# Tablet, after successful transfer and verification:
+# 平板：传输与校验成功后：
 sudo piano-devmode off
 ```
 
-When the Android root patch in slot A changes (for example Magisk to KernelSU), the stored
-`android/` no longer matches and `to-android` would write the old `init_boot` back. Make a new
-Android set from the current slot A images and store it with
-`sudo piano-boot-switch import-android --from <dir>`.
+A 槽的 Android root 补丁变化后（例如从 Magisk 换成 KernelSU），存储的 `android/` 不再一致，`to-android`
+会写回旧的 `init_boot`。请用当前 A 槽镜像生成新的 Android 镜像组，并用
+`sudo piano-boot-switch import-android --from <dir>` 存入。
 
-## From Ubuntu: `piano-boot-switch`
+## 在 Ubuntu 中：`piano-boot-switch`
 
-| Command | Writes | Result |
+| 命令 | 写入 | 结果 |
 |---|---|---|
-| `sudo piano-boot-switch status` | nothing | slot A occupant (`android`, `ubuntu`, `ubuntu.prev`, `unknown`), slot flags, backup GPT state |
-| `sudo piano-boot-switch verify` | nothing | exit status 0 when every set is intact |
-| `sudo piano-boot-switch to-android --dry-run` | nothing | `"result": "would-write"` |
-| `sudo piano-boot-switch to-android --reboot [--force]` | slot A | `"result": "written"`, then requests a reboot into Android |
-| `sudo piano-boot-switch to-ubuntu [--reboot]` | slot A | `written`, or `unchanged` when slot A already holds it |
-| `sudo piano-boot-switch import-android --from DIR` | store | `"result": "imported"`; replaces `android/` |
-| `sudo piano-boot-switch import-ubuntu [--from DIR]` | store | `imported`; the old `ubuntu/` becomes `ubuntu.prev/` |
+| `sudo piano-boot-switch status` | 不写 | A 槽内容（`android`、`ubuntu`、`ubuntu.prev`、`unknown`）、槽标志、备份 GPT 状态 |
+| `sudo piano-boot-switch verify` | 不写 | 所有镜像组完好时退出码为 0 |
+| `sudo piano-boot-switch to-android --dry-run` | 不写 | `"result": "would-write"` |
+| `sudo piano-boot-switch to-android --reboot [--force]` | A 槽 | `"result": "written"`，随后请求重启进入 Android |
+| `sudo piano-boot-switch to-ubuntu [--reboot]` | A 槽 | `written`；A 槽已是该镜像组时为 `unchanged` |
+| `sudo piano-boot-switch import-android --from DIR` | 存储 | `"result": "imported"`；替换 `android/` |
+| `sudo piano-boot-switch import-ubuntu [--from DIR]` | 存储 | `imported`；原 `ubuntu/` 变为 `ubuntu.prev/` |
 
-- Complete [INSTALL.md step 10](INSTALL.md#10-install-your-units-files) first to install your unit's files.
-- It needs your `boot-profile.json` and `boot-partitions.json` in `/etc/piano/`, and writes only
-  when slot A holds a known set, which serves as the rollback. Each partition is written and read
-  back in full; on a failure the previous set is written back.
-- `"result": "refused"` means nothing was written; `code` and `message` say why.
-  `rollback-failed` or `final-mismatch`: do not reboot; recover from Fastboot (below).
-- Before rebooting it lists the processes that block shutdown (inhibitors); if the reboot is denied it exits 1 with slot A already holding Android, so the next boot is Android. Save your work and reboot normally, or use `--reboot --force` to ignore inhibitors. The app-grid entry **Switch to Android** runs the same tool.
-- Verified on the test unit: `status`, `verify`, both imports, `to-ubuntu`, `to-android --reboot`.
+- 需要先完成 [INSTALL.md 第 10 步](INSTALL.md#10-安装本机文件)，装入本机文件。
+- 需要 `/etc/piano/` 中有本机的 `boot-profile.json` 和 `boot-partitions.json`；只在 A 槽为已知镜像组时写入，
+  该镜像组同时作为回滚。每个分区都完整写入并读回；失败时写回原镜像组。
+- `"result": "refused"` 表示什么都没写，`code` 与 `message` 说明原因。
+  `rollback-failed` 或 `final-mismatch`：不要重启，从 Fastboot 恢复（见下文）。
+- 重启前会列出阻止关机的进程（inhibitor）；重启被拒时退出 1，此时 A 槽已写入 Android，下一次启动将进入 Android。保存工作后正常重启，或用 `--reboot --force` 忽略 inhibitor。应用网格中的 **切换到 Android** 调用同一工具。
+- 测试机已验证：`status`、`verify`、两种导入、`to-ubuntu`、`to-android --reboot`。
 
-## From Android: KernelSU module
+## 在 Android 中：KernelSU 模块
 
-Switching from Android is verified on the test unit. The module
-`tools/piano-switch-ksu-<version>.zip` of the release needs KernelSU-Next with shell root, a stored
-`android/` set equal to slot A and a clean Ubuntu shutdown.
+Android 侧切换已在测试机验证。
+发布目录中的 `tools/piano-switch-ksu-<version>.zip` 需要带 shell root 的 KernelSU-Next、与 A 槽一致的已存储
+`android/` 镜像组，以及 Ubuntu 正常关机。
 
 ```bash
 KSU_VERSION=$(sed -n 's/^version=//p' "$REPO/device/android/piano-switch-ksu/module/module.prop")
@@ -144,71 +130,65 @@ adb -s <SERIAL> push "$RELEASE/tools/$KSU_ZIP" /data/local/tmp/
 adb -s <SERIAL> shell su -c "/data/adb/ksud module install /data/local/tmp/$KSU_ZIP"
 adb -s <SERIAL> reboot
 adb -s <SERIAL> shell su -c 'sh /data/adb/modules/piano-switch/piano-switch.sh --check'
-# expect "CHECK OK: slot A holds the android set and the ubuntu set is ready; nothing written"
-adb -s <SERIAL> shell su -c 'ksud module action piano-switch'   # writes slot A and reboots
+# 预期 "CHECK OK: slot A holds the android set and the ubuntu set is ready; nothing written"
+adb -s <SERIAL> shell su -c 'ksud module action piano-switch'   # 写入 A 槽并重启
 ```
 
-Exit status 3 means the write and the restore both failed: do not reboot; restore the Android set
-from Fastboot. Details: [device/android/piano-switch-ksu](../device/android/piano-switch-ksu/README.md).
+退出码 3 表示写入与恢复都失败：不要重启，从 Fastboot 恢复 Android 镜像组。
+详见 [device/android/piano-switch-ksu](../device/android/piano-switch-ksu/README.md)（英文）。
 
-## From the host: `piano-switch.py`
+## 从主机：`piano-switch.py`
 
-Verified on the test unit in both directions. In Fastboot:
+测试机已验证两个方向。在 Fastboot 中：
 
 ```bash
-# to Android
+# 切到 Android
 python3 "$REPO/tools/piano-switch.py" --serial <SERIAL> --images <android-set> --rollback <ubuntu-set>
 fastboot -s <SERIAL> reboot
-# to Ubuntu
+# 切到 Ubuntu
 python3 "$REPO/tools/piano-switch.py" --serial <SERIAL> --images <ubuntu-set> --rollback <android-set>
 fastboot -s <SERIAL> reboot
-# expect "Active A boot triplet written; remain in Fastboot for a RAM readback before reboot."
+# 预期 "Active A boot triplet written; remain in Fastboot for a RAM readback before reboot."
 ```
 
-- Before the first write it checks `product: piano`, `unlocked: yes`, `current-slot: a`, the three
-  partition sizes and both `SHA256SUMS`. If a write fails it writes the rollback set and reports the
-  error.
-- The three writes are not atomic: after a power loss during a switch, run it again from Fastboot.
-- Power off Ubuntu before entering Fastboot; do not interrupt a running write.
+- 首次写入前检查 `product: piano`、`unlocked: yes`、`current-slot: a`、三个分区大小和两组 `SHA256SUMS`。
+  写入失败时写回回滚镜像组并报告错误。
+- 三次写入不是原子操作：切换中途断电后，从 Fastboot 重新执行。
+- 进入 Fastboot 前先关闭 Ubuntu；不要中断正在进行的写入。
 
-## Slot attributes
+## 槽属性
 
 ```bash
-fastboot -s <SERIAL> getvar slot-successful:a     # "yes" once marked
-fastboot -s <SERIAL> getvar slot-unbootable:a     # expect "no"
-fastboot -s <SERIAL> getvar slot-retry-count:a    # 7 after a host write, one less after each unmarked boot
+fastboot -s <SERIAL> getvar slot-successful:a     # 已标记时为 "yes"
+fastboot -s <SERIAL> getvar slot-unbootable:a     # 预期 "no"
+fastboot -s <SERIAL> getvar slot-retry-count:a    # 主机写入后为 7，每次未标记的启动减 1
 ```
 
-| Event | Effect on slot A |
+| 事件 | 对 A 槽的影响 |
 |---|---|
-| Host write of `boot_a` (also through `piano-switch.py`) | successful cleared, retry count set to 7 |
-| Boot of a slot not yet marked successful | ABL lowers the retry count; at 0 the slot becomes unbootable |
-| Ubuntu boot | `piano-slot-success.service` marks the slot successful after the boot completes |
-| Android boot | Android marks the slot |
-| Switching inside either system | unchanged |
+| 主机写入 `boot_a`（包括经 `piano-switch.py`） | 清除 successful，重试计数设为 7 |
+| 启动尚未标记成功的槽 | ABL 将重试计数减 1；减到 0 时该槽变为不可启动 |
+| Ubuntu 启动 | 启动完成后 `piano-slot-success.service` 将该槽标记为成功 |
+| Android 启动 | Android 标记该槽 |
+| 在任一系统内切换 | 不变 |
 
-Prefer switching inside a system: it keeps the attributes. `sudo piano-slot-success --check` shows
-the state in Ubuntu without writing.
+优先在系统内切换，它保留槽属性。在 Ubuntu 中可用 `sudo piano-slot-success --check` 查看状态，不会写入。
 
-If Fastboot shows `slot-unbootable:a: yes`, run `fastboot -s <SERIAL> --set-active=a` to reset
-slot A's counter, then switch or `fastboot -s <SERIAL> reboot`. On the test unit this also raised
-slot B's priority; slot B stays unused.
+如果 Fastboot 显示 `slot-unbootable:a: yes`，执行 `fastboot -s <SERIAL> --set-active=a` 重置 A 槽计数，
+然后切换或 `fastboot -s <SERIAL> reboot`。在测试机上这也提高了 B 槽的优先级；B 槽仍不使用。
 
-## When the tablet does not respond
+## 平板无响应时
 
-1. **Developer mode on** (`sudo piano-devmode on` in Ubuntu): about 22 s after power-on,
-   `python3 "$REPO/tools/piano-devmode-ssh.py" --serial <SERIAL> --check` should report the link as `ready`. Then
-   `python3 "$REPO/tools/piano-devmode-ssh.py" --serial <SERIAL> -t <USER> sudo piano-reboot-bootloader`, or switch to Android
-   with `piano-boot-switch to-android --reboot`.
-2. **Otherwise** hold Power + Volume Down until Fastboot appears, then write the Android set with
-   `piano-switch.py`. A boot that hangs before the system starts has no timer and stays hung until
-   you press the keys.
+1. **已开启开发者模式**（在 Ubuntu 中 `sudo piano-devmode on`）：开机约 22 秒后，
+   `python3 "$REPO/tools/piano-devmode-ssh.py" --serial <SERIAL> --check` 应报告连接 `ready`。然后执行
+   `python3 "$REPO/tools/piano-devmode-ssh.py" --serial <SERIAL> -t <USER> sudo piano-reboot-bootloader`，或用
+   `piano-boot-switch to-android --reboot` 切到 Android。
+2. **否则**长按电源 + 音量下直到出现 Fastboot，再用 `piano-switch.py` 写入 Android 镜像组。
+   在系统启动前卡住的启动没有计时器，会一直停在那里，直到按下组合键。
 
-Do not reset the USB device from the host and do not repeat commands against a tablet that does
-not answer.
+不要从主机重置 USB 设备，也不要对没有响应的平板重复发命令。
 
-## Restoring the original layout
+## 恢复原布局
 
-Removing Ubuntu and restoring the original partition table has no tool and no verified procedure yet; the [maintenance RAM image](#maintenance-ram-image) is the environment such a write would
-need. Keep the partition table backups of [INSTALL.md](INSTALL.md#2-back-up) and the full
-partition backup.
+移除 Ubuntu 并恢复原分区表目前既无工具，也无已验证的流程；这类写入所需的环境是[维护 RAM 镜像](#维护-ram-镜像)。请保留 [INSTALL.md](INSTALL.md#2-备份)
+中的分区表备份和完整分区备份。

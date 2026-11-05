@@ -1,7 +1,7 @@
 # Release history and current support
 
-Current release: **v0.10.0**. See the [README](../README.md#hardware-support) or
-[中文 README](../README.zh-CN.md#硬件支持) for the hardware support tables and usage instructions.
+Current release: **v0.10.0**. See the [README](../README.en.md#hardware-support) or
+[中文 README](../README.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
 
@@ -161,5 +161,5 @@ results do not establish support for other models, capacities or accessories.
 - Bluetooth occasionally needs reconnecting before data or audio works again.
 - The rear camera has fixed focus; nearby subjects may be blurry and color tuning is limited.
 
-Installation and maintenance instructions are in [INSTALL.md](INSTALL.md),
-[UPGRADE.md](UPGRADE.md) and [FLASHING.md](FLASHING.md).
+Installation and maintenance instructions are in [INSTALL.en.md](INSTALL.en.md),
+[UPGRADE.en.md](UPGRADE.en.md) and [FLASHING.en.md](FLASHING.en.md).
