@@ -226,6 +226,9 @@ class Desktop:
                 raise RuntimeError('portal screenshot is not a PNG')
             if source != output:
                 shutil.copyfile(source, output)
+                # The portal saves every screenshot into the user's Pictures
+                # folder as well; remove that copy so a check leaves no files.
+                source.unlink()
             return {'path': str(output), 'portal_response': result['code']}
         finally:
             if not result:
