@@ -135,7 +135,7 @@ Not yet supported: stylus, fingerprint.
 | Function | Hardware / implementation | Status | Notes |
 |---|---|---|---|
 | Wi-Fi | Qualcomm WCN7860 / ath12k | ✅ works | Stable 2.4 GHz and 5 GHz 80 MHz links |
-| Bluetooth | Qualcomm WCN7860 / `hci_qca` | 🟡 partial | Pairing, file transfer and audio work; occasionally needs reconnecting |
+| Bluetooth | Qualcomm WCN7860 / `hci_qca` | ✅ works | Pairing, file transfer and audio work |
 | USB device mode | USB 3 / 5 Gbit/s networking (NCM) | ✅ works | SSH over the USB cable in developer mode, off by default |
 | USB host / OTG | Type-C role switching / USB 3 / 5 Gbit/s | 🟡 partial | USB sticks, keyboards, mice and docks work at 5 Gbit/s in both orientations; a plain OTG adapter may not be detected when re-plugged right after an OTG device is removed |
 | USB-C external display | DisplayPort Alt Mode | ✅ works | Both orientations and hot-plug; tested at 4K 60 Hz as an extended desktop |

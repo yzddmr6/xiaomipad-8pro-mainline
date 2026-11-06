@@ -44,6 +44,7 @@ results do not establish support for other models, capacities or accessories.
 - Regular users can create and manage ARM64 Ubuntu guests with SSH, NAT networking, persistent disks and restart after a clean shutdown.
 - The VM tools are installed separately and the virtualization modules load only when needed; device and network actions each ask for administrator authorization.
 - The [VM guide](VIRTUALIZATION.md) covers installation, creation, use and removal.
+- The desktop and applications load the Adreno 830 Mesa build through the system library path instead of environment variables; Settings → System → About → System Details shows the correct GPU, and graphical programs started with sudo are hardware accelerated too.
 
 ### v0.10.0
 
@@ -166,8 +167,7 @@ results do not establish support for other models, capacities or accessories.
 
 - Some HEVC videos may drop a small number of frames in Firefox.
 - After an OTG device is unplugged, a plain OTG adapter plugged in next may not be detected; plug a charger or computer cable in and out once, or use a dock.
-- Bluetooth occasionally needs reconnecting before data or audio works again.
-- The rear camera has fixed focus; nearby subjects may be blurry and color tuning is limited.
+- The rear camera has no autofocus; nearby subjects may be out of focus.
 
 Installation and maintenance instructions are in [INSTALL.en.md](INSTALL.en.md),
 [UPGRADE.en.md](UPGRADE.en.md) and [FLASHING.en.md](FLASHING.en.md).
