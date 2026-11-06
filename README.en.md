@@ -110,7 +110,7 @@ The kernel, Mesa, the device packages, the root image and the signed boot set ar
 
 ## Hardware Support
 
-Support in the latest release. ✅ works · 🟡 partial (the notes say what is missing) · ❌ unsupported.
+Support in the latest release. ✅ works · 🟡 partial · ❌ unsupported.
 Current support and improvements by release are in [docs/STATUS.md](docs/STATUS.md).
 
 ### Platform, Display and Input
