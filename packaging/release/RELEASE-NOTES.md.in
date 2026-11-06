@@ -8,17 +8,17 @@ $updates_zh
 
 ## 获取、安装与升级
 
-[全新安装]($repo_url/blob/$release_name/docs/INSTALL.zh-CN.md) · [已安装用户升级]($repo_url/blob/$release_name/docs/UPGRADE.zh-CN.md) · [构建指南]($repo_url/blob/$release_name/docs/build.zh-CN.md) · [内核源码]($kernel_url/tree/$release_name)
+[全新安装]($repo_url/blob/$release_name/docs/INSTALL.md) · [已安装用户升级]($repo_url/blob/$release_name/docs/UPGRADE.md) · [构建指南]($repo_url/blob/$release_name/docs/BUILD.md) · [内核源码]($kernel_url/tree/$release_name)
 
-附件包括 `$prefix-boot.zip` 启动镜像、`$prefix-tools.zip` 切换与恢复工具、`$prefix-packages.zip` 升级包，以及系统镜像分卷。分卷下载后按文件名顺序拼接再解压，用 `SHA256SUMS.assets` 校验。已安装用户使用 `packages.zip` 整组升级并重启，保留旧内核与回退镜像组。安装会清空 Android 数据，请先读 [README 安装前须知]($repo_url/blob/$release_name/README.zh-CN.md#️-安装前请阅读)。
+附件包括 `$prefix-boot.zip` 启动镜像、`$prefix-tools.zip` 切换与恢复工具、`$prefix-packages.zip` 升级包，以及系统镜像分卷。分卷下载后按文件名顺序拼接再解压，用 `SHA256SUMS.assets` 校验。已安装用户使用 `packages.zip` 整组升级并重启，保留旧内核与回退镜像组。安装会清空 Android 数据，请先读 [README 安装前须知]($repo_url/blob/$release_name/README.md#️-安装前请阅读)。
 
 ## 已知限制
 
 $limits_zh
 
-内核：Linux $kernel_version；原厂基线：`$stock_build`（A 槽）。完整功能见 [README 硬件支持表]($repo_url/blob/$release_name/README.zh-CN.md#硬件支持)。
+内核：Linux $kernel_version；原厂基线：`$stock_build`（A 槽）。完整功能见 [README 硬件支持表]($repo_url/blob/$release_name/README.md#硬件支持)。
 
-来源与许可：见 [README 致谢与许可证]($repo_url/blob/$release_name/README.zh-CN.md#致谢与许可证)；维护镜像内 BusyBox $busybox_version 的对应源码见 [Ubuntu 源码包](https://launchpad.net/ubuntu/+source/busybox/$busybox_version)。
+来源与许可：见 [README 致谢与许可证]($repo_url/blob/$release_name/README.md#致谢与许可证)；维护镜像内 BusyBox $busybox_version 的对应源码见 [Ubuntu 源码包](https://launchpad.net/ubuntu/+source/busybox/$busybox_version)。
 
 ---
 
@@ -32,14 +32,14 @@ $updates_en
 
 ## Get, install and upgrade
 
-[Fresh installation]($repo_url/blob/$release_name/docs/INSTALL.md) · [Upgrade an existing installation]($repo_url/blob/$release_name/docs/UPGRADE.md) · [Build guide]($repo_url/blob/$release_name/docs/BUILD.md) · [Kernel source]($kernel_url/tree/$release_name)
+[Fresh installation]($repo_url/blob/$release_name/docs/INSTALL.en.md) · [Upgrade an existing installation]($repo_url/blob/$release_name/docs/UPGRADE.en.md) · [Build guide]($repo_url/blob/$release_name/docs/BUILD.en.md) · [Kernel source]($kernel_url/tree/$release_name)
 
-Attachments include `$prefix-boot.zip` boot images, `$prefix-tools.zip` switching and recovery tools, `$prefix-packages.zip` upgrade packages, and split system image files. Download every image part, concatenate them in filename order and decompress, and verify with `SHA256SUMS.assets`. Existing users should install the complete `packages.zip` set and reboot, retaining the previous kernel and rollback boot set. Installation erases Android data; read [README Before Installing]($repo_url/blob/$release_name/README.md#️-read-before-installing) first.
+Attachments include `$prefix-boot.zip` boot images, `$prefix-tools.zip` switching and recovery tools, `$prefix-packages.zip` upgrade packages, and split system image files. Download every image part, concatenate them in filename order and decompress, and verify with `SHA256SUMS.assets`. Existing users should install the complete `packages.zip` set and reboot, retaining the previous kernel and rollback boot set. Installation erases Android data; read [README Before Installing]($repo_url/blob/$release_name/README.en.md#️-read-before-installing) first.
 
 ## Known limitations
 
 $limits_en
 
-Kernel: Linux $kernel_version; stock baseline: `$stock_build` (slot A). Full hardware support is listed in the [README hardware support table]($repo_url/blob/$release_name/README.md#hardware-support).
+Kernel: Linux $kernel_version; stock baseline: `$stock_build` (slot A). Full hardware support is listed in the [README hardware support table]($repo_url/blob/$release_name/README.en.md#hardware-support).
 
-Sources and licensing: see [README acknowledgments and licensing]($repo_url/blob/$release_name/README.md#acknowledgments-and-licensing); the maintenance image's BusyBox $busybox_version source is available as an [Ubuntu source package](https://launchpad.net/ubuntu/+source/busybox/$busybox_version).
+Sources and licensing: see [README acknowledgments and licensing]($repo_url/blob/$release_name/README.en.md#acknowledgments-and-licensing); the maintenance image's BusyBox $busybox_version source is available as an [Ubuntu source package](https://launchpad.net/ubuntu/+source/busybox/$busybox_version).

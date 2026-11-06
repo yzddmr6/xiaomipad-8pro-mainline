@@ -1,7 +1,7 @@
 # Release history and current support
 
-Current release: **v0.10.0**. See the [README](../README.md#hardware-support) or
-[中文 README](../README.zh-CN.md#硬件支持) for the hardware support tables and usage instructions.
+Current release: **v1.0.0**. See the [README](../README.en.md#hardware-support) or
+[中文 README](../README.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
 
@@ -12,7 +12,8 @@ audio, speaker playback, microphone recording, front and rear cameras, sensors,
 auto-rotation, 5 Gbit/s USB host / OTG with docks, USB storage, keyboards and mice,
 USB-C external displays (DisplayPort Alt Mode, tested at 4K 60 Hz as an extended
 desktop), charging and system suspend. The power button locks the screen by default and
-GNOME offers Power Saver, Balanced and Performance modes.
+GNOME offers Power Saver, Balanced and Performance modes. Optional command-line virtual
+machines run Ubuntu and Windows 11 ARM guests; see the [VM guide](VIRTUALIZATION.md).
 
 The system player (GStreamer), Firefox (H.264/HEVC/VP9) and Chrome (H.264/VP9) use
 hardware decoding automatically; AV1 uses software decoding. H.264/H.265 hardware
@@ -36,6 +37,14 @@ verified on this unit; later versions were tested on the installed system. These
 results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
+
+### v1.0.0
+
+- Windows 11 ARM virtual machines can be created from your own official ISO and used through a local VNC viewer; the firmware, test-signed drivers and media tools are an optional install.
+- Regular users can create and manage ARM64 Ubuntu guests with SSH, NAT networking, persistent disks and restart after a clean shutdown.
+- The VM tools are installed separately and the virtualization modules load only when needed; device and network actions each ask for administrator authorization.
+- The [VM guide](VIRTUALIZATION.md) covers installation, creation, use and removal.
+- The desktop and applications load the Adreno 830 Mesa build through the system library path instead of environment variables; Settings → System → About → System Details shows the correct GPU, and graphical programs started with sudo are hardware accelerated too.
 
 ### v0.10.0
 
@@ -158,8 +167,7 @@ results do not establish support for other models, capacities or accessories.
 
 - Some HEVC videos may drop a small number of frames in Firefox.
 - After an OTG device is unplugged, a plain OTG adapter plugged in next may not be detected; plug a charger or computer cable in and out once, or use a dock.
-- Bluetooth occasionally needs reconnecting before data or audio works again.
-- The rear camera has fixed focus; nearby subjects may be blurry and color tuning is limited.
+- The rear camera has no autofocus; nearby subjects may be out of focus.
 
-Installation and maintenance instructions are in [INSTALL.md](INSTALL.md),
-[UPGRADE.md](UPGRADE.md) and [FLASHING.md](FLASHING.md).
+Installation and maintenance instructions are in [INSTALL.en.md](INSTALL.en.md),
+[UPGRADE.en.md](UPGRADE.en.md) and [FLASHING.en.md](FLASHING.en.md).
