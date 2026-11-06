@@ -10,10 +10,10 @@
   "config": "arch/arm64/configs/piano-diagnostic.config",
   "release_config_fragments": [
     "arch/arm64/configs/piano-diagnostic.config",
+    "arch/arm64/configs/sm8750-peripherals.config",
     "arch/arm64/configs/piano-desktop-diag.config",
     "arch/arm64/configs/piano-persistent.config",
     "arch/arm64/configs/sm8750-netfilter.config",
-    "arch/arm64/configs/sm8750-peripherals.config",
     "arch/arm64/configs/sm8750-waydroid.config",
     "arch/arm64/configs/piano-virt.config",
     "arch/arm64/configs/piano-release.config"
