@@ -25,11 +25,16 @@ import zlib
 
 from initramfs_archive import read_newc, regular_file
 
-# Debug-only observation of a boot that stops before userspace. console-ramoops
-# (pstore) is always a console; dropping the 115200 serial console keeps the
-# extra output from adding seconds of synchronous UART time, so the pstore copy
+# The debug UART (ttyMSM0) is not reachable without opening the tablet, and the
+# kernel writes every console record to it at 115200 baud with interrupts off
+# on the printing CPU, so a burst of errors stalls that CPU for seconds. No
+# console= is passed by default: ABL appends console=ttynull to every command
+# line, and console-ramoops (pstore) is always a console. --serial-console
+# names the UART again for a debug boot that has it wired.
+SERIAL_CONSOLE = 'console=ttyMSM0,115200n8'
+# Debug-only observation of a boot that stops before userspace: the pstore copy
 # of the log carries every level, each initcall and every clk disable/unprepare
-# with its completion. CONFIG_NULL_TTY is off, so ttynull only names "no tty".
+# with its completion.
 DEBUG_BOOT_TRACE = ('console=ttynull ignore_loglevel initcall_debug tp_printk trace_event='
                     'clk:clk_disable,clk:clk_disable_complete,clk:clk_unprepare,clk:clk_unprepare_complete')
 # The RAM init (initramfs/init) reads piano.diag and piano.maint_idle; no root= at all.
@@ -121,7 +126,9 @@ def main():
     p.add_argument('--modprobe-blacklist',
                    help='Debug boot only: kmod modprobe.blacklist= (stops alias autoload; an explicit insmod still loads)')
     p.add_argument('--debug-boot-trace', action='store_true',
-                   help='Debug boot only: replace the serial console by DEBUG_BOOT_TRACE')
+                   help='Debug boot only: add DEBUG_BOOT_TRACE (every level and initcall to pstore)')
+    p.add_argument('--serial-console', action='store_true',
+                   help='Name the debug UART as a console (console=ttyMSM0,115200n8); it needs a wired UART')
     p.add_argument('--maintenance', action='store_true',
                    help='Build only boot-ram-maintenance.img from a maintenance initramfs; no root, no AVB')
     p.add_argument('--maintenance-idle', type=int, default=600, metavar='SECONDS',
@@ -138,6 +145,8 @@ def main():
             p.error('Module controls require an explicit debug boot and valid module names')
     if a.debug_boot_trace and not a.debug:
         p.error('The boot trace console is only available for explicit debug boots')
+    if a.serial_console and a.debug_boot_trace:
+        p.error('The boot trace prints every level; it must not go to the 115200 serial console')
     if a.root_partlabel is not None and not re.fullmatch(r'[A-Za-z0-9_.-]{1,36}', a.root_partlabel):
         p.error('A GPT partition name of 1-36 letters, digits, "_", "." or "-" is required')
     root_spec = (f'PARTUUID={a.root_partuuid}' if a.root_partuuid is not None else f'PARTLABEL={a.root_partlabel}')
@@ -267,11 +276,11 @@ def main():
         # ath12k reads it with device_get_mac_address() when the card reports none; byte order as written.
         subprocess.run(['fdtput', '-t', 'bx', str(dtb), node, 'local-mac-address',
                         *[f'{b:02x}' for b in raw]], check=True)
-    console = DEBUG_BOOT_TRACE if a.debug_boot_trace else 'console=ttyMSM0,115200n8'
+    console = DEBUG_BOOT_TRACE if a.debug_boot_trace else SERIAL_CONSOLE if a.serial_console else ''
     native_kms = native_kms_enabled(dtb)
     gpu_kms = 0 if native_kms else 1
     cmdline = (f'root={root_spec} rootfstype=ext4 rw rootwait '
-               f'{console} log_buf_len=2M panic=15 '
+               f'{console + " " if console else ""}log_buf_len=2M panic=15 '
                f'msm.separate_gpu_kms={gpu_kms} piano.boot=persistent systemd.gpt_auto=0 bootconfig')
     if a.native_display:
         cmdline += ' piano.native_display=1'
@@ -350,6 +359,8 @@ def main():
                 'scope': 'Image construction only; cold boot and recovery must be verified on piano'}
     if a.debug_boot_trace:
         manifest['debug_boot_trace'] = DEBUG_BOOT_TRACE
+    if a.serial_console:
+        manifest['serial_console'] = SERIAL_CONSOLE
     if a.keyboard_transport:
         manifest['keyboard_transport'] = True
     if a.native_display:

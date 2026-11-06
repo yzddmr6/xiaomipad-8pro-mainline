@@ -93,8 +93,9 @@ def main():
     subprocess.run([str(a.mke2fs), '-q', '-F', '-t', 'ext4', '-b', '4096', '-L', 'linux_data', '-E', f'offset={data_start}',
                     str(disk), str((1 << 30) // 4096)], check=True)
     set_cmdline = manifest['boot_set']['cmdline']
-    cmdline = (set_cmdline.replace('console=ttyMSM0,115200n8', 'console=ttyAMA0') + ' systemd.unit=multi-user.target'
-               + ''.join(' ' + arg for arg in a.kernel_arg))
+    # QEMU's PL011 replaces whatever console the set names (by default none: ABL adds console=ttynull).
+    cmdline = (' '.join(w for w in set_cmdline.split() if not w.startswith('console='))
+               + ' console=ttyAMA0 systemd.unit=multi-user.target' + ''.join(' ' + arg for arg in a.kernel_arg))
     sock = out / 'qmp.sock'
     command = [str(a.qemu), '-machine', 'virt', '-cpu', 'max', '-accel', 'tcg,thread=multi',
                '-smp', str(a.smp), '-m', f'{a.memory_mib}M', '-nodefaults', '-display', 'none',
