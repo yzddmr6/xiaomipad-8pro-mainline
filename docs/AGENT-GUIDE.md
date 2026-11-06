@@ -195,8 +195,8 @@ python3 tools/build-persistent-boot.py \
   kernel, initrd, DTB and command line). The tool refuses a command line over 511 bytes: the v2
   header field keeps 511, and piano's ABL drops the rest.
 - `--maintenance` builds only `boot-ram-maintenance.img` from a maintenance initramfs (§4.6).
-- Release command line: `root=PARTUUID=<...> rootfstype=ext4 rw rootwait console=ttyMSM0,115200n8
-  log_buf_len=2M panic=15 msm.separate_gpu_kms=1 piano.boot=persistent systemd.gpt_auto=0 bootconfig
+- Release command line: `root=PARTUUID=<...> rootfstype=ext4 rw rootwait log_buf_len=2M
+  panic=15 msm.separate_gpu_kms=1 piano.boot=persistent systemd.gpt_auto=0 bootconfig
   androidboot.serialno=<SERIAL>`. It has no debug entry.
 - Debug options (refused without `--debug`):
 

@@ -50,7 +50,7 @@ host keys, developer mode off, no journal or APT caches, and no per-unit file in
 The boot set is address-free: its command line is
 
 ```
-root=PARTLABEL=linux_rootfs rootfstype=ext4 rw rootwait console=ttyMSM0,115200n8 log_buf_len=2M panic=15
+root=PARTLABEL=linux_rootfs rootfstype=ext4 rw rootwait log_buf_len=2M panic=15
 msm.separate_gpu_kms=0 piano.boot=persistent systemd.gpt_auto=0 bootconfig
 ```
 
