@@ -162,8 +162,8 @@ Some HEVC videos may drop a small number of frames in Firefox. Chromium snap is 
 | Power modes | GNOME / TuneD | ✅ works | Power Saver, Balanced and Performance in quick settings or Settings → Power; Balanced by default |
 | Battery gauge / temperature | 2 × TI BQ27Z561 / thermal zones | ✅ works | Charge level, voltage, current and temperatures |
 | Board temperatures | PMIC ADC thermistors | ✅ works | 11 on-board temperature readings, shown on the task manager Temperature page |
-| Charging | `xiaomi_mca` / SC8541 | ✅ works | Fast charging: USB PD chargers charge at 9 V; PPS chargers charge directly through the SC8541 charge pump; the Xiaomi charger is authenticated (MiPPS) for higher current. Qualcomm QC and other proprietary fast-charge protocols charge at the normal 5 V rate. GNOME Settings → Power offers “Preserve Battery Health”: stop at 80% and resume at 75%. With protection enabled, the system stays awake while wired power is online and charging is allowed. Reaching the limit, a thermal charging stop, unplugging, or disabling protection releases the suspend block |
-| Suspend | suspend-to-idle | ✅ works | Timer, keyboard, power-button and cover-open wake; default system idle policy |
+| Charging | `xiaomi_mca` / SC8541 | ✅ works | Fast charging: USB PD chargers charge at 9 V; PPS chargers charge directly through the SC8541 charge pump; the Xiaomi charger is authenticated (MiPPS) for higher current. Qualcomm QC and other proprietary fast-charge protocols charge at the normal 5 V rate. Settings → Power offers “Preserve Battery Health”: stop at 80% and resume at 75%; while it is on, the tablet stays awake when plugged in below the limit, as on Android |
+| Suspend | suspend-to-idle | ✅ works | Timer, keyboard, power-button and cover-open wake; default system idle policy; closing the keyboard cover on external power only locks the screen |
 
 Not yet supported: disk hibernation, hardware clock writes (time is set from the network after boot).
 
@@ -172,6 +172,7 @@ Not yet supported: disk hibernation, hardware clock writes (time is set from the
 | Feature | Implementation | Status | Notes |
 |---|---|---|---|
 | Command-line VMs | Gunyah / crosvm | 🧪 optional | Ubuntu and Windows ARM guests, SSH/VNC, NAT and persistent disks; [user guide](docs/VIRTUALIZATION.md) |
+| Android apps | Waydroid | 🟡 partial | Optional install; runs Android apps with networking; software rendering only, no GPU acceleration; [installation and setup](docs/WAYDROID.en.md) |
 
 ## Usage and Maintenance
 
@@ -202,7 +203,7 @@ A host write resets slot A's retry counter; the next Ubuntu boot marks the slot 
 
 **App Center.** Once online, run `sudo snap refresh snap-store gnome-46-2404` to update App Center.
 
-Run `piano-check` for local status, or `piano-check --markdown` for an issue-ready summary. It needs no root privileges and omits device serials, radio addresses, network names and account names.
+**Self-check.** Run `piano-check` for local status, or `piano-check --markdown` for an issue-ready summary. It needs no root privileges and omits device serials, radio addresses, network names and account names.
 
 ## Development and Contributions
 
@@ -215,7 +216,7 @@ See [docs/BUILD.en.md](docs/BUILD.en.md) to build the kernel, Mesa, device packa
 
 Before operating on a device, read [docs/AGENT-GUIDE.en.md](docs/AGENT-GUIDE.en.md), written for human operators and AI assistants; contribution rules are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Report problems through [GitHub Issues](https://github.com/yzddmr6/xiaomipad-8pro-mainline/issues) with the device model, stock build and project release; strip serial numbers, Bluetooth addresses, calibration data and personal information first.
+Report problems through [GitHub Issues](https://github.com/yzddmr6/xiaomipad-8pro-mainline/issues) with the output of `piano-check --markdown` and your stock build; strip serial numbers, Bluetooth addresses, calibration data and personal information first.
 
 ## Sponsors
 

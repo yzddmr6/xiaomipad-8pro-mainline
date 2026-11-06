@@ -160,8 +160,8 @@ Firefox 播放部分 HEVC 视频可能有轻微丢帧。Chromium snap 不支持�
 | 性能模式 | GNOME / TuneD | ✅ 可用 | 快速设置或设置 → 电源中切换节能、平衡、性能，默认平衡 |
 | 电量 / 温度 | 2 × TI BQ27Z561 / 温区 | ✅ 可用 | 电量、电压、电流和温度可读 |
 | 机身温度 | PMIC ADC 热敏电阻 | ✅ 可用 | 11 路板载温度可读，任务管理器“温度”页可看 |
-| 充电 | `xiaomi_mca` / SC8541 | ✅ 可用 | 支持快充：USB PD 充电器以 9 V 充电；支持 PPS 的充电器经 SC8541 电荷泵直充；小米原装充电器经 MiPPS 认证后使用更高电流。高通 QC 等其他快充协议按普通 5 V 充电。GNOME「设置 → 电源」可开启「保护电池健康」：80% 停充、降至 75% 复充；保护开启、插电且允许充电时保持系统唤醒；到上限停充、温度禁充、拔线或关闭保护后不再阻止系统挂起 |
-| 待机 | suspend-to-idle | ✅ 可用 | 支持定时、键盘、电源键和开盖唤醒，使用系统默认空闲策略 |
+| 充电 | `xiaomi_mca` / SC8541 | ✅ 可用 | 支持快充：USB PD 充电器以 9 V 充电；支持 PPS 的充电器经 SC8541 电荷泵直充；小米原装充电器经 MiPPS 认证后使用更高电流。高通 QC 等其他快充协议按普通 5 V 充电。「设置 → 电源」可开启「保护电池健康」：80% 停充、降到 75% 复充；开启后插电且未到上限时系统保持唤醒，与 Android 一致 |
+| 待机 | suspend-to-idle | ✅ 可用 | 支持定时、键盘、电源键和开盖唤醒，使用系统默认空闲策略；插电时合上键盘盖只锁屏、不进入睡眠 |
 
 暂不支持：休眠到磁盘、硬件时钟写入（启动后联网校时）。
 
@@ -170,6 +170,7 @@ Firefox 播放部分 HEVC 视频可能有轻微丢帧。Chromium snap 不支持�
 | 功能 | 实现 | 状态 | 说明 |
 |---|---|---|---|
 | 命令行虚拟机 | Gunyah / crosvm | 🧪 可选功能 | Ubuntu/Windows ARM 客体、SSH/VNC、NAT 和持久磁盘；[使用指南](docs/VIRTUALIZATION.zh-CN.md) |
+| Android 应用 | Waydroid | 🟡 部分支持 | 可选安装，运行 Android 应用并联网；仅软件渲染，无 GPU 加速；[安装与设置](docs/WAYDROID.md) |
 
 ## 使用与维护
 
@@ -200,6 +201,8 @@ fastboot -s <serial> reboot
 
 **应用中心。** 联网后运行 `sudo snap refresh snap-store gnome-46-2404` 更新应用中心。
 
+**自检。** 运行 `piano-check` 查看本地状态，或运行 `piano-check --markdown` 生成可贴入 issue 的自检摘要；不需要 root，摘要不含设备序列号、无线地址、网络名或用户名。
+
 ## 开发与贡献
 
 | 仓库 | 内容 |
@@ -211,9 +214,7 @@ fastboot -s <serial> reboot
 
 在设备上操作前，请先阅读面向人工操作者和 AI 助手的 [docs/AGENT-GUIDE.md](docs/AGENT-GUIDE.md)；贡献规则见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
-运行 `piano-check` 查看本地状态，或运行 `piano-check --markdown` 生成可贴入 issue 的自检摘要；不需要 root，摘要不含设备序列号、无线地址、网络名或用户名。
-
-问题请通过 [GitHub Issues](https://github.com/yzddmr6/xiaomipad-8pro-mainline/issues) 反馈，注明设备型号、原厂版本和项目版本；提交前去除序列号、蓝牙地址、标定数据和个人信息。
+问题请通过 [GitHub Issues](https://github.com/yzddmr6/xiaomipad-8pro-mainline/issues) 反馈，贴上 `piano-check --markdown` 的输出并注明原厂版本；提交前去除序列号、蓝牙地址、标定数据和个人信息。
 
 ## 赞助
 
