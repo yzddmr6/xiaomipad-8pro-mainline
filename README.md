@@ -108,8 +108,8 @@
 
 ## 硬件支持
 
-以下为最新发布版本在测试机上的状态。✅ 可用 · 🟡 部分支持 · ❌ 不支持 · 🧪 未验证。
-✅ 表示已在真机验证所述功能，不代表所有应用和使用场景都测过。当前支持范围与各版本改进见 [docs/STATUS.md](docs/STATUS.md)（英文）。
+以下为最新发布版本的支持情况。✅ 可用 · 🟡 部分支持（说明里写缺什么） · ❌ 不支持。
+当前支持范围与各版本改进见 [docs/STATUS.md](docs/STATUS.md)（英文）。
 
 ### 平台、显示与输入
 
@@ -169,7 +169,7 @@ Firefox 播放部分 HEVC 视频可能有轻微丢帧。Chromium snap 不支持�
 
 | 功能 | 实现 | 状态 | 说明 |
 |---|---|---|---|
-| 命令行虚拟机 | Gunyah / crosvm | 🧪 可选功能 | Ubuntu/Windows ARM 客体、SSH/VNC、NAT 和持久磁盘；[使用指南](docs/VIRTUALIZATION.zh-CN.md) |
+| 命令行虚拟机 | Gunyah / crosvm | ✅ 可选功能 | Ubuntu/Windows ARM 客体、SSH/VNC、NAT 和持久磁盘；[使用指南](docs/VIRTUALIZATION.zh-CN.md) |
 | Android 应用 | Waydroid | 🟡 部分支持 | 可选安装，运行 Android 应用并联网；仅软件渲染，无 GPU 加速；[安装与设置](docs/WAYDROID.md) |
 
 ## 使用与维护

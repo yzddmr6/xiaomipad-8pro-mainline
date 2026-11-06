@@ -110,8 +110,8 @@ The kernel, Mesa, the device packages, the root image and the signed boot set ar
 
 ## Hardware Support
 
-State of the latest release on the test unit. ✅ works · 🟡 partial · ❌ unsupported · 🧪 untested.
-✅ means the described function was verified on the tablet, not that every application and use case was tested. Current support and improvements by release are in [docs/STATUS.md](docs/STATUS.md).
+Support in the latest release. ✅ works · 🟡 partial (the notes say what is missing) · ❌ unsupported.
+Current support and improvements by release are in [docs/STATUS.md](docs/STATUS.md).
 
 ### Platform, Display and Input
 
@@ -171,7 +171,7 @@ Not yet supported: disk hibernation, hardware clock writes (time is set from the
 
 | Feature | Implementation | Status | Notes |
 |---|---|---|---|
-| Command-line VMs | Gunyah / crosvm | 🧪 optional | Ubuntu and Windows ARM guests, SSH/VNC, NAT and persistent disks; [user guide](docs/VIRTUALIZATION.md) |
+| Command-line VMs | Gunyah / crosvm | ✅ optional | Ubuntu and Windows ARM guests, SSH/VNC, NAT and persistent disks; [user guide](docs/VIRTUALIZATION.md) |
 | Android apps | Waydroid | 🟡 partial | Optional install; runs Android apps with networking; software rendering only, no GPU acceleration; [installation and setup](docs/WAYDROID.en.md) |
 
 ## Usage and Maintenance
