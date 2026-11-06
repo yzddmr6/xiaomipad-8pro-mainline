@@ -39,7 +39,7 @@ sudo systemctl restart waydroid-container
 
 ## 使用
 
-从应用列表打开“Waydroid”，或在终端运行 `waydroid show-full-ui`，首次启动约需半分钟。Android 通过平板当前的网络上网。
+从应用列表打开“Waydroid”，或在终端运行 `waydroid show-full-ui`。首次启动约需半分钟，期间 Android 系统界面会反复重启几次，之后恢复正常。Android 通过平板当前的网络上网。
 
 ## 卸载
 

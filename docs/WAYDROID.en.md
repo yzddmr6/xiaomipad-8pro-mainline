@@ -39,7 +39,7 @@ sudo systemctl restart waydroid-container
 
 ## Use
 
-Open “Waydroid” from the app grid, or run `waydroid show-full-ui` in a terminal; the first start takes about half a minute. Android uses the tablet's current network connection.
+Open “Waydroid” from the app grid, or run `waydroid show-full-ui` in a terminal. The first start takes about half a minute, during which the Android system UI restarts a few times before it settles. Android uses the tablet's current network connection.
 
 ## Remove
 
