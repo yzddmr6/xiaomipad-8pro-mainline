@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "purpose": "Optional command-line Ubuntu virtual machines with Gunyah",
+  "purpose": "1.1.0: daily use, recovery and GPU stability on Linux 7.2.15",
   "upstream_url": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-  "upstream_tag": "v7.2.14",
-  "upstream_commit": "e09610b541f2725a6382137c168e4efe208917c3",
+  "upstream_tag": "v7.2.15",
+  "upstream_commit": "497791a0a96b866d90add64041c47acdff49cae6",
   "url": "https://github.com/yzddmr6/linux-sm8750-piano",
-  "commit": "bf42598aceec58fd7392314de233e5fab3835938",
-  "branch": "piano/virt-1.0",
+  "commit": "d2710cd13b337ef5172bd2394839e9d9673ff88a",
+  "branch": "piano/v1.1.0",
   "config": "arch/arm64/configs/piano-diagnostic.config",
   "release_config_fragments": [
     "arch/arm64/configs/piano-diagnostic.config",
@@ -19,5 +19,5 @@
     "arch/arm64/configs/piano-release.config"
   ],
   "note": "The kernel release fragments remain in the kernel source and are merged in order. tools/build-kernel.sh then applies kernel_release to CONFIG_LOCALVERSION for package ABI allocation without a kernel-only release commit; all other configuration remains unchanged. kernel/abi.json binds the final commit and .config.",
-  "kernel_release": "7.2.14-piano56"
+  "kernel_release": "7.2.15-piano58"
 }

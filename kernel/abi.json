@@ -302,6 +302,12 @@
       "kernel_commit": "bf42598aceec58fd7392314de233e5fab3835938",
       "config_sha256": "6c6b1b19ad7cc34de8d1f42f59c7664fbe08afc8c5ee2b8969c92312a677fb48",
       "upload": 1
+    },
+    {
+      "kernel_release": "7.2.15-piano58",
+      "kernel_commit": "d2710cd13b337ef5172bd2394839e9d9673ff88a",
+      "config_sha256": "8cc28bd0ef468b5ca3fedd702f403929d51f7ad61f96575211382d75b6dddbec",
+      "upload": 1
     }
   ]
 }
