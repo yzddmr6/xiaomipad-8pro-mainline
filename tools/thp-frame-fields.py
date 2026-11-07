@@ -41,7 +41,19 @@ def decode(header, frame):
         row['fields'] = {'frequency_index': p[54],
                          'noise': list(struct.unpack_from('<4H', p, 32)),
                          'scan_rate': struct.unpack_from('<H', p, 52)[0],
-                         'mode': p[24]}
+                         'mode': p[24],
+                         'data_type': p[56]}
+        if p[56] == 29 and len(p) >= 100:
+            # The pen frame carries the main touch as four quarters and the
+            # two stylus planes of 12 by 40 and 60 by 8.
+            request = p[64 + 17]
+            row['fields']['pen'] = {
+                'quarter': p[64 + 11],
+                'main_touch_columns': p[48], 'main_touch_rows': p[49],
+                'stylus_columns_1': p[64 + 7], 'stylus_rows_1': p[64 + 8],
+                'stylus_columns_2': p[64 + 9], 'stylus_rows_2': p[64 + 10],
+                'frequency_request': request if request <= 63 and (request & 15) <= 3 else None,
+            }
     return row
 
 

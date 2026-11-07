@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "device": "piano",
+  "source": "HyperOS OS3.0.309.0.WPYCNXM BluetoothExtension, runtime TIME_STAMP 1745566508; observed original initialization on 2026-10-09",
+  "parameter_prefix": "03",
+  "timing": "a01e3e171a041a",
+  "first_id_cycle": "03",
+  "second_id_cycle": "01",
+  "intervals": "00000d680000052800000d68",
+  "parameter_tail": "f401",
+  "frequency": "9b6fef43",
+  "frequency_interval": "2800",
+  "voltage": "2800",
+  "double_tap": true,
+  "squeeze_motor_level": 3,
+  "squeeze_threshold_down": 600,
+  "squeeze_threshold_up": 300
+}

@@ -42,6 +42,21 @@ void LivePipeline::feed(const StreamRecord &record, uint64_t now_ns) {
             words |= uint32_t{record.payload[8 + index]} << (index * 8);
         if (record.checksum != checksum || record.length_words != words)
             throw std::runtime_error("NTP1 payload/header mismatch");
+        if (packet.data_type == 29) {
+            // The pen frame is handed over to the pen pipeline. The fingers
+            // are not tracked at the same time, so a valid pen frame
+            // releases them.
+            const auto pen = parsePenFrame(packet);
+            ++stats.pen_frames;
+            if (active_) {
+                sink_({});
+                active_ = false;
+            }
+            if (pen_sink_)
+                pen_sink_(pen, record.timestamp_ns);
+            expire(now_ns);
+            return;
+        }
         if (packet.data_type != 3) {
             ++stats.other_types;
             expire(now_ns);

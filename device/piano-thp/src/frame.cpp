@@ -46,4 +46,19 @@ FingerFrame parseFingerFrame(const Packet &packet) {
 FingerFrame parseFingerFrame(std::span<const uint8_t> payload) {
     return parseFingerFrame(parsePacket(payload));
 }
+
+PenFrame parsePenFrame(const Packet &packet) {
+    const auto payload = packet.payload;
+    // The vendor adapter only carries the pen in the type29 frame; the other
+    // data type stays as it is and is not converted.
+    if (packet.data_type != 29)
+        throw std::runtime_error("the packet does not carry a pen frame");
+    if (payload.size() < 64 || payload[48] != kColumns || payload[49] != kRows)
+        throw std::runtime_error("unsupported pen frame or geometry");
+    return {payload, packet.counter, packet.scan_mode};
+}
+
+PenFrame parsePenFrame(std::span<const uint8_t> payload) {
+    return parsePenFrame(parsePacket(payload));
+}
 } // namespace nvt
