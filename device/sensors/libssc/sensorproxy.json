@@ -46,6 +46,20 @@
       "path": "sensorproxy-patches/0001-wait-for-discovery-notifications.patch",
       "sha256": "ee92fbd3a3155d4ecb100ffe90df14d9784e43c5ccd26fc1f2162f1039b66622",
       "scope": "Upstream SSC tests only; await capability notification using existing timeout"
+    },
+    {
+      "path": "sensorproxy-patches/0007-iio-sensor-proxy-serialize-ssc-light-polling.patch",
+      "sha256": "0df2077947affd5d2e197d72b680f7e635f7b8a87c4764c41cbd105d1e358b47",
+      "source_repository": "https://github.com/yzddmr6/onepluspad-2pro-mainline",
+      "source_commit": "8116a8f93ef6",
+      "source_path": "packaging/sensors/patches/iio-sensor-proxy/0005-iio-sensor-proxy-serialize-ssc-light-polling.patch",
+      "license": "GPL-3.0-only (modified upstream C file)",
+      "changes": "Imported unchanged; serialize reentrant SSC light polling transitions"
+    },
+    {
+      "path": "sensorproxy-patches/0008-iio-sensor-proxy-report-ssc-light-discovery-errors.patch",
+      "sha256": "fa0f0a919279c346d00274f25b0abd9acf70bed3df446d6ea37b0639ef3bfe48",
+      "scope": "Preserve the failure reason of SSC light discovery and cleanup; no retry or admission change"
     }
   ],
   "scope": "ARM64 build, three targeted SSC startup/availability/claim checks and two pending-release/multi-client scenarios passed in QEMU with synthetic sensors. No physical sensor, installed service or full desktop startup claim.",
