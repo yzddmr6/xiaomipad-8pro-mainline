@@ -585,4 +585,4 @@ the host ([FLASHING.en.md](FLASHING.en.md#from-the-host-piano-switchpy)).
 | Wi-Fi address, boot profile (step 3) | standard commands; no generator |
 | New partition table (step 5) | standard `sgdisk`/`sfdisk` on a loop device |
 | Writing the partition table (step 6) | standard `dd` commands in the release's maintenance RAM image |
-| Restoring the original partition table and removing Ubuntu | no tool and no verified procedure; keep the GPT backups |
+| Restoring the original partition table and removing Ubuntu | [512 GB one-unit evidence / manual sequence](RESTORE-STOCK.en.md); `prepare-stock-restore.py` validates/extracts offline only, not an automatic uninstaller; keep this unit's backups |

@@ -209,6 +209,15 @@ not answer.
 
 ## Restoring the original layout
 
-Removing Ubuntu and restoring the original partition table has no tool and no verified procedure yet; the [maintenance RAM image](#maintenance-ram-image) is the environment such a write would
-need. Keep the partition table backups of [INSTALL.en.md](INSTALL.en.md#2-back-up) and the full
-partition backup.
+A [one-unit report and manual sequence](RESTORE-STOCK.en.md) documents restoring a `piano`
+512 GB / BOE unit's original GPT from Ubuntu dual boot, then flashing OS4.0.5.0.XPYCNXM.
+Keep this unit's original GPT and full backups from [INSTALL.en.md](INSTALL.en.md#2-back-up).
+Use the [maintenance RAM image](#maintenance-ram-image): restore the backup GPT and verify its
+readback before the primary. Do not format in that same session.
+
+`tools/prepare-stock-restore.py` only validates local backups, extracts exact GPT reserved regions
+and generates a review plan; it rejects nonregular inputs and issues no device reads/writes. The parameterized tool has offline tests,
+not another hardware validation, and is not an automatic uninstaller. Ordinary stock fastboot
+flashing does not restore GPT. Never write all 34 dumped blocks or a factory GPT template directly.
+Other capacities/layouts, missing backups and downgrades remain untested. Full stock firmware
+writes require separate explicit authorization, not the normal Ubuntu update permission.
