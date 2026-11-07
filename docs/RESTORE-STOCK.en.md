@@ -21,7 +21,7 @@ The procedure destroys Android and Linux user data. To use Android temporarily, 
   KernelSU patch and Linux switching set; neither was reinstalled.
 - Complete stock recovery, including both-slot firmware, radio, `vbmeta` and `dtbo`, was explicitly
   authorized for this operation. This **does not** relax the normal Ubuntu installation/update
-  [do-not-write boundaries](FLASHING.en.md#do-not-write).
+  [do-not-write boundaries](FLASHING.en.md#never-write).
 - A device-bound controller performed the actual experiment. The new host-only
   `tools/prepare-stock-restore.py` extracts the same GPT validation, exact-region extraction and
   factory-action planning logic. **The parameterized tool has only offline tests, not another
