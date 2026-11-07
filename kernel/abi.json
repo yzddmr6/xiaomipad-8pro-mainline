@@ -308,6 +308,18 @@
       "kernel_commit": "d2710cd13b337ef5172bd2394839e9d9673ff88a",
       "config_sha256": "8cc28bd0ef468b5ca3fedd702f403929d51f7ad61f96575211382d75b6dddbec",
       "upload": 1
+    },
+    {
+      "kernel_release": "7.2.15-piano59",
+      "kernel_commit": "e20ddf530f90fd93bf063ba2fb97ba13cd2e0f41",
+      "config_sha256": "3fd74cfc78023854ad91e7ea9916054615472911e228c7a289cd4dd856a468b4",
+      "upload": 1
+    },
+    {
+      "kernel_release": "7.2.15-piano60",
+      "kernel_commit": "849689e9f63c2f9d1a768c2bbd3474a4207e0fb7",
+      "config_sha256": "0a7a07a64638ee75dd2d694012a35d161ff11c8c1f8b4a0e37003e436a4ccd19",
+      "upload": 1
     }
   ]
 }
