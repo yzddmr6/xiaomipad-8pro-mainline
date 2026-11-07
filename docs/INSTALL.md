@@ -532,4 +532,4 @@ piano-devmode status       # 预期 "developer mode: disabled, inactive"
 | Wi-Fi 地址、启动配置（第 3 步） | 标准命令，无生成工具 |
 | 新分区表（第 5 步） | 在 loop 设备上用标准 `sgdisk`/`sfdisk` |
 | 写入分区表（第 6 步） | 在发布目录的维护 RAM 镜像中执行标准 `dd` 命令 |
-| 恢复原分区表并移除 Ubuntu | 无工具，也无已验证流程；请保留分区表备份 |
+| 恢复原分区表并移除 Ubuntu | [512 GB 单机实证／人工流程](RESTORE-STOCK.md)；`prepare-stock-restore.py` 仅离线验证和提取，非自动卸载器；必须保留本机备份 |
