@@ -11,6 +11,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tarfile
+from lib.deps import fetch
 
 REPO = Path(__file__).resolve().parents[1]
 INPUT = REPO / "device/video/iris-vaapi"
@@ -27,10 +28,11 @@ def sha(path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source-archive", type=Path, required=True)
-    parser.add_argument("--cross-file", type=Path, required=True)
+    parser.add_argument("--source-archive", type=Path)
+    parser.add_argument("--fetch-only", action="store_true")
+    parser.add_argument("--cross-file", type=Path)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--jobs", type=int, default=4)
+    parser.add_argument("--jobs", type=int, default=len(os.sched_getaffinity(0)))
     args = parser.parse_args()
     os.umask(0o022)
     out = args.output.resolve()
@@ -38,6 +40,11 @@ def main():
     lock_fd = (out / ".lock").open("w")
     fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
     lock = json.loads((INPUT / "source.json").read_text())
+    args.source_archive = fetch(lock["archive_url"], args.source_archive or out / "inputs/source.tar.gz", lock["archive_sha256"])
+    if args.fetch_only:
+        return
+    if args.cross_file is None:
+        parser.error("--cross-file is required for compilation")
     if sha(args.source_archive) != lock["archive_sha256"]:
         raise ValueError("Source archive does not match source.json")
     fingerprint = {

@@ -14,6 +14,8 @@ import tempfile
 import urllib.request
 
 repo = Path(sys.argv[1])
+sys.path.insert(0, str(repo / "tools"))
+from lib.deps import fetch, inventory
 pin = json.loads((repo / 'tools/aosp-avb.json').read_text())
 target = repo / 'tools/local/aosp-avb/avbtool.py'
 target.parent.mkdir(parents=True, exist_ok=True)
@@ -21,8 +23,9 @@ if target.exists():
     data = target.read_bytes()
 else:
     url = f'{pin["url"]}/+/{pin["commit"]}/avbtool.py?format=TEXT'
-    with urllib.request.urlopen(url, timeout=60) as response:
-        data = base64.b64decode(response.read(), validate=True)
+    entry = next(r for r in inventory()['files'] if r['name'] == 'aosp-avb')
+    raw = fetch(url, target.parent / 'avbtool.py.base64', entry['sha256'])
+    data = base64.b64decode(raw.read_bytes(), validate=True)
 if hashlib.sha256(data).hexdigest() != pin['avbtool_sha256']:
     raise SystemExit('avbtool.py differs from tools/aosp-avb.json; refusing to use or overwrite it')
 if not target.exists():

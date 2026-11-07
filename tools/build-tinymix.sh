@@ -9,7 +9,7 @@ if [[ ${1:-} == --help ]]; then
     exit 0
 fi
 [[ $# == 0 ]] || exit 2
-src=$(realpath "${TINYALSA_SOURCE:?set the pinned upstream checkout}")
+src=${TINYALSA_SOURCE:-}
 out=${OUT_DIR:?set an isolated build output directory}
 cross=${CROSS_COMPILE:-aarch64-linux-gnu-}
 mkdir -p "$out"
@@ -18,11 +18,18 @@ exec 9>"$out/.build.lock"
 flock -n 9 || { echo 'tinymix output already in use' >&2; exit 1; }
 expected=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["commit"])' \
     "$repo/device/audio/tinyalsa/source.json")
-[[ $(git -C "$src" rev-parse HEAD) == "$expected" && -z $(git -C "$src" status --porcelain) ]] || {
-    echo 'TinyALSA source must be clean at the pinned commit' >&2; exit 1;
-}
+if [[ -n $src ]]; then
+    src=$(realpath "$src")
+    [[ $(git -C "$src" rev-parse HEAD) == "$expected" && -z $(git -C "$src" status --porcelain) ]] || {
+        echo 'TinyALSA source must be clean at the pinned commit' >&2; exit 1;
+    }
+else
+    python3 "$repo/tools/fetch-deps.py" --export-vendor tinyalsa --output "$out/vendor"
+    src="$out/vendor"
+fi
 [[ $(${cross}gcc -dumpmachine) == aarch64*-linux-gnu ]] || { echo 'Need an ARM64 Linux compiler' >&2; exit 1; }
 identity=$({
+    cat "$repo/third_party/tinyalsa/source.json"
     cat "$repo/device/audio/tinyalsa/source.json" "$0"
     "${cross}gcc" --version
     "${cross}ld" --version
@@ -33,17 +40,21 @@ if [[ -f $out/input.sha256 ]]; then
 else
     [[ ! -e $out/source ]] || { echo 'Unidentified source in OUT_DIR' >&2; exit 1; }
     mkdir "$out/source"
-    git -C "$src" archive "$expected" | tar -xf - -C "$out/source"
+    if [[ -n ${TINYALSA_SOURCE:-} ]]; then
+        git -C "$src" archive "$expected" | tar -xf - -C "$out/source"
+    else
+        cp -a "$src/." "$out/source/"
+    fi
     printf '%s\n' "$identity" >"$out/input.sha256"
 fi
 export SOURCE_DATE_EPOCH
-SOURCE_DATE_EPOCH=$(git -C "$src" show -s --format=%ct "$expected")
+SOURCE_DATE_EPOCH=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["source_date_epoch"])' "$repo/third_party/tinyalsa/source.json")
 # The upstream Makefiles leave TINYALSA_USES_PLUGINS undefined: hardware API only.
 # Command-line LDFLAGS override the utils Makefile's default dynamic PIE link.
 export CFLAGS="-O2 -ffile-prefix-map=$out/source=."
 export CPPFLAGS=
-make -C "$out/source/src" CROSS_COMPILE="$cross" CC="ccache ${cross}gcc" ARFLAGS=rcD libtinyalsa.a
-make -C "$out/source/utils" CROSS_COMPILE="$cross" CC="ccache ${cross}gcc" \
+make -j"$(nproc)" -C "$out/source/src" CROSS_COMPILE="$cross" CC="ccache ${cross}gcc" ARFLAGS=rcD libtinyalsa.a
+make -j"$(nproc)" -C "$out/source/utils" CROSS_COMPILE="$cross" CC="ccache ${cross}gcc" \
     LDFLAGS='-static -L../src' tinymix
 mkdir -p "$out/bin"
 "${cross}strip" --strip-unneeded -o "$out/bin/tinymix" "$out/source/utils/tinymix"

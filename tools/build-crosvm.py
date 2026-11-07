@@ -3,12 +3,15 @@
 """Build locked arm64 crosvm in a fresh, unprivileged output directory."""
 import argparse,hashlib,json,os,shlex,shutil,subprocess,tarfile
 from pathlib import Path
+from lib.deps import fetch
 
 def run(args,**kw):return subprocess.run([str(x) for x in args],check=True,**kw)
 def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 def main():
  p=argparse.ArgumentParser(description=__doc__)
- for n in ['inputs','cargo-cache','rust-toolchain','output']:p.add_argument('--'+n,type=Path,required=True)
+ for n in ['inputs','rust-toolchain','output']:p.add_argument('--'+n,type=Path,required=True)
+ p.add_argument('--cargo-cache',type=Path)
+ p.add_argument('--cargo-vendor',type=Path)
  a=p.parse_args();repo=Path(__file__).resolve().parents[1];lock=json.loads((repo/'tools/crosvm.lock.json').read_text())
  os.setpriority(os.PRIO_PROCESS,0,max(10,os.getpriority(os.PRIO_PROCESS,0)))
  os.umask(0o022);out=a.output.resolve();out.mkdir(parents=True,exist_ok=False)
@@ -21,7 +24,7 @@ def main():
  for rel,expected in lock.get('rust_toolchain_files',{}).items():
   if digest(rust/rel)!=expected:raise RuntimeError('locked Rust component differs: '+rel)
  for rel,expected in lock['inputs'].items():
-  if digest(inputs/rel)!=expected:raise RuntimeError('input checksum mismatch: '+rel)
+  fetch(lock['input_urls'][rel],inputs/rel,expected)
  for patch in lock['patches']:
   if digest(repo/patch['file'])!=patch['sha256']:raise RuntimeError('patch checksum mismatch: '+patch['file'])
  src=out/'src';src.mkdir()
@@ -34,7 +37,18 @@ def main():
  for directory,dest in [('sysroot-debs',sysroot),('host-debs',host)]:
   for deb in sorted((inputs/directory).glob('*.deb')):run(['dpkg-deb','-x',deb,dest])
  if not (sysroot/'lib').exists():(sysroot/'lib').symlink_to('usr/lib')
- cargo=out/'cargo-home';cargo.mkdir();shutil.copytree(a.cargo_cache.resolve()/'registry',cargo/'registry')
+ cargo=out/'cargo-home';cargo.mkdir()
+ if a.cargo_vendor:
+  vendor=a.cargo_vendor.resolve()
+ else:
+  vendor=out/'cargo-vendor'
+  crate_cache=a.cargo_cache or out/'crate-cache'
+  if (crate_cache/'registry/cache').is_dir():
+   candidates=list((crate_cache/'registry/cache').iterdir())
+   if len(candidates)!=1:raise ValueError('Select one crates.io cache directory')
+   crate_cache=candidates[0]
+  run(['python3',repo/'tools/fetch-cargo-inputs.py','--lock',src/'Cargo.lock','--cache',crate_cache,'--vendor',vendor])
+ (cargo/'config.toml').write_text('[source.crates-io]\nreplace-with = "preserved"\n[source.preserved]\ndirectory = '+json.dumps(str(vendor))+'\n')
  wrappers=out/'tool-bin';wrappers.mkdir();q=shlex.quote
  wrapper='#!/bin/sh\nexec /usr/bin/aarch64-linux-gnu-gcc '+ ' '.join(map(q,[f'--sysroot={sysroot}','-nostdinc','-isystem','/usr/lib/gcc-cross/aarch64-linux-gnu/13/include','-isystem',str(sysroot/'usr/include/aarch64-linux-gnu'),'-isystem',str(sysroot/'usr/include'),f'-B{sysroot}/usr/lib/aarch64-linux-gnu/',f'-L{sysroot}/usr/lib/aarch64-linux-gnu',f'-ffile-prefix-map={out}=/build/piano-crosvm',f'-fdebug-prefix-map={out}=/build/piano-crosvm']))+' "$@"\n'
  (wrappers/'aarch64-linux-gnu-gcc').write_text(wrapper);(wrappers/'aarch64-linux-gnu-gcc').chmod(0o755)

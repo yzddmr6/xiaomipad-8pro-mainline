@@ -2,22 +2,23 @@
 
 The build is an unprivileged, offline cross-build after input preparation. It does not use a device or install host packages. `tools/crosvm.lock.json` pins the crosvm/minijail commits, the unchanged 30-patch iceland-gvm queue, the separate shutdown-log and bounded child-exit patches, Cargo.lock, target sysroot packages, host compiler packages, Rust 1.88.0 and resulting ELF hashes.
 
-Prepare the exact host package versions listed under host_packages and a Rust 1.88.0 toolchain containing the aarch64-unknown-linux-gnu standard library. Use an existing Cargo registry cache matching Cargo.lock, or the public registry cache included in the corresponding-source archive. The cache contains source crates and registry metadata, never credentials. Populate the download cache using:
+Prepare the exact host package versions listed under host_packages and a Rust 1.88.0 toolchain containing the aarch64-unknown-linux-gnu standard library. Prepare all registry packages named by Cargo.lock as a directory source, or use `cargo-vendor/` from the corresponding-source archive. Registry package checksums come from Cargo.lock; no online registry index is needed during compilation. Populate the pinned inputs using:
 
 ```sh
 python3 tools/fetch-crosvm-inputs.py --output inputs
+python3 tools/fetch-cargo-inputs.py --cache cargo-cache --vendor cargo-vendor
 ```
 
 Build into an empty directory:
 
 ```sh
 nice -n 10 python3 tools/build-crosvm.py \
-  --inputs inputs --cargo-cache cargo-cache \
+  --inputs inputs --cargo-vendor cargo-vendor \
   --rust-toolchain /path/to/1.88.0-x86_64-unknown-linux-gnu \
   --output build
 ```
 
-The script applies patches in locked order without fuzz, extracts a private arm64 sysroot and host libclang, copies the registry into its own Cargo home, and builds gunyah,net,vnc with no default features. It uses --frozen --offline, SOURCE_DATE_EPOCH, stable path remapping and all available CPU threads at nice 10. Windows uses the simple framebuffer and loopback VNC; GPU acceleration and dynamic GuestAccept are not enabled. No system Cargo configuration or shared target directory is modified. Build output includes crosvm; a mismatch against the lock fails.
+The script applies patches in locked order without fuzz, extracts a private arm64 sysroot and host libclang, configures its own Cargo home to use the verified directory source, and builds gunyah,net,vnc with no default features. It uses --frozen --offline, SOURCE_DATE_EPOCH, stable path remapping and all available CPU threads at nice 10. Windows uses the simple framebuffer and loopback VNC; GPU acceleration and dynamic GuestAccept are not enabled. No system Cargo configuration or shared target directory is modified. Build output includes crosvm; a mismatch against the lock fails.
 
 Package using the existing device-package entry point:
 
@@ -36,7 +37,7 @@ Pass `--virtualization-packages packages --virtualization-source piano-virtualiz
 
 ## Optional Windows assets
 
-`tools/windows.lock.json` pins edk2-gunyah, edk2 and its direct submodules, host tools, the standalone 4 MiB DMA patch, the signed DroidVM driver attachment and the resulting firmware/helper. Prepare these inputs and build without system package installation:
+`tools/windows.lock.json` pins the preserved edk2-gunyah commit with recursively expanded submodules and their original source commits, host tools, the standalone 4 MiB DMA patch, the signed DroidVM driver attachment and the resulting firmware/helper. Prepare these inputs and build without system package installation. Local archives and bare mirrors can be selected with `DEPS_ARCHIVE` and `DEPS_MIRRORS`; `DEPS_OFFLINE=1` prohibits network access. See [dependency inputs](../deps/README.md).
 
 ```sh
 python3 tools/fetch-windows-inputs.py --output windows-inputs

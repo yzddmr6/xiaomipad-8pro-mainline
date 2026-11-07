@@ -59,8 +59,7 @@ def main():
             raise ValueError("Input checksum: " + package.name)
         run(["dpkg-deb", "-x", package, host])
     tree = out / "src"
-    for item in lock["firmware_repositories"]:
-        archive(args.firmware_cache / item["path"], item["commit"], tree / item["path"])
+    archive(args.firmware_cache / "edk2-gunyah.git", lock["firmware_preserved"]["commit"], tree)
     run(["git", "init", "-q", tree / "edk2"])
     for patch in sorted((tree / "patches/edk2").glob("*.patch")):
         run(["git", "-C", tree / "edk2", "apply", patch])
