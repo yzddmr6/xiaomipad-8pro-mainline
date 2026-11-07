@@ -4,6 +4,7 @@
 #include "nvt_stylus_core.hpp"
 #include "nvt_stylus_frame.hpp"
 #include "pen.hpp"
+#include "pen_monitor.hpp"
 
 #include <cstdint>
 #include <cstring>
@@ -214,6 +215,16 @@ int main()
         // proximity. That is the honest result of the fixture.
         check(!pipeline.state().proximity, "the synthetic frames claimed a pen in proximity");
 
+        for (bool connected : {false, true}) {
+            for (bool active : {false, true}) {
+                check(nvt::penScanModel(connected, std::nullopt, active) == 0,
+                      "unknown dock state enabled scanning");
+                for (bool docked : {false, true})
+                    check(nvt::penScanModel(connected, docked, active) ==
+                          (connected && !docked && active ? 3U : 0U),
+                          "pen scan did not follow the stock connection/dock/display condition");
+            }
+        }
         nvt::PenPressureSource source;
         uint8_t pressure[15] = { 5, 0x10, 0x27, 0 };
         check(source.feed(pressure, sizeof(pressure), 1000, &message), "the pressure was not read");

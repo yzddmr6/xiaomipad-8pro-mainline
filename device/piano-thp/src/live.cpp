@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
-// Finger-only event loop adapted from xiaomi-sheng-thp; see NOTICE.
+// Touch event loop adapted from xiaomi-sheng-thp; see NOTICE.
 #include "calibration.hpp"
 #include "input.hpp"
 #include "live_pipeline.hpp"
 #include "orientation.hpp"
 #include "pen.hpp"
+#include "pen_monitor.hpp"
+#include "pen_connection.hpp"
+#include <linux/hidraw.h>
+#include <sys/ioctl.h>
 #include <cerrno>
 #include <cmath>
 #include <csignal>
@@ -40,21 +44,10 @@ constexpr double kPanelHeightMm = 163.0;
 // value of the original firmware.
 constexpr uint64_t kPressureMaxAgeNs = 100000000;
 
-// Finds the hidraw node of the pen by its Bluetooth identifiers. The kernel
-// keeps the private pressure report out of the input layer, but hidraw still
-// receives it.
-std::optional<std::string> findPenHidraw() {
-    const std::filesystem::path root("/sys/class/hidraw");
-    std::error_code error;
-    for (const auto &entry : std::filesystem::directory_iterator(root, error)) {
-        std::ifstream stream(entry.path() / "device" / "uevent");
-        std::string line;
-        while (std::getline(stream, line))
-            if (line.rfind("HID_ID=", 0) == 0 && line.find(":00000022:00005081") != std::string::npos)
-                return entry.path().filename().string();
-    }
-    return std::nullopt;
-}
+// Fixed-width UAPI from linux/piano-touch.h in the matching kernel.
+constexpr unsigned long kSetPen = _IOW('P', 0x20, uint32_t);
+constexpr unsigned long kGetState = _IOR('P', 0x21, uint32_t);
+constexpr uint32_t kStateActive = 1;
 
 void recordBytes(int fd, std::span<const uint8_t> bytes) {
     while (!bytes.empty()) {
@@ -83,9 +76,6 @@ int main(int argc, char **argv) {
         const auto panel_identity = nvt::readPanelVendor(argv[2]);
         const auto vendor = panel_identity.vendor;
         std::cerr << nvt::describePanel(panel_identity) << '\n';
-        if (file.invert_y.has_value())
-            std::cerr << "THP Y mapping: " << (*file.invert_y ? "inverted" : "direct")
-                      << " (device calibration)\n";
         if (const auto mismatch = nvt::calibrationMismatch(vendor, file.project_vendor_id))
             std::cerr << "THP calibration error: " << *mismatch << '\n';
         if (argc == 5) {
@@ -96,42 +86,100 @@ int main(int argc, char **argv) {
         const auto panel = nvt::panelAxes(calibration);
         nvt::UInputTouch touch(panel.width, panel.height);
         std::vector<nvt::Slot> panel_slots;
-        // The pen path needs the pen facts of the same calibration file.
+        std::optional<nvt::StylusCalibration> facts;
         std::unique_ptr<nvt::PenPipeline> pen;
         std::unique_ptr<nvt::UInputPen> pen_input;
-        try {
-            const auto facts = nvt::readStylusCalibration(nvt::readCalibrationDocument(argv[1]));
-            pen = std::make_unique<nvt::PenPipeline>(facts, kPressureMaxAgeNs);
-        } catch (const std::exception &error) {
-            std::cerr << "THP calibration carries no pen facts, the pen path stays off: "
-                      << error.what() << '\n';
-        }
-        // A failure of the pen path must not take the finger path down.
-        const auto pen_failed = [&](const char *what, const std::exception &error) {
-            std::cerr << "Pen path failed (" << what << "): " << error.what()
-                      << "; the pen path stays off\n";
-            pen.reset();
+        std::unique_ptr<nvt::PenMonitor> monitor;
+        std::unique_ptr<nvt::PenConnection> connection;
+        std::string pen_address;
+        int pen_fd = -1;
+        uint32_t scan_model = 0; // Kernel default; no command without a pen.
+        const auto disable_pen = [&] {
+            if (scan_model && fd >= 0) {
+                uint32_t off = 0;
+                if (ioctl(fd, kSetPen, &off) < 0)
+                    std::cerr << "Pen scan disable request failed; fingers continue\n";
+            }
+            scan_model = 0;
+            if (pen_fd >= 0) close(pen_fd);
+            pen_fd = -1;
             pen_input.reset();
+            pen.reset();
         };
+        const auto pen_action = [&](auto action) {
+            try { action(); }
+            catch (const std::exception &error) {
+                std::cerr << "Pen path disabled; fingers continue: " << error.what() << '\n';
+                disable_pen();
+            }
+        };
+        pen_action([&] {
+            const auto document = nvt::readCalibrationDocument(argv[1]);
+            if (document.contains("pen")) {
+                facts = nvt::readStylusCalibration(document);
+                monitor = std::make_unique<nvt::PenMonitor>();
+            }
+        });
         const auto report_pen = [&] {
-            if (!pen || !pen_input)
+            if (pen && pen_input) {
+                const auto &state = pen->state();
+                pen_input->report(state.proximity, state.contact, state.squeeze, state.output);
+            }
+        };
+        const auto update_scan = [&] {
+            uint32_t active = 0;
+            if (pen_fd >= 0 && ioctl(fd, kGetState, &active) < 0)
+                throw std::system_error(errno, std::generic_category(), "pen panel state");
+            const uint32_t model = nvt::penScanModel(pen_fd >= 0 && bool(pen_input) &&
+                connection && connection->connected(pen_address),
+                monitor ? monitor->docked() : std::nullopt, active & kStateActive);
+            if (model != scan_model) {
+                // Preserve a failed enable request so the error path disables it.
+                scan_model = model;
+                if (ioctl(fd, kSetPen, &model) < 0)
+                    throw std::system_error(errno, std::generic_category(), "pen scan request");
+                if (!model && pen) {
+                    pen->reset();
+                    report_pen();
+                }
+            }
+        };
+        const auto open_pen = [&] {
+            if (!facts || !monitor || pen_fd >= 0) return;
+            const auto node = nvt::PenMonitor::hidraw();
+            if (!node) return;
+            // Do not subscribe to Bluetooth or query it on a pen-free system.
+            if (!connection) connection = std::make_unique<nvt::PenConnection>();
+            pen_fd = open(node->c_str(), O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+            if (pen_fd < 0)
+                throw std::system_error(errno, std::generic_category(), "open pen reports");
+            hidraw_devinfo identity{};
+            if (ioctl(pen_fd, HIDIOCGRAWINFO, &identity) < 0 ||
+                identity.bustype != BUS_BLUETOOTH || identity.vendor != 0x22 || identity.product != 0x5081)
+                throw std::runtime_error("pen report device identity changed");
+            std::array<char, 128> address{};
+            if (ioctl(pen_fd, HIDIOCGRAWUNIQ(address.size()), address.data()) < 0)
+                throw std::system_error(errno, std::generic_category(), "pen connection identity");
+            pen_address = address.data();
+            if (!connection || !connection->connected(pen_address)) {
+                close(pen_fd);
+                pen_fd = -1;
                 return;
-            const auto &state = pen->state();
-            pen_input->report(state.proximity, state.contact, state.squeeze, state.output);
+            }
+            pen = std::make_unique<nvt::PenPipeline>(*facts, kPressureMaxAgeNs);
+            const auto &info = pen->info();
+            pen_input = std::make_unique<nvt::UInputPen>(info.y_max, info.x_max, info.pressure_max,
+                info.tilt_min, info.tilt_max, int(std::lround(info.y_max / kPanelWidthMm)),
+                int(std::lround(info.x_max / kPanelHeightMm)));
+            update_scan();
+            std::cerr << "Pen input connected\n";
         };
         nvt::LivePipeline pipeline(calibration, [&](auto slots) {
             nvt::panelSlots(slots, calibration, vendor, panel_slots, file.invert_y);
             touch.report(panel_slots);
         }, [&](const nvt::PenFrame &frame, uint64_t timestamp_ns) {
-            if (!pen)
-                return;
-            try {
-                pen->feed(frame, timestamp_ns);
-            } catch (const std::exception &error) {
-                pen_failed("cannot read the pen frames", error);
-                return;
-            }
-            report_pen();
+            if (!pen || !scan_model) return;
+            pen_action([&] { pen->feed(frame, timestamp_ns); report_pen(); });
         });
         nvt::StreamReader reader;
         std::signal(SIGINT, stop);
@@ -145,37 +193,16 @@ int main(int argc, char **argv) {
         std::cerr << "THP stream opened; input=" << touch.sysname() << "; awaiting baseline\n";
         std::array<uint8_t, 16384> bytes{};
         std::array<uint8_t, 64> report{};
-        // The tablet tool of the pen exists while the pen is connected.
-        int pen_fd = -1;
-        const auto open_pen = [&] {
-            if (!pen || pen_input)
-                return;
-            const auto node = findPenHidraw();
-            if (!node)
-                return;
-            pen_fd = open(("/dev/" + *node).c_str(), O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-            if (pen_fd < 0)
-                return;
-            try {
-                const auto &info = pen->info();
-                pen_input = std::make_unique<nvt::UInputPen>(info.y_max, info.x_max, info.pressure_max,
-                                                             info.tilt_min, info.tilt_max,
-                                                             int(std::lround(info.y_max / kPanelWidthMm)),
-                                                             int(std::lround(info.x_max / kPanelHeightMm)));
-            } catch (const std::exception &error) {
-                close(pen_fd);
-                pen_fd = -1;
-                pen_failed("cannot create the pen input", error);
-                return;
-            }
-            std::cerr << "Pen connected; input=" << pen_input->sysname() << '\n';
-        };
-        open_pen();
-        pollfd watches[2]{};
+        pen_action(open_pen);
+        pollfd watches[5]{};
         while (running) {
-            watches[0] = {fd, POLLIN, 0};
+            watches[0] = {fd, short(POLLIN | (pen_fd >= 0 ? POLLPRI : 0)), 0};
             watches[1] = {pen_fd, POLLIN, 0};
-            const int result = poll(watches, pen_fd >= 0 ? 2 : 1, 20);
+            watches[2] = {monitor ? monitor->fd() : -1, POLLIN, 0};
+            watches[3] = {monitor ? monitor->dockFd() : -1, POLLIN, 0};
+            watches[4] = {connection ? connection->fd() : -1, POLLIN, 0};
+            // Existing finger stall deadline; the pen adds no periodic timer.
+            const int result = poll(watches, 5, 20);
             if (result < 0) {
                 if (errno == EINTR)
                     continue;
@@ -183,25 +210,36 @@ int main(int argc, char **argv) {
             }
             if (watches[0].revents & (POLLERR | POLLHUP | POLLNVAL))
                 throw std::runtime_error("THP stream failed or was removed");
-            if (pen_fd >= 0 && watches[1].revents) {
-                if (watches[1].revents & (POLLERR | POLLHUP | POLLNVAL)) {
-                    // The pen left; the tablet tool goes with it.
-                    close(pen_fd);
-                    pen_fd = -1;
-                    pen_input.reset();
-                    std::cerr << "Pen disconnected\n";
-                } else if (watches[1].revents & POLLIN) {
-                    const ssize_t size = read(pen_fd, report.data(), report.size());
-                    if (size > 0 && pen) {
-                        try {
+            pen_action([&] {
+                // Pending D-Bus replies use the existing finger deadline.
+                if (connection && connection->process()) {
+                    if (pen_fd >= 0 && !connection->connected(pen_address)) disable_pen();
+                    open_pen();
+                    update_scan();
+                }
+                if (monitor && watches[2].revents) {
+                    if (monitor->changes()) open_pen();
+                    update_scan();
+                }
+                if (monitor && watches[3].revents) {
+                    monitor->readDock();
+                    update_scan();
+                }
+                if (watches[0].revents & POLLPRI) update_scan();
+                if (pen_fd >= 0 && watches[1].revents) {
+                    if (watches[1].revents & (POLLERR | POLLHUP | POLLNVAL)) {
+                        disable_pen();
+                    } else if (watches[1].revents & POLLIN) {
+                        const ssize_t size = read(pen_fd, report.data(), report.size());
+                        if (!size || (size < 0 && errno != EAGAIN && errno != EINTR))
+                            throw std::runtime_error("pen report device disconnected");
+                        if (size > 0 && pen && scan_model) {
                             pen->feedReport(report.data(), size, bootTimeNs());
-                        } catch (const std::exception &error) {
-                            pen_failed("cannot read the pen reports", error);
+                            report_pen();
                         }
-                        report_pen();
                     }
                 }
-            }
+            });
             if (watches[0].revents & POLLIN) {
                 const ssize_t size = read(fd, bytes.data(), bytes.size());
                 if (size < 0 && (errno == EAGAIN || errno == EINTR))
@@ -215,21 +253,17 @@ int main(int argc, char **argv) {
                 if (record_fd >= 0)
                     recordBytes(record_fd, std::span(bytes.data(), size));
                 reader.feed(std::span(bytes.data(), size), [&](const auto &record) {
+                    if (pen && (record.flags & nvt::kStreamEpoch))
+                        pen_action([&] { pen->reset(); report_pen(); });
                     pipeline.feed(record, bootTimeNs());
                 });
             }
             pipeline.expire(bootTimeNs());
-            if (pen) {
-                try {
-                    if (pen->expire(bootTimeNs()))
-                        report_pen();
-                } catch (const std::exception &error) {
-                    pen_failed("cannot expire the pen state", error);
-                }
-            }
-            if (pen && !pen_input)
-                open_pen();
+            pen_action([&] {
+                if (pen && pen->expire(bootTimeNs())) report_pen();
+            });
         }
+        disable_pen();
         pipeline.reset();
         const auto &s = pipeline.stats;
         std::cerr << "records=" << s.records << " fingers=" << s.fingers

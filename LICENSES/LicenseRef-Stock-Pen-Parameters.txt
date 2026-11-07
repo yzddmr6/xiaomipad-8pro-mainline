@@ -1,0 +1,9 @@
+LicenseRef-Stock-Pen-Parameters
+
+Applies only to device/bluetooth/p81c-radio.json: generic radio parameter
+values transcribed from the Xiaomi Pad 8 Pro stock BluetoothExtension
+service, with the original build and source recorded in that file and NOTICE.
+
+The upstream profile has no licence declaration. No redistribution licence
+from its respective rights holders is recorded. This project's MIT licence
+and the BSD licence of the radio client do not grant rights in this profile.

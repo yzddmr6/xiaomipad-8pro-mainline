@@ -14,6 +14,7 @@ import json
 import os
 from pathlib import Path
 import tokenize
+import warnings
 
 
 def assignments(text):
@@ -229,9 +230,14 @@ def extract(source):
             'edge_size': edges[0] * units, 'edge_gain': gains[0] * units,
         },
     }
-    pen = extract_pen(data)
-    if pen is not None:
-        result['pen'] = pen
+    # Optional pen facts must never prevent extraction of finger geometry.
+    # Keep extract_pen strict for callers validating a pen profile itself.
+    try:
+        fields = parse_ini(data)
+        if any(key.startswith('stylus.') for key in fields):
+            result['pen'] = extract_pen(data)
+    except (KeyError, ValueError) as error:
+        warnings.warn(f'Pen calibration omitted: {error}', stacklevel=2)
     return result
 
 

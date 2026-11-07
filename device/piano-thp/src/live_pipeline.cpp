@@ -43,17 +43,14 @@ void LivePipeline::feed(const StreamRecord &record, uint64_t now_ns) {
         if (record.checksum != checksum || record.length_words != words)
             throw std::runtime_error("NTP1 payload/header mismatch");
         if (packet.data_type == 29) {
-            // The pen frame is handed over to the pen pipeline. The fingers
-            // are not tracked at the same time, so a valid pen frame
-            // releases them.
-            const auto pen = parsePenFrame(packet);
             ++stats.pen_frames;
-            if (active_) {
-                sink_({});
-                active_ = false;
+            // A pen transport/sink failure has no authority over finger state.
+            try {
+                const auto pen = parsePenFrame(packet);
+                if (pen_sink_) pen_sink_(pen, record.timestamp_ns);
+            } catch (...) {
+                ++stats.pen_errors;
             }
-            if (pen_sink_)
-                pen_sink_(pen, record.timestamp_ns);
             expire(now_ns);
             return;
         }
@@ -64,8 +61,12 @@ void LivePipeline::feed(const StreamRecord &record, uint64_t now_ns) {
         }
         finger = parseFingerFrame(packet);
     } catch (const std::runtime_error &) {
-        ++stats.invalid;
-        reset();
+        if (record.payload.size() > 56 && record.payload[56] == 29) {
+            ++stats.pen_errors;
+        } else {
+            ++stats.invalid;
+            reset();
+        }
         return;
     }
     ++stats.fingers;

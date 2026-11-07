@@ -53,6 +53,8 @@ public:
     // stale. Returns true when the state changed.
     bool expire(uint64_t now_ns);
 
+    void reset();
+
     const PenState &state() const { return state_; }
     const StylusCoreInfo &info() const { return info_; }
     uint64_t maxAge() const { return max_age_; }

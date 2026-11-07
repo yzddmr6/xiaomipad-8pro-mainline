@@ -1,16 +1,32 @@
+# SPDX-License-Identifier: MIT
 [Unit]
-Description=Initialise the wireless link of the Focus Pen Pro
-# The pen radio needs the Bluetooth controller and the pen in its dock. The
-# client identifies the pen over the magnetic charging link, so it starts
-# with the system and waits for the pen itself.
+Description=Piano Focus Pen Pro radio initialization
 After=bluetooth.service
 Wants=bluetooth.service
 
 [Service]
 Type=simple
-ExecStart=/usr/libexec/piano/piano-pen-radio --follow --profile /usr/share/piano/pen/p81c-radio.json
-Restart=on-failure
-RestartSec=5
+User=piano-pen
+Group=piano-pen
+ExecStart=/usr/libexec/piano/piano-pen-radio --profile /usr/share/piano/pen/p81c-radio.json
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_NETLINK
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+DevicePolicy=closed
+DeviceAllow=char-input r
+UMask=0077
 
+# Manual opt-in until hardware acceptance; the package does not enable this unit.
 [Install]
 WantedBy=multi-user.target

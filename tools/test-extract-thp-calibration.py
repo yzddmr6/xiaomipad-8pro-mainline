@@ -104,6 +104,20 @@ class ExtractPenTest(unittest.TestCase):
         self.module = load()
         self.config = vendor_config()
 
+    def test_optional_pen_never_blocks_finger_extraction(self):
+        import tempfile
+        import re
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'calibration.ini'
+            for data in (self.config.split('stylus\n')[0] + 'mapping\n' + self.config.split('mapping\n')[1],
+                         self.config.replace('stylus_up_threshold = 200\n', ''),
+                         self.config.replace('stylus_vendor_id = 3', 'stylus_vendor_id = 9')):
+                data = re.sub(r"(?m)^(lcd_|k_)", r"cfg_\1", data)
+                path.write_text(data)
+                result = self.module.extract(path)
+                self.assertIn('calibration', result)
+                self.assertNotIn('pen', result)
+
     def test_pen_facts(self):
         pen = self.module.extract_pen(self.config.encode())
         self.assertEqual(pen['coordinate_resolution'], 100)

@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: MIT
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{name}=="Xiaomi Piano Pen Dock", GROUP="piano-pen", MODE="0660", TAG+="piano-pen"
+SUBSYSTEM=="power_supply", KERNEL=="sc96231-pen", TAG+="piano-pen"
+SUBSYSTEM=="misc", KERNEL=="nvt-thp-*", TAG+="piano-pen"

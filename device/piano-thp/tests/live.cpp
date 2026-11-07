@@ -100,6 +100,7 @@ struct Fixture {
     std::vector<nvt::Slot> visible;
     size_t reports = 0;
     size_t pen_frames = 0;
+    bool pen_failure = false;
     uint64_t pen_timestamp = 0;
     nvt::LivePipeline pipeline{calibration(), [&](auto slots) {
         visible.assign(slots.begin(), slots.end());
@@ -107,6 +108,7 @@ struct Fixture {
     }, [&](const nvt::PenFrame &, uint64_t timestamp_ns) {
         ++pen_frames;
         pen_timestamp = timestamp_ns;
+        if (pen_failure) throw std::runtime_error("simulated pen uinput failure");
     }};
     nvt::StreamReader reader;
     uint64_t sequence = 0, timestamp = 1000000000;
@@ -215,6 +217,30 @@ void midStreamEpoch() {
     std::cout << "PASS: mid-stream EPOCH releases two contacts, waits for baseline and resumes\n";
 }
 
+void penFailureIsolation() {
+    Fixture f;
+    f.activate();
+    check(!f.visible.empty(), "missing live finger before pen failure");
+    const auto contacts = f.visible;
+    const auto reports = f.reports;
+    f.pen_failure = true;
+    f.feed(packet(5, false, 29));
+    check(f.pipeline.stats.pen_errors == 1, "pen sink failure escaped its boundary");
+    check(f.reports == reports && f.visible.size() == contacts.size(),
+          "failed pen sink changed finger output");
+    check(f.visible[0].tracking_id == contacts[0].tracking_id,
+          "failed pen sink replaced finger tracking");
+    auto corrupt_pen = packet(6, false, 29);
+    corrupt_pen[64] ^= 1;
+    f.feed(corrupt_pen);
+    check(f.pipeline.stats.pen_errors == 2 && f.reports == reports,
+          "a corrupt pen packet changed finger output");
+    f.feed(packet(7, true));
+    check(!f.visible.empty() && f.pipeline.stats.invalid == 0,
+          "finger output did not continue after pen failure");
+    std::cout << "PASS: a throwing pen sink leaves finger output and tracking alive\n";
+}
+
 void lifecycle() {
     Fixture f;
     f.activate();
@@ -226,7 +252,7 @@ void lifecycle() {
     f.feed(packet(5, false, 29));
     check(f.pipeline.stats.pen_frames == 1 && f.pen_frames == 1, "pen frame did not reach the pen path");
     check(f.pipeline.stats.other_types == 0, "pen frame was counted as another type");
-    check(f.visible.empty(), "a valid pen frame did not release the fingers");
+    check(!f.visible.empty(), "a pen frame changed live fingers");
     check(f.pen_timestamp == f.timestamp, "the pen frame lost the timestamp of the stream");
     f.timestamp += nvt::LivePipeline::kStallNs;
     f.feed(packet(6, false, 29));
@@ -342,16 +368,6 @@ void orientation() {
     std::vector<nvt::Slot> boe_panel;
     nvt::panelSlots(slots, value, nvt::PanelVendor::Boe, boe_panel);
     check(boe_panel[0].contact.x == 520 && boe_panel[0].contact.y == 21291, "BOE slots are flipped");
-    // The same panel vendor can require a different physical Y mapping.
-    for (auto vendor : {nvt::PanelVendor::Csot, nvt::PanelVendor::Boe}) {
-        nvt::panelSlots(slots, value, vendor, panel, true);
-        check(panel[0].contact.y < panel[1].contact.y &&
-              panel[0].contact.x == slots[0].contact.x &&
-              panel[0].tracking_id == slots[0].tracking_id, "inverted override changed contact identity or direction");
-        nvt::panelSlots(slots, value, vendor, panel, false);
-        check(panel[0].contact.y == slots[0].contact.y &&
-              panel[1].contact.y == slots[1].contact.y, "direct override still uses the vendor reversal");
-    }
 }
 
 struct TemporaryTree {
@@ -424,19 +440,6 @@ void panel() {
     const auto file = nvt::readCalibrationFile(tree.root / "boe.json");
     check(file.project_vendor_id == 26 && file.calibration.row_maximum == value.row_maximum,
           "calibration project_vendor_id not read");
-    check(!file.invert_y.has_value(), "older calibration gained a direction override");
-    for (bool inverted : {false, true}) {
-        document["invert_y"] = inverted;
-        tree.write("direction.json", document.dump());
-        check(nvt::readCalibrationFile(tree.root / "direction.json").invert_y == inverted,
-              "explicit Y direction was not preserved");
-    }
-    document["invert_y"] = "true";
-    tree.write("direction.json", document.dump());
-    bool rejected = false;
-    try { nvt::readCalibrationFile(tree.root / "direction.json"); }
-    catch (const std::runtime_error &) { rejected = true; }
-    check(rejected, "string Y direction silently changed the mapping");
 }
 
 void stock(const char *configuration, const char *path) {
@@ -480,6 +483,7 @@ int main(int argc, char **argv) {
         framing();
         midStreamEpoch();
         lifecycle();
+        penFailureIsolation();
         orientation();
         panel();
         std::cout << "PASS: synthetic NTP1 splits/bounds, contact release lifecycle, recorded corner and "

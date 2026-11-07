@@ -21,7 +21,7 @@ public:
     void reset();
 
     struct Statistics {
-        uint64_t records = 0, fingers = 0, other_types = 0, invalid = 0, pen_frames = 0;
+        uint64_t records = 0, fingers = 0, other_types = 0, invalid = 0, pen_frames = 0, pen_errors = 0;
         uint64_t discontinuities = 0, baselines = 0, processed = 0, stalls = 0, stale = 0;
     } stats;
 

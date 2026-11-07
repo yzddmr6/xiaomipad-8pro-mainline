@@ -121,4 +121,12 @@ bool PenPipeline::expire(uint64_t now_ns)
     return changed;
 }
 
+void PenPipeline::reset() {
+    core_->reset();
+    pressure_.reset();
+    state_ = {};
+    last_frame_ns_ = 0;
+    have_frame_ = false;
+}
+
 } // namespace nvt
