@@ -76,7 +76,6 @@ def main():
     select.add_argument('--desktop-only', action='store_true', help='Build desktop policy without rebuilding locked support/Mesa inputs')
     select.add_argument('--mesa-only', action='store_true', help='Build only the verified desktop Mesa package')
     select.add_argument('--snap-graphics-only', action='store_true', help='Build only piano-snap-graphics')
-    select.add_argument('--mipps-auth-only', action='store_true', help='Build only the pinned MiPPS authentication package')
     select.add_argument('--virtualization-only', action='store_true', help='Build optional VM userspace packages')
     ap.add_argument('--crosvm-build', type=Path)
     ap.add_argument('--windows-build', type=Path)
@@ -93,7 +92,7 @@ def main():
         ap.error('--snap-graphics-only requires --snap-graphics-build')
     if a.mesa_only and not a.mesa_build:
         ap.error('--mesa-only requires --mesa-build')
-    if not (a.desktop_only or a.snap_graphics_only or a.mipps_auth_only or a.mesa_only):
+    if not (a.desktop_only or a.snap_graphics_only or a.mesa_only):
         # The support package carries the device integration only; the desktop
         # package needs the verified Mesa build, so --support-only does not.
         required = ('thp_live', 'busybox', 'avbtool')
@@ -102,7 +101,7 @@ def main():
         for name in required:
             if getattr(a, name) is None:
                 ap.error('--' + name.replace('_', '-') + ' is required unless --desktop-only, '
-                         '--snap-graphics-only or --mipps-auth-only')
+                         '--snap-graphics-only or --mesa-only')
     repo = Path(__file__).resolve().parents[1]
     if a.avbtool is not None:
         avb_pin = json.loads((repo / 'tools/aosp-avb.json').read_text())
@@ -131,7 +130,7 @@ def main():
                 licences.setdefault(root, {})[str(Path(dest) / p.relative_to(src))] = spdx(p)
 
     def package(name, root, depends, description, postinst=None, recommends=None, third_party=(),
-                prerm=None, postrm=None, conffiles=()):
+                prerm=None, postrm=None, conffiles=(), conflicts=None):
         """third_party: (files, copyright, licence, comment) paragraphs for files not from this repository;
         every other regular file is attributed to this repository under its SPDX header or MIT."""
         docs = root / 'usr/share/doc' / name
@@ -153,6 +152,7 @@ def main():
             f'Package: {name}\nVersion: {a.version}\nArchitecture: arm64\n'
             'Maintainer: Piano local build <piano@localhost>\n'
             f'Depends: {depends}\n' + (f'Recommends: {recommends}\n' if recommends else '') +
+            (f'Conflicts: {conflicts}\n' if conflicts else '') +
             f'Description: {description}\n')
         if conffiles:
             for path in conffiles:
@@ -215,34 +215,6 @@ def main():
             return
 
     if not (a.desktop_only or a.mesa_only):
-        auth = stages / 'piano-mipps-auth'
-        shutil.copytree(repo / 'packaging/piano-mipps-auth', auth, ignore=untracked)
-        tree(repo / 'packaging/piano-mipps-auth', auth, '.')
-        source = repo / 'device/power/mipps-auth'
-        lock = json.loads((source / 'source.json').read_text())
-        upstream = source / lock['file']
-        if sha(upstream) != lock['sha256']:
-            raise ValueError('MiPPS source hash mismatch')
-        target = auth / 'usr/libexec/xiaomi-mipps-auth'
-        copy(upstream, auth, 'usr/libexec/xiaomi-mipps-auth', 0o755)
-        for patch in lock['patches']:
-            path = source / patch['file']
-            if sha(path) != patch['sha256']:
-                raise ValueError('MiPPS patch hash mismatch')
-            subprocess.run(['patch', '--batch', '--forward', '--fuzz=0', '-p1', '-i', str(path.resolve())],
-                           cwd=target.parent, check=True)
-        if sha(target) != lock['patched_sha256']:
-            raise ValueError('MiPPS patched output hash mismatch')
-        package('piano-mipps-auth', auth, 'python3, util-linux, systemd',
-                'Xiaomi MiPPS charger authentication through the kernel MCA relay',
-                third_party=[(('usr/libexec/xiaomi-mipps-auth',), 'ianchb; bluseliu50',
-                              'GPL-2.0-only', lock['url'] + ' at ' + lock['commit'] +
-                              '; piano relay path and device-only integration patch in device/power/mipps-auth.')])
-        if a.mipps_auth_only:
-            (a.output / 'manifest.json').write_text(json.dumps(receipts, indent=2) + '\n')
-            return
-
-    if not (a.desktop_only or a.mesa_only):
         support = stages / 'piano-device-support'
         shutil.copytree(repo / 'packaging/piano-device-support', support, ignore=untracked)
         tree(repo / 'packaging/piano-device-support', support, '.')
@@ -278,10 +250,11 @@ def main():
         busybox = re.search(r'^package=busybox-static_(\S+)_arm64\.deb$',
                             (repo / 'tools/fetch-busybox-arm64.sh').read_text(), re.M).group(1)
         support_third_party = [
-            (('usr/libexec/piano/piano-pen-radio',), 'slwyts and piano mainline contributors',
-             'BSD-2-Clause-Patent',
-             'Adapted from slwyts/Project-SunUEFI 6a8763d010adb00b18911d6d12e6dd02869f98b9;\n'
-             'linux/userspace/pen/piano-pen-bluetooth.py (see NOTICE).'),
+            (('usr/libexec/piano/piano-pen-radio',), 'slwyts; ' + PROJECT,
+             'BSD-2-Clause-Patent', 'Command sequencing adapted from Project-SunUEFI; see NOTICE.'),
+            (('usr/share/piano/pen/p81c-radio.json',),
+             'Respective rights holders of the stock configuration; slwyts (transcription)',
+             'LicenseRef-Stock-Pen-Parameters', 'Generic stock radio parameters, without per-unit identities; see NOTICE.'),
             (('usr/libexec/piano/bluetooth-address',), 'slwyts and piano mainline contributors', 'MIT',
              'Adapted from slwyts/Project-SunUEFI 6a8763d010adb00b18911d6d12e6dd02869f98b9;\n'
              'linux/bsp/common/usr/lib/piano/bluetooth-address.py (see NOTICE).'),
@@ -295,16 +268,16 @@ def main():
              f'The busybox-static {busybox} arm64 binary from Ubuntu, unmodified (pinned by\n'
              'tools/fetch-busybox-arm64.sh). Its corresponding source is the Ubuntu source package\n'
              f'busybox {busybox}: https://launchpad.net/ubuntu/+source/busybox/{busybox}'),
-            (('usr/libexec/piano/piano-thp-live',), 'ianchb; Niels Lohmann; ' + PROJECT,
-             'Apache-2.0 AND MIT', 'Built from device/piano-thp: files adapted from ianchb/xiaomi-sheng-thp are\n'
-             'Apache-2.0, the rest MIT (see NOTICE); it includes the MIT nlohmann JSON headers.'),
+            (('usr/libexec/piano/piano-thp-live',), 'ianchb; slwyts; Niels Lohmann; ' + PROJECT,
+             'Apache-2.0 AND MIT AND BSD-2-Clause-Patent', 'Built from device/piano-thp: files adapted from ianchb/xiaomi-sheng-thp are\n'
+             'Apache-2.0; SunUEFI pen framing is BSD-2-Clause-Patent (see NOTICE); it includes the MIT nlohmann JSON headers.'),
         ]
         package('piano-device-support', support,
-                'python3, openssl, device-tree-compiler, dracut, kmod, init-system-helpers, piano-mipps-auth, udev, systemd, libpam-modules, pkexec, polkitd, '
+                'python3, python3-gi, python3-pyudev, libsystemd0, openssl, device-tree-compiler, dracut, kmod, init-system-helpers, udev, systemd, libpam-modules, pkexec, polkitd, '
                 'piano-local-firmware (>= 0.6+os3.0.303.0)',
                 'Piano platform, touchscreen and persistent boot integration',
                 '#!/bin/sh\nset -e\nif [ "$1" = configure ]; then\n'
-                ' systemd-sysusers /usr/lib/sysusers.d/piano-gunyah.conf\n'
+                ' systemd-sysusers /usr/lib/sysusers.d/piano-gunyah.conf /usr/lib/sysusers.d/piano-pen.conf\n'
                 ' if [ -d /run/udev ] && [ "$(stat -Lc %d:%i /)" = "$(stat -Lc %d:%i /proc/1/root 2>/dev/null || true)" ]; then\n'
                 '  udevadm control --reload-rules\n'
                 '  if [ -e /sys/class/misc/gunyah ]; then udevadm trigger --action=change /sys/class/misc/gunyah; fi\n'
@@ -325,7 +298,8 @@ def main():
                        ' deb-systemd-helper purge piano-emergency-android.service >/dev/null\nfi\n',
                 recommends='openssh-server',  # developer mode only; piano-devmode refuses without sshd
                 third_party=support_third_party,
-                conffiles=['/etc/security/limits.d/90-piano-gunyah.conf', '/etc/dracut.conf.d/91-piano-gunyah.conf'])
+                conffiles=['/etc/security/limits.d/90-piano-gunyah.conf', '/etc/dracut.conf.d/91-piano-gunyah.conf'],
+                conflicts='piano-mipps-auth')
         if a.support_only:
             (a.output / 'manifest.json').write_text(json.dumps(receipts, indent=2) + '\n')
             return

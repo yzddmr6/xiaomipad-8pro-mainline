@@ -17,7 +17,7 @@ GENERAL_HINT = 'See the hardware support and troubleshooting notes.'
 DOC = 'https://github.com/yzddmr6/xiaomipad-8pro-mainline/blob/main/'
 PACKAGES = ('piano-device-support', 'piano-ubuntu-desktop', 'piano-local-firmware',
             'piano-mesa', 'piano-snap-graphics', 'piano-sensors', 'piano-iio-sensor-proxy',
-            'piano-camerad', 'piano-mipps-auth', 'piano-iris-vaapi', 'piano-crosvm',
+            'piano-camerad', 'piano-iris-vaapi', 'piano-crosvm',
             'piano-vm', 'piano-vm-windows')
 SERVICES = ('piano-thp.service', 'piano-hexagonrpcd-sns.service', 'iio-sensor-proxy.service',
             'piano-camerad.service', 'piano-emergency-android.service')
@@ -25,7 +25,7 @@ SAFE_UNITS = set(SERVICES) | {
     'gdm.service', 'gdm3.service', 'NetworkManager.service', 'bluetooth.service',
     'piano-charging.service', 'piano-devmode.service', 'piano-devmode-ssh.socket',
     'piano-slot-success.service', 'piano-debug.service', 'piano-debug-timeout.service',
-    'piano-mipps-auth.service', 'systemd-udevd.service', 'systemd-logind.service'}
+    'systemd-udevd.service', 'systemd-logind.service'}
 
 
 class Local:

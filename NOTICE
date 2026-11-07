@@ -297,15 +297,6 @@ https://github.com/blu-sharky/linux-piano
 f8afe7ff7127f46f5339fdaf5c24ecbffbfbb92b, GPL-2.0-only,
 map220v, ianchb and bluseliu50. Integration files: device/keyboard/.
 
-MiPPS: device/power/mipps-auth/upstream/xiaomi-mipps-auth, from
-https://github.com/blu-sharky/piano-mipps-auth
-ccdc3ce7f5200ef736d7d552eb7b387ea3bb6fd9, fork of ianchb/xiaomi-mipps-auth
-9176efbdf276b874fc0a97912a914449a88155fb.
-Authors: ianchb <i@4t.pw>, bluseliu50
-<265648257+bluseliu50@users.noreply.github.com>. GPL-2.0-only per script SPDX;
-no root LICENSE was supplied. Local patch/hashes: device/power/mipps-auth/source.json.
-Service and udev integration is project MIT.
-
 Bluetooth: device/bluetooth/bluetooth-address.py, from
 https://github.com/slwyts/Project-SunUEFI
 6a8763d010adb00b18911d6d12e6dd02869f98b9, 2026-10-10,
@@ -416,7 +407,7 @@ See device/virtualization/windows/NOTICE and the packaged per-file notices.
   validity bits are unchanged.
 - tools/extract-thp-calibration.py: the pen facts of the same vendor
   configuration, adapted from https://github.com/slwyts/Project-SunUEFI, commit
-  5084588f85884abc52bb675bb7e4c5541cd6cb0c, source path
+  ce5ee2926ec62c7b51e13065ebeafd98835c5e79, source path
   tools/extract_piano_pen_calibration.py. Licence: MIT.
   Changes: the section parser and the numeric extraction of the pen facts
   joined the existing tool, which reads the same vendor file; the facts are
@@ -426,7 +417,7 @@ See device/virtualization/windows/NOTICE and the packaged per-file notices.
   device/piano-thp/src/pen.hpp, device/piano-thp/src/pen.cpp: the tablet
   tool of the pen and the pipeline which feeds it, adapted from
   https://github.com/slwyts/Project-SunUEFI, commit
-  626c84a2ef633c1fa743a8235a5efb33971652ed, source paths
+  34a31774179abd53cb226e3726ed1f6234edcc82, source paths
   linux/userspace/pen/piano-pen-owner.c and piano-pen-owner.h, based on
   ianchb/xiaomi-sheng-thp commit 34046210932d654a4c0df0121ecc31c008f8148c.
   Licence: Apache-2.0; full original notice in LICENSES/Apache-2.0.txt.
@@ -435,18 +426,19 @@ See device/virtualization/windows/NOTICE and the packaged per-file notices.
   mirrored into the landscape of the panel; the pressure freshness limit
   is the choice of the caller and an expired pressure releases the contact
   instead of writing a pressure of zero.
-- device/bluetooth/piano-pen-radio.py: the wireless initialisation of the
-  Focus Pen Pro, imported from slwyts/Project-SunUEFI, commit
-  6a8763d010adb00b18911d6d12e6dd02869f98b9 (2026-10-10),
-  linux/userspace/pen/piano-pen-bluetooth.py, author slwyts,
-  BSD-2-Clause-Patent; full original notice in
-  LICENSES/BSD-2-Clause-Patent.txt.
-  Source: https://github.com/slwyts/Project-SunUEFI
-  Changes: the agent of the pairing path is registered under the piano bus
-  name, and the description names the pen and the magnetic link. The dock
-  switch, the Bluetooth address of the pen and the screen state are read
-  from the interfaces of this repository and of the kernel, so no private
-  THP node is used.
-  device/bluetooth/p81c-radio.json is the radio parameter profile of the
-  pen, collected from the original firmware service, and holds radio
-  parameters only, never pairing keys or device identities.
+
+- device/bluetooth/p81c-radio.json: generic Focus Pen Pro radio parameters
+  from the stock BluetoothExtension service, imported from
+  https://github.com/slwyts/Project-SunUEFI/blob/f28d7c2ca2df34fc904e3ca9d9f6735ea5af5ddf/linux/bsp/common/usr/share/piano/pen/p81c-radio.json.
+  The profile contains no device addresses, pairing keys or per-unit data.
+  No licence declaration accompanies the upstream profile; see
+  LICENSES/LicenseRef-Stock-Pen-Parameters.txt.
+
+- device/bluetooth/piano-pen-radio.py: radio command sequencing adapted from
+  slwyts/Project-SunUEFI, commit 6707bcc8dbfde1fe30ce3519d587e79a99a41aa3,
+  linux/userspace/pen/piano-pen-bluetooth.py (BSD-2-Clause-Patent).
+  Source: https://github.com/slwyts/Project-SunUEFI/commit/6707bcc8dbfde1fe30ce3519d587e79a99a41aa3
+  Changes: GLib/BlueZ and tagged udev events replace polling; discovery is
+  limited to one bounded attempt for the identified, docked, unpaired pen;
+  commands use asynchronous replies and finite deadlines without retries.
+  The optional service uses a dedicated account and systemd confinement.

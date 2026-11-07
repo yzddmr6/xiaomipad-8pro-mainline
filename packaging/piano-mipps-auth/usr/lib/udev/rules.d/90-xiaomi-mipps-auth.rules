@@ -1,8 +1,0 @@
-# SPDX-License-Identifier: MIT
-# Only schedule the upstream oneshot on the current Xiaomi charger edge.
-ACTION=="add|change", SUBSYSTEM=="power_supply", KERNEL=="xiaomi-mca-usb", ENV{POWER_SUPPLY_ONLINE}=="1", ATTR{xiaomi/adapter_svid}=="2717", RUN+="/usr/libexec/xiaomi-mipps-auth --usb-online-trigger"
-ACTION=="add|change", SUBSYSTEM=="power_supply", KERNEL=="xiaomi-mca-usb", ENV{POWER_SUPPLY_ONLINE}=="0", RUN+="/usr/libexec/xiaomi-mipps-auth --clear-notification"
-
-# Preserve the community partner edge for replugs shorter than the MCA poll.
-# The oneshot still requires the current Xiaomi SVID before authenticating.
-ACTION=="add", SUBSYSTEM=="typec", KERNEL=="port*-partner", TAG+="systemd", ENV{SYSTEMD_WANTS}+="xiaomi-mipps-auth.service"
