@@ -4,8 +4,8 @@
 
 The flash of the camera is a standard LED class device, so any program can
 use it and no helper of this repository is needed at runtime. This script
-reads the limits of the device and can write the torch value and read it
-back, which is what a hardware check of the flash needs.
+reads the limits and can write and read back a torch setting, restoring
+the original setting afterwards. This alone does not prove light output.
 
 The torch of a flash LED is its ordinary brightness; the strobe has its
 own file and its own limits. The names are the ones of
@@ -60,16 +60,37 @@ def report(root):
 
 
 def drive(root, value):
-    """Write the torch value and read it back on every flash device."""
+    """Check the requested torch setting, then restore every original setting."""
     rows = []
     for entry in devices(root):
-        written = None
+        row = {'name': entry.name, 'requested': value, 'ok': False}
+        brightness = entry / 'brightness'
+        original = None
+        attempted = False
         try:
-            (entry / 'brightness').write_text(str(value))
-            written = read_value(entry / 'brightness')
-        except OSError as error:
-            written = f'write failed: {error.strerror}'
-        rows.append({'name': entry.name, 'requested': value, 'read_back': written})
+            original = int(brightness.read_text().strip())
+            maximum = int((entry / 'max_brightness').read_text().strip())
+            if not 0 <= value <= maximum:
+                raise ValueError('torch request outside device limits')
+            attempted = True
+            brightness.write_text(str(value))
+            row['read_back'] = brightness.read_text().strip()
+            if int(row['read_back']) != value:
+                raise ValueError('torch readback differs from request')
+            row['ok'] = True
+        except (OSError, ValueError) as error:
+            row['error'] = str(error)
+        finally:
+            if attempted:
+                try:
+                    brightness.write_text(str(original))
+                    row['restored'] = int(brightness.read_text().strip())
+                    if row['restored'] != original:
+                        raise ValueError('original torch state was not restored')
+                except (OSError, ValueError) as error:
+                    row['restore_error'] = str(error)
+                    row['ok'] = False
+        rows.append(row)
     return rows
 
 
@@ -86,8 +107,7 @@ def main():
             parser.error('the torch value must not be negative')
         rows = drive(root, args.torch)
         print(json.dumps({'torch': rows}, indent=2))
-        return 0 if rows and all(not row['read_back'].startswith(('write failed', 'unreadable'))
-                                 for row in rows) else 1
+        return 0 if rows and all(row['ok'] for row in rows) else 1
     rows = report(root)
     print(json.dumps({'flash': rows}, indent=2))
     if not rows:

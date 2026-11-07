@@ -934,7 +934,7 @@ echo "INTF1 $a $($bb devmem 0x0ae360ac 32)  INTF2 $b $($bb devmem 0x0ae370ac 32)
 
 ```bash
 python3 tools/check-piano-flash.py            # 读出每路闪光灯的限值与当前 torch
-python3 tools/check-piano-flash.py --torch 64 # 写入 torch 值并读回
+python3 tools/check-piano-flash.py --torch 64 # 写入 torch 值、核对读回并恢复原值
 ```
 
 相机的闪光灯是标准 LED class 设备，发行版里的程序可以直接使用，运行时不依赖本仓库的助手脚本。

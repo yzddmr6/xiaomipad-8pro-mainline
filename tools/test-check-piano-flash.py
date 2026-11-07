@@ -19,7 +19,9 @@ def load():
 class FlashCheckTest(unittest.TestCase):
     def setUp(self):
         self.module = load()
-        self.root = Path(tempfile.mkdtemp())
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
         leds = self.root / 'sys/class/leds'
         (leds / 'flash0').mkdir(parents=True)
         (leds / 'flash0' / 'brightness').write_text('0\n')
@@ -51,7 +53,35 @@ class FlashCheckTest(unittest.TestCase):
         for row in rows:
             self.assertEqual(row['requested'], 128)
             self.assertEqual(row['read_back'], '128')
-        self.assertEqual((self.root / 'sys/class/leds/flash0/brightness').read_text(), '128')
+        self.assertTrue(all(row['ok'] for row in rows))
+        self.assertEqual((self.root / 'sys/class/leds/flash0/brightness').read_text(), '0')
+
+    def test_out_of_range_does_not_change_torch(self):
+        self.assertTrue(all(not row['ok'] for row in self.module.drive(self.root, 256)))
+        self.assertEqual((self.root / 'sys/class/leds/flash0/brightness').read_text(), '0\n')
+
+    def test_mismatched_readback_fails_and_restores(self):
+        from unittest.mock import patch
+        write = Path.write_text
+        def limited(path, value, *args, **kwargs):
+            return write(path, '64' if value == '128' else value, *args, **kwargs)
+        with patch.object(Path, 'write_text', limited):
+            rows = self.module.drive(self.root, 128)
+        self.assertTrue(all(not row['ok'] for row in rows))
+        self.assertTrue(all(row['restored'] == 0 for row in rows))
+
+    def test_write_failure_still_restores(self):
+        from unittest.mock import patch
+        write = Path.write_text
+        def failing(path, value, *args, **kwargs):
+            if value == '128':
+                write(path, '64')
+                raise OSError('synthetic partial write')
+            return write(path, value, *args, **kwargs)
+        with patch.object(Path, 'write_text', failing):
+            rows = self.module.drive(self.root, 128)
+        self.assertTrue(all(not row['ok'] for row in rows))
+        self.assertTrue(all(row['restored'] == 0 for row in rows))
 
     def test_a_missing_tree_reports_nothing(self):
         self.assertEqual(self.module.report(self.root / 'absent'), [])

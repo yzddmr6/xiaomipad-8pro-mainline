@@ -1022,7 +1022,7 @@ image content.
 
 ```bash
 python3 tools/check-piano-flash.py            # the limits and the current torch of every flash device
-python3 tools/check-piano-flash.py --torch 64 # write a torch value and read it back
+python3 tools/check-piano-flash.py --torch 64 # check a torch value and restore the original setting
 ```
 
 The flash of the camera is a standard LED class device, so a program of the distribution can use it
