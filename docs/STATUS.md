@@ -1,6 +1,6 @@
 # Release history and current support
 
-Current release: **v1.0.0**. See the [README](../README.en.md#hardware-support) or
+Current release: **v1.1.0**. See the [README](../README.en.md#hardware-support) or
 [中文 README](../README.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
@@ -14,11 +14,12 @@ USB-C external displays (DisplayPort Alt Mode, tested at 4K 60 Hz as an extended
 desktop), charging and system suspend. The power button locks the screen by default and
 GNOME offers Power Saver, Balanced and Performance modes. Optional command-line virtual
 machines run Ubuntu and Windows 11 ARM guests; see the [VM guide](VIRTUALIZATION.md).
+Waydroid runs Android apps with software rendering.
 
 The system player (GStreamer), Firefox (H.264/HEVC/VP9) and Chrome (H.264/VP9) use
 hardware decoding automatically; AV1 uses software decoding. H.264/H.265 hardware
-encoding is verified at 1080p and 4K. Multi-finger touch, volume keys and fast charging
-(USB PD 9 V, PPS direct charging, Xiaomi charger authentication) work. Keep the default
+encoding is verified at 1080p and 4K. Multi-finger touch and volume keys work. USB PD chargers fast-charge at 9 V, below stock
+fast-charging power; Preserve Battery Health stops charging at 80% and resumes at 75%. Keep the default
 speaker volume cap because speaker protection is absent. System time is set from the network after boot.
 Sensor calibration defaults are included; see the
 [calibration instructions](../device/sensors/README.zh-CN.md) to use your own tablet's calibration.
@@ -37,6 +38,16 @@ verified on this unit; later versions were tested on the installed system. These
 results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
+
+### v1.1.0
+
+- Preserve Battery Health in Settings → Power stops charging at 80% and resumes at 75%; while plugged in below the limit the tablet stays awake so charging stops on time.
+- Closing the keyboard cover on external power locks the screen without suspending.
+- If Ubuntu is unresponsive, holding both volume keys for 10 seconds with the cover open switches back to Android.
+- `piano-check` reports system and hardware status; `piano-check --markdown` gives an issue-ready summary.
+- Waydroid runs Android apps with software rendering; see the [Waydroid guide](WAYDROID.en.md).
+- USB recovers after a USB-C display is unplugged, without a restart.
+- Linux 7.2.15, with the Ubuntu generic kernel's USB and Bluetooth peripheral drivers.
 
 ### v1.0.0
 
