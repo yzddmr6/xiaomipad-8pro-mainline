@@ -49,7 +49,7 @@ class DesktopMonitors(unittest.TestCase):
                 self.assertEqual([logical.findtext(k) for k in ('x', 'y', 'scale', 'primary')],
                                  ['0', '0', '2', 'yes'])
                 self.assertEqual([monitor.findtext('mode/' + k) for k in ('width', 'height', 'rate')],
-                                 ['3200', '2136', {'DSI-1': '144.000', 'None-1': '60.000'}[connector]])
+                                 ['3200', '2136', {'DSI-1': '120.000', 'None-1': '60.000'}[connector]])
 
     def test_rates_match_captured_mutter_mode_ids(self):
         for monitor in self.root.findall('configuration/logicalmonitor/monitor'):
