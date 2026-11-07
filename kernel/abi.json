@@ -320,6 +320,19 @@
       "kernel_commit": "849689e9f63c2f9d1a768c2bbd3474a4207e0fb7",
       "config_sha256": "0a7a07a64638ee75dd2d694012a35d161ff11c8c1f8b4a0e37003e436a4ccd19",
       "upload": 1
+    },
+    {
+      "kernel_release": "7.2.15-piano61",
+      "kernel_commit": "de3e4752a11a4cf49037b5c2a3c63ac1512d6ce2",
+      "config_sha256": "64ff523b05ab6bc0fe58266983b5ebf1f69313f0d59a7526b7257920d4c980e7",
+      "upload": 1,
+      "purpose": "GunyahVM"
+    },
+    {
+      "kernel_release": "7.2.15-piano62",
+      "kernel_commit": "6824e7cdc2197e9d16940c4854230f53a6da888c",
+      "config_sha256": "590222ee6890a52547bf314ec50ca0e77a1d3f339e5299f5183044ff9db17b4e",
+      "upload": 1
     }
   ]
 }

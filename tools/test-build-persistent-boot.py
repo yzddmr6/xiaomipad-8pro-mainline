@@ -147,6 +147,7 @@ class RootAndSerial(unittest.TestCase):
             manifest = json.loads((d / 'set/manifest.json').read_text())
             self.assertTrue(manifest['cmdline'].startswith('root=PARTLABEL=linux_rootfs rootfstype=ext4 '))
             self.assertNotIn('androidboot.serialno', manifest['cmdline'])
+            self.assertFalse(any(w.startswith('console=') for w in manifest['cmdline'].split()))
             self.assertFalse(manifest['native_kms'])
             self.assertIn('msm.separate_gpu_kms=1', manifest['cmdline'])
             self.assertEqual((manifest['root'], manifest['root_partuuid'], manifest['serial_in_cmdline']),
