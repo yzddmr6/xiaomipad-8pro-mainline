@@ -180,7 +180,7 @@ python3 tools/build-persistent-boot.py \
   以及 `boot-ram-check.img`（供 `fastboot boot` 的 v2 镜像，内核、initrd、DTB 与命令行相同）。命令行超过 511 字节时工具拒绝构建：
   v2 头字段只容 511 字节，piano 的 ABL 丢弃其余部分。
 - `--maintenance` 只用维护 initramfs 构建 `boot-ram-maintenance.img`（§4.6）。
-- 正式命令行：`root=PARTUUID=<...> rootfstype=ext4 rw rootwait console=ttyMSM0,115200n8
+- 正式命令行：`root=PARTUUID=<...> rootfstype=ext4 rw rootwait
   log_buf_len=2M panic=15 msm.separate_gpu_kms=1 piano.boot=persistent systemd.gpt_auto=0 bootconfig
   androidboot.serialno=<SERIAL>`，不含调试入口。
 - 调试选项（不带 `--debug` 时拒绝）：
