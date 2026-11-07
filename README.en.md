@@ -162,7 +162,7 @@ Some HEVC videos may drop a small number of frames in Firefox. Chromium snap is 
 | Power modes | GNOME / TuneD | ✅ works | Power Saver, Balanced and Performance in quick settings or Settings → Power; Balanced by default |
 | Battery gauge / temperature | 2 × TI BQ27Z561 / thermal zones | ✅ works | Charge level, voltage, current and temperatures |
 | Board temperatures | PMIC ADC thermistors | ✅ works | 11 on-board temperature readings, shown on the task manager Temperature page |
-| Charging | `xiaomi_mca` / SC8541 | ✅ works | Fast charging: USB PD chargers charge at 9 V; PPS chargers charge directly through the SC8541 charge pump; the Xiaomi charger is authenticated (MiPPS) for higher current. Qualcomm QC and other proprietary fast-charge protocols charge at the normal 5 V rate. Settings → Power offers “Preserve Battery Health”: stop at 80% and resume at 75%; while it is on, the tablet stays awake when plugged in below the limit, as on Android |
+| Charging | `xiaomi_mca` / SC8541 | 🟡 partial | USB PD chargers fast-charge at 9 V; fast-charging power is currently below stock. Qualcomm QC and other proprietary fast-charge protocols charge at the normal 5 V rate. Settings → Power offers “Preserve Battery Health”: stop at 80% and resume at 75%; while it is on, the tablet stays awake when plugged in below the limit, as on Android |
 | Suspend | suspend-to-idle | ✅ works | Timer, keyboard, power-button and cover-open wake; default system idle policy; closing the keyboard cover on external power only locks the screen |
 
 Not yet supported: disk hibernation, hardware clock writes (time is set from the network after boot).
