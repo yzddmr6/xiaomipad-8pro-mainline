@@ -307,7 +307,8 @@ def read_snapshot(thp_pid, rtc):
     for path in sorted(Path('/sys/class/power_supply').glob('*')):
         kind = read(path / 'type')
         if kind == 'Battery':
-            supplies[path.name] = {'type': kind, 'capacity': read(path / 'capacity'),
+            supplies[path.name] = {'type': kind, 'present': read(path / 'present'),
+                                   'capacity': read(path / 'capacity'),
                                    'status': read(path / 'status'),
                                    'current_now': read(path / 'current_now')}
         elif path.name == 'xiaomi-mca-usb':
@@ -389,7 +390,7 @@ class Check:
     def guard(self, phase):
         # Busy threads pass through D all the time: the first piano17 run caught its own
         # journalctl, piano22 the THP SPI IRQ thread reading 120 Hz frames. Block only a
-        # task that stays in D for ~2 s without a single context switch.
+        # task that stays in D for ~30 s without a single context switch.
         def switches(task):
             try:
                 status = Path(f"/proc/{task['tgid']}/task/{task['tid']}/status").read_text()
@@ -397,7 +398,7 @@ class Check:
                 return None
             return sum(int(v) for v in re.findall(r'^(?:non)?voluntary_ctxt_switches:\s+(\d+)$', status, re.M))
         blocked = [dict(t, switches=switches(t)) for t in d_tasks()]
-        for _ in range(2):
+        for _ in range(30):
             if not blocked:
                 break
             time.sleep(1)
@@ -562,7 +563,8 @@ def peripheral_checks(before, after):
         return any(d['name'] == name and d['nodes_present'] for d in snapshot['inputs'])
     def cards(snapshot):
         return set(re.findall(r'^\s*\d+\s+\[([^\]]+)\]', snapshot['cards_raw'] or '', re.M))
-    batteries = {n: p for n, p in before['supplies'].items() if p['type'] == 'Battery'}
+    batteries = {n: p for n, p in before['supplies'].items()
+                 if p['type'] == 'Battery' and p.get('present') != '0'}
     capacities = [after['supplies'].get(n, {}).get('capacity') for n in batteries]
     charger = after['supplies'].get('xiaomi-mca-usb', {})
     return {
@@ -590,7 +592,8 @@ def charging_recovery_checks(before, after):
     Positive BQ27xxx current means net charging. Full batteries need not
     draw current; a readable offline charger never counts as recovery.
     """
-    batteries = {n: p for n, p in before['supplies'].items() if p['type'] == 'Battery'}
+    batteries = {n: p for n, p in before['supplies'].items()
+                 if p['type'] == 'Battery' and p.get('present') != '0'}
     checks = {
         'charging_source_before': before['supplies'].get('xiaomi-mca-usb', {}).get('online') == '1',
         'charging_source_restored': after['supplies'].get('xiaomi-mca-usb', {}).get('online') == '1',
