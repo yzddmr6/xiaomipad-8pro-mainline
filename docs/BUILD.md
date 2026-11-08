@@ -225,8 +225,9 @@ Firefox 使用 [Mozilla APT 仓库](https://support.mozilla.org/en-US/kb/install
 ARM64 deb，以使用镜像的 Mesa 栈。`--mozilla-firefox` 按
 [ubuntu/firefox/source.json](../ubuntu/firefox/source.json) 校验密钥、签名索引及包版本和哈希；
 镜像保留 Mozilla 源和优先级 1000。构建时保留官方预置 Firefox snap 和 snapd 状态。
-首次启动 seeding 完成后，桌面包的 `piano-firefox-snap-remove.service` 仅用 `snap remove --purge`
-移除 Firefox，成功后留标记，超时为五分钟，不延迟显示管理器。Dock 使用 `firefox.desktop`；
+首次启动 seeding 完成后，桌面包的 `piano-firefox-snap-remove.service` 先确认 Mozilla Firefox 已安装，
+并检查 `/home/*/snap/firefox` 和 `/root/snap/firefox`；存在用户数据路径（含符号链接）时保留 Snap 并记录日志。
+没有这些路径时才用 `snap remove firefox` 移除，成功或确认未安装后留标记，超时为五分钟，不延迟显示管理器。Dock 使用 `firefox.desktop`；
 Thunderbird 保持 snap。Snap 移除和 Firefox GPU 渲染需在设备上单独验证。
 
 `fake-hwclock` 是当前桌面包的依赖。仅为包含 `CONFIG_ZRAM` 的内核下载

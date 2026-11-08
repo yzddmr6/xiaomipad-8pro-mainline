@@ -239,8 +239,11 @@ so it can use the image's Mesa stack. `--mozilla-firefox` authenticates the key,
 and exact package version/hash in [ubuntu/firefox/source.json](../ubuntu/firefox/source.json); the image
 retains the Mozilla source and priority 1000 for updates. The official preseeded Firefox snap and
 snapd state remain untouched during construction. After first-boot seeding, the desktop package's
-`piano-firefox-snap-remove.service` removes only Firefox with `snap remove --purge`, marks success
-and has a five-minute timeout. It does not delay the display manager. The dock uses `firefox.desktop`;
+`piano-firefox-snap-remove.service` first checks that Mozilla Firefox is installed and checks
+`/home/*/snap/firefox` and `/root/snap/firefox`. Existing data paths, including symlinks, retain
+the snap and produce a journal message. Only when these paths are absent does it run
+`snap remove firefox`; it marks completion after removal or confirmation that the snap is absent.
+The service has a five-minute timeout. It does not delay the display manager. The dock uses `firefox.desktop`;
 Thunderbird remains a snap. Snap removal and Firefox GPU rendering require a device test.
 
 `fake-hwclock` is a dependency of the current piano-ubuntu-desktop package. Download

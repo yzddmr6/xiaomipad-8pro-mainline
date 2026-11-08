@@ -1,0 +1,35 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2026 yzddmr6
+# Profile guard and non-purging removal adapted from erhai-firefox; see NOTICE.
+set -eu
+
+# A standalone desktop package upgrade must not remove the only browser.
+if [ ! -x /usr/lib/firefox/firefox ]; then
+    printf '%s\n' 'Keeping Firefox snap: Mozilla Firefox is not installed.'
+    exit 0
+fi
+
+# Any existing data path is enough to retain the snap. Also protect dangling
+# symlinks: unavailable user storage must not be mistaken for an unused snap.
+for profile in /home/*/snap/firefox /root/snap/firefox; do
+    if [ -e "$profile" ] || [ -L "$profile" ]; then
+        printf '%s\n' 'Keeping Firefox snap: existing user data detected.'
+        exit 0
+    fi
+done
+
+if listing=$(LC_ALL=C snap list firefox 2>&1); then
+    printf '%s\n' "$listing"
+    snap remove firefox
+elif [ "$listing" != 'error: no matching snaps installed' ]; then
+    printf '%s\n' "$listing" >&2
+    exit 1
+fi
+
+# Optional completion marker for integrations that only run this once.
+# Retaining user data or failing removal must never mark the snap as removed.
+if [ -n "${1:-}" ]; then
+    mkdir -p -m 755 "${1%/*}"
+    : > "$1"
+fi

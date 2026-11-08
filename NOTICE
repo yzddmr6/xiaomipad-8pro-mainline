@@ -1,5 +1,5 @@
 Third-party attribution
-=======================
+================
 
 This file records component sources, imported files, licences and local changes.
 Per-file notices and the texts in LICENSES/ remain authoritative for licensing.
@@ -442,3 +442,13 @@ See device/virtualization/windows/NOTICE and the packaged per-file notices.
   limited to one bounded attempt for the identified, docked, unpaired pen;
   commands use asynchronous replies and finite deadlines without retries.
   The optional service uses a dedicated account and systemd confinement.
+
+Firefox snap migration
+----------------------
+packaging/firefox-snap-migration adapts the user-data guard and non-purging
+removal from yzddmr6/onepluspad-2pro-mainline commit
+3a703b964838c5c986daa34a45b2e8b24a501ca4, packaging/erhai-firefox/tree/usr/lib/systemd/system/erhai-firefox-snap-removal.service.
+https://github.com/yzddmr6/onepluspad-2pro-mainline
+Copyright (C) 2026 yzddmr6; GPL-2.0-only. This repository maintains the shared
+helper; existing data paths (including dangling symlinks) retain the snap and
+produce a journal message. The completion marker is optional.

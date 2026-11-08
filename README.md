@@ -174,6 +174,8 @@ Firefox 播放部分 HEVC 视频可能有轻微丢帧。Chromium snap 不支持�
 
 ## 使用与维护
 
+每天匿名检查一次 GitHub 上的最新版本，有新版时提示；可在通知设置中关闭。
+
 主机命令按 [INSTALL.md 的「准备」](docs/INSTALL.md#准备)设置 REPO、RELEASE 和 WORK，在 WORK 中执行。详细说明见 [docs/FLASHING.md](docs/FLASHING.md)。
 
 **切换系统。** 在 Ubuntu 中运行 `sudo piano-boot-switch to-android --reboot`，它把保存的 Android 镜像组写入 A 槽、读回校验后重启。在 Android 中用 [KernelSU 切换模块](device/android/piano-switch-ksu/README.md)切到 Ubuntu。在系统内切换不改变槽属性。

@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Check for project releases
+
+[Timer]
+OnStartupSec=10min
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=2min
+Unit=mainline-release-notifier@check.service
+
+[Install]
+WantedBy=timers.target

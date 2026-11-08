@@ -219,6 +219,9 @@ def main():
         support = stages / 'piano-device-support'
         shutil.copytree(repo / 'packaging/piano-device-support', support, ignore=untracked)
         tree(repo / 'packaging/piano-device-support', support, '.')
+        release_file = support / 'usr/share/mainline-release/version'
+        release_file.parent.mkdir(parents=True, exist_ok=True)
+        release_file.write_text(a.version + '\n')
         for p in support.rglob('*'):
             if p.is_file() and p.read_bytes().startswith(b'#!'):
                 p.chmod(0o755)
@@ -319,6 +322,10 @@ def main():
     desktop = stages / 'piano-ubuntu-desktop'
     shutil.copytree(repo / 'packaging/piano-ubuntu-desktop', desktop, ignore=untracked)
     tree(repo / 'packaging/piano-ubuntu-desktop', desktop, '.')
+    shutil.copytree(repo / 'packaging/release-notifier', desktop, dirs_exist_ok=True, ignore=untracked)
+    tree(repo / 'packaging/release-notifier', desktop, '.')
+    shutil.copytree(repo / 'packaging/firefox-snap-migration', desktop, dirs_exist_ok=True, ignore=untracked)
+    tree(repo / 'packaging/firefox-snap-migration', desktop, '.')
     copy(repo / 'device/keyboard/README.md', desktop,
          'usr/share/doc/piano-ubuntu-desktop/keyboard.md')
     # Distribution-specific configuration consumes the board profiles once.
@@ -349,15 +356,18 @@ def main():
             '  printf "CHASSIS=convertible\\n" >> /etc/machine-info\n'
             ' fi\n'
             ' deb-systemd-helper enable piano-firefox-snap-remove.service >/dev/null\n'
-            ' deb-systemd-helper --user enable piano-panel-srgb.service >/dev/null\nfi\n',
+            ' deb-systemd-helper --user enable piano-panel-srgb.service >/dev/null\n'
+            ' deb-systemd-helper --user enable mainline-release-notifier.timer >/dev/null\nfi\n',
             prerm='#!/bin/sh\nset -e\nif [ "$1" = remove ]; then\n'
-                  ' deb-systemd-helper --user disable piano-panel-srgb.service >/dev/null\nfi\n',
+                  ' deb-systemd-helper --user disable piano-panel-srgb.service >/dev/null\n'
+                  ' deb-systemd-helper --user disable mainline-release-notifier.timer >/dev/null\nfi\n',
             postrm='#!/bin/sh\nset -e\nif [ "$1" = purge ]; then\n'
                    ' if [ -f /etc/machine-info ]; then\n'
                    '  sed -i \'/^CHASSIS=convertible$/d\' /etc/machine-info\n'
                    '  if [ ! -s /etc/machine-info ]; then rm -f /etc/machine-info; fi\n'
                    ' fi\n'
-                   ' deb-systemd-helper --user purge piano-panel-srgb.service >/dev/null\nfi\n',
+                   ' deb-systemd-helper --user purge piano-panel-srgb.service >/dev/null\n'
+                   ' deb-systemd-helper --user purge mainline-release-notifier.timer >/dev/null\nfi\n',
             conffiles=['/etc/apt/preferences.d/piano-resources', '/etc/apt/preferences.d/piano-power-button-lock', '/etc/tuned/piano-ppd.conf',
                        '/etc/xdg/mimeapps.list'],
             third_party=[(('usr/share/alsa/ucm2/*',),
