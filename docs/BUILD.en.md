@@ -411,6 +411,22 @@ new consumers are not automatically intercepted. When consumers move to
 this core24 provider does not serve `gpu-2604`. Retire it when the distribution
 provider supports A830 and passes the same hardware/confinement checks.
 
+`piano-snap-graphics` depends only on Python, snapd and systemd integration;
+it does not depend on a board kernel package or native desktop Mesa. It supplies
+an ARM64/core24 runtime through the standard `gpu-2404` interface. Its package
+name is not a device-model check. With the provider already installed, close
+Firefox and run `sudo piano-snap-graphics-connect --consumer firefox` to switch
+only that consumer. Repeat the option to select more consumers. It cannot be
+combined with first-boot `--install` and does not mark first boot complete.
+Omitting `--consumer` retains the existing behavior for all installed consumers.
+
+Graphics content does not enable strict confinement. Neither `strict` snap
+metadata nor an Adreno renderer replaces `strict` from `snap debug confinement`,
+`support-level:full` from `snap debug sandbox-features`, and actual access denial.
+When mainline `network_v9` does not satisfy snapd's legacy `network` assessment,
+confinement remains partial. Using `--devmode` or disabling AppArmor does not
+satisfy strict confinement.
+
 ## Bounded RAM return regression
 
 `piano-debug-timeout.service` uses the kernel-uptime `piano.debug_timeout`

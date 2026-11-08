@@ -61,10 +61,21 @@ def install():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--install', action='store_true')
+    parser.add_argument('--consumer', action='append', metavar='SNAP',
+                        help='connect only this installed consumer (repeatable); provider must be installed')
     args = parser.parse_args()
+    if args.install and args.consumer:
+        parser.error('--consumer cannot be combined with the first-boot --install operation')
     if args.install:
         install()
-    for plug, slots in connections(snap('connections', '--all').stdout).items():
+    plugs = connections(snap('connections', '--all').stdout)
+    if args.consumer:
+        selected = {name + ':gpu-2404' for name in args.consumer}
+        missing = selected - plugs.keys()
+        if missing:
+            raise ValueError('no installed gpu-2404 plug: ' + ', '.join(sorted(missing)))
+        plugs = {plug: slots for plug, slots in plugs.items() if plug in selected}
+    for plug, slots in plugs.items():
         # Remove old content first; overlapping providers otherwise clash at
         # gpu-2404 and snapd can retain a renamed mount in the saved namespace.
         for slot in sorted(slots - {'-', PROVIDER}):
