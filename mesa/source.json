@@ -1,27 +1,19 @@
 {
   "url": "https://gitlab.freedesktop.org/mesa/mesa.git",
-  "tag": "mesa-26.2.0",
-  "commit": "9f0a761020bca92f2b07156a0621e5360cb8eca5",
+  "tag": "mesa-26.2.6",
+  "commit": "8e87a503ebd91408c88596d1b9eeb5f4c0b2088d",
   "patch": "mesa/piano-fixes.patch",
-  "prefix": "/opt/piano/mesa-26.2.0",
-  "scope": "Pinned Mesa for the desktop and gpu-2404 provider; A830 speedbin and shared-context publication fixes",
-  "version": "26.2.0",
-  "archive": "mesa-26.2.0.tar",
-  "archive_sha256": "944a85a89e5b05566cf4b2eb56d9917148a25d51261f75b5edaaed8d5fea738e",
+  "prefix": "/opt/piano/mesa-26.2.6",
+  "scope": "Shared Adreno 830 desktop and gpu-2404 source and patches",
+  "version": "26.2.6",
+  "archive": "mesa-26.2.6.tar.xz",
+  "archive_sha256": "b9436b3e1a8be76fbd4823dc884f90596ab7c6ac5e1867a305e66ffccfb31a92",
   "patch_sha256": "98c0e3ada8fb8fbc4dff21e858b31ae273ffeb07884db726b7d893744573d591",
-  "archive_note": "git archive --format=tar --prefix=mesa-26.2.0/ of the pinned commit; gpu-2404 uses the same source and patch as the desktop deb.",
+  "archive_note": "Official Mesa release archive; checksum published in the release notes.",
   "additional_patches": [
     {
-      "path": "mesa/turnip-gen8-tex-line-offset.patch",
-      "sha256": "0ed6ad87059cea48ff4b1390ac82561aa799e5ef62261ba6aa080c12967fdd8d",
-      "upstream_commit": "7ea5e51c8a301a15202e28fef114e4c4055bc329",
-      "stable_commit": "f9a4bfdadbc9f2959b9b7a82c519c7f5a69db6c5",
-      "merge_request": "https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/44151",
-      "license": "MIT"
-    },
-    {
       "path": "mesa/turnip-a8xx-runtime-unroll.patch",
-      "sha256": "8fc207b72c8c86aeced2d23b9a4a954dfbbd6e52ebe2a37f98124e6e52e098e1",
+      "sha256": "87909ead37580758f277d171350d08551b03ca5e1439db91e9b7b8661a69ca96",
       "upstream": "local, not yet submitted",
       "exit_condition": "Remove when the pinned upstream includes equivalent changes.",
       "license": "MIT"
@@ -35,10 +27,26 @@
     },
     {
       "path": "mesa/turnip-a8xx-word-reuse.patch",
-      "sha256": "de83e37c18cb34b0647eac70b5e6e715a2de41b2b6ebef22d89e379d32b7a72b",
+      "sha256": "3b51c78c0adeaedd441b53c91db9742754e6ca5d94ecd81e931d1812946a7475",
       "upstream": "local, not yet submitted",
       "exit_condition": "Remove when the pinned upstream includes equivalent changes.",
       "license": "MIT"
+    },
+    {
+      "path": "mesa/freedreno-thread-safe-tex-seqno.patch",
+      "origin": "https://github.com/yzddmr6/onepluspad-2pro-mainline/commit/dc487f4",
+      "license": "MIT",
+      "exit_condition": "Remove when upstream provides equivalent thread-safe, nonzero texture IDs.",
+      "sha256": "20894ab355ed33388b45a3b82ed3677be4bf20b3c63ba4f191defdb85fd3c479"
+    },
+    {
+      "path": "mesa/freedreno-explicit-sync.patch",
+      "upstream_commit": "1f9c4d529f4cfb332f5abfabbd0918f5d5f6cb4e",
+      "origin": "https://gitlab.freedesktop.org/mesa/mesa/-/commit/1f9c4d529f4cfb332f5abfabbd0918f5d5f6cb4e",
+      "license": "MIT",
+      "sha256": "72c3f2696ba5d18b5d56139bbfa0f7c9ddeb9567e6d4f56a4461caa84c929c6d"
     }
-  ]
+  ],
+  "archive_url": "https://archive.mesa3d.org/mesa-26.2.6.tar.xz",
+  "checksum_source": "https://docs.mesa3d.org/relnotes/26.2.6.html"
 }

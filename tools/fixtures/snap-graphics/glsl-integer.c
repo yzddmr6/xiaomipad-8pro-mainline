@@ -109,7 +109,7 @@ int main(void)
 	if (!maps) { perror("maps"); return 1; }
 	while (fgets(line, sizeof(line), maps)) {
 		char *path = strchr(line, '/');
-		if (path && strstr(path, "/libgallium-26.2.0.so")) {
+		if (path && strstr(path, "/libgallium-")) {
 			printf("gallium=%s", path);
 			found = 1;
 			break;

@@ -1,4 +1,4 @@
-# Piano Mesa inputs
+# Shared Adreno 830 Mesa inputs
 
 `source.json` pins upstream Mesa and the ordered patches used by
 both the desktop deb and the gpu-2404 builder. `piano-fixes.patch` contains the A830
@@ -11,8 +11,8 @@ destroy shared contexts while a fifth allocates and deletes buffer storage.
 Compile against EGL/GLES and pthreads, then select the candidate libraries:
 
 ```sh
-LD_LIBRARY_PATH=/opt/piano/mesa-26.2.0/lib \
-LIBGL_DRIVERS_PATH=/opt/piano/mesa-26.2.0/lib/dri \
+LD_LIBRARY_PATH=/opt/piano/mesa-26.2.6/lib \
+LIBGL_DRIVERS_PATH=/opt/piano/mesa-26.2.6/lib/dri \
   ./shared-context-stress Adreno
 ```
 
@@ -36,14 +36,28 @@ separately; changing the desktop deb does not update an installed snap.
 Remove the local shared-context change when the pinned upstream contains an
 equivalent fix and the regression passes. No upstream submission is implied.
 
-The additional `turnip-gen8-tex-line-offset.patch` is the unmodified upstream
-commit 7ea5e51c8a301a15202e28fef114e4c4055bc329 by Rob Clark (2026-08-31,
-MIT), [MR !44151](https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/44151),
-also backported as f9a4bfdadbc9f2959b9b7a82c519c7f5a69db6c5. It encodes
-gen8 TEX_LINE_OFFSET in bits in the common descriptor helper, including
-Turnip's NV12 buffer-to-image upload. Both builders apply it after
-`piano-fixes.patch` and validate both hashes. Remove this backport when the
-pinned upstream includes it; package builds alone do not prove GPU rendering.
+Mesa 26.2.6 already includes the gen8 TEX_LINE_OFFSET fix, so no separate
+backport is applied. `freedreno-explicit-sync.patch` is the unmodified upstream
+commit 1f9c4d529f4cfb332f5abfabbd0918f5d5f6cb4e by Sahitya Kandru:
+only an incoming fence selects explicit synchronization; requesting an outgoing
+fence alone must not suppress implicit synchronization.
+
+`freedreno-thread-safe-tex-seqno.patch` retains the OnePlus project's texture
+sequence allocator fix, including its original attribution. A830 revision-1
+speedbin matching and the shared-context publication fix remain necessary.
+
+Both desktop and gpu-2404 use `tools/build-mesa.py`, `--optimization=2` and
+`b_ndebug=true`. Configuration and target compile commands are checked before
+compilation. The desktop uses a private prefix, non-GLVND Mesa libraries and
+Turnip; gpu-2404 retains its GLVND provider layout. Both include softpipe.
+`tools/build-mesa.sh` is only a compatibility wrapper around this recipe.
+
+`piano-mesa` supplies the common desktop binaries. The OnePlus integration uses
+an `erhai-mesa` transitional package depending on it; there is no second Mesa
+binary build. Once all supported upgrade paths have migrated and desktop
+metapackages depend directly on `piano-mesa`, the transitional package can be
+retired. The source lock, patches and recipe are maintained here; downstream
+imports record this repository's commit and file hashes.
 
 `turnip-a8xx-runtime-unroll.patch` adds bounded runtime loop unrolling and read scheduling for A8xx compute shaders; remove it when the pinned upstream includes equivalent changes.
 `turnip-ssbo-wide-reads.patch` uses exact-width aligned read-only SSBO accesses with matching descriptor strides; remove it when the pinned upstream includes equivalent changes.

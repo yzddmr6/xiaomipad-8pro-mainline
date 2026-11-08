@@ -71,6 +71,7 @@ def main():
         ap.add_argument('--' + name, type=Path)
     ap.add_argument('--snap-graphics-build', type=Path, help='Verified build-mesa-root.py output')
     ap.add_argument('--version', required=True)
+    ap.add_argument('--mesa-dependency-root', type=Path, help='ARM64 SDK for Mesa dependency scanning')
     select = ap.add_mutually_exclusive_group()
     select.add_argument('--support-only', action='store_true', help='Rebuild only the small device integration package')
     select.add_argument('--desktop-only', action='store_true', help='Build desktop policy without rebuilding locked support/Mesa inputs')
@@ -305,24 +306,12 @@ def main():
             return
 
     if not a.desktop_only:
-        mesa = stages / 'piano-mesa'
-        subprocess.run(['python3', str(repo / 'tools/prepare-mesa-initramfs.py'), '--mesa-build', str(a.mesa_build),
-                        '--stage', str(mesa)], stdout=subprocess.DEVNULL, check=True)
-        mesa_source = json.loads((repo / 'mesa/source.json').read_text())
-        # Register the prefix with the dynamic linker, ahead of the distribution
-        # directories: every process, including setuid programs and those that start
-        # with a cleared environment, then resolves Mesa's sonames to this A830 build.
-        ldconf = mesa / 'etc/ld.so.conf.d/00-piano-mesa.conf'
-        ldconf.parent.mkdir(parents=True)
-        ldconf.write_text(mesa_source['prefix'] + '/lib\n')
-        package('piano-mesa', mesa, 'libc6, libdrm2, libexpat1, libzstd1, zlib1g',
-                'Mesa 26.2 with piano A830 input lock, preferred by the dynamic linker',
-                postinst='#!/bin/sh\nset -e\nif [ "$1" = configure ]; then ldconfig; fi\n',
-                postrm='#!/bin/sh\nset -e\nif [ "$1" = remove ] || [ "$1" = purge ]; then ldconfig; fi\n',
-                third_party=[((mesa_source['prefix'].lstrip('/') + '/*',), 'Mesa contributors (per-file notices)',
-                              'MIT', f'Mesa {mesa_source["tag"]} ({mesa_source["url"]}, commit {mesa_source["commit"]})\n'
-                              f'with {mesa_source["patch"]} from this repository. Most of Mesa is MIT; some files\n'
-                              'carry other permissive licences, listed in docs/license.rst of that source.')])
+        subprocess.run(['python3', str(repo / 'tools/package-mesa.py'),
+                        '--mesa-build', str(a.mesa_build), '--output', str(a.output),
+                        '--version', a.version,
+                        *(['--dependency-root', str(a.mesa_dependency_root)]
+                          if a.mesa_dependency_root else [])], check=True)
+        receipts['piano-mesa'] = json.loads((a.output / 'mesa-package.json').read_text())
         if a.mesa_only:
             (a.output / 'manifest.json').write_text(json.dumps(receipts, indent=2) + '\n')
             return

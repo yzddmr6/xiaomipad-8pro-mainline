@@ -1,0 +1,105 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
+Date: Thu, 22 Oct 2026 22:10:00 +0800
+Subject: [PATCH] freedreno/a6xx: Make the tex seqno allocator thread-safe
+
+With threaded_context, create_sampler_state and create_sampler_view are
+called directly in the frontend thread, while delete_sampler_state and
+the final sampler view release run in the driver thread.  Both modify
+the per-context tex_ids allocator without synchronization, so a
+concurrent alloc and free can lose an update and hand out a seqno that
+is still in use.  Two live views with the same seqno give the same tex
+cache key, and a draw can then reuse texture state built for the other
+view's resource.  Debug builds abort with
+
+  fd6_texture_state: Assertion `state->view_rsc_seqno[i] == seqno' failed.
+
+This was hit by GTK 4 drawing GStreamer GL video frames.  In the
+captured case the bound view and its resource agreed on resource seqno
+1526, while the cached entry for the same view seqno held 1534, a
+resource created later.  Release builds sample the wrong texture.
+
+Use util_idalloc_mt and reserve seqno 0, which marks an unbound slot in
+the cache key.  The atomic counter replaced by idalloc had both
+properties.
+
+Fixes: 7b3879972446 ("freedreno/a6xx: Use idalloc for samp/view seqno's")
+Assisted-by: LLM
+---
+ src/gallium/drivers/freedreno/a6xx/fd6_context.h  |  6 +++++-
+ src/gallium/drivers/freedreno/a6xx/fd6_texture.cc | 12 ++++++------
+ 2 files changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/src/gallium/drivers/freedreno/a6xx/fd6_context.h b/src/gallium/drivers/freedreno/a6xx/fd6_context.h
+--- a/src/gallium/drivers/freedreno/a6xx/fd6_context.h
++++ b/src/gallium/drivers/freedreno/a6xx/fd6_context.h
+@@ -115,7 +115,11 @@
+    struct hash_table *bcolor_cache;
+    struct fd_bo *bcolor_mem;
+ 
+-   struct util_idalloc tex_ids;
++   /* Sampler and sampler view seqnos.  With threaded_context they are
++    * allocated in the frontend thread and freed in the driver thread.
++    * Zero is reserved: it marks an unbound slot in the tex cache key.
++    */
++   struct util_idalloc_mt tex_ids;
+    struct hash_table *tex_cache;
+    bool tex_cache_needs_invalidate;
+ 
+diff --git a/src/gallium/drivers/freedreno/a6xx/fd6_texture.cc b/src/gallium/drivers/freedreno/a6xx/fd6_texture.cc
+--- a/src/gallium/drivers/freedreno/a6xx/fd6_texture.cc
++++ b/src/gallium/drivers/freedreno/a6xx/fd6_texture.cc
+@@ -262,7 +262,7 @@
+       return NULL;
+ 
+    so->base = *cso;
+-   so->seqno = util_idalloc_alloc(&fd6_context(ctx)->tex_ids);
++   so->seqno = util_idalloc_mt_alloc(&fd6_context(ctx)->tex_ids);
+ 
+    if (cso->min_mip_filter == PIPE_TEX_MIPFILTER_LINEAR)
+       miplinear = true;
+@@ -408,7 +408,7 @@
+ 
+    fd_screen_unlock(ctx->screen);
+ 
+-   util_idalloc_free(&fd6_ctx->tex_ids, samp->seqno);
++   util_idalloc_mt_free(&fd6_ctx->tex_ids, samp->seqno);
+ 
+    free(hwcso);
+ }
+@@ -424,7 +424,7 @@
+       return NULL;
+ 
+    so->base = *cso;
+-   so->seqno = util_idalloc_alloc(&fd6_ctx->tex_ids);
++   so->seqno = util_idalloc_mt_alloc(&fd6_ctx->tex_ids);
+    pipe_reference(NULL, &prsc->reference);
+    so->base.texture = prsc;
+    so->base.reference.count = 1;
+@@ -606,7 +606,7 @@
+ 
+    pipe_resource_reference(&view->base.texture, NULL);
+ 
+-   util_idalloc_free(&fd6_context(ctx)->tex_ids, view->seqno);
++   util_idalloc_mt_free(&fd6_context(ctx)->tex_ids, view->seqno);
+ 
+    free(view);
+ }
+@@ -943,7 +943,7 @@
+    fd_context_add_private_bo(ctx, fd6_ctx->bcolor_mem);
+ 
+    fd6_ctx->tex_cache = _mesa_hash_table_create(NULL, tex_key_hash, tex_key_equals);
+-   util_idalloc_init(&fd6_ctx->tex_ids, 256);
++   util_idalloc_mt_init(&fd6_ctx->tex_ids, 256, true);
+ }
+ FD_GENX(fd6_texture_init);
+ 
+@@ -961,7 +961,7 @@
+ 
+    fd_screen_unlock(ctx->screen);
+ 
+-   util_idalloc_fini(&fd6_ctx->tex_ids);
++   util_idalloc_mt_fini(&fd6_ctx->tex_ids);
+    ralloc_free(fd6_ctx->tex_cache);
+    fd_bo_del(fd6_ctx->bcolor_mem);
+    ralloc_free(fd6_ctx->bcolor_cache);
