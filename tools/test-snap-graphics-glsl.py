@@ -47,7 +47,7 @@ def main():
     compile_wrapper = ('set -eu; mount -t tmpfs tmpfs "$1/dev"; '
                        'touch "$1/dev/null"; mount --bind /dev/null "$1/dev/null"; '
                        'mount -t proc proc "$1/proc"; '
-                       'exec chroot "$1" /usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C '
+                       'exec chroot "$1" /usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C QEMU_CPU=max,pauth-impdef=on '
                        'gcc -O2 -Wall -Wextra -o /tmp/piano-glsl-integer '
                        '/tmp/piano-glsl-integer.c -lEGL -lGLESv2')
     with (out / 'compile.log').open('w') as stream:
@@ -69,7 +69,7 @@ def main():
     wrapper = ('set -eu; ulimit -c 0; for node in null random urandom; do '
                'mount --bind /dev/$node "$1/dev/$node"; done; '
                'mount -t proc proc "$1/proc"; '
-               'exec chroot "$1" /usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C '
+               'exec chroot "$1" /usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C QEMU_CPU=max,pauth-impdef=on '
                'XDG_RUNTIME_DIR=/tmp/runtime MESA_SHADER_CACHE_DISABLE=true '
                'LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=softpipe '
                '/bin/sh -c \'"$@"; code=$?; exit "$code"\' sh '
@@ -88,7 +88,13 @@ def main():
             '--pid', '--fork', '--kill-child', 'sh', '-c', wrapper, 'sh', str(root), relative],
             capture_output=True, text=True)
         (out / f'{name}.log').write_text(result.stdout + result.stderr)
-        gallium = provider / 'usr/lib/aarch64-linux-gnu/libgallium-26.2.0.so'
+        libraries = list((provider / 'usr/lib/aarch64-linux-gnu').glob('libgallium-*.so'))
+        # Stock payload may retain an older Gallium; identify the library actually mapped.
+        libraries = [p for p in libraries
+                     if f'gallium={relative}/usr/lib/aarch64-linux-gnu/{p.name}\n' in result.stdout]
+        if len(libraries) != 1:
+            raise RuntimeError('expected exactly one mapped provider Gallium library')
+        gallium = libraries[0]
         mapped = f'gallium={relative}/usr/lib/aarch64-linux-gnu/{gallium.name}\n' in result.stdout
         assertion = ('ir.cpp:1603:' in result.stderr and 'ir_constant::is_value' in result.stderr
                      and 'Assertion' in result.stderr)

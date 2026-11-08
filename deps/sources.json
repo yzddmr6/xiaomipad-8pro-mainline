@@ -1223,14 +1223,15 @@
       "preservation": "D"
     },
     {
-      "name": "mesa-26.2.0",
-      "filename": "944a85a89e5b05566cf4b2eb56d9917148a25d51261f75b5edaaed8d5fea738e-mesa-26.2.0.tar",
-      "sha256": "944a85a89e5b05566cf4b2eb56d9917148a25d51261f75b5edaaed8d5fea738e",
-      "upstream": [],
+      "name": "mesa-26.2.6",
+      "filename": "b9436b3e1a8be76fbd4823dc884f90596ab7c6ac5e1867a305e66ffccfb31a92-mesa-26.2.6.tar.xz",
+      "sha256": "b9436b3e1a8be76fbd4823dc884f90596ab7c6ac5e1867a305e66ffccfb31a92",
+      "upstream": [
+        "https://archive.mesa3d.org/mesa-26.2.6.tar.xz"
+      ],
       "recipe": "mesa/source.json",
-      "commit": "9f0a761020bca92f2b07156a0621e5360cb8eca5",
-      "own_url": "https://github.com/yzddmr6/deps-archive/releases/download/inputs-20261108/944a85a89e5b05566cf4b2eb56d9917148a25d51261f75b5edaaed8d5fea738e-mesa-26.2.0.tar",
-      "preservation": "C"
+      "commit": "8e87a503ebd91408c88596d1b9eeb5f4c0b2088d",
+      "preservation": "D"
     },
     {
       "name": "aosp-mkbootimg",

@@ -34,7 +34,7 @@ sh tools/fetch-busybox-arm64.sh        # expect ".../usr/bin/busybox: OK"
 |---|---|
 | Kernel | [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano), branch `piano/dev`; commit and configuration fragments in [kernel/source.json](../kernel/source.json), releases in [kernel/abi.json](../kernel/abi.json) |
 | Firmware | [firmware/](../firmware/README.md), locked by `firmware/piano-*.json` |
-| Mesa | 26.2.0 and `mesa/piano-fixes.patch`, [mesa/source.json](../mesa/source.json) |
+| Mesa | 26.2.6 and `mesa/piano-fixes.patch`, [mesa/source.json](../mesa/source.json) |
 | Ubuntu | 26.04 Desktop ARM64 ISO, SHA-256 `c2afd538d66fdd77377d03f1ed2ac76a34f1c116baecc9a8170d68f833121f57`; [ubuntu/26.04.sources](../ubuntu/26.04.sources); packages from a dated [snapshot](https://snapshot.ubuntu.com/) |
 | Device userspace | `device/*/source.json` |
 
@@ -136,8 +136,8 @@ make -C device/piano-thp OUT="$PWD/out/piano-thp-arm64" CXX=aarch64-linux-gnu-g+
   JSON_INCLUDE="$PWD/out/json-include" LDFLAGS='-static-libstdc++ -static-libgcc -Wl,-z,relro,-z,now' \
   all test RUNNER='qemu-aarch64-static -L /usr/aarch64-linux-gnu'
 # expect three "PASS:" lines from the unit tests run under qemu-user
-# Mesa 26.2.0 with the A830 patch
-MESA_SOURCE=<Mesa checkout at mesa/source.json> CROSS_FILE=<arm64 cross file> \
+# Mesa 26.2.6 with the A830 patch
+MESA_SOURCE_ARCHIVE=<official Mesa archive> CROSS_FILE=<arm64 cross file> TARGET_ROOT=<arm64 SDK> \
   OUT_DIR="$PWD/out/mesa" bash tools/build-mesa.sh
 # piano-device-support, piano-mesa, piano-ubuntu-desktop
 python3 tools/build-device-debs.py --output out/device-debs --version 0.1+<YYYYMMDD>.<n> \
@@ -170,8 +170,8 @@ python3 tools/build-firmware-deb.py --topology out/audio/Piano-Capture-Diag-tplg
 
   The v0.6.1 `piano-thp-live` (SHA-256 `a6d6c50b670333740b4e4cd3a0fd03d469158c00d462fb4ac69321c77b9400ba`) was built this way, with the unpacked g++, and
   rebuilds byte-identically from tag v0.6.1.
-- `build-mesa.sh` refuses a Mesa HEAD other than `mesa/source.json`. Mesa installs under
-  `/opt/piano/mesa-26.2.0` and does not replace Ubuntu's Mesa packages.
+- `build-mesa.sh` calls the shared `build-mesa.py` recipe and verifies the official archive against `mesa/source.json`. Mesa installs under
+  `/opt/piano/mesa-26.2.6` and does not replace Ubuntu's Mesa packages.
 - `build-firmware-deb.py` takes `firmware/` by default; `--firmware-tree <dir>` uses your own
   extraction in the same layout. Every file is checked against its lock.
 - Raise `--version` on every device package rebuild so that dpkg installs it as an upgrade.
@@ -325,7 +325,7 @@ Imported tooling provenance and its GPL-2.0-only licence are recorded in `mesa/s
 ```bash
 python3 tools/build-mesa-root.py --target gpu-2404 --native-nir \
   --base-snap <mesa-2404_1166.snap> \
-  --mesa-source <Mesa Git checkout> --cache out/gpu-snap-inputs \
+  --source-archive <official Mesa archive> --cache out/gpu-snap-inputs \
   --work out/gpu-snap-build --output out/gpu-snap-package --jobs 6
 python3 tools/validate-mesa-snap.py --build out/gpu-snap-package \
   --sdk-root out/gpu-snap-build/root --stock-provider <mesa-2404_1166.snap> \

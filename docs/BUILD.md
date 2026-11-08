@@ -34,7 +34,7 @@ sh tools/fetch-busybox-arm64.sh        # 预期 ".../usr/bin/busybox: OK"
 |---|---|
 | 内核 | [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano)，分支 `piano/dev`；提交和配置片段见 [kernel/source.json](../kernel/source.json)，release 见 [kernel/abi.json](../kernel/abi.json) |
 | 固件 | [firmware/](../firmware/README.md)，由 `firmware/piano-*.json` 锁定 |
-| Mesa | 26.2.0 与 `mesa/piano-fixes.patch`，见 [mesa/source.json](../mesa/source.json) |
+| Mesa | 26.2.6 与 `mesa/piano-fixes.patch`，见 [mesa/source.json](../mesa/source.json) |
 | Ubuntu | 26.04 Desktop ARM64 ISO，SHA-256 `c2afd538d66fdd77377d03f1ed2ac76a34f1c116baecc9a8170d68f833121f57`；[ubuntu/26.04.sources](../ubuntu/26.04.sources)；软件包取自指定日期的[快照](https://snapshot.ubuntu.com/) |
 | 设备用户态 | `device/*/source.json` |
 
@@ -128,8 +128,8 @@ make -C device/piano-thp OUT="$PWD/out/piano-thp-arm64" CXX=aarch64-linux-gnu-g+
   JSON_INCLUDE="$PWD/out/json-include" LDFLAGS='-static-libstdc++ -static-libgcc -Wl,-z,relro,-z,now' \
   all test RUNNER='qemu-aarch64-static -L /usr/aarch64-linux-gnu'
 # 预期单元测试在 qemu-user 下输出三行 "PASS:"
-# Mesa 26.2.0 与 A830 补丁
-MESA_SOURCE=<Mesa checkout at mesa/source.json> CROSS_FILE=<arm64 cross file> \
+# Mesa 26.2.6 与 A830 补丁
+MESA_SOURCE_ARCHIVE=<official Mesa archive> CROSS_FILE=<arm64 cross file> TARGET_ROOT=<arm64 SDK> \
   OUT_DIR="$PWD/out/mesa" bash tools/build-mesa.sh
 # piano-device-support、piano-mesa、piano-ubuntu-desktop
 python3 tools/build-device-debs.py --output out/device-debs --version 0.1+<YYYYMMDD>.<n> \
@@ -160,7 +160,7 @@ python3 tools/build-firmware-deb.py --topology out/audio/Piano-Capture-Diag-tplg
   ```
 
   v0.6.1 的 `piano-thp-live`（SHA-256 `a6d6c50b670333740b4e4cd3a0fd03d469158c00d462fb4ac69321c77b9400ba`）按此方法用解包的 g++ 构建，可从标签 v0.6.1 逐字节重建。
-- `build-mesa.sh` 拒绝与 `mesa/source.json` 不符的 Mesa HEAD。安装前缀为 `/opt/piano/mesa-26.2.0`，
+- `build-mesa.sh` 调用共用的 `build-mesa.py`，核对 `mesa/source.json` 中的官方源码包 SHA-256。安装前缀为 `/opt/piano/mesa-26.2.6`，
   不替换 Ubuntu 的 Mesa 包。
 - `build-firmware-deb.py` 默认从 `firmware/` 取文件；`--firmware-tree <dir>` 可指定相同布局的本机提取目录。
   每个文件均按身份锁核对。两份音频拓扑的构建与检查说明见[音频文档](../device/audio/README.md#build)。
@@ -294,7 +294,7 @@ Flutter 应用（应用中心）因此不显示文字。
 ```bash
 python3 tools/build-mesa-root.py --target gpu-2404 --native-nir \
   --base-snap <mesa-2404_1166.snap> \
-  --mesa-source <Mesa Git checkout> --cache out/gpu-snap-inputs \
+  --source-archive <official Mesa archive> --cache out/gpu-snap-inputs \
   --work out/gpu-snap-build --output out/gpu-snap-package --jobs 6
 python3 tools/validate-mesa-snap.py --build out/gpu-snap-package \
   --sdk-root out/gpu-snap-build/root --stock-provider <mesa-2404_1166.snap> \

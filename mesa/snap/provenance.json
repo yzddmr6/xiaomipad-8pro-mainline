@@ -48,7 +48,7 @@
   ],
   "local_changes": [
     "Rename provider and SDK-local paths from erhai to piano.",
-    "Use mesa/source.json Git commit and mesa/piano-fixes.patch shared with the desktop deb; archive the exact commit, never the reference Mesa 26.2.3 archive.",
+    "Use the official release archive and ordered patches pinned by mesa/source.json, shared with the desktop deb.",
     "Limit the imported root build entry point to gpu-2404, retain native NIR and resume, and keep downloads under the caller cache.",
     "Retain imported tool/wrapper GPL-2.0-only notices and ship their licence.",
     "2026-10-12: replace the minimal dependency-closure runtime with the complete pinned mesa-2404 revision 1166, overlay only compiled Mesa files, and preserve the stock wrapper/hooks and non-Mesa content.",

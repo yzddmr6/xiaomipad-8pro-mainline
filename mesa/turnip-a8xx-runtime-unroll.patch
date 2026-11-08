@@ -643,8 +643,8 @@ index 55503cf..1a44494 100644
  ir3_nir_should_scalarize_mem(const nir_intrinsic_instr *intrin, const void *data)
  {
 @@ -806,6 +822,16 @@ ir3_finalize_nir(struct ir3_compiler *compiler,
-    bool idiv_progress = OPT(s, nir_opt_idiv_const, 8);
-    idiv_progress |= OPT(s, nir_lower_idiv, &idiv_options);
+    /* Remove unused components from IO loads. */
+    progress |= OPT(s, nir_opt_shrink_vectors, true);
  
 +   /* Expose adjacent reads in small runtime compute loops to the existing
 +    * vectorizer. Four iterations match the maximum memory vector width;

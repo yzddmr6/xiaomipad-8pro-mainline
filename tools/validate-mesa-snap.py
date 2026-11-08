@@ -117,7 +117,7 @@ def main():
     wrapper = ('set -eu; for node in null random urandom; do '
                'mount --bind /dev/$node "$1/dev/$node"; done; '
                'mount -t proc proc "$1/proc"; root=$1; shift; '
-               'exec chroot "$root" /usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C '
+               'exec chroot "$root" /usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C QEMU_CPU=max,pauth-impdef=on '
                'XDG_RUNTIME_DIR=/tmp/runtime "$@"')
     prefix = ['timeout', '-k', '5', '120', 'unshare', '--map-root-user', '--mount', '--net',
               '--pid', '--fork', '--kill-child', 'sh', '-c', wrapper, 'sh', str(root),

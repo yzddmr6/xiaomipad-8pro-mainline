@@ -226,8 +226,8 @@
 +      ir3_optimize_loop(compiler, &optimize_options, s);
 +   }
 +
-    bool idiv_progress = OPT(s, nir_opt_idiv_const, 8);
-    idiv_progress |= OPT(s, nir_lower_idiv, &idiv_options);
+    bool progress = OPT(s, nir_opt_idiv_const, 8);
+    progress |= OPT(s, nir_lower_idiv, &idiv_options);
  
 --- a/src/compiler/nir/tests/loop_unroll_tests.cpp
 +++ b/src/compiler/nir/tests/loop_unroll_tests.cpp

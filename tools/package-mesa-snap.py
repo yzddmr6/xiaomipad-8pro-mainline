@@ -158,7 +158,7 @@ def main():
         (docs / 'build.json').write_text(json.dumps(provenance, indent=2) + '\n')
         snap = output / ('piano-mesa-2404_' + version + '_arm64.snap')
         subprocess.run(['mksquashfs', str(root), str(snap), '-noappend', '-all-root', '-no-xattrs',
-                        '-comp', 'xz', '-processors', '4', '-mkfs-time', epoch],
+                        '-comp', 'xz', '-processors', str(os.cpu_count() or 1), '-mkfs-time', epoch],
                        check=True, env={k: v for k, v in os.environ.items() if k != 'SOURCE_DATE_EPOCH'})
         provenance.update(version=version, package={'file': snap.name, 'sha256': sha(snap)})
         (output / 'manifest.json').write_text(json.dumps(provenance, indent=2) + '\n')

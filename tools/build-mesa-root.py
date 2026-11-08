@@ -23,7 +23,7 @@ import tempfile
 REPO = Path(__file__).resolve().parents[1]
 INPUTS = REPO / 'mesa'
 # The recipe copied into the build root: exactly what the native build uses.
-RECIPE = ('tools/build-mesa.py', 'mesa', 'tools/lib/build_root.py',
+RECIPE = ('tools/build-mesa.py', 'mesa', 'tools/lib/build_root.py', 'tools/lib/deps.py', 'deps/sources.json',
           'LICENSES/oneplus-mesa-tools-GPL-2.0-only.txt')
 BINFMT = Path('/proc/sys/fs/binfmt_misc/qemu-aarch64')
 
@@ -93,11 +93,11 @@ def main():
                         help='new directory for the package and its records')
     parser.add_argument('--work', type=Path, default=WS / 'out/mesa-root-build')
     parser.add_argument('--cache', type=Path, default=WS / 'cache/mesa')
-    parser.add_argument('--jobs', type=int, default=6)
+    parser.add_argument('--jobs', type=int, default=os.cpu_count() or 1)
     parser.add_argument('--target', choices=('gpu-2404',), default='gpu-2404')
     parser.add_argument('--base-snap', type=Path, required=True, help='Stock mesa-2404 pinned by mesa/snap/mesa-2404.json')
-    parser.add_argument('--mesa-source', type=Path, required=True,
-                        help='Mesa Git checkout containing mesa/source.json commit')
+    parser.add_argument('--mesa-source', '--source-archive', type=Path, required=True,
+                        help='Official source archive pinned by mesa/source.json')
     parser.add_argument('--resume', action='store_true',
                         help='continue this work directory after a failed build; source/flags must match')
     parser.add_argument('--native-nir', action='store_true',
@@ -115,8 +115,8 @@ def main():
         parser.error('--keep-build and --clean are mutually exclusive')
     if args.cross_file and args.native_nir:
         parser.error('--cross-file already runs all build generators natively')
-    if not 1 <= args.jobs <= 8:
-        parser.error('--jobs must be between 1 and 8, the limit of tools/build-mesa.py')
+    if args.jobs < 1:
+        parser.error('--jobs must be positive')
     if shutil.which('unshare') is None:
         die('unshare is required')
     if not BINFMT.is_file():
@@ -134,13 +134,9 @@ def main():
     base = root_tools.fetch(pins['build_root']['url'], args.cache / pins['build_root']['archive'],
                             pins['build_root']['sha256'])
     args.cache.mkdir(parents=True, exist_ok=True)
-    archive = args.cache / source['archive']
-    with archive.open('wb') as output_archive:
-        subprocess.run(['git', '-C', str(args.mesa_source.resolve()), 'archive', '--format=tar',
-                        '--prefix=mesa-' + source['version'] + '/', source['commit']],
-                       stdout=output_archive, check=True)
-    if root_tools.sha256(archive) != source['archive_sha256']:
-        die('Git archive does not match mesa/source.json')
+    archive = args.mesa_source.resolve()
+    if not archive.is_file() or root_tools.sha256(archive) != source['archive_sha256']:
+        die('Official source archive does not match mesa/source.json')
     bootstrap = [(entry, root_tools.fetch(entry['url'], args.cache / entry['file'], entry['sha256']))
                  for entry in pins.get('build_tools', [])]
 
