@@ -1,0 +1,190 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 yzddmr6
+"""Check public releases; keep an action receiver only while a notice is open."""
+import json
+import http.client
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+
+from gi.repository import Gio, GLib
+
+DATA = Path('/usr/share/mainline-release-notifier')
+RELEASE = Path('/usr/share/mainline-release/version')
+APP = 'mainline-release-notifier'
+BUS = 'org.freedesktop.Notifications'
+OBJECT = '/org/freedesktop/Notifications'
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def latest(repository):
+    """Do not fetch the release page or send cookies, locale or installed version."""
+    request = urllib.request.Request(repository + '/releases/latest',
+                                     headers={'User-Agent': 'Release-Notifier'})
+    try:
+        with urllib.request.build_opener(NoRedirect).open(request, timeout=15):
+            return None
+    except urllib.error.HTTPError as response:
+        with response:
+            if response.code != 302:
+                return None
+            location = response.headers.get('Location', '')
+    except (OSError, urllib.error.URLError, http.client.HTTPException, ValueError):
+        return None
+    prefix = repository + '/releases/tag/'
+    if not location.startswith(prefix):
+        return None
+    tag = location[len(prefix):]
+    # Project release tags are v<Debian version>; forbid URL/markup metacharacters.
+    if not re.fullmatch(r'v?[0-9][0-9A-Za-z.+~\-]{0,127}', tag):
+        return None
+    version = tag.removeprefix('v')
+    if subprocess.run(['dpkg', '--validate-version', version],
+                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode:
+        return None
+    return version, location
+
+
+def newer(candidate, installed):
+    return subprocess.run(['dpkg', '--compare-versions', candidate, 'gt', installed],
+                          stderr=subprocess.DEVNULL).returncode == 0
+
+
+def state_directory():
+    base = os.environ.get('XDG_STATE_HOME') or str(Path.home() / '.local/state')
+    path = Path(base) / APP
+    path.mkdir(parents=True, exist_ok=True, mode=0o700)
+    return path
+
+
+def read_json(path, default):
+    try:
+        return json.loads(path.read_text())
+    except FileNotFoundError:
+        return default
+
+
+def write_json(path, value):
+    temporary = path.with_suffix('.tmp')
+    temporary.write_text(json.dumps(value) + '\n')
+    temporary.replace(path)
+
+
+def check(repository, installed, state, start_notification):
+    release = latest(repository)
+    if release is None:
+        return
+    version, url = release
+    seen = read_json(state / 'notified.json', [])
+    if not newer(version, installed) or version in seen:
+        return
+    write_json(state / 'pending.json', {'version': version, 'url': url})
+    start_notification()
+
+
+def chinese():
+    language = os.environ.get('LC_ALL') or os.environ.get('LC_MESSAGES') or os.environ.get('LANG', '')
+    return language.lower().startswith('zh')
+
+
+def notify(product, repository, state):
+    pending = read_json(state / 'pending.json', None)
+    if not pending:
+        return
+    version, url = pending['version'], pending['url']
+    # The state file is data, never a command or an arbitrary URL to open.
+    tag = url.removeprefix(repository + '/releases/tag/')
+    if (url != repository + '/releases/tag/' + tag or
+            not re.fullmatch(r'v?[0-9][0-9A-Za-z.+~\-]{0,127}', tag) or
+            tag.removeprefix('v') != version):
+        return
+    seen = read_json(state / 'notified.json', [])
+    if version in seen or not newer(version, RELEASE.read_text().strip()):
+        return
+    bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+    loop = GLib.MainLoop()
+    notification_id = None
+    activation_token = None
+
+    def signal(connection, sender, path, interface, name, parameters):
+        nonlocal activation_token
+        values = parameters.unpack()
+        if values[0] != notification_id:
+            return
+        if name == 'ActivationToken':
+            activation_token = values[1]
+        elif name == 'ActionInvoked' and values[1] in ('default', 'view'):
+            environment = os.environ.copy()
+            if activation_token:
+                environment['XDG_ACTIVATION_TOKEN'] = activation_token
+            subprocess.run(['xdg-open', url], env=environment, check=False)
+            loop.quit()
+        elif name == 'NotificationClosed':
+            loop.quit()
+
+    subscription = bus.signal_subscribe(BUS, BUS, None, OBJECT, None,
+                                        Gio.DBusSignalFlags.NONE, signal)
+    title = '有新版本可用' if chinese() else 'New release available'
+    action = '查看更新说明' if chinese() else 'View release notes'
+    # Both clicking the banner and its single button open the same pinned release.
+    arguments = GLib.Variant('(susssasa{sv}i)', (
+        product, 0, 'software-update-available', title, f'{product} {version}',
+        ['default', action, 'view', action],
+        {'desktop-entry': GLib.Variant('s', APP)}, -1))
+    try:
+        notification_id = bus.call_sync(BUS, OBJECT, BUS, 'Notify', arguments,
+                                        GLib.VariantType.new('(u)'),
+                                        Gio.DBusCallFlags.NONE, 5000, None).unpack()[0]
+        if not notification_id:
+            return
+        write_json(state / 'notified.json', seen + [version])
+        loop.run()
+    finally:
+        bus.signal_unsubscribe(subscription)
+        if notification_id:
+            try:
+                bus.call_sync(BUS, OBJECT, BUS, 'CloseNotification',
+                              GLib.Variant('(u)', (notification_id,)), None,
+                              Gio.DBusCallFlags.NONE, 1000, None)
+            except GLib.Error:
+                pass
+
+
+def main():
+    repository, product = json.loads((DATA / 'project.json').read_text())
+    if not re.fullmatch(r'https://github.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repository):
+        raise ValueError('Invalid project repository')
+    state = state_directory()
+    if sys.argv[1:] == ['check']:
+        # Persistent calendar catch-up may fire before OnStartupSec. Leave that
+        # early run to the startup trigger instead of notifying during login.
+        started = int(subprocess.check_output(
+            ['systemctl', '--user', 'show', '--property=UserspaceTimestampMonotonic',
+             '--value'], text=True).strip()) / 1_000_000
+        if time.monotonic() - started < 600:
+            return
+        check(repository, RELEASE.read_text().strip(), state,
+              lambda: subprocess.run(['systemctl', '--user', 'restart',
+                                      APP + '@notify.service'], check=True))
+    elif sys.argv[1:] == ['notify']:
+        notify(product, repository, state)
+    else:
+        raise ValueError('Expected check or notify')
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (OSError, ValueError, GLib.Error, subprocess.CalledProcessError) as error:
+        print(f'{APP}: {error}', file=sys.stderr)
+        sys.exit(1)

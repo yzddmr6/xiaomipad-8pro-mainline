@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Project Updates
+Name[zh_CN]=项目更新
+Name[zh_TW]=專案更新
+Comment=Notifications about new project releases
+Icon=software-update-available
+Exec=/usr/libexec/mainline-release-notifier check
+NoDisplay=true
+X-GNOME-UsesNotifications=true

@@ -176,6 +176,8 @@ Not yet supported: disk hibernation, hardware clock writes (time is set from the
 
 ## Usage and Maintenance
 
+Checks GitHub anonymously once a day for the latest release and notifies you when a newer version is available; this can be disabled in notification settings.
+
 Host commands use the REPO, RELEASE and WORK variables from [INSTALL.en.md "What you need"](docs/INSTALL.en.md#what-you-need) and run in WORK. Details are in [docs/FLASHING.en.md](docs/FLASHING.en.md).
 
 **Switching.** In Ubuntu, `sudo piano-boot-switch to-android --reboot` writes the stored Android image set to slot A, reads it back and reboots. In Android, the [KernelSU switch module](device/android/piano-switch-ksu/README.md) switches to Ubuntu. Switching from within either system does not change the slot attributes.

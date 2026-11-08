@@ -41,6 +41,7 @@ class DesktopIntegration(unittest.TestCase):
             for package in ('showtime', 'gstreamer1.0-plugins-base', 'gstreamer1.0-plugins-good',
                             'gstreamer1.0-plugins-bad', 'gstreamer1.0-libav'):
                 self.assertEqual(dependencies.split(', ').count(package), 1)
+            self.assertFalse(list(root.rglob('__pycache__')))
             self.assertFalse((root / 'usr/local').exists())
             self.assertFalse((root / 'etc/mpv').exists())
             self.assertFalse(list(root.rglob('powerprofilesctl')))
