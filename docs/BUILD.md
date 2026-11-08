@@ -349,6 +349,17 @@ Mesa 构建器的 `--keep-build` 可保留未 strip 的对象供排查。
 消费者改用 `gpu-2604`/core26 时须针对该 ABI 和接口重建 provider。发行版 provider 支持 A830
 并通过相同硬件与沙箱检查后，应撤销此覆盖。
 
+`piano-snap-graphics` 仅依赖 Python、snapd 和 systemd 集成，不依赖板级内核包或桌面 Mesa。
+它通过标准 `gpu-2404` 接口提供 ARM64/core24 运行库，包名不构成设备型号检查。
+提供者装好后，可关闭 Firefox 并运行 `sudo piano-snap-graphics-connect --consumer firefox`，
+仅切换该消费者；该选项可重复，不能与首次安装的 `--install` 合用，也不会写首次启动完成标记。
+不带 `--consumer` 时仍按原行为处理所有已安装的 `gpu-2404` 消费者。
+
+图形提供者不负责启用严格隔离。`strict` snap 元数据与 Adreno renderer 都不能代替
+`snap debug confinement` 的 `strict`、`snap debug sandbox-features` 的 `support-level:full`
+和实际访问拒绝。主线内核的 `network_v9` 与 snapd 旧 `network` 判据不匹配时，
+系统仍是 partial；不能通过改用 `--devmode` 或关闭 AppArmor 把它当作严格隔离。
+
 ## 有时限的 RAM 返回检查
 
 `piano-debug-timeout.service` 使用基于内核 uptime 的 `piano.debug_timeout` 截止时间，

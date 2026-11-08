@@ -166,6 +166,34 @@ class Graphics(unittest.TestCase):
         self.assertEqual(self.calls('disconnect'), [])
         self.assertEqual(self.calls('discard-ns'), [])
 
+    def test_selected_consumer_preserves_other_connections_and_namespaces(self):
+        self.state['version'] = 'fixture-version'
+        self.state['connections'] += 'content firefox:gpu-2404 mesa-2404:gpu-2404 manual\n'
+        self.state['mounts'] = {'snap-store': [{'target': 'gpu-2404', 'source': 'mesa-2404:gpu-2404'}]}
+        self.save()
+        self.run_cli('--consumer', 'firefox')
+        state = json.loads((self.root / 'state.json').read_text())
+        self.assertEqual(self.calls('disconnect'), [['disconnect', 'firefox:gpu-2404', 'mesa-2404:gpu-2404']])
+        self.assertEqual(self.calls('connect'), [['connect', 'firefox:gpu-2404', tool.PROVIDER]])
+        self.assertEqual(self.calls('discard-ns'), [['discard-ns', 'firefox']])
+        self.assertEqual(state['mounts']['snap-store'], self.state['mounts']['snap-store'])
+        self.assertEqual(tool.connections(state['connections'])['snap-store:gpu-2404'],
+                         tool.connections(self.state['connections'])['snap-store:gpu-2404'])
+        self.assertFalse(tool.MARKER.exists())
+
+    def test_missing_selected_consumer_changes_nothing(self):
+        with self.assertRaisesRegex(ValueError, 'no installed gpu-2404 plug'):
+            self.run_cli('--consumer', 'snap-store', '--consumer', 'missing')
+        self.assertEqual(self.calls('connect'), [])
+        self.assertEqual(self.calls('disconnect'), [])
+        self.assertEqual(self.calls('discard-ns'), [])
+
+    def test_selected_consumer_cannot_mark_first_boot_complete(self):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            self.run_cli('--install', '--consumer', 'snap-store')
+        self.assertFalse((self.root / 'calls.jsonl').exists())
+        self.assertFalse(tool.MARKER.exists())
+
     def test_install_failure_leaves_no_marker(self):
         self.state['fail_install'] = True
         self.save()
