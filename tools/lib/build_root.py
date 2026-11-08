@@ -9,6 +9,12 @@ import shutil
 import subprocess
 import tarfile
 import urllib.request
+import importlib.util
+
+_deps_spec = importlib.util.spec_from_file_location('pinned_deps', Path(__file__).with_name('deps.py'))
+_deps = importlib.util.module_from_spec(_deps_spec)
+_deps_spec.loader.exec_module(_deps)
+fetch = _deps.fetch
 
 REPO = Path(__file__).resolve().parents[2]
 if (REPO.parent.parent / 'AGENTS.md').is_file() and (REPO.parent.parent / 'kernel/linux').is_dir():
@@ -30,21 +36,6 @@ def sha256(path):
             digest.update(chunk)
     return digest.hexdigest()
 
-
-def fetch(url, target, expected):
-    """Download once into the cache; a cached file must still hash right."""
-    if target.is_file() and sha256(target) == expected:
-        return target
-    target.parent.mkdir(parents=True, exist_ok=True)
-    print(f'  fetching {url}', flush=True)
-    partial = target.with_name(target.name + '.part')
-    with urllib.request.urlopen(url, timeout=120) as response, open(partial, 'wb') as out:
-        shutil.copyfileobj(response, out)
-    if sha256(partial) != expected:
-        partial.unlink()
-        die(f'{url} does not match the pinned SHA-256')
-    partial.rename(target)
-    return target
 
 
 def chroot(root, script, env=None, log=None):

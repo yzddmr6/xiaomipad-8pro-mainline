@@ -15,6 +15,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tarfile
+from lib.deps import source_repo
 
 REPO = Path(__file__).resolve().parents[1]
 LIBDIR = 'usr/lib/aarch64-linux-gnu/piano-sensors'
@@ -37,6 +38,8 @@ def copy(source, dest, mode=0o644):
 
 def unpack_source(repo, lockfile, dest):
     lock = json.loads(lockfile.read_text())
+    name = 'iio-sensor-proxy' if lockfile.name == 'sensorproxy.json' else lockfile.parent.name
+    repo = source_repo(name, lock, local=repo)
     dest.mkdir()
     data = subprocess.check_output(['git', '-C', str(repo), 'archive', lock['commit']])
     with tarfile.open(fileobj=io.BytesIO(data)) as archive:
@@ -151,11 +154,20 @@ def package(root, output, name, version, depends, relations, description, epoch,
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    for name in ('hexagonrpc-source', 'libssc-source', 'sensorproxy-source', 'cross-file', 'sysroot', 'output'):
-        p.add_argument('--' + name, type=Path, required=True)
+    for name in ('hexagonrpc-source', 'libssc-source', 'sensorproxy-source'):
+        p.add_argument('--' + name, type=Path)
+    p.add_argument('--fetch-only', action='store_true')
+    for name in ('cross-file', 'sysroot', 'output'):
+        p.add_argument('--' + name, type=Path, required=(name == 'output'))
     p.add_argument('--version', default='0.1+20261022.1')
     p.add_argument('--proxy-version', default='3.9+piano20261022.1')
     a = p.parse_args()
+    if a.fetch_only:
+        for name, local, filename in (('hexagonrpc', a.hexagonrpc_source, 'device/sensors/hexagonrpc/source.json'), ('libssc', a.libssc_source, 'device/sensors/libssc/source.json'), ('iio-sensor-proxy', a.sensorproxy_source, 'device/sensors/libssc/sensorproxy.json')):
+            source_repo(name, json.loads((REPO / filename).read_text()), local, a.output)
+        return
+    if a.cross_file is None or a.sysroot is None:
+        p.error('--cross-file and --sysroot are required for compilation')
     output = a.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     build = output / 'build'; build.mkdir()

@@ -11,6 +11,7 @@ from pathlib import Path
 import platform
 import subprocess
 import tarfile
+from lib.deps import fetch, inventory
 
 REPO = Path(__file__).resolve().parents[1]
 INPUTS = REPO / 'mesa'
@@ -31,7 +32,7 @@ def version(command):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--source-archive', type=Path, required=True)
+    parser.add_argument('--source-archive', type=Path)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--jobs', type=int, default=2)
     parser.add_argument('--configure-only', action='store_true',
@@ -49,7 +50,8 @@ def main():
     if not 1 <= args.jobs <= 8:
         parser.error('--jobs must be between 1 and 8')
     lock = json.loads((INPUTS / 'source.json').read_text())
-    archive = args.source_archive.resolve()
+    entry = next(r for r in inventory()['files'] if r['sha256'] == lock['archive_sha256'])
+    archive = fetch(entry['own_url'], args.source_archive or args.output / 'inputs' / lock['archive'], lock['archive_sha256'])
     if sha(archive) != lock['archive_sha256']:
         parser.error('source archive does not match the pinned SHA-256')
     patches = [{'path': lock['patch'], 'sha256': lock['patch_sha256']},

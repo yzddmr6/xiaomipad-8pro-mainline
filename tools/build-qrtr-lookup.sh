@@ -9,7 +9,7 @@ if [[ ${1:-} == --help ]]; then
     exit 0
 fi
 [[ $# == 0 ]] || exit 2
-src=$(realpath "${QRTR_SOURCE:?set the clean pinned qrtr checkout}")
+src=${QRTR_SOURCE:-}
 out=${OUT_DIR:?set an isolated output directory}
 cross=${CROSS_COMPILE:-aarch64-linux-gnu-}
 mkdir -p "$out"
@@ -17,9 +17,15 @@ out=$(realpath "$out")
 exec 9>"$out/.build.lock"
 flock -n 9 || { echo 'QRTR output is in use' >&2; exit 1; }
 expected=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["commit"])' "$repo/device/qrtr/source.json")
-[[ $(git -C "$src" rev-parse HEAD) == "$expected" && -z $(git -C "$src" status --porcelain) ]] || {
-    echo 'QRTR source must be clean at the pinned commit' >&2; exit 1;
-}
+if [[ -n $src ]]; then
+    src=$(realpath "$src")
+    [[ $(git -C "$src" rev-parse HEAD) == "$expected" && -z $(git -C "$src" status --porcelain) ]] || {
+        echo 'QRTR source must be clean at the pinned commit' >&2; exit 1;
+    }
+else
+    python3 "$repo/tools/fetch-deps.py" --export-vendor qrtr --output "$out/vendor"
+    src="$out/vendor"
+fi
 cross_spec=$(mktemp "$out/arm64.XXXXXX")
 trap 'rm -f -- "$cross_spec"' EXIT
 python3 - "$cross_spec" "$cross" <<'PY'
@@ -32,6 +38,7 @@ text += "[properties]\nneeds_exe_wrapper = true\n[built-in options]\nc_link_args
 Path(sys.argv[1]).write_text(text)
 PY
 identity=$({
+    cat "$repo/third_party/qrtr/source.json"
     cat "$repo/device/qrtr/source.json" "$cross_spec" "$0"
     "${cross}gcc" --version
     "${cross}ld" --version
@@ -48,13 +55,13 @@ if ! cmp -s "$cross_spec" "$out/arm64.ini"; then
     mv "$cross_spec" "$out/arm64.ini"
 fi
 export SOURCE_DATE_EPOCH
-SOURCE_DATE_EPOCH=$(git -C "$src" show -s --format=%ct "$expected")
+SOURCE_DATE_EPOCH=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["source_date_epoch"])' "$repo/third_party/qrtr/source.json")
 unset CFLAGS CPPFLAGS LDFLAGS
 if [[ ! -f $out/build/build.ninja ]]; then
     meson setup "$out/build" "$src" --cross-file "$out/arm64.ini" \
         --buildtype=release --wrap-mode=nofallback -Ddefault_library=static -Db_pie=false
 fi
-ninja -C "$out/build" -j2 src/qrtr-lookup
+ninja -C "$out/build" -j"$(nproc)" src/qrtr-lookup
 mkdir -p "$out/bin"
 "${cross}strip" --strip-unneeded -o "$out/bin/qrtr-lookup" "$out/build/src/qrtr-lookup"
 "${cross}readelf" -h "$out/bin/qrtr-lookup" >"$out/elf-header.txt"

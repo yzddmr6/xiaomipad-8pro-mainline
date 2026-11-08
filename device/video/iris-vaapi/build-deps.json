@@ -6,349 +6,349 @@
     {
       "package": "gcc-16-base",
       "version": "16-20260322-1ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/g/gcc-16/gcc-16-base_16-20260322-1ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/g/gcc-16/gcc-16-base_16-20260322-1ubuntu1_arm64.deb",
       "sha256": "7aaed4a4fb1d47792c66e1323a6662ee1b184fb7993aacaa1cc82ba55a1716e0"
     },
     {
       "package": "libbsd0",
       "version": "0.12.2-2build2",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libb/libbsd/libbsd0_0.12.2-2build2_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libb/libbsd/libbsd0_0.12.2-2build2_arm64.deb",
       "sha256": "21ceca917fdee4d568dd616121be4b436801448d7f436ca1b8a7604ed6fd9f30"
     },
     {
       "package": "libc-gconv-modules-extra",
       "version": "2.43-2ubuntu2",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/g/glibc/libc-gconv-modules-extra_2.43-2ubuntu2_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/g/glibc/libc-gconv-modules-extra_2.43-2ubuntu2_arm64.deb",
       "sha256": "928474717b93f8fedf4ec22072e3385084d4258af0bcb4b5b44f0bef267e21f3"
     },
     {
       "package": "libc6",
       "version": "2.43-2ubuntu2",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/g/glibc/libc6_2.43-2ubuntu2_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/g/glibc/libc6_2.43-2ubuntu2_arm64.deb",
       "sha256": "6be782d90425acbdf9b7523f791a69a0d3f8770be0750b5cce71d4cdc18397c0"
     },
     {
       "package": "libc6-dev",
       "version": "2.43-2ubuntu2",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/g/glibc/libc6-dev_2.43-2ubuntu2_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/g/glibc/libc6-dev_2.43-2ubuntu2_arm64.deb",
       "sha256": "26060610ffbcb3e7260d113e659dbedfe0bacd5dd116affa3bde72431184d328"
     },
     {
       "package": "libdrm-amdgpu1",
       "version": "2.4.131-1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libd/libdrm/libdrm-amdgpu1_2.4.131-1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libd/libdrm/libdrm-amdgpu1_2.4.131-1_arm64.deb",
       "sha256": "68967e70e7b658980be666823d42e253fb5cea40f0e4d93793b5b62517744532"
     },
     {
       "package": "libdrm-common",
       "version": "2.4.131-1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libd/libdrm/libdrm-common_2.4.131-1_all.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libd/libdrm/libdrm-common_2.4.131-1_all.deb",
       "sha256": "a32b8d623c04310d049cde28cdbbd339575cdc26c8dc741d7de708a954eff528"
     },
     {
       "package": "libdrm-dev",
       "version": "2.4.131-1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libd/libdrm/libdrm-dev_2.4.131-1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libd/libdrm/libdrm-dev_2.4.131-1_arm64.deb",
       "sha256": "3b74d9ea45a26e6f66b306f0baff6c6da72e30a11f0ad6d37eeace11b62c7318"
     },
     {
       "package": "libdrm2",
       "version": "2.4.131-1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libd/libdrm/libdrm2_2.4.131-1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libd/libdrm/libdrm2_2.4.131-1_arm64.deb",
       "sha256": "7b9c0ca3b76cd7aab77422ea459be250cc04357a62cc081854a6e4c7fa24ca3f"
     },
     {
       "package": "libedit2",
       "version": "3.1-20251016-1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libe/libedit/libedit2_3.1-20251016-1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libe/libedit/libedit2_3.1-20251016-1_arm64.deb",
       "sha256": "a184af2ab98ee85ed2b7616a995b93bd9d0b65c7552b4f799ee27ada2b52707f"
     },
     {
       "package": "libegl-dev",
       "version": "1.7.0-3",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libg/libglvnd/libegl-dev_1.7.0-3_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libegl-dev_1.7.0-3_arm64.deb",
       "sha256": "100208430b0bc335b314163418eda30d9201eaddf0a6168a366d4fbfc7721b5c"
     },
     {
       "package": "libegl-mesa0",
       "version": "26.0.3-1ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/m/mesa/libegl-mesa0_26.0.3-1ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/m/mesa/libegl-mesa0_26.0.3-1ubuntu1_arm64.deb",
       "sha256": "049092cb83f2815fbd41c5a78a5bf4b4b195f35a3fe1371aa82b8241d06bcf38"
     },
     {
       "package": "libegl1",
       "version": "1.7.0-3",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libg/libglvnd/libegl1_1.7.0-3_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libegl1_1.7.0-3_arm64.deb",
       "sha256": "1cefa36464c8ab3043ba2f82c3daa18ce591dc4c2a37d09e3c47b1f2fa880dc6"
     },
     {
       "package": "libelf1t64",
       "version": "0.194-4",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/e/elfutils/libelf1t64_0.194-4_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/e/elfutils/libelf1t64_0.194-4_arm64.deb",
       "sha256": "2cb6cbc4045b07ff9deff1a8bc29d855e11a5ad09e0f532206698ffb74b29634"
     },
     {
       "package": "libexpat1",
       "version": "2.7.4-1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/e/expat/libexpat1_2.7.4-1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/e/expat/libexpat1_2.7.4-1_arm64.deb",
       "sha256": "00ed4c10629966b9b758734b5331ea581fd13782cd3efd7373d721f584a2b45e"
     },
     {
       "package": "libffi8",
       "version": "3.5.2-4",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libf/libffi/libffi8_3.5.2-4_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libf/libffi/libffi8_3.5.2-4_arm64.deb",
       "sha256": "cfab73343f076b79df0f4a9d5430319fdb6153760d3e8c2964c448b49edad084"
     },
     {
       "package": "libgbm-dev",
       "version": "26.0.3-1ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/m/mesa/libgbm-dev_26.0.3-1ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/m/mesa/libgbm-dev_26.0.3-1ubuntu1_arm64.deb",
       "sha256": "d9de9d276b78eb4d532dd1a6fbff0405233e24f3706ae99ba08174eac9884e66"
     },
     {
       "package": "libgbm1",
       "version": "26.0.3-1ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/m/mesa/libgbm1_26.0.3-1ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/m/mesa/libgbm1_26.0.3-1ubuntu1_arm64.deb",
       "sha256": "de8166e8225a1fe2565e7ebdb5cd879cb1be3de8c0bcaa34f02b2235d016dd57"
     },
     {
       "package": "libgcc-s1",
       "version": "16-20260322-1ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/g/gcc-16/libgcc-s1_16-20260322-1ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/g/gcc-16/libgcc-s1_16-20260322-1ubuntu1_arm64.deb",
       "sha256": "106e53a42bebdc55f253d737a818991eba5b4f22c8b1a035a4202b133ade9743"
     },
     {
       "package": "libgl-dev",
       "version": "1.7.0-3",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libg/libglvnd/libgl-dev_1.7.0-3_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libgl-dev_1.7.0-3_arm64.deb",
       "sha256": "073af8c8a4d8bbb374003c95ad75cdd39559701dae94e963adc209d03cbdd252"
     },
     {
       "package": "libgles-dev",
       "version": "1.7.0-3",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libg/libglvnd/libgles-dev_1.7.0-3_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libgles-dev_1.7.0-3_arm64.deb",
       "sha256": "e245b3cad7136ab19f5b63b4d68e79cdc5cc41f52bedafbb9b2b5d68e52ac2e5"
     },
     {
       "package": "libgles1",
       "version": "1.7.0-3",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libg/libglvnd/libgles1_1.7.0-3_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libgles1_1.7.0-3_arm64.deb",
       "sha256": "96fc4f56f277967ee89ae23bfff1751e43e7bb1c44faf372e6ffddc042390a5b"
     },
     {
       "package": "libgles2",
       "version": "1.7.0-3",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libg/libglvnd/libgles2_1.7.0-3_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libgles2_1.7.0-3_arm64.deb",
       "sha256": "757eb4ceda29fda07273d21d8f5707b6a1af7dd3553bf11d1bde7cd519a64236"
     },
     {
       "package": "libglvnd0",
       "version": "1.7.0-3",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libg/libglvnd/libglvnd0_1.7.0-3_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libglvnd0_1.7.0-3_arm64.deb",
       "sha256": "6881ac107fb88b7133aaf68cd346bc656ce30bd930a08a06471a3461da5d3e26"
     },
     {
       "package": "libglx-dev",
       "version": "1.7.0-3",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libg/libglvnd/libglx-dev_1.7.0-3_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libglx-dev_1.7.0-3_arm64.deb",
       "sha256": "590d278a50d1ab5f11f5b73b813c0ff54bc4566eca4f52716fcc71c276568d03"
     },
     {
       "package": "libllvm21",
       "version": "1:21.1.8-6ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/l/llvm-toolchain-21/libllvm21_21.1.8-6ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/l/llvm-toolchain-21/libllvm21_21.1.8-6ubuntu1_arm64.deb",
       "sha256": "f2b6894d77b02a629b689e07ee5431f0155f1b8f857ac1e3f2153337dfcc1fcb"
     },
     {
       "package": "libmd0",
       "version": "1.1.0-2build4",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libm/libmd/libmd0_1.1.0-2build4_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libm/libmd/libmd0_1.1.0-2build4_arm64.deb",
       "sha256": "20d4f22076064b7cbfc20b58fff9630aeeb19a78e16a54ce2b7557a22015cfc0"
     },
     {
       "package": "libopengl-dev",
       "version": "1.7.0-3",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libg/libglvnd/libopengl-dev_1.7.0-3_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libopengl-dev_1.7.0-3_arm64.deb",
       "sha256": "b06cd3892ec6c58024f72e28caf7812baf371b35309e7960974fda3e9e684287"
     },
     {
       "package": "libpciaccess0",
       "version": "0.18.1-1ubuntu4",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libp/libpciaccess/libpciaccess0_0.18.1-1ubuntu4_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libp/libpciaccess/libpciaccess0_0.18.1-1ubuntu4_arm64.deb",
       "sha256": "24c5fc1b51c8d5a9fe3827dc1a0aecec6d4bc9e25a24a83e8e3c0822338cd7ee"
     },
     {
       "package": "libsensors-config",
       "version": "1:3.6.2-2build1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/l/lm-sensors/libsensors-config_3.6.2-2build1_all.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/l/lm-sensors/libsensors-config_3.6.2-2build1_all.deb",
       "sha256": "57193f731de79bbad343a1369e6e95b13096c08ba166c7e193bfc24d78f960fb"
     },
     {
       "package": "libsensors5",
       "version": "1:3.6.2-2build1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/l/lm-sensors/libsensors5_3.6.2-2build1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/l/lm-sensors/libsensors5_3.6.2-2build1_arm64.deb",
       "sha256": "dc63821eccb23cf1784bad5287f9d6bed4e461c836372f5edd30fd5c609ff8af"
     },
     {
       "package": "libstdc++6",
       "version": "16-20260322-1ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/g/gcc-16/libstdc++6_16-20260322-1ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/g/gcc-16/libstdc++6_16-20260322-1ubuntu1_arm64.deb",
       "sha256": "4ec527bc695f4221b97aee9ac0c2f4f068b514a810db5d18465a8636dc5b2948"
     },
     {
       "package": "libtinfo6",
       "version": "6.6+20251231-1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/n/ncurses/libtinfo6_6.6+20251231-1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/n/ncurses/libtinfo6_6.6+20251231-1_arm64.deb",
       "sha256": "9da3b65c7d025c0e8d08d438f35e70aadbc40596e6ae191d8b4399f263b62805"
     },
     {
       "package": "libva-dev",
       "version": "2.23.0-1ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/universe/libv/libva/libva-dev_2.23.0-1ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/universe/libv/libva/libva-dev_2.23.0-1ubuntu1_arm64.deb",
       "sha256": "c37693a9dd4d424b090cf16dac1062f4e99cf3eb3136ee87d07a55ea60ee0baa"
     },
     {
       "package": "libva-drm2",
       "version": "2.23.0-1ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libv/libva/libva-drm2_2.23.0-1ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libv/libva/libva-drm2_2.23.0-1ubuntu1_arm64.deb",
       "sha256": "4e72506d4e876eb1a9db59401bfd8f9e2b4d4c29f0f33c9109f81d238bff420f"
     },
     {
       "package": "libva2",
       "version": "2.23.0-1ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libv/libva/libva2_2.23.0-1ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libv/libva/libva2_2.23.0-1ubuntu1_arm64.deb",
       "sha256": "32eb1f4b19712706cab329faea87160c48476bd500c203dbb066762d465215cd"
     },
     {
       "package": "libwayland-client0",
       "version": "1.24.0-2",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/w/wayland/libwayland-client0_1.24.0-2_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/w/wayland/libwayland-client0_1.24.0-2_arm64.deb",
       "sha256": "8459ccec5bdd6aa15dd1e75ea450d97e514f8448e529c4fd08cc036f23f4235a"
     },
     {
       "package": "libwayland-dev",
       "version": "1.24.0-2",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/w/wayland/libwayland-dev_1.24.0-2_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/w/wayland/libwayland-dev_1.24.0-2_arm64.deb",
       "sha256": "ed360391b0367823800fbb92ce3f7bda6523538ecf81cd703f35bafc861592ea"
     },
     {
       "package": "libwayland-server0",
       "version": "1.24.0-2",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/w/wayland/libwayland-server0_1.24.0-2_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/w/wayland/libwayland-server0_1.24.0-2_arm64.deb",
       "sha256": "8fe592fc0efe0a3dd8f194e88db9f04e58f810d7af77208dc825dab742b9582d"
     },
     {
       "package": "libx11-6",
       "version": "2:1.8.13-1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libx/libx11/libx11-6_1.8.13-1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libx11/libx11-6_1.8.13-1_arm64.deb",
       "sha256": "955ede3dfadc55c6257f5d8d2d7ed2f60891afc79c310c76f238bc2f1c83f7de"
     },
     {
       "package": "libx11-data",
       "version": "2:1.8.13-1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libx/libx11/libx11-data_1.8.13-1_all.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libx11/libx11-data_1.8.13-1_all.deb",
       "sha256": "8188c233d59dc419205c314ef8f230fc83ca7a3e7e9b9671f18b469fd3e428ae"
     },
     {
       "package": "libx11-dev",
       "version": "2:1.8.13-1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libx/libx11/libx11-dev_1.8.13-1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libx11/libx11-dev_1.8.13-1_arm64.deb",
       "sha256": "cb23d4fec887866cc09ddcdcf85ec0f085067f68c8e75e4c5fd933d618416323"
     },
     {
       "package": "libx11-xcb1",
       "version": "2:1.8.13-1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libx/libx11/libx11-xcb1_1.8.13-1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libx11/libx11-xcb1_1.8.13-1_arm64.deb",
       "sha256": "89a98329e5251691050be79fccb10a4bee31cd538c310300795893cb9a46a2c8"
     },
     {
       "package": "libxau6",
       "version": "1:1.0.11-1build2",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libx/libxau/libxau6_1.0.11-1build2_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxau/libxau6_1.0.11-1build2_arm64.deb",
       "sha256": "2df4a14fea0c98f2e52c8ad3e2cfed6f5d40b66e5aa15af01eba24edfe2686ae"
     },
     {
       "package": "libxcb-dri3-0",
       "version": "1.17.0-2ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libx/libxcb/libxcb-dri3-0_1.17.0-2ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxcb/libxcb-dri3-0_1.17.0-2ubuntu1_arm64.deb",
       "sha256": "a3f538fb0f99824a36ce248d91d87bba985006cc19554c44eee214482c588368"
     },
     {
       "package": "libxcb-present0",
       "version": "1.17.0-2ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libx/libxcb/libxcb-present0_1.17.0-2ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxcb/libxcb-present0_1.17.0-2ubuntu1_arm64.deb",
       "sha256": "511b6c9afab2790d10f808c1bd1a24c81cedeb6600ed1ad517a17c8e9a5ef23b"
     },
     {
       "package": "libxcb-randr0",
       "version": "1.17.0-2ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libx/libxcb/libxcb-randr0_1.17.0-2ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxcb/libxcb-randr0_1.17.0-2ubuntu1_arm64.deb",
       "sha256": "64bce047a66f7f8ce5a64f93fd43c946e74c2cf679ee142e9502891ad362963f"
     },
     {
       "package": "libxcb-shm0",
       "version": "1.17.0-2ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libx/libxcb/libxcb-shm0_1.17.0-2ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxcb/libxcb-shm0_1.17.0-2ubuntu1_arm64.deb",
       "sha256": "dbcf77b20a17a95fbe3ca52c5cd607a682ada8f70eb7c36dbcf1d8b2aab84533"
     },
     {
       "package": "libxcb-sync1",
       "version": "1.17.0-2ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libx/libxcb/libxcb-sync1_1.17.0-2ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxcb/libxcb-sync1_1.17.0-2ubuntu1_arm64.deb",
       "sha256": "4904208813f265e5cc452d0eac62501d3b42a9d0c326d447d8e81bacd0604c78"
     },
     {
       "package": "libxcb-xfixes0",
       "version": "1.17.0-2ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libx/libxcb/libxcb-xfixes0_1.17.0-2ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxcb/libxcb-xfixes0_1.17.0-2ubuntu1_arm64.deb",
       "sha256": "619b45cdb525ed16a9ff466dd11497d1361482dbefa31da2029cb209fd8dbab2"
     },
     {
       "package": "libxcb1",
       "version": "1.17.0-2ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libx/libxcb/libxcb1_1.17.0-2ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxcb/libxcb1_1.17.0-2ubuntu1_arm64.deb",
       "sha256": "59fa782e45c93a024851df6fb92d5a0d5c84416898b9640c35ece50d1f2fdfda"
     },
     {
       "package": "libxdmcp6",
       "version": "1:1.1.5-2",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libx/libxdmcp/libxdmcp6_1.1.5-2_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxdmcp/libxdmcp6_1.1.5-2_arm64.deb",
       "sha256": "e90265c37e823b293a4c0db30a906772d6f675d15a73c747c7431b5a5b0db8e6"
     },
     {
       "package": "libxml2-16",
       "version": "2.15.2+dfsg-0.1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libx/libxml2/libxml2-16_2.15.2+dfsg-0.1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxml2/libxml2-16_2.15.2+dfsg-0.1_arm64.deb",
       "sha256": "2d2c8c56f50f5ae2371aec0dcf62a291db858bd11adaacbb29816557d0498e3c"
     },
     {
       "package": "libxshmfence1",
       "version": "1.3.3-1build1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libx/libxshmfence/libxshmfence1_1.3.3-1build1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxshmfence/libxshmfence1_1.3.3-1build1_arm64.deb",
       "sha256": "4b288951c1ce9fa001640ee8f080505fa88f4b82039719199109c82082c9c7dd"
     },
     {
       "package": "libzstd1",
       "version": "1.5.7+dfsg-3",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libz/libzstd/libzstd1_1.5.7+dfsg-3_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libz/libzstd/libzstd1_1.5.7+dfsg-3_arm64.deb",
       "sha256": "af32dd47238a84108c46536baddb7f7b6b0ca7914707dfe1beb95f56ef3a37dd"
     },
     {
       "package": "linux-libc-dev",
       "version": "7.0.0-14.14",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/l/linux/linux-libc-dev_7.0.0-14.14_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/l/linux/linux-libc-dev_7.0.0-14.14_arm64.deb",
       "sha256": "e86f6bbf7bebdc1958241b546ca9467c35fc29f57c01d4f0336c1908ca21f2fe"
     },
     {
       "package": "mesa-libgallium",
       "version": "26.0.3-1ubuntu1",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/m/mesa/mesa-libgallium_26.0.3-1ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/m/mesa/mesa-libgallium_26.0.3-1ubuntu1_arm64.deb",
       "sha256": "45bbeddbbe8e7b3d6b391e4e4499bc98563d321bb3d43e0e6795ff7da864144a"
     },
     {
       "package": "zlib1g",
       "version": "1:1.3.dfsg+really1.3.1-1ubuntu3",
-      "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/z/zlib/zlib1g_1.3.dfsg+really1.3.1-1ubuntu3_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/z/zlib/zlib1g_1.3.dfsg+really1.3.1-1ubuntu3_arm64.deb",
       "sha256": "3f4ef035018933af69033a5391ba8cf7b793afbdd9d82c65de57cc4666156f5a"
     }
   ]

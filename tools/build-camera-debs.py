@@ -14,6 +14,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tarfile
+from lib.deps import check_hash
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -30,7 +31,7 @@ def sha(path):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--kernel-out', type=Path, required=True)
-    p.add_argument('--loopback-source', type=Path, required=True)
+    p.add_argument('--loopback-source', type=Path)
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--cross-compile', default='aarch64-linux-gnu-')
     p.add_argument('--loopback-only', action='store_true',
@@ -58,11 +59,13 @@ def main():
             raise ValueError('Local camerad source differs from its lock: ' + name)
     if sha(source / '50-piano-camera.conf') != lock['wireplumber']['sha256']:
         raise ValueError('WirePlumber policy differs from its community source lock')
-    actual = subprocess.check_output(['git', '-C', str(a.loopback_source), 'rev-parse', 'HEAD'], text=True).strip()
-    if actual != lock['loopback']['commit']:
-        raise ValueError('Wrong v4l2loopback source revision')
-    if subprocess.check_output(['git', '-C', str(a.loopback_source), 'status', '--porcelain']):
-        raise ValueError('v4l2loopback source must be clean')
+    actual = lock['loopback']['commit']
+    if a.loopback_source is not None:
+        actual = subprocess.check_output(['git', '-C', str(a.loopback_source), 'rev-parse', 'HEAD'], text=True).strip()
+        if actual != lock['loopback']['commit']:
+            raise ValueError('Wrong v4l2loopback source revision')
+        if subprocess.check_output(['git', '-C', str(a.loopback_source), 'status', '--porcelain']):
+            raise ValueError('v4l2loopback source must be clean')
     epoch = subprocess.check_output(['git', '-C', str(REPO), 'show', '-s', '--format=%ct', 'HEAD'], text=True).strip()
     os.environ['SOURCE_DATE_EPOCH'] = epoch
     if not a.loopback_only:
@@ -71,7 +74,13 @@ def main():
             '-ffile-prefix-map=' + str(REPO) + '=/piano',
             source / 'piano-camerad.c', '-lm', '-o', out / 'piano-camerad')
     archive = out / 'loopback-source.tar'
-    run('git', '-C', a.loopback_source, 'archive', '--format=tar', '-o', archive, actual)
+    if a.loopback_source is not None:
+        run('git', '-C', a.loopback_source, 'archive', '--format=tar', '-o', archive, actual)
+    else:
+        pin = json.loads((REPO / 'third_party/v4l2loopback/source.json').read_text())
+        if pin['commit'] != actual:
+            raise ValueError('Vendored v4l2loopback revision differs')
+        shutil.copyfile(check_hash(REPO / 'third_party/v4l2loopback/source.tar', pin['sha256']), archive)
     module = out / 'loopback'
     module.mkdir()
     with tarfile.open(archive) as tf:

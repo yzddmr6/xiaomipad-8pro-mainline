@@ -1,0 +1,4557 @@
+{
+  "schema": 1,
+  "files": [
+    {
+      "name": "v4l2loopback",
+      "filename": "a9f30d8bbb128956b4b8cbb4d7d8ee8bb0c3e085490e4223db713bfe629c0e15-v4l2loopback.tar",
+      "sha256": "a9f30d8bbb128956b4b8cbb4d7d8ee8bb0c3e085490e4223db713bfe629c0e15",
+      "bytes": 368640,
+      "vendored": "third_party/v4l2loopback/source.tar",
+      "upstream": [],
+      "commit": "0f9ee86760b7f2bea174b7e3e7a1d38845da0ab4",
+      "license": "GPL-2.0-or-later",
+      "preservation": "A"
+    },
+    {
+      "name": "audioreach-topology",
+      "filename": "e970b0caf9317360dd8ffc69c3c48e531c10b077e300186913e47e51660f38d3-audioreach-topology.tar",
+      "sha256": "e970b0caf9317360dd8ffc69c3c48e531c10b077e300186913e47e51660f38d3",
+      "bytes": 286720,
+      "vendored": "third_party/audioreach-topology/source.tar",
+      "upstream": [],
+      "commit": "2af1f1ebb8d4fd03b5f53891467ddde2e208a8a0",
+      "license": "BSD-3-Clause",
+      "preservation": "A"
+    },
+    {
+      "name": "tinyalsa",
+      "filename": "64600622d07240e9ce3d8f4b22721f8addf8aa28e2fbcd736dec3b94aaa0462d-tinyalsa.tar",
+      "sha256": "64600622d07240e9ce3d8f4b22721f8addf8aa28e2fbcd736dec3b94aaa0462d",
+      "bytes": 573440,
+      "vendored": "third_party/tinyalsa/source.tar",
+      "upstream": [],
+      "commit": "961babfe962e71d952ae734074cc89576b28a9e7",
+      "license": "BSD-3-Clause",
+      "preservation": "A"
+    },
+    {
+      "name": "qrtr",
+      "filename": "bcf9b0035e1683fb0ea0e2419fcdf3d8bb57c5a2dc980f80fd62464206ad4dc4-qrtr.tar",
+      "sha256": "bcf9b0035e1683fb0ea0e2419fcdf3d8bb57c5a2dc980f80fd62464206ad4dc4",
+      "bytes": 102400,
+      "vendored": "third_party/qrtr/source.tar",
+      "upstream": [],
+      "commit": "29e36ae164389580a0f8ea7a7fdb728140ae978d",
+      "license": "BSD-3-Clause",
+      "preservation": "A"
+    },
+    {
+      "name": "gcc-16-base_16-20260322-1ubuntu1_arm64.deb",
+      "filename": "7aaed4a4fb1d47792c66e1323a6662ee1b184fb7993aacaa1cc82ba55a1716e0-gcc-16-base_16-20260322-1ubuntu1_arm64.deb",
+      "sha256": "7aaed4a4fb1d47792c66e1323a6662ee1b184fb7993aacaa1cc82ba55a1716e0",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/g/gcc-16/gcc-16-base_16-20260322-1ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libbsd0_0.12.2-2build2_arm64.deb",
+      "filename": "21ceca917fdee4d568dd616121be4b436801448d7f436ca1b8a7604ed6fd9f30-libbsd0_0.12.2-2build2_arm64.deb",
+      "sha256": "21ceca917fdee4d568dd616121be4b436801448d7f436ca1b8a7604ed6fd9f30",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libb/libbsd/libbsd0_0.12.2-2build2_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libc-gconv-modules-extra_2.43-2ubuntu2_arm64.deb",
+      "filename": "928474717b93f8fedf4ec22072e3385084d4258af0bcb4b5b44f0bef267e21f3-libc-gconv-modules-extra_2.43-2ubuntu2_arm64.deb",
+      "sha256": "928474717b93f8fedf4ec22072e3385084d4258af0bcb4b5b44f0bef267e21f3",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/g/glibc/libc-gconv-modules-extra_2.43-2ubuntu2_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libc6_2.43-2ubuntu2_arm64.deb",
+      "filename": "6be782d90425acbdf9b7523f791a69a0d3f8770be0750b5cce71d4cdc18397c0-libc6_2.43-2ubuntu2_arm64.deb",
+      "sha256": "6be782d90425acbdf9b7523f791a69a0d3f8770be0750b5cce71d4cdc18397c0",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/g/glibc/libc6_2.43-2ubuntu2_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libc6-dev_2.43-2ubuntu2_arm64.deb",
+      "filename": "26060610ffbcb3e7260d113e659dbedfe0bacd5dd116affa3bde72431184d328-libc6-dev_2.43-2ubuntu2_arm64.deb",
+      "sha256": "26060610ffbcb3e7260d113e659dbedfe0bacd5dd116affa3bde72431184d328",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/g/glibc/libc6-dev_2.43-2ubuntu2_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libdrm-amdgpu1_2.4.131-1_arm64.deb",
+      "filename": "68967e70e7b658980be666823d42e253fb5cea40f0e4d93793b5b62517744532-libdrm-amdgpu1_2.4.131-1_arm64.deb",
+      "sha256": "68967e70e7b658980be666823d42e253fb5cea40f0e4d93793b5b62517744532",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libd/libdrm/libdrm-amdgpu1_2.4.131-1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libdrm-common_2.4.131-1_all.deb",
+      "filename": "a32b8d623c04310d049cde28cdbbd339575cdc26c8dc741d7de708a954eff528-libdrm-common_2.4.131-1_all.deb",
+      "sha256": "a32b8d623c04310d049cde28cdbbd339575cdc26c8dc741d7de708a954eff528",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libd/libdrm/libdrm-common_2.4.131-1_all.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libdrm-dev_2.4.131-1_arm64.deb",
+      "filename": "3b74d9ea45a26e6f66b306f0baff6c6da72e30a11f0ad6d37eeace11b62c7318-libdrm-dev_2.4.131-1_arm64.deb",
+      "sha256": "3b74d9ea45a26e6f66b306f0baff6c6da72e30a11f0ad6d37eeace11b62c7318",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libd/libdrm/libdrm-dev_2.4.131-1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libdrm2_2.4.131-1_arm64.deb",
+      "filename": "7b9c0ca3b76cd7aab77422ea459be250cc04357a62cc081854a6e4c7fa24ca3f-libdrm2_2.4.131-1_arm64.deb",
+      "sha256": "7b9c0ca3b76cd7aab77422ea459be250cc04357a62cc081854a6e4c7fa24ca3f",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libd/libdrm/libdrm2_2.4.131-1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libedit2_3.1-20251016-1_arm64.deb",
+      "filename": "a184af2ab98ee85ed2b7616a995b93bd9d0b65c7552b4f799ee27ada2b52707f-libedit2_3.1-20251016-1_arm64.deb",
+      "sha256": "a184af2ab98ee85ed2b7616a995b93bd9d0b65c7552b4f799ee27ada2b52707f",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libe/libedit/libedit2_3.1-20251016-1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libegl-dev_1.7.0-3_arm64.deb",
+      "filename": "100208430b0bc335b314163418eda30d9201eaddf0a6168a366d4fbfc7721b5c-libegl-dev_1.7.0-3_arm64.deb",
+      "sha256": "100208430b0bc335b314163418eda30d9201eaddf0a6168a366d4fbfc7721b5c",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libegl-dev_1.7.0-3_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libegl-mesa0_26.0.3-1ubuntu1_arm64.deb",
+      "filename": "049092cb83f2815fbd41c5a78a5bf4b4b195f35a3fe1371aa82b8241d06bcf38-libegl-mesa0_26.0.3-1ubuntu1_arm64.deb",
+      "sha256": "049092cb83f2815fbd41c5a78a5bf4b4b195f35a3fe1371aa82b8241d06bcf38",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/m/mesa/libegl-mesa0_26.0.3-1ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libegl1_1.7.0-3_arm64.deb",
+      "filename": "1cefa36464c8ab3043ba2f82c3daa18ce591dc4c2a37d09e3c47b1f2fa880dc6-libegl1_1.7.0-3_arm64.deb",
+      "sha256": "1cefa36464c8ab3043ba2f82c3daa18ce591dc4c2a37d09e3c47b1f2fa880dc6",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libegl1_1.7.0-3_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libelf1t64_0.194-4_arm64.deb",
+      "filename": "2cb6cbc4045b07ff9deff1a8bc29d855e11a5ad09e0f532206698ffb74b29634-libelf1t64_0.194-4_arm64.deb",
+      "sha256": "2cb6cbc4045b07ff9deff1a8bc29d855e11a5ad09e0f532206698ffb74b29634",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/e/elfutils/libelf1t64_0.194-4_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libexpat1_2.7.4-1_arm64.deb",
+      "filename": "00ed4c10629966b9b758734b5331ea581fd13782cd3efd7373d721f584a2b45e-libexpat1_2.7.4-1_arm64.deb",
+      "sha256": "00ed4c10629966b9b758734b5331ea581fd13782cd3efd7373d721f584a2b45e",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/e/expat/libexpat1_2.7.4-1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libffi8_3.5.2-4_arm64.deb",
+      "filename": "cfab73343f076b79df0f4a9d5430319fdb6153760d3e8c2964c448b49edad084-libffi8_3.5.2-4_arm64.deb",
+      "sha256": "cfab73343f076b79df0f4a9d5430319fdb6153760d3e8c2964c448b49edad084",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libf/libffi/libffi8_3.5.2-4_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libgbm-dev_26.0.3-1ubuntu1_arm64.deb",
+      "filename": "d9de9d276b78eb4d532dd1a6fbff0405233e24f3706ae99ba08174eac9884e66-libgbm-dev_26.0.3-1ubuntu1_arm64.deb",
+      "sha256": "d9de9d276b78eb4d532dd1a6fbff0405233e24f3706ae99ba08174eac9884e66",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/m/mesa/libgbm-dev_26.0.3-1ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libgbm1_26.0.3-1ubuntu1_arm64.deb",
+      "filename": "de8166e8225a1fe2565e7ebdb5cd879cb1be3de8c0bcaa34f02b2235d016dd57-libgbm1_26.0.3-1ubuntu1_arm64.deb",
+      "sha256": "de8166e8225a1fe2565e7ebdb5cd879cb1be3de8c0bcaa34f02b2235d016dd57",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/m/mesa/libgbm1_26.0.3-1ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libgcc-s1_16-20260322-1ubuntu1_arm64.deb",
+      "filename": "106e53a42bebdc55f253d737a818991eba5b4f22c8b1a035a4202b133ade9743-libgcc-s1_16-20260322-1ubuntu1_arm64.deb",
+      "sha256": "106e53a42bebdc55f253d737a818991eba5b4f22c8b1a035a4202b133ade9743",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/g/gcc-16/libgcc-s1_16-20260322-1ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libgl-dev_1.7.0-3_arm64.deb",
+      "filename": "073af8c8a4d8bbb374003c95ad75cdd39559701dae94e963adc209d03cbdd252-libgl-dev_1.7.0-3_arm64.deb",
+      "sha256": "073af8c8a4d8bbb374003c95ad75cdd39559701dae94e963adc209d03cbdd252",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libgl-dev_1.7.0-3_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libgles-dev_1.7.0-3_arm64.deb",
+      "filename": "e245b3cad7136ab19f5b63b4d68e79cdc5cc41f52bedafbb9b2b5d68e52ac2e5-libgles-dev_1.7.0-3_arm64.deb",
+      "sha256": "e245b3cad7136ab19f5b63b4d68e79cdc5cc41f52bedafbb9b2b5d68e52ac2e5",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libgles-dev_1.7.0-3_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libgles1_1.7.0-3_arm64.deb",
+      "filename": "96fc4f56f277967ee89ae23bfff1751e43e7bb1c44faf372e6ffddc042390a5b-libgles1_1.7.0-3_arm64.deb",
+      "sha256": "96fc4f56f277967ee89ae23bfff1751e43e7bb1c44faf372e6ffddc042390a5b",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libgles1_1.7.0-3_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libgles2_1.7.0-3_arm64.deb",
+      "filename": "757eb4ceda29fda07273d21d8f5707b6a1af7dd3553bf11d1bde7cd519a64236-libgles2_1.7.0-3_arm64.deb",
+      "sha256": "757eb4ceda29fda07273d21d8f5707b6a1af7dd3553bf11d1bde7cd519a64236",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libgles2_1.7.0-3_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libglvnd0_1.7.0-3_arm64.deb",
+      "filename": "6881ac107fb88b7133aaf68cd346bc656ce30bd930a08a06471a3461da5d3e26-libglvnd0_1.7.0-3_arm64.deb",
+      "sha256": "6881ac107fb88b7133aaf68cd346bc656ce30bd930a08a06471a3461da5d3e26",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libglvnd0_1.7.0-3_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libglx-dev_1.7.0-3_arm64.deb",
+      "filename": "590d278a50d1ab5f11f5b73b813c0ff54bc4566eca4f52716fcc71c276568d03-libglx-dev_1.7.0-3_arm64.deb",
+      "sha256": "590d278a50d1ab5f11f5b73b813c0ff54bc4566eca4f52716fcc71c276568d03",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libglx-dev_1.7.0-3_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libllvm21_21.1.8-6ubuntu1_arm64.deb",
+      "filename": "f2b6894d77b02a629b689e07ee5431f0155f1b8f857ac1e3f2153337dfcc1fcb-libllvm21_21.1.8-6ubuntu1_arm64.deb",
+      "sha256": "f2b6894d77b02a629b689e07ee5431f0155f1b8f857ac1e3f2153337dfcc1fcb",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/l/llvm-toolchain-21/libllvm21_21.1.8-6ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libmd0_1.1.0-2build4_arm64.deb",
+      "filename": "20d4f22076064b7cbfc20b58fff9630aeeb19a78e16a54ce2b7557a22015cfc0-libmd0_1.1.0-2build4_arm64.deb",
+      "sha256": "20d4f22076064b7cbfc20b58fff9630aeeb19a78e16a54ce2b7557a22015cfc0",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libm/libmd/libmd0_1.1.0-2build4_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libopengl-dev_1.7.0-3_arm64.deb",
+      "filename": "b06cd3892ec6c58024f72e28caf7812baf371b35309e7960974fda3e9e684287-libopengl-dev_1.7.0-3_arm64.deb",
+      "sha256": "b06cd3892ec6c58024f72e28caf7812baf371b35309e7960974fda3e9e684287",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libglvnd/libopengl-dev_1.7.0-3_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libpciaccess0_0.18.1-1ubuntu4_arm64.deb",
+      "filename": "24c5fc1b51c8d5a9fe3827dc1a0aecec6d4bc9e25a24a83e8e3c0822338cd7ee-libpciaccess0_0.18.1-1ubuntu4_arm64.deb",
+      "sha256": "24c5fc1b51c8d5a9fe3827dc1a0aecec6d4bc9e25a24a83e8e3c0822338cd7ee",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libp/libpciaccess/libpciaccess0_0.18.1-1ubuntu4_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libsensors-config_3.6.2-2build1_all.deb",
+      "filename": "57193f731de79bbad343a1369e6e95b13096c08ba166c7e193bfc24d78f960fb-libsensors-config_3.6.2-2build1_all.deb",
+      "sha256": "57193f731de79bbad343a1369e6e95b13096c08ba166c7e193bfc24d78f960fb",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/l/lm-sensors/libsensors-config_3.6.2-2build1_all.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libsensors5_3.6.2-2build1_arm64.deb",
+      "filename": "dc63821eccb23cf1784bad5287f9d6bed4e461c836372f5edd30fd5c609ff8af-libsensors5_3.6.2-2build1_arm64.deb",
+      "sha256": "dc63821eccb23cf1784bad5287f9d6bed4e461c836372f5edd30fd5c609ff8af",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/l/lm-sensors/libsensors5_3.6.2-2build1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libstdc++6_16-20260322-1ubuntu1_arm64.deb",
+      "filename": "4ec527bc695f4221b97aee9ac0c2f4f068b514a810db5d18465a8636dc5b2948-libstdc++6_16-20260322-1ubuntu1_arm64.deb",
+      "sha256": "4ec527bc695f4221b97aee9ac0c2f4f068b514a810db5d18465a8636dc5b2948",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/g/gcc-16/libstdc++6_16-20260322-1ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libtinfo6_6.6+20251231-1_arm64.deb",
+      "filename": "9da3b65c7d025c0e8d08d438f35e70aadbc40596e6ae191d8b4399f263b62805-libtinfo6_6.6+20251231-1_arm64.deb",
+      "sha256": "9da3b65c7d025c0e8d08d438f35e70aadbc40596e6ae191d8b4399f263b62805",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/n/ncurses/libtinfo6_6.6+20251231-1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libva-dev_2.23.0-1ubuntu1_arm64.deb",
+      "filename": "c37693a9dd4d424b090cf16dac1062f4e99cf3eb3136ee87d07a55ea60ee0baa-libva-dev_2.23.0-1ubuntu1_arm64.deb",
+      "sha256": "c37693a9dd4d424b090cf16dac1062f4e99cf3eb3136ee87d07a55ea60ee0baa",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/universe/libv/libva/libva-dev_2.23.0-1ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libva-drm2_2.23.0-1ubuntu1_arm64.deb",
+      "filename": "4e72506d4e876eb1a9db59401bfd8f9e2b4d4c29f0f33c9109f81d238bff420f-libva-drm2_2.23.0-1ubuntu1_arm64.deb",
+      "sha256": "4e72506d4e876eb1a9db59401bfd8f9e2b4d4c29f0f33c9109f81d238bff420f",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libv/libva/libva-drm2_2.23.0-1ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libva2_2.23.0-1ubuntu1_arm64.deb",
+      "filename": "32eb1f4b19712706cab329faea87160c48476bd500c203dbb066762d465215cd-libva2_2.23.0-1ubuntu1_arm64.deb",
+      "sha256": "32eb1f4b19712706cab329faea87160c48476bd500c203dbb066762d465215cd",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libv/libva/libva2_2.23.0-1ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libwayland-client0_1.24.0-2_arm64.deb",
+      "filename": "8459ccec5bdd6aa15dd1e75ea450d97e514f8448e529c4fd08cc036f23f4235a-libwayland-client0_1.24.0-2_arm64.deb",
+      "sha256": "8459ccec5bdd6aa15dd1e75ea450d97e514f8448e529c4fd08cc036f23f4235a",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/w/wayland/libwayland-client0_1.24.0-2_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libwayland-dev_1.24.0-2_arm64.deb",
+      "filename": "ed360391b0367823800fbb92ce3f7bda6523538ecf81cd703f35bafc861592ea-libwayland-dev_1.24.0-2_arm64.deb",
+      "sha256": "ed360391b0367823800fbb92ce3f7bda6523538ecf81cd703f35bafc861592ea",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/w/wayland/libwayland-dev_1.24.0-2_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libwayland-server0_1.24.0-2_arm64.deb",
+      "filename": "8fe592fc0efe0a3dd8f194e88db9f04e58f810d7af77208dc825dab742b9582d-libwayland-server0_1.24.0-2_arm64.deb",
+      "sha256": "8fe592fc0efe0a3dd8f194e88db9f04e58f810d7af77208dc825dab742b9582d",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/w/wayland/libwayland-server0_1.24.0-2_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libx11-6_1.8.13-1_arm64.deb",
+      "filename": "955ede3dfadc55c6257f5d8d2d7ed2f60891afc79c310c76f238bc2f1c83f7de-libx11-6_1.8.13-1_arm64.deb",
+      "sha256": "955ede3dfadc55c6257f5d8d2d7ed2f60891afc79c310c76f238bc2f1c83f7de",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libx11/libx11-6_1.8.13-1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libx11-data_1.8.13-1_all.deb",
+      "filename": "8188c233d59dc419205c314ef8f230fc83ca7a3e7e9b9671f18b469fd3e428ae-libx11-data_1.8.13-1_all.deb",
+      "sha256": "8188c233d59dc419205c314ef8f230fc83ca7a3e7e9b9671f18b469fd3e428ae",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libx11/libx11-data_1.8.13-1_all.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libx11-dev_1.8.13-1_arm64.deb",
+      "filename": "cb23d4fec887866cc09ddcdcf85ec0f085067f68c8e75e4c5fd933d618416323-libx11-dev_1.8.13-1_arm64.deb",
+      "sha256": "cb23d4fec887866cc09ddcdcf85ec0f085067f68c8e75e4c5fd933d618416323",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libx11/libx11-dev_1.8.13-1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libx11-xcb1_1.8.13-1_arm64.deb",
+      "filename": "89a98329e5251691050be79fccb10a4bee31cd538c310300795893cb9a46a2c8-libx11-xcb1_1.8.13-1_arm64.deb",
+      "sha256": "89a98329e5251691050be79fccb10a4bee31cd538c310300795893cb9a46a2c8",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libx11/libx11-xcb1_1.8.13-1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libxau6_1.0.11-1build2_arm64.deb",
+      "filename": "2df4a14fea0c98f2e52c8ad3e2cfed6f5d40b66e5aa15af01eba24edfe2686ae-libxau6_1.0.11-1build2_arm64.deb",
+      "sha256": "2df4a14fea0c98f2e52c8ad3e2cfed6f5d40b66e5aa15af01eba24edfe2686ae",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxau/libxau6_1.0.11-1build2_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libxcb-dri3-0_1.17.0-2ubuntu1_arm64.deb",
+      "filename": "a3f538fb0f99824a36ce248d91d87bba985006cc19554c44eee214482c588368-libxcb-dri3-0_1.17.0-2ubuntu1_arm64.deb",
+      "sha256": "a3f538fb0f99824a36ce248d91d87bba985006cc19554c44eee214482c588368",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxcb/libxcb-dri3-0_1.17.0-2ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libxcb-present0_1.17.0-2ubuntu1_arm64.deb",
+      "filename": "511b6c9afab2790d10f808c1bd1a24c81cedeb6600ed1ad517a17c8e9a5ef23b-libxcb-present0_1.17.0-2ubuntu1_arm64.deb",
+      "sha256": "511b6c9afab2790d10f808c1bd1a24c81cedeb6600ed1ad517a17c8e9a5ef23b",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxcb/libxcb-present0_1.17.0-2ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libxcb-randr0_1.17.0-2ubuntu1_arm64.deb",
+      "filename": "64bce047a66f7f8ce5a64f93fd43c946e74c2cf679ee142e9502891ad362963f-libxcb-randr0_1.17.0-2ubuntu1_arm64.deb",
+      "sha256": "64bce047a66f7f8ce5a64f93fd43c946e74c2cf679ee142e9502891ad362963f",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxcb/libxcb-randr0_1.17.0-2ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libxcb-shm0_1.17.0-2ubuntu1_arm64.deb",
+      "filename": "dbcf77b20a17a95fbe3ca52c5cd607a682ada8f70eb7c36dbcf1d8b2aab84533-libxcb-shm0_1.17.0-2ubuntu1_arm64.deb",
+      "sha256": "dbcf77b20a17a95fbe3ca52c5cd607a682ada8f70eb7c36dbcf1d8b2aab84533",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxcb/libxcb-shm0_1.17.0-2ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libxcb-sync1_1.17.0-2ubuntu1_arm64.deb",
+      "filename": "4904208813f265e5cc452d0eac62501d3b42a9d0c326d447d8e81bacd0604c78-libxcb-sync1_1.17.0-2ubuntu1_arm64.deb",
+      "sha256": "4904208813f265e5cc452d0eac62501d3b42a9d0c326d447d8e81bacd0604c78",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxcb/libxcb-sync1_1.17.0-2ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libxcb-xfixes0_1.17.0-2ubuntu1_arm64.deb",
+      "filename": "619b45cdb525ed16a9ff466dd11497d1361482dbefa31da2029cb209fd8dbab2-libxcb-xfixes0_1.17.0-2ubuntu1_arm64.deb",
+      "sha256": "619b45cdb525ed16a9ff466dd11497d1361482dbefa31da2029cb209fd8dbab2",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxcb/libxcb-xfixes0_1.17.0-2ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libxcb1_1.17.0-2ubuntu1_arm64.deb",
+      "filename": "59fa782e45c93a024851df6fb92d5a0d5c84416898b9640c35ece50d1f2fdfda-libxcb1_1.17.0-2ubuntu1_arm64.deb",
+      "sha256": "59fa782e45c93a024851df6fb92d5a0d5c84416898b9640c35ece50d1f2fdfda",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxcb/libxcb1_1.17.0-2ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libxdmcp6_1.1.5-2_arm64.deb",
+      "filename": "e90265c37e823b293a4c0db30a906772d6f675d15a73c747c7431b5a5b0db8e6-libxdmcp6_1.1.5-2_arm64.deb",
+      "sha256": "e90265c37e823b293a4c0db30a906772d6f675d15a73c747c7431b5a5b0db8e6",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxdmcp/libxdmcp6_1.1.5-2_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libxml2-16_2.15.2+dfsg-0.1_arm64.deb",
+      "filename": "2d2c8c56f50f5ae2371aec0dcf62a291db858bd11adaacbb29816557d0498e3c-libxml2-16_2.15.2+dfsg-0.1_arm64.deb",
+      "sha256": "2d2c8c56f50f5ae2371aec0dcf62a291db858bd11adaacbb29816557d0498e3c",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxml2/libxml2-16_2.15.2+dfsg-0.1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libxshmfence1_1.3.3-1build1_arm64.deb",
+      "filename": "4b288951c1ce9fa001640ee8f080505fa88f4b82039719199109c82082c9c7dd-libxshmfence1_1.3.3-1build1_arm64.deb",
+      "sha256": "4b288951c1ce9fa001640ee8f080505fa88f4b82039719199109c82082c9c7dd",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libx/libxshmfence/libxshmfence1_1.3.3-1build1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libzstd1_1.5.7+dfsg-3_arm64.deb",
+      "filename": "af32dd47238a84108c46536baddb7f7b6b0ca7914707dfe1beb95f56ef3a37dd-libzstd1_1.5.7+dfsg-3_arm64.deb",
+      "sha256": "af32dd47238a84108c46536baddb7f7b6b0ca7914707dfe1beb95f56ef3a37dd",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libz/libzstd/libzstd1_1.5.7+dfsg-3_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "linux-libc-dev_7.0.0-14.14_arm64.deb",
+      "filename": "e86f6bbf7bebdc1958241b546ca9467c35fc29f57c01d4f0336c1908ca21f2fe-linux-libc-dev_7.0.0-14.14_arm64.deb",
+      "sha256": "e86f6bbf7bebdc1958241b546ca9467c35fc29f57c01d4f0336c1908ca21f2fe",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/l/linux/linux-libc-dev_7.0.0-14.14_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "mesa-libgallium_26.0.3-1ubuntu1_arm64.deb",
+      "filename": "45bbeddbbe8e7b3d6b391e4e4499bc98563d321bb3d43e0e6795ff7da864144a-mesa-libgallium_26.0.3-1ubuntu1_arm64.deb",
+      "sha256": "45bbeddbbe8e7b3d6b391e4e4499bc98563d321bb3d43e0e6795ff7da864144a",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/m/mesa/mesa-libgallium_26.0.3-1ubuntu1_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "zlib1g_1.3.dfsg+really1.3.1-1ubuntu3_arm64.deb",
+      "filename": "3f4ef035018933af69033a5391ba8cf7b793afbdd9d82c65de57cc4666156f5a-zlib1g_1.3.dfsg+really1.3.1-1ubuntu3_arm64.deb",
+      "sha256": "3f4ef035018933af69033a5391ba8cf7b793afbdd9d82c65de57cc4666156f5a",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/z/zlib/zlib1g_1.3.dfsg+really1.3.1-1ubuntu3_arm64.deb"
+      ],
+      "recipe": "device/video/iris-vaapi/build-deps.json",
+      "preservation": "D"
+    },
+    {
+      "name": "iris-vaapi",
+      "filename": "7b4c073b575f4ba6692d03f15990807c1dd8b4775474b74d4558ca7877e184fc-qualcomm-iris-vaapi-f587b14.tar.gz",
+      "sha256": "7b4c073b575f4ba6692d03f15990807c1dd8b4775474b74d4558ca7877e184fc",
+      "bytes": 267878,
+      "upstream": [
+        "https://codeload.github.com/phxinyang/qualcomm-iris-vaapi/tar.gz/f587b14e6b22955c7250a45ff5f43588bbce2114"
+      ],
+      "own_url": "https://github.com/yzddmr6/deps-archive/releases/download/inputs-20261108/7b4c073b575f4ba6692d03f15990807c1dd8b4775474b74d4558ca7877e184fc-qualcomm-iris-vaapi-f587b14.tar.gz",
+      "license": "MIT and LGPL-2.1; bundled kernel patches GPL-2.0-only",
+      "preservation": "C"
+    },
+    {
+      "name": "ubuntu-base-24.04.4-base-arm64.tar.gz",
+      "filename": "04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2-ubuntu-base-24.04.4-base-arm64.tar.gz",
+      "sha256": "04207713ece899c3740823d33690441ad3a7f0ded1101aca744e2b0f37ac7ff2",
+      "upstream": [
+        "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.4-base-arm64.tar.gz"
+      ],
+      "recipe": "mesa/snap/core24-sdk.json",
+      "preservation": "D"
+    },
+    {
+      "name": "meson-1.9.2-py3-none-any.whl",
+      "filename": "1a284dc1912929098a6462401af58dc49ae3f324e94814a38a8f1020cee07cba-meson-1.9.2-py3-none-any.whl",
+      "sha256": "1a284dc1912929098a6462401af58dc49ae3f324e94814a38a8f1020cee07cba",
+      "upstream": [
+        "https://files.pythonhosted.org/packages/d7/ab/115470e7c6dcce024e43e2e00986864c56e48c59554bb19f4b02ed72814c/meson-1.9.2-py3-none-any.whl"
+      ],
+      "recipe": "mesa/snap/core24-sdk.json",
+      "preservation": "D"
+    },
+    {
+      "name": "wayland-protocols_1.47-1_all.deb",
+      "filename": "9e5d9e73914a8a701e4cc5adef1f3fe95624effb1bac006e240f0f35d76139e4-wayland-protocols_1.47-1_all.deb",
+      "sha256": "9e5d9e73914a8a701e4cc5adef1f3fe95624effb1bac006e240f0f35d76139e4",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20260924T000000Z/pool/main/w/wayland-protocols/wayland-protocols_1.47-1_all.deb"
+      ],
+      "recipe": "mesa/snap/core24-sdk.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libcap2_2.75-10ubuntu2_arm64.deb",
+      "filename": "52c249af074c215f6372f9cd911ae70c63a8bddefdc1aca80350b47d39888829-libcap2_2.75-10ubuntu2_arm64.deb",
+      "sha256": "52c249af074c215f6372f9cd911ae70c63a8bddefdc1aca80350b47d39888829",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libc/libcap2/libcap2_2.75-10ubuntu2_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libcap-dev_2.75-10ubuntu2_arm64.deb",
+      "filename": "b9d1f3a08a86bdc59aa6f1bc502fc2485c39b9a724bc603a06c72ee5680c3a31-libcap-dev_2.75-10ubuntu2_arm64.deb",
+      "sha256": "b9d1f3a08a86bdc59aa6f1bc502fc2485c39b9a724bc603a06c72ee5680c3a31",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libc/libcap2/libcap-dev_2.75-10ubuntu2_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "Droid-VM signed Windows drivers",
+      "filename": "207d566ca39894eee7a811a1ff92e6e8826260a810e337c3bb88b1bec908d716-gunyah-arm64-drivers.zip",
+      "sha256": "207d566ca39894eee7a811a1ff92e6e8826260a810e337c3bb88b1bec908d716",
+      "upstream": [
+        "https://api.github.com/repos/Droid-VM/gunyah-guest-drivers-windows/releases/assets/558946077"
+      ],
+      "recipe": "tools/windows.lock.json",
+      "own_url": "https://github.com/yzddmr6/deps-archive/releases/download/inputs-20261108/207d566ca39894eee7a811a1ff92e6e8826260a810e337c3bb88b1bec908d716-gunyah-arm64-drivers.zip",
+      "preservation": "C"
+    },
+    {
+      "name": "libclang-common-18-dev_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "filename": "d41631bb752815a8196261d1030c096591c59678c8adfbf2e6a740a691b49e80-libclang-common-18-dev_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "sha256": "d41631bb752815a8196261d1030c096591c59678c8adfbf2e6a740a691b49e80",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/universe/l/llvm-toolchain-18/libclang-common-18-dev_18.1.3-1ubuntu1_amd64.deb"
+      ],
+      "recipe": "tools/windows.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libclang1-18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "filename": "1ed67106d743ab4f12db2726c5fc11c436c5e1fba613e9f1006bf3fa05cc69bd-libclang1-18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "sha256": "1ed67106d743ab4f12db2726c5fc11c436c5e1fba613e9f1006bf3fa05cc69bd",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/l/llvm-toolchain-18/libclang1-18_18.1.3-1ubuntu1_amd64.deb"
+      ],
+      "recipe": "tools/windows.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libllvm18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "filename": "af6197096ce3b89aab86de59f01c1b5feb008b2ae1514a03906c0664edb8b0b1-libllvm18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "sha256": "af6197096ce3b89aab86de59f01c1b5feb008b2ae1514a03906c0664edb8b0b1",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/l/llvm-toolchain-18/libllvm18_18.1.3-1ubuntu1_amd64.deb"
+      ],
+      "recipe": "tools/windows.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "acpica-tools_20230628-1_amd64.deb",
+      "filename": "1282c3e0f5f3e53759350e98e68b96bf31d1f381aaf1e0abdbd750f7a131841c-acpica-tools_20230628-1_amd64.deb",
+      "sha256": "1282c3e0f5f3e53759350e98e68b96bf31d1f381aaf1e0abdbd750f7a131841c",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/universe/a/acpica-unix/acpica-tools_20230628-1_amd64.deb"
+      ],
+      "recipe": "tools/windows.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "uuid-dev_2.39.3-9ubuntu6.6_amd64.deb",
+      "filename": "266115cc3bcecef70b9f75c0cf8ca4daccd40958bf7872f8ccebec50502d2a13-uuid-dev_2.39.3-9ubuntu6.6_amd64.deb",
+      "sha256": "266115cc3bcecef70b9f75c0cf8ca4daccd40958bf7872f8ccebec50502d2a13",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/u/util-linux/uuid-dev_2.39.3-9ubuntu6.6_amd64.deb"
+      ],
+      "recipe": "tools/windows.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "clang-18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "filename": "628b16701014ef7ad648380b20ea74b90dd543857f933b3e34d2fc042783de25-clang-18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "sha256": "628b16701014ef7ad648380b20ea74b90dd543857f933b3e34d2fc042783de25",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/universe/l/llvm-toolchain-18/clang-18_18.1.3-1ubuntu1_amd64.deb"
+      ],
+      "recipe": "tools/windows.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "llvm-18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "filename": "139cb82e16e75fcdd4a56562804ff9bfb482b65d0929580d621d28088075a27e-llvm-18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "sha256": "139cb82e16e75fcdd4a56562804ff9bfb482b65d0929580d621d28088075a27e",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/universe/l/llvm-toolchain-18/llvm-18_18.1.3-1ubuntu1_amd64.deb"
+      ],
+      "recipe": "tools/windows.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "lld-18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "filename": "c574594d714bf445f4c2323fa99374c05b79be09a3899edbf9d4b7265c9ccc57-lld-18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "sha256": "c574594d714bf445f4c2323fa99374c05b79be09a3899edbf9d4b7265c9ccc57",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/universe/l/llvm-toolchain-18/lld-18_18.1.3-1ubuntu1_amd64.deb"
+      ],
+      "recipe": "tools/windows.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "libclang-cpp18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "filename": "e91eda104813ee0468d145d010a4a4e142401f3f17f9a65596c66d416298d018-libclang-cpp18_1%3a18.1.3-1ubuntu1_amd64.deb",
+      "sha256": "e91eda104813ee0468d145d010a4a4e142401f3f17f9a65596c66d416298d018",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/l/llvm-toolchain-18/libclang-cpp18_18.1.3-1ubuntu1_amd64.deb"
+      ],
+      "recipe": "tools/windows.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "firefox_157.0.1~build1_arm64_b60f3ca510708be59e370fca2851a4f5.deb",
+      "filename": "04072d2f8d4a61840c07b6b5f1da41a420ad075dbe5eca76dbf6acafb7f10894-firefox_157.0.1~build1_arm64_b60f3ca510708be59e370fca2851a4f5.deb",
+      "sha256": "04072d2f8d4a61840c07b6b5f1da41a420ad075dbe5eca76dbf6acafb7f10894",
+      "upstream": [
+        "https://packages.mozilla.org/apt/pool/mozilla/firefox_157.0.1~build1_arm64_b60f3ca510708be59e370fca2851a4f5.deb"
+      ],
+      "recipe": "ubuntu/firefox/source.json",
+      "preservation": "D"
+    },
+    {
+      "name": "gnome-control-center_50.0.orig.tar.xz",
+      "filename": "20e8d5b13b9f390581004cab34b74372c0ff4a16f9c11bffd93d8386fbcdeeb3-gnome-control-center_50.0.orig.tar.xz",
+      "sha256": "20e8d5b13b9f390581004cab34b74372c0ff4a16f9c11bffd93d8386fbcdeeb3",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261015T000000Z/pool/main/g/gnome-control-center/gnome-control-center_50.0.orig.tar.xz"
+      ],
+      "recipe": "ubuntu/gnome-control-center/source.json",
+      "preservation": "D"
+    },
+    {
+      "name": "gnome-control-center_50.0-0ubuntu6.debian.tar.xz",
+      "filename": "b94b041ccc08cc3cc6a198405a0e745f27bca22ea1407fc42b95e20053b29021-gnome-control-center_50.0-0ubuntu6.debian.tar.xz",
+      "sha256": "b94b041ccc08cc3cc6a198405a0e745f27bca22ea1407fc42b95e20053b29021",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261015T000000Z/pool/main/g/gnome-control-center/gnome-control-center_50.0-0ubuntu6.debian.tar.xz"
+      ],
+      "recipe": "ubuntu/gnome-control-center/source.json",
+      "preservation": "D"
+    },
+    {
+      "name": "gnome-control-center_50.0-0ubuntu6.dsc",
+      "filename": "343381fe6c233a914924cc57940d31bbb7a4ce82b7dbb89d3c957f492b25cd3a-gnome-control-center_50.0-0ubuntu6.dsc",
+      "sha256": "343381fe6c233a914924cc57940d31bbb7a4ce82b7dbb89d3c957f492b25cd3a",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261015T000000Z/pool/main/g/gnome-control-center/gnome-control-center_50.0-0ubuntu6.dsc"
+      ],
+      "recipe": "ubuntu/gnome-control-center/source.json",
+      "preservation": "D"
+    },
+    {
+      "name": "gnome-settings-daemon_50.0.orig.tar.xz",
+      "filename": "d82b50336c98a2ed713e9716c372125bb31bdfc2dae9d95baaef4d769d614fb6-gnome-settings-daemon_50.0.orig.tar.xz",
+      "sha256": "d82b50336c98a2ed713e9716c372125bb31bdfc2dae9d95baaef4d769d614fb6",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261015T000000Z/pool/main/g/gnome-settings-daemon/gnome-settings-daemon_50.0.orig.tar.xz"
+      ],
+      "recipe": "ubuntu/gnome-settings-daemon/source.json",
+      "preservation": "D"
+    },
+    {
+      "name": "gnome-settings-daemon_50.0-1ubuntu1.debian.tar.xz",
+      "filename": "61df5b3c4beda65fabfec5c2b87aa0bebae1154299fe6c57233f790e283723cd-gnome-settings-daemon_50.0-1ubuntu1.debian.tar.xz",
+      "sha256": "61df5b3c4beda65fabfec5c2b87aa0bebae1154299fe6c57233f790e283723cd",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261015T000000Z/pool/main/g/gnome-settings-daemon/gnome-settings-daemon_50.0-1ubuntu1.debian.tar.xz"
+      ],
+      "recipe": "ubuntu/gnome-settings-daemon/source.json",
+      "preservation": "D"
+    },
+    {
+      "name": "gnome-settings-daemon_50.0-1ubuntu1.dsc",
+      "filename": "db5d02d7f301fb847ab87c73b0623ea76da9531a561cf5856b4be81f2773bbe3-gnome-settings-daemon_50.0-1ubuntu1.dsc",
+      "sha256": "db5d02d7f301fb847ab87c73b0623ea76da9531a561cf5856b4be81f2773bbe3",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261015T000000Z/pool/main/g/gnome-settings-daemon/gnome-settings-daemon_50.0-1ubuntu1.dsc"
+      ],
+      "recipe": "ubuntu/gnome-settings-daemon/source.json",
+      "preservation": "D"
+    },
+    {
+      "name": "resources_1.10.2.orig.tar.gz",
+      "filename": "aeaa9440831d1a2b839b5f005854a11d0becc9f2fc14e997b7f4166bf27b4c41-resources_1.10.2.orig.tar.gz",
+      "sha256": "aeaa9440831d1a2b839b5f005854a11d0becc9f2fc14e997b7f4166bf27b4c41",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261024T000000Z/pool/main/r/resources/resources_1.10.2.orig.tar.gz"
+      ],
+      "recipe": "ubuntu/resources/source.json",
+      "preservation": "D"
+    },
+    {
+      "name": "resources_1.10.2-0ubuntu3.1.debian.tar.xz",
+      "filename": "c974baa8daf5b7869e9780f471e56b7d49e9c7ffa537187950b24f865bc1eb6f-resources_1.10.2-0ubuntu3.1.debian.tar.xz",
+      "sha256": "c974baa8daf5b7869e9780f471e56b7d49e9c7ffa537187950b24f865bc1eb6f",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261024T000000Z/pool/main/r/resources/resources_1.10.2-0ubuntu3.1.debian.tar.xz"
+      ],
+      "recipe": "ubuntu/resources/source.json",
+      "preservation": "D"
+    },
+    {
+      "name": "resources_1.10.2-0ubuntu3.1.dsc",
+      "filename": "77f66037d178add27fd461e3d5babdf6c9e0c0ec5fca69fb1672a14299629c82-resources_1.10.2-0ubuntu3.1.dsc",
+      "sha256": "77f66037d178add27fd461e3d5babdf6c9e0c0ec5fca69fb1672a14299629c82",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261024T000000Z/pool/main/r/resources/resources_1.10.2-0ubuntu3.1.dsc"
+      ],
+      "recipe": "ubuntu/resources/source.json",
+      "preservation": "D"
+    },
+    {
+      "name": "systemd_259.5.orig.tar.gz",
+      "filename": "80ed55a8a69c4bd1fb12a36659303372b37baf9ee224ef4f032db4b748be0f76-systemd_259.5.orig.tar.gz",
+      "sha256": "80ed55a8a69c4bd1fb12a36659303372b37baf9ee224ef4f032db4b748be0f76",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20260930T000000Z/pool/main/s/systemd/systemd_259.5.orig.tar.gz"
+      ],
+      "recipe": "ubuntu/systemd/source.json",
+      "preservation": "D",
+      "purpose": "research input; not required for product builds"
+    },
+    {
+      "name": "systemd_259.5-0ubuntu3.4.debian.tar.xz",
+      "filename": "34048bc4b67dce61835a5a959d903f912d68bb09a93ba654e6ae33410c74aaa9-systemd_259.5-0ubuntu3.4.debian.tar.xz",
+      "sha256": "34048bc4b67dce61835a5a959d903f912d68bb09a93ba654e6ae33410c74aaa9",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20260930T000000Z/pool/main/s/systemd/systemd_259.5-0ubuntu3.4.debian.tar.xz"
+      ],
+      "recipe": "ubuntu/systemd/source.json",
+      "preservation": "D",
+      "purpose": "research input; not required for product builds"
+    },
+    {
+      "name": "systemd_259.5-0ubuntu3.4.dsc",
+      "filename": "c4c764e0b98b7840619f16f42fb8229a344bc2946bd1a74612280d5e218f8177-systemd_259.5-0ubuntu3.4.dsc",
+      "sha256": "c4c764e0b98b7840619f16f42fb8229a344bc2946bd1a74612280d5e218f8177",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20260930T000000Z/pool/main/s/systemd/systemd_259.5-0ubuntu3.4.dsc"
+      ],
+      "recipe": "ubuntu/systemd/source.json",
+      "preservation": "D",
+      "purpose": "research input; not required for product builds"
+    },
+    {
+      "name": "crosvm/crosvm-96e84c3.tar.gz",
+      "filename": "805f9e718ae1256193a65549281b52cfd44999d3ebe54204f1c75c91fd5249c3-crosvm-96e84c3.tar.gz",
+      "sha256": "805f9e718ae1256193a65549281b52cfd44999d3ebe54204f1c75c91fd5249c3",
+      "upstream": [
+        "https://github.com/google/crosvm/archive/96e84c3f680e34e82e932ef911ae97d734121758.tar.gz"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "own_url": "https://github.com/yzddmr6/deps-archive/releases/download/inputs-20261108/805f9e718ae1256193a65549281b52cfd44999d3ebe54204f1c75c91fd5249c3-crosvm-96e84c3.tar.gz",
+      "preservation": "C"
+    },
+    {
+      "name": "crosvm/minijail-7845d899.tar.gz",
+      "filename": "f9b1844f624a298d62ce5cabe8b95d9b582c175f92da9352041db48af83a6ea4-minijail-7845d899.tar.gz",
+      "sha256": "f9b1844f624a298d62ce5cabe8b95d9b582c175f92da9352041db48af83a6ea4",
+      "upstream": [
+        "https://github.com/google/minijail/archive/7845d89927a82dbdcdee6276837cd0978f69ba19.tar.gz"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libvncserver-dev_0.9.15+dfsg-3_arm64.deb",
+      "filename": "2de209744291273297b71050331ba122c0abbaa841d36d6c26a4860cf14ae94f-libvncserver-dev_0.9.15+dfsg-3_arm64.deb",
+      "sha256": "2de209744291273297b71050331ba122c0abbaa841d36d6c26a4860cf14ae94f",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libv/libvncserver/libvncserver-dev_0.9.15+dfsg-3_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libvncserver1_0.9.15+dfsg-3_arm64.deb",
+      "filename": "4379c55fcf2ec99aa5c53b17c6cc5291b7614c47332c34ec1acf71221e5a6ada-libvncserver1_0.9.15+dfsg-3_arm64.deb",
+      "sha256": "4379c55fcf2ec99aa5c53b17c6cc5291b7614c47332c34ec1acf71221e5a6ada",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libv/libvncserver/libvncserver1_0.9.15+dfsg-3_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/zlib1g-dev_1.3.dfsg+really1.3.1-1ubuntu3_arm64.deb",
+      "filename": "6225185052192b092a309911f2f831d61d945e7ae17b13a63f4a5494319e4ea7-zlib1g-dev_1.3.dfsg+really1.3.1-1ubuntu3_arm64.deb",
+      "sha256": "6225185052192b092a309911f2f831d61d945e7ae17b13a63f4a5494319e4ea7",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/z/zlib/zlib1g-dev_1.3.dfsg+really1.3.1-1ubuntu3_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libjpeg-turbo8-dev_2.1.5-4ubuntu4_arm64.deb",
+      "filename": "56cf8f25b59609721a7f151c97f83b2e665cb8d2275fe82f515910d9e66d8223-libjpeg-turbo8-dev_2.1.5-4ubuntu4_arm64.deb",
+      "sha256": "56cf8f25b59609721a7f151c97f83b2e665cb8d2275fe82f515910d9e66d8223",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libj/libjpeg-turbo/libjpeg-turbo8-dev_2.1.5-4ubuntu4_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libpng-dev_1.6.57-1_arm64.deb",
+      "filename": "f8fbd1449928c62f8df190b1292dee774d809e56bb93dc54defa17f0fa524264-libpng-dev_1.6.57-1_arm64.deb",
+      "sha256": "f8fbd1449928c62f8df190b1292dee774d809e56bb93dc54defa17f0fa524264",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libp/libpng1.6/libpng-dev_1.6.57-1_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/liblzo2-dev_2.10-3build2_arm64.deb",
+      "filename": "84616d55edb640caf574f3ba71d3a8f222569bbd033fd886e93ca8c760359aa1-liblzo2-dev_2.10-3build2_arm64.deb",
+      "sha256": "84616d55edb640caf574f3ba71d3a8f222569bbd033fd886e93ca8c760359aa1",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/l/lzo2/liblzo2-dev_2.10-3build2_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libwayland-cursor0_1.24.0-2_arm64.deb",
+      "filename": "3335233608016b05401f0c95cd81c9d830cf7be92b3681829e2f26cbf55dd394-libwayland-cursor0_1.24.0-2_arm64.deb",
+      "sha256": "3335233608016b05401f0c95cd81c9d830cf7be92b3681829e2f26cbf55dd394",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/w/wayland/libwayland-cursor0_1.24.0-2_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libwayland-egl1_1.24.0-2_arm64.deb",
+      "filename": "c45add63e3f928c6f1b11580ac10c7b06a9c3c8d5f302c409138033e8d682357-libwayland-egl1_1.24.0-2_arm64.deb",
+      "sha256": "c45add63e3f928c6f1b11580ac10c7b06a9c3c8d5f302c409138033e8d682357",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/w/wayland/libwayland-egl1_1.24.0-2_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libwayland-bin_1.24.0-2_arm64.deb",
+      "filename": "2beb85b7957c83aaf9ac2be026e2f8b1d1528b5cc7e9923fbf20f0d671915ba3-libwayland-bin_1.24.0-2_arm64.deb",
+      "sha256": "2beb85b7957c83aaf9ac2be026e2f8b1d1528b5cc7e9923fbf20f0d671915ba3",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/w/wayland/libwayland-bin_1.24.0-2_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libvncclient1_0.9.15+dfsg-3_arm64.deb",
+      "filename": "519484ceb6a094eed279ae870e39ba66773c95946b39c6342c888ea3e870df3b-libvncclient1_0.9.15+dfsg-3_arm64.deb",
+      "sha256": "519484ceb6a094eed279ae870e39ba66773c95946b39c6342c888ea3e870df3b",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libv/libvncserver/libvncclient1_0.9.15+dfsg-3_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libgcrypt20_1.12.0-2_arm64.deb",
+      "filename": "042d505553d39fd8e44e44e36d5fe80835446552c85f5830e19df08647e9af94-libgcrypt20_1.12.0-2_arm64.deb",
+      "sha256": "042d505553d39fd8e44e44e36d5fe80835446552c85f5830e19df08647e9af94",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libgcrypt20/libgcrypt20_1.12.0-2_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libgnutls30t64_3.8.12-2ubuntu1_arm64.deb",
+      "filename": "9ba0dd2f5dc0be90fd7e517907041a89c26c35a6b91ccf98756010086d0c498c-libgnutls30t64_3.8.12-2ubuntu1_arm64.deb",
+      "sha256": "9ba0dd2f5dc0be90fd7e517907041a89c26c35a6b91ccf98756010086d0c498c",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/g/gnutls28/libgnutls30t64_3.8.12-2ubuntu1_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libjpeg8_8c-2ubuntu12_arm64.deb",
+      "filename": "295ec4d6072c71e33eb3a1746d1f7fc0dc75c15352c4166f814ca8e5f14b85c5-libjpeg8_8c-2ubuntu12_arm64.deb",
+      "sha256": "295ec4d6072c71e33eb3a1746d1f7fc0dc75c15352c4166f814ca8e5f14b85c5",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libj/libjpeg8-empty/libjpeg8_8c-2ubuntu12_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/liblzo2-2_2.10-3build2_arm64.deb",
+      "filename": "a03243d4250d3f1f1cec303170f6e4499c0c95cc20191b1e85bf78ca3769e98c-liblzo2-2_2.10-3build2_arm64.deb",
+      "sha256": "a03243d4250d3f1f1cec303170f6e4499c0c95cc20191b1e85bf78ca3769e98c",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/l/lzo2/liblzo2-2_2.10-3build2_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libjpeg-turbo8_2.1.5-4ubuntu4_arm64.deb",
+      "filename": "cd6cac6155d81d8d2e4a53693a7c91b42b26d1e84d018792d319c24cddaaf9d8-libjpeg-turbo8_2.1.5-4ubuntu4_arm64.deb",
+      "sha256": "cd6cac6155d81d8d2e4a53693a7c91b42b26d1e84d018792d319c24cddaaf9d8",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libj/libjpeg-turbo/libjpeg-turbo8_2.1.5-4ubuntu4_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libpng16-16t64_1.6.57-1_arm64.deb",
+      "filename": "5d455489a958be0a231da0fc64bffa47fc1b0b790fbff4ecc421041af7fc76ef-libpng16-16t64_1.6.57-1_arm64.deb",
+      "sha256": "5d455489a958be0a231da0fc64bffa47fc1b0b790fbff4ecc421041af7fc76ef",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libp/libpng1.6/libpng16-16t64_1.6.57-1_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libsasl2-2_2.1.28+dfsg1-9ubuntu3_arm64.deb",
+      "filename": "58ae0fc34067c27aa5ee50c6ca3823919057f1a4fb092478f9ff47a3dfe36496-libsasl2-2_2.1.28+dfsg1-9ubuntu3_arm64.deb",
+      "sha256": "58ae0fc34067c27aa5ee50c6ca3823919057f1a4fb092478f9ff47a3dfe36496",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/c/cyrus-sasl2/libsasl2-2_2.1.28+dfsg1-9ubuntu3_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libgpg-error0_1.58-2_arm64.deb",
+      "filename": "36bfef06ca8d020656e3b6f37e3c99c0fc45929b6a275a844247987bc9819c33-libgpg-error0_1.58-2_arm64.deb",
+      "sha256": "36bfef06ca8d020656e3b6f37e3c99c0fc45929b6a275a844247987bc9819c33",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libg/libgpg-error/libgpg-error0_1.58-2_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libgmp10_6.3.0+dfsg-5ubuntu2_arm64.deb",
+      "filename": "d7e393a6f350c62c4ca009a61e176824d2b97ceab211797eacde06d98eeb6749-libgmp10_6.3.0+dfsg-5ubuntu2_arm64.deb",
+      "sha256": "d7e393a6f350c62c4ca009a61e176824d2b97ceab211797eacde06d98eeb6749",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/g/gmp/libgmp10_6.3.0+dfsg-5ubuntu2_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libhogweed6t64_3.10.2-1_arm64.deb",
+      "filename": "d6b297d01eb4a37a5f5277f8285221567c54537c20d730fc5f5c4bde72ffd2ce-libhogweed6t64_3.10.2-1_arm64.deb",
+      "sha256": "d6b297d01eb4a37a5f5277f8285221567c54537c20d730fc5f5c4bde72ffd2ce",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/n/nettle/libhogweed6t64_3.10.2-1_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libidn2-0_2.3.8-4build1_arm64.deb",
+      "filename": "8c0daa227474b787790f62fd15c9ad05890e22a66c2eaeabee12b4ccdb5102c6-libidn2-0_2.3.8-4build1_arm64.deb",
+      "sha256": "8c0daa227474b787790f62fd15c9ad05890e22a66c2eaeabee12b4ccdb5102c6",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libi/libidn2/libidn2-0_2.3.8-4build1_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libnettle8t64_3.10.2-1_arm64.deb",
+      "filename": "922ad03de441c26ca6e2a437545b7afdec5cfb6aeb123ee51b6b6a4e5b5a0975-libnettle8t64_3.10.2-1_arm64.deb",
+      "sha256": "922ad03de441c26ca6e2a437545b7afdec5cfb6aeb123ee51b6b6a4e5b5a0975",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/n/nettle/libnettle8t64_3.10.2-1_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libp11-kit0_0.26.2-2_arm64.deb",
+      "filename": "0776f4755a37442e4e4c7f2e0c8fbe4bea021ad9652fe5702d0cc003cf9f5683-libp11-kit0_0.26.2-2_arm64.deb",
+      "sha256": "0776f4755a37442e4e4c7f2e0c8fbe4bea021ad9652fe5702d0cc003cf9f5683",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/p/p11-kit/libp11-kit0_0.26.2-2_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libtasn1-6_4.21.0-2_arm64.deb",
+      "filename": "63d38a74ad15cc88fec21f408cdabf857d5c5a9d83887a21915c24b428fa6576-libtasn1-6_4.21.0-2_arm64.deb",
+      "sha256": "63d38a74ad15cc88fec21f408cdabf857d5c5a9d83887a21915c24b428fa6576",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libt/libtasn1-6/libtasn1-6_4.21.0-2_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libunistring5_1.3-2build1_arm64.deb",
+      "filename": "1a73d3d7690e26f926d7af025b44d6d57c2dd1e0abb35c0d5b1b11f4b9b7f4da-libunistring5_1.3-2build1_arm64.deb",
+      "sha256": "1a73d3d7690e26f926d7af025b44d6d57c2dd1e0abb35c0d5b1b11f4b9b7f4da",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/libu/libunistring/libunistring5_1.3-2build1_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libsasl2-modules-db_2.1.28+dfsg1-9ubuntu3_arm64.deb",
+      "filename": "02ce11bf8ba0455f09af83c7e8aa27f86ac7cc60f240ff8e789c6d63cb510428-libsasl2-modules-db_2.1.28+dfsg1-9ubuntu3_arm64.deb",
+      "sha256": "02ce11bf8ba0455f09af83c7e8aa27f86ac7cc60f240ff8e789c6d63cb510428",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/c/cyrus-sasl2/libsasl2-modules-db_2.1.28+dfsg1-9ubuntu3_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libssl3t64_3.5.5-1ubuntu3_arm64.deb",
+      "filename": "9ada8cf212787ead17a496fa39c3e727d7273b2e900da96aa921949d404b16bb-libssl3t64_3.5.5-1ubuntu3_arm64.deb",
+      "sha256": "9ada8cf212787ead17a496fa39c3e727d7273b2e900da96aa921949d404b16bb",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/o/openssl/libssl3t64_3.5.5-1ubuntu3_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "crosvm/sysroot-debs/libdb5.3t64_5.3.28+dfsg2-10ubuntu1_arm64.deb",
+      "filename": "899b09f03294cc5fb6341aad80f704fb3144180ee908bcf8ee84f470b524ebe9-libdb5.3t64_5.3.28+dfsg2-10ubuntu1_arm64.deb",
+      "sha256": "899b09f03294cc5fb6341aad80f704fb3144180ee908bcf8ee84f470b524ebe9",
+      "upstream": [
+        "https://snapshot.ubuntu.com/ubuntu/20261107T000000Z/pool/main/d/db5.3/libdb5.3t64_5.3.28+dfsg2-10ubuntu1_arm64.deb"
+      ],
+      "recipe": "tools/crosvm.lock.json",
+      "preservation": "D"
+    },
+    {
+      "name": "mesa-26.2.0",
+      "filename": "944a85a89e5b05566cf4b2eb56d9917148a25d51261f75b5edaaed8d5fea738e-mesa-26.2.0.tar",
+      "sha256": "944a85a89e5b05566cf4b2eb56d9917148a25d51261f75b5edaaed8d5fea738e",
+      "upstream": [],
+      "recipe": "mesa/source.json",
+      "commit": "9f0a761020bca92f2b07156a0621e5360cb8eca5",
+      "own_url": "https://github.com/yzddmr6/deps-archive/releases/download/inputs-20261108/944a85a89e5b05566cf4b2eb56d9917148a25d51261f75b5edaaed8d5fea738e-mesa-26.2.0.tar",
+      "preservation": "C"
+    },
+    {
+      "name": "aosp-mkbootimg",
+      "filename": "434f155d717564c2c2cf4760afd05c338a37a5fbc3fa2eb6a474409dbf28c503-aosp-mkbootimg-954bc3ead5e679005fddf3484d247f2557b3c2c9.tar.gz",
+      "sha256": "434f155d717564c2c2cf4760afd05c338a37a5fbc3fa2eb6a474409dbf28c503",
+      "upstream": [
+        "https://android.googlesource.com/platform/system/tools/mkbootimg/+archive/954bc3ead5e679005fddf3484d247f2557b3c2c9.tar.gz"
+      ],
+      "recipe": "kernel/source.json",
+      "commit": "954bc3ead5e679005fddf3484d247f2557b3c2c9",
+      "preservation": "D"
+    },
+    {
+      "name": "aosp-avb",
+      "filename": "024579e3e8ee2e1724252933b02c248069ef35b12485b16a71dbac20ec4b3e36-avbtool.py.base64",
+      "sha256": "024579e3e8ee2e1724252933b02c248069ef35b12485b16a71dbac20ec4b3e36",
+      "upstream": [
+        "https://android.googlesource.com/platform/external/avb/+/5ac0c3a071d811846a62412383dd6e259f341e6e/avbtool.py?format=TEXT"
+      ],
+      "preservation": "D",
+      "bytes": 276672
+    },
+    {
+      "name": "cargo/addr2line-0.21.0.crate",
+      "filename": "8a30b2e23b9e17a9f90641c7ab1549cd9b44f296d3ccbf309d2863cfe398a0cb-addr2line-0.21.0.crate",
+      "sha256": "8a30b2e23b9e17a9f90641c7ab1549cd9b44f296d3ccbf309d2863cfe398a0cb",
+      "bytes": 40807,
+      "upstream": [
+        "https://static.crates.io/crates/addr2line/addr2line-0.21.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.21.0"
+    },
+    {
+      "name": "cargo/adler-1.0.2.crate",
+      "filename": "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe-adler-1.0.2.crate",
+      "sha256": "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe",
+      "bytes": 12778,
+      "upstream": [
+        "https://static.crates.io/crates/adler/adler-1.0.2.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.2"
+    },
+    {
+      "name": "cargo/ahash-0.8.6.crate",
+      "filename": "91429305e9f0a25f6205c5b8e0d2db09e0708a7a6df0f42212bb56c32c8ac97a-ahash-0.8.6.crate",
+      "sha256": "91429305e9f0a25f6205c5b8e0d2db09e0708a7a6df0f42212bb56c32c8ac97a",
+      "bytes": 42780,
+      "upstream": [
+        "https://static.crates.io/crates/ahash/ahash-0.8.6.crate"
+      ],
+      "preservation": "D",
+      "version": "0.8.6"
+    },
+    {
+      "name": "cargo/aho-corasick-0.7.18.crate",
+      "filename": "1e37cfd5e7657ada45f742d6e99ca5788580b5c529dc78faf11ece6dc702656f-aho-corasick-0.7.18.crate",
+      "sha256": "1e37cfd5e7657ada45f742d6e99ca5788580b5c529dc78faf11ece6dc702656f",
+      "bytes": 112923,
+      "upstream": [
+        "https://static.crates.io/crates/aho-corasick/aho-corasick-0.7.18.crate"
+      ],
+      "preservation": "D",
+      "version": "0.7.18"
+    },
+    {
+      "name": "cargo/android_log-sys-0.3.1.crate",
+      "filename": "5ecc8056bf6ab9892dcd53216c83d1597487d7dacac16c8df6b877d127df9937-android_log-sys-0.3.1.crate",
+      "sha256": "5ecc8056bf6ab9892dcd53216c83d1597487d7dacac16c8df6b877d127df9937",
+      "bytes": 6063,
+      "upstream": [
+        "https://static.crates.io/crates/android_log-sys/android_log-sys-0.3.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.1"
+    },
+    {
+      "name": "cargo/anyhow-1.0.58.crate",
+      "filename": "bb07d2053ccdbe10e2af2995a2f116c1330396493dc1269f6a91d0ae82e19704-anyhow-1.0.58.crate",
+      "sha256": "bb07d2053ccdbe10e2af2995a2f116c1330396493dc1269f6a91d0ae82e19704",
+      "bytes": 43137,
+      "upstream": [
+        "https://static.crates.io/crates/anyhow/anyhow-1.0.58.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.58"
+    },
+    {
+      "name": "cargo/arbitrary-1.1.6.crate",
+      "filename": "f44124848854b941eafdb34f05b3bcf59472f643c7e151eba7c2b69daa469ed5-arbitrary-1.1.6.crate",
+      "sha256": "f44124848854b941eafdb34f05b3bcf59472f643c7e151eba7c2b69daa469ed5",
+      "bytes": 29037,
+      "upstream": [
+        "https://static.crates.io/crates/arbitrary/arbitrary-1.1.6.crate"
+      ],
+      "preservation": "D",
+      "version": "1.1.6"
+    },
+    {
+      "name": "cargo/argh-0.1.10.crate",
+      "filename": "ab257697eb9496bf75526f0217b5ed64636a9cfafa78b8365c71bd283fcef93e-argh-0.1.10.crate",
+      "sha256": "ab257697eb9496bf75526f0217b5ed64636a9cfafa78b8365c71bd283fcef93e",
+      "bytes": 22165,
+      "upstream": [
+        "https://static.crates.io/crates/argh/argh-0.1.10.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.10"
+    },
+    {
+      "name": "cargo/argh_derive-0.1.10.crate",
+      "filename": "b382dbd3288e053331f03399e1db106c9fb0d8562ad62cb04859ae926f324fa6-argh_derive-0.1.10.crate",
+      "sha256": "b382dbd3288e053331f03399e1db106c9fb0d8562ad62cb04859ae926f324fa6",
+      "bytes": 19393,
+      "upstream": [
+        "https://static.crates.io/crates/argh_derive/argh_derive-0.1.10.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.10"
+    },
+    {
+      "name": "cargo/argh_shared-0.1.10.crate",
+      "filename": "64cb94155d965e3d37ffbbe7cc5b82c3dd79dd33bd48e536f73d2cfb8d85506f-argh_shared-0.1.10.crate",
+      "sha256": "64cb94155d965e3d37ffbbe7cc5b82c3dd79dd33bd48e536f73d2cfb8d85506f",
+      "bytes": 4308,
+      "upstream": [
+        "https://static.crates.io/crates/argh_shared/argh_shared-0.1.10.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.10"
+    },
+    {
+      "name": "cargo/ash-0.37.3+1.3.251.crate",
+      "filename": "39e9c3835d686b0a6084ab4234fcd1b07dbf6e4767dce60874b12356a25ecd4a-ash-0.37.3+1.3.251.crate",
+      "sha256": "39e9c3835d686b0a6084ab4234fcd1b07dbf6e4767dce60874b12356a25ecd4a",
+      "bytes": 449524,
+      "upstream": [
+        "https://static.crates.io/crates/ash/ash-0.37.3+1.3.251.crate"
+      ],
+      "preservation": "D",
+      "version": "0.37.3+1.3.251"
+    },
+    {
+      "name": "cargo/async-task-4.3.0.crate",
+      "filename": "7a40729d2133846d9ed0ea60a8b9541bccddab49cd30f0715a1da672fe9a2524-async-task-4.3.0.crate",
+      "sha256": "7a40729d2133846d9ed0ea60a8b9541bccddab49cd30f0715a1da672fe9a2524",
+      "bytes": 29544,
+      "upstream": [
+        "https://static.crates.io/crates/async-task/async-task-4.3.0.crate"
+      ],
+      "preservation": "D",
+      "version": "4.3.0"
+    },
+    {
+      "name": "cargo/async-trait-0.1.85.crate",
+      "filename": "3f934833b4b7233644e5848f235df3f57ed8c80f1528a26c3dfa13d2147fa056-async-trait-0.1.85.crate",
+      "sha256": "3f934833b4b7233644e5848f235df3f57ed8c80f1528a26c3dfa13d2147fa056",
+      "bytes": 33251,
+      "upstream": [
+        "https://static.crates.io/crates/async-trait/async-trait-0.1.85.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.85"
+    },
+    {
+      "name": "cargo/atty-0.2.14.crate",
+      "filename": "d9b39be18770d11421cdb1b9947a45dd3f37e93092cbf377614828a319d5fee8-atty-0.2.14.crate",
+      "sha256": "d9b39be18770d11421cdb1b9947a45dd3f37e93092cbf377614828a319d5fee8",
+      "bytes": 5470,
+      "upstream": [
+        "https://static.crates.io/crates/atty/atty-0.2.14.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.14"
+    },
+    {
+      "name": "cargo/autocfg-1.1.0.crate",
+      "filename": "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa-autocfg-1.1.0.crate",
+      "sha256": "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa",
+      "bytes": 13272,
+      "upstream": [
+        "https://static.crates.io/crates/autocfg/autocfg-1.1.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.1.0"
+    },
+    {
+      "name": "cargo/backtrace-0.3.69.crate",
+      "filename": "2089b7e3f35b9dd2d0ed921ead4f6d318c27680d4a5bd167b3ee120edb105837-backtrace-0.3.69.crate",
+      "sha256": "2089b7e3f35b9dd2d0ed921ead4f6d318c27680d4a5bd167b3ee120edb105837",
+      "bytes": 77299,
+      "upstream": [
+        "https://static.crates.io/crates/backtrace/backtrace-0.3.69.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.69"
+    },
+    {
+      "name": "cargo/bindgen-0.63.0.crate",
+      "filename": "36d860121800b2a9a94f9b5604b332d5cffb234ce17609ea479d723dbc9d3885-bindgen-0.63.0.crate",
+      "sha256": "36d860121800b2a9a94f9b5604b332d5cffb234ce17609ea479d723dbc9d3885",
+      "bytes": 201856,
+      "upstream": [
+        "https://static.crates.io/crates/bindgen/bindgen-0.63.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.63.0"
+    },
+    {
+      "name": "cargo/bindgen-0.68.1.crate",
+      "filename": "726e4313eb6ec35d2730258ad4e15b547ee75d6afaa1361a922e78e59b7d8078-bindgen-0.68.1.crate",
+      "sha256": "726e4313eb6ec35d2730258ad4e15b547ee75d6afaa1361a922e78e59b7d8078",
+      "bytes": 218997,
+      "upstream": [
+        "https://static.crates.io/crates/bindgen/bindgen-0.68.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.68.1"
+    },
+    {
+      "name": "cargo/bindgen-0.70.1.crate",
+      "filename": "f49d8fed880d473ea71efb9bf597651e77201bdd4893efe54c9e5d65ae04ce6f-bindgen-0.70.1.crate",
+      "sha256": "f49d8fed880d473ea71efb9bf597651e77201bdd4893efe54c9e5d65ae04ce6f",
+      "bytes": 226363,
+      "upstream": [
+        "https://static.crates.io/crates/bindgen/bindgen-0.70.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.70.1"
+    },
+    {
+      "name": "cargo/bitflags-1.3.2.crate",
+      "filename": "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a-bitflags-1.3.2.crate",
+      "sha256": "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a",
+      "bytes": 23021,
+      "upstream": [
+        "https://static.crates.io/crates/bitflags/bitflags-1.3.2.crate"
+      ],
+      "preservation": "D",
+      "version": "1.3.2"
+    },
+    {
+      "name": "cargo/bitflags-2.4.0.crate",
+      "filename": "b4682ae6287fcf752ecaabbfcc7b6f9b72aa33933dc23a554d853aea8eea8635-bitflags-2.4.0.crate",
+      "sha256": "b4682ae6287fcf752ecaabbfcc7b6f9b72aa33933dc23a554d853aea8eea8635",
+      "bytes": 36954,
+      "upstream": [
+        "https://static.crates.io/crates/bitflags/bitflags-2.4.0.crate"
+      ],
+      "preservation": "D",
+      "version": "2.4.0"
+    },
+    {
+      "name": "cargo/bitreader-0.3.6.crate",
+      "filename": "d84ea71c85d1fe98fe67a9b9988b1695bc24c0b0d3bfb18d4c510f44b4b09941-bitreader-0.3.6.crate",
+      "sha256": "d84ea71c85d1fe98fe67a9b9988b1695bc24c0b0d3bfb18d4c510f44b4b09941",
+      "bytes": 11525,
+      "upstream": [
+        "https://static.crates.io/crates/bitreader/bitreader-0.3.6.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.6"
+    },
+    {
+      "name": "cargo/bytemuck-1.14.0.crate",
+      "filename": "374d28ec25809ee0e23827c2ab573d729e293f281dfe393500e7ad618baa61c6-bytemuck-1.14.0.crate",
+      "sha256": "374d28ec25809ee0e23827c2ab573d729e293f281dfe393500e7ad618baa61c6",
+      "bytes": 44933,
+      "upstream": [
+        "https://static.crates.io/crates/bytemuck/bytemuck-1.14.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.14.0"
+    },
+    {
+      "name": "cargo/bytemuck_derive-1.5.0.crate",
+      "filename": "965ab7eb5f8f97d2a083c799f3a1b994fc397b2fe2da5d1da1626ce15a39f2b1-bytemuck_derive-1.5.0.crate",
+      "sha256": "965ab7eb5f8f97d2a083c799f3a1b994fc397b2fe2da5d1da1626ce15a39f2b1",
+      "bytes": 17323,
+      "upstream": [
+        "https://static.crates.io/crates/bytemuck_derive/bytemuck_derive-1.5.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.5.0"
+    },
+    {
+      "name": "cargo/byteorder-1.4.3.crate",
+      "filename": "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610-byteorder-1.4.3.crate",
+      "sha256": "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610",
+      "bytes": 22512,
+      "upstream": [
+        "https://static.crates.io/crates/byteorder/byteorder-1.4.3.crate"
+      ],
+      "preservation": "D",
+      "version": "1.4.3"
+    },
+    {
+      "name": "cargo/bytes-1.2.0.crate",
+      "filename": "f0b3de4a0c5e67e16066a0715723abd91edc2f9001d09c46e1dca929351e130e-bytes-1.2.0.crate",
+      "sha256": "f0b3de4a0c5e67e16066a0715723abd91edc2f9001d09c46e1dca929351e130e",
+      "bytes": 54688,
+      "upstream": [
+        "https://static.crates.io/crates/bytes/bytes-1.2.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.2.0"
+    },
+    {
+      "name": "cargo/cbindgen-0.24.3.crate",
+      "filename": "a6358dedf60f4d9b8db43ad187391afe959746101346fe51bb978126bec61dfb-cbindgen-0.24.3.crate",
+      "sha256": "a6358dedf60f4d9b8db43ad187391afe959746101346fe51bb978126bec61dfb",
+      "bytes": 195698,
+      "upstream": [
+        "https://static.crates.io/crates/cbindgen/cbindgen-0.24.3.crate"
+      ],
+      "preservation": "D",
+      "version": "0.24.3"
+    },
+    {
+      "name": "cargo/cc-1.0.90.crate",
+      "filename": "8cd6604a82acf3039f1144f54b8eb34e91ffba622051189e71b781822d5ee1f5-cc-1.0.90.crate",
+      "sha256": "8cd6604a82acf3039f1144f54b8eb34e91ffba622051189e71b781822d5ee1f5",
+      "bytes": 73954,
+      "upstream": [
+        "https://static.crates.io/crates/cc/cc-1.0.90.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.90"
+    },
+    {
+      "name": "cargo/cexpr-0.6.0.crate",
+      "filename": "6fac387a98bb7c37292057cffc56d62ecb629900026402633ae9160df93a8766-cexpr-0.6.0.crate",
+      "sha256": "6fac387a98bb7c37292057cffc56d62ecb629900026402633ae9160df93a8766",
+      "bytes": 17966,
+      "upstream": [
+        "https://static.crates.io/crates/cexpr/cexpr-0.6.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.6.0"
+    },
+    {
+      "name": "cargo/cfg-if-1.0.0.crate",
+      "filename": "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd-cfg-if-1.0.0.crate",
+      "sha256": "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd",
+      "bytes": 7934,
+      "upstream": [
+        "https://static.crates.io/crates/cfg-if/cfg-if-1.0.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.0"
+    },
+    {
+      "name": "cargo/cfg_aliases-0.1.1.crate",
+      "filename": "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e-cfg_aliases-0.1.1.crate",
+      "sha256": "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e",
+      "bytes": 6009,
+      "upstream": [
+        "https://static.crates.io/crates/cfg_aliases/cfg_aliases-0.1.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.1"
+    },
+    {
+      "name": "cargo/cfg_aliases-0.2.1.crate",
+      "filename": "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724-cfg_aliases-0.2.1.crate",
+      "sha256": "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724",
+      "bytes": 6355,
+      "upstream": [
+        "https://static.crates.io/crates/cfg_aliases/cfg_aliases-0.2.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.1"
+    },
+    {
+      "name": "cargo/chrono-0.4.35.crate",
+      "filename": "8eaf5903dcbc0a39312feb77df2ff4c76387d591b9fc7b04a238dcf8bb62639a-chrono-0.4.35.crate",
+      "sha256": "8eaf5903dcbc0a39312feb77df2ff4c76387d591b9fc7b04a238dcf8bb62639a",
+      "bytes": 234267,
+      "upstream": [
+        "https://static.crates.io/crates/chrono/chrono-0.4.35.crate"
+      ],
+      "preservation": "D",
+      "version": "0.4.35"
+    },
+    {
+      "name": "cargo/ciborium-0.2.2.crate",
+      "filename": "42e69ffd6f0917f5c029256a24d0161db17cea3997d185db0d35926308770f0e-ciborium-0.2.2.crate",
+      "sha256": "42e69ffd6f0917f5c029256a24d0161db17cea3997d185db0d35926308770f0e",
+      "bytes": 35611,
+      "upstream": [
+        "https://static.crates.io/crates/ciborium/ciborium-0.2.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.2"
+    },
+    {
+      "name": "cargo/ciborium-io-0.2.2.crate",
+      "filename": "05afea1e0a06c9be33d539b876f1ce3692f4afea2cb41f740e7743225ed1c757-ciborium-io-0.2.2.crate",
+      "sha256": "05afea1e0a06c9be33d539b876f1ce3692f4afea2cb41f740e7743225ed1c757",
+      "bytes": 6697,
+      "upstream": [
+        "https://static.crates.io/crates/ciborium-io/ciborium-io-0.2.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.2"
+    },
+    {
+      "name": "cargo/ciborium-ll-0.2.2.crate",
+      "filename": "57663b653d948a338bfb3eeba9bb2fd5fcfaecb9e199e87e1eda4d9e8b240fd9-ciborium-ll-0.2.2.crate",
+      "sha256": "57663b653d948a338bfb3eeba9bb2fd5fcfaecb9e199e87e1eda4d9e8b240fd9",
+      "bytes": 14695,
+      "upstream": [
+        "https://static.crates.io/crates/ciborium-ll/ciborium-ll-0.2.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.2"
+    },
+    {
+      "name": "cargo/clang-sys-1.4.0.crate",
+      "filename": "fa2e27ae6ab525c3d369ded447057bca5438d86dc3a68f6faafb8269ba82ebf3-clang-sys-1.4.0.crate",
+      "sha256": "fa2e27ae6ab525c3d369ded447057bca5438d86dc3a68f6faafb8269ba82ebf3",
+      "bytes": 38679,
+      "upstream": [
+        "https://static.crates.io/crates/clang-sys/clang-sys-1.4.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.4.0"
+    },
+    {
+      "name": "cargo/clap-3.2.23.crate",
+      "filename": "71655c45cb9845d3270c9d6df84ebe72b4dad3c2ba3f7023ad47c144e4e473a5-clap-3.2.23.crate",
+      "sha256": "71655c45cb9845d3270c9d6df84ebe72b4dad3c2ba3f7023ad47c144e4e473a5",
+      "bytes": 219435,
+      "upstream": [
+        "https://static.crates.io/crates/clap/clap-3.2.23.crate"
+      ],
+      "preservation": "D",
+      "version": "3.2.23"
+    },
+    {
+      "name": "cargo/clap-4.1.8.crate",
+      "filename": "c3d7ae14b20b94cb02149ed21a86c423859cbe18dc7ed69845cace50e52b40a5-clap-4.1.8.crate",
+      "sha256": "c3d7ae14b20b94cb02149ed21a86c423859cbe18dc7ed69845cace50e52b40a5",
+      "bytes": 207175,
+      "upstream": [
+        "https://static.crates.io/crates/clap/clap-4.1.8.crate"
+      ],
+      "preservation": "D",
+      "version": "4.1.8"
+    },
+    {
+      "name": "cargo/clap_derive-4.1.8.crate",
+      "filename": "44bec8e5c9d09e439c4335b1af0abaab56dcf3b94999a936e1bb47b9134288f0-clap_derive-4.1.8.crate",
+      "sha256": "44bec8e5c9d09e439c4335b1af0abaab56dcf3b94999a936e1bb47b9134288f0",
+      "bytes": 27889,
+      "upstream": [
+        "https://static.crates.io/crates/clap_derive/clap_derive-4.1.8.crate"
+      ],
+      "preservation": "D",
+      "version": "4.1.8"
+    },
+    {
+      "name": "cargo/clap_lex-0.2.4.crate",
+      "filename": "2850f2f5a82cbf437dd5af4d49848fbdfc27c157c3d010345776f952765261c5-clap_lex-0.2.4.crate",
+      "sha256": "2850f2f5a82cbf437dd5af4d49848fbdfc27c157c3d010345776f952765261c5",
+      "bytes": 9652,
+      "upstream": [
+        "https://static.crates.io/crates/clap_lex/clap_lex-0.2.4.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.4"
+    },
+    {
+      "name": "cargo/clap_lex-0.3.2.crate",
+      "filename": "350b9cf31731f9957399229e9b2adc51eeabdfbe9d71d9a0552275fd12710d09-clap_lex-0.3.2.crate",
+      "sha256": "350b9cf31731f9957399229e9b2adc51eeabdfbe9d71d9a0552275fd12710d09",
+      "bytes": 9650,
+      "upstream": [
+        "https://static.crates.io/crates/clap_lex/clap_lex-0.3.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.2"
+    },
+    {
+      "name": "cargo/core-foundation-0.9.4.crate",
+      "filename": "91e195e091a93c46f7102ec7818a2aa394e1e1771c3ab4825963fa03e45afb8f-core-foundation-0.9.4.crate",
+      "sha256": "91e195e091a93c46f7102ec7818a2aa394e1e1771c3ab4825963fa03e45afb8f",
+      "bytes": 27743,
+      "upstream": [
+        "https://static.crates.io/crates/core-foundation/core-foundation-0.9.4.crate"
+      ],
+      "preservation": "D",
+      "version": "0.9.4"
+    },
+    {
+      "name": "cargo/core-foundation-sys-0.8.6.crate",
+      "filename": "06ea2b9bc92be3c2baa9334a323ebca2d6f074ff852cd1d7b11064035cd3868f-core-foundation-sys-0.8.6.crate",
+      "sha256": "06ea2b9bc92be3c2baa9334a323ebca2d6f074ff852cd1d7b11064035cd3868f",
+      "bytes": 37629,
+      "upstream": [
+        "https://static.crates.io/crates/core-foundation-sys/core-foundation-sys-0.8.6.crate"
+      ],
+      "preservation": "D",
+      "version": "0.8.6"
+    },
+    {
+      "name": "cargo/core-graphics-types-0.1.3.crate",
+      "filename": "45390e6114f68f718cc7a830514a96f903cccd70d02a8f6d9f643ac4ba45afaf-core-graphics-types-0.1.3.crate",
+      "sha256": "45390e6114f68f718cc7a830514a96f903cccd70d02a8f6d9f643ac4ba45afaf",
+      "bytes": 7063,
+      "upstream": [
+        "https://static.crates.io/crates/core-graphics-types/core-graphics-types-0.1.3.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.3"
+    },
+    {
+      "name": "cargo/crc32fast-1.3.2.crate",
+      "filename": "b540bd8bc810d3885c6ea91e2018302f68baba2129ab3e88f32389ee9370880d-crc32fast-1.3.2.crate",
+      "sha256": "b540bd8bc810d3885c6ea91e2018302f68baba2129ab3e88f32389ee9370880d",
+      "bytes": 38661,
+      "upstream": [
+        "https://static.crates.io/crates/crc32fast/crc32fast-1.3.2.crate"
+      ],
+      "preservation": "D",
+      "version": "1.3.2"
+    },
+    {
+      "name": "cargo/cros-codecs-0.0.4.crate",
+      "filename": "277a30a0ddadfa014380ee30cc60330d260369855417c492fa94421d7c7e9229-cros-codecs-0.0.4.crate",
+      "sha256": "277a30a0ddadfa014380ee30cc60330d260369855417c492fa94421d7c7e9229",
+      "bytes": 1924450,
+      "upstream": [
+        "https://static.crates.io/crates/cros-codecs/cros-codecs-0.0.4.crate"
+      ],
+      "preservation": "D",
+      "version": "0.0.4"
+    },
+    {
+      "name": "cargo/cros-libva-0.0.4.crate",
+      "filename": "dc78ee9952d72572d126ef28338857d12c08a013ba39b77fd8e20201837def3e-cros-libva-0.0.4.crate",
+      "sha256": "dc78ee9952d72572d126ef28338857d12c08a013ba39b77fd8e20201837def3e",
+      "bytes": 67729,
+      "upstream": [
+        "https://static.crates.io/crates/cros-libva/cros-libva-0.0.4.crate"
+      ],
+      "preservation": "D",
+      "version": "0.0.4"
+    },
+    {
+      "name": "cargo/crossbeam-channel-0.5.8.crate",
+      "filename": "a33c2bf77f2df06183c3aa30d1e96c0695a313d4f9c453cc3762a6db39f99200-crossbeam-channel-0.5.8.crate",
+      "sha256": "a33c2bf77f2df06183c3aa30d1e96c0695a313d4f9c453cc3762a6db39f99200",
+      "bytes": 90455,
+      "upstream": [
+        "https://static.crates.io/crates/crossbeam-channel/crossbeam-channel-0.5.8.crate"
+      ],
+      "preservation": "D",
+      "version": "0.5.8"
+    },
+    {
+      "name": "cargo/crossbeam-deque-0.8.3.crate",
+      "filename": "ce6fd6f855243022dcecf8702fef0c297d4338e226845fe067f6341ad9fa0cef-crossbeam-deque-0.8.3.crate",
+      "sha256": "ce6fd6f855243022dcecf8702fef0c297d4338e226845fe067f6341ad9fa0cef",
+      "bytes": 21746,
+      "upstream": [
+        "https://static.crates.io/crates/crossbeam-deque/crossbeam-deque-0.8.3.crate"
+      ],
+      "preservation": "D",
+      "version": "0.8.3"
+    },
+    {
+      "name": "cargo/crossbeam-epoch-0.9.14.crate",
+      "filename": "46bd5f3f85273295a9d14aedfb86f6aadbff6d8f5295c4a9edb08e819dcf5695-crossbeam-epoch-0.9.14.crate",
+      "sha256": "46bd5f3f85273295a9d14aedfb86f6aadbff6d8f5295c4a9edb08e819dcf5695",
+      "bytes": 48524,
+      "upstream": [
+        "https://static.crates.io/crates/crossbeam-epoch/crossbeam-epoch-0.9.14.crate"
+      ],
+      "preservation": "D",
+      "version": "0.9.14"
+    },
+    {
+      "name": "cargo/crossbeam-queue-0.3.11.crate",
+      "filename": "df0346b5d5e76ac2fe4e327c5fd1118d6be7c51dfb18f9b7922923f287471e35-crossbeam-queue-0.3.11.crate",
+      "sha256": "df0346b5d5e76ac2fe4e327c5fd1118d6be7c51dfb18f9b7922923f287471e35",
+      "bytes": 15581,
+      "upstream": [
+        "https://static.crates.io/crates/crossbeam-queue/crossbeam-queue-0.3.11.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.11"
+    },
+    {
+      "name": "cargo/crossbeam-utils-0.8.19.crate",
+      "filename": "248e3bacc7dc6baa3b21e405ee045c3047101a49145e7e9eca583ab4c2ca5345-crossbeam-utils-0.8.19.crate",
+      "sha256": "248e3bacc7dc6baa3b21e405ee045c3047101a49145e7e9eca583ab4c2ca5345",
+      "bytes": 42328,
+      "upstream": [
+        "https://static.crates.io/crates/crossbeam-utils/crossbeam-utils-0.8.19.crate"
+      ],
+      "preservation": "D",
+      "version": "0.8.19"
+    },
+    {
+      "name": "cargo/crunchy-0.2.2.crate",
+      "filename": "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7-crunchy-0.2.2.crate",
+      "sha256": "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7",
+      "bytes": 2995,
+      "upstream": [
+        "https://static.crates.io/crates/crunchy/crunchy-0.2.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.2"
+    },
+    {
+      "name": "cargo/ctrlc-3.2.5.crate",
+      "filename": "bbcf33c2a618cbe41ee43ae6e9f2e48368cd9f9db2896f10167d8d762679f639-ctrlc-3.2.5.crate",
+      "sha256": "bbcf33c2a618cbe41ee43ae6e9f2e48368cd9f9db2896f10167d8d762679f639",
+      "bytes": 13282,
+      "upstream": [
+        "https://static.crates.io/crates/ctrlc/ctrlc-3.2.5.crate"
+      ],
+      "preservation": "D",
+      "version": "3.2.5"
+    },
+    {
+      "name": "cargo/dbus-0.9.7.crate",
+      "filename": "1bb21987b9fb1613058ba3843121dd18b163b254d8a6e797e144cbac14d96d1b-dbus-0.9.7.crate",
+      "sha256": "1bb21987b9fb1613058ba3843121dd18b163b254d8a6e797e144cbac14d96d1b",
+      "bytes": 104206,
+      "upstream": [
+        "https://static.crates.io/crates/dbus/dbus-0.9.7.crate"
+      ],
+      "preservation": "D",
+      "version": "0.9.7"
+    },
+    {
+      "name": "cargo/derive-into-owned-0.1.0.crate",
+      "filename": "576fce04d31d592013a5887ba8d9c3830adff329e5096d7e1eb5e8e61262ca62-derive-into-owned-0.1.0.crate",
+      "sha256": "576fce04d31d592013a5887ba8d9c3830adff329e5096d7e1eb5e8e61262ca62",
+      "bytes": 6736,
+      "upstream": [
+        "https://static.crates.io/crates/derive-into-owned/derive-into-owned-0.1.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.0"
+    },
+    {
+      "name": "cargo/document-features-0.2.6.crate",
+      "filename": "c3267e1ade4f1f6ddd35fed44a04b6514e244ffeda90c6a14a9ee30f9c9fd7a1-document-features-0.2.6.crate",
+      "sha256": "c3267e1ade4f1f6ddd35fed44a04b6514e244ffeda90c6a14a9ee30f9c9fd7a1",
+      "bytes": 12869,
+      "upstream": [
+        "https://static.crates.io/crates/document-features/document-features-0.2.6.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.6"
+    },
+    {
+      "name": "cargo/either-1.7.0.crate",
+      "filename": "3f107b87b6afc2a64fd13cac55fe06d6c8859f12d4b14cbcdd2c67d0976781be-either-1.7.0.crate",
+      "sha256": "3f107b87b6afc2a64fd13cac55fe06d6c8859f12d4b14cbcdd2c67d0976781be",
+      "bytes": 15492,
+      "upstream": [
+        "https://static.crates.io/crates/either/either-1.7.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.7.0"
+    },
+    {
+      "name": "cargo/enumn-0.1.13.crate",
+      "filename": "6fd000fd6988e73bbe993ea3db9b1aa64906ab88766d654973924340c8cddb42-enumn-0.1.13.crate",
+      "sha256": "6fd000fd6988e73bbe993ea3db9b1aa64906ab88766d654973924340c8cddb42",
+      "bytes": 8391,
+      "upstream": [
+        "https://static.crates.io/crates/enumn/enumn-0.1.13.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.13"
+    },
+    {
+      "name": "cargo/env_filter-1.0.0.crate",
+      "filename": "7a1c3cc8e57274ec99de65301228b537f1e4eedc1b8e0f9411c6caac8ae7308f-env_filter-1.0.0.crate",
+      "sha256": "7a1c3cc8e57274ec99de65301228b537f1e4eedc1b8e0f9411c6caac8ae7308f",
+      "bytes": 16069,
+      "upstream": [
+        "https://static.crates.io/crates/env_filter/env_filter-1.0.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.0"
+    },
+    {
+      "name": "cargo/env_logger-0.11.9.crate",
+      "filename": "b2daee4ea451f429a58296525ddf28b45a3b64f1acf6587e2067437bb11e218d-env_logger-0.11.9.crate",
+      "sha256": "b2daee4ea451f429a58296525ddf28b45a3b64f1acf6587e2067437bb11e218d",
+      "bytes": 32624,
+      "upstream": [
+        "https://static.crates.io/crates/env_logger/env_logger-0.11.9.crate"
+      ],
+      "preservation": "D",
+      "version": "0.11.9"
+    },
+    {
+      "name": "cargo/equivalent-1.0.1.crate",
+      "filename": "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5-equivalent-1.0.1.crate",
+      "sha256": "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5",
+      "bytes": 6615,
+      "upstream": [
+        "https://static.crates.io/crates/equivalent/equivalent-1.0.1.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.1"
+    },
+    {
+      "name": "cargo/errno-0.2.8.crate",
+      "filename": "f639046355ee4f37944e44f60642c6f3a7efa3cf6b78c78a0d989a8ce6c396a1-errno-0.2.8.crate",
+      "sha256": "f639046355ee4f37944e44f60642c6f3a7efa3cf6b78c78a0d989a8ce6c396a1",
+      "bytes": 9276,
+      "upstream": [
+        "https://static.crates.io/crates/errno/errno-0.2.8.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.8"
+    },
+    {
+      "name": "cargo/errno-0.3.12.crate",
+      "filename": "cea14ef9355e3beab063703aa9dab15afd25f0667c341310c1e5274bb1d0da18-errno-0.3.12.crate",
+      "sha256": "cea14ef9355e3beab063703aa9dab15afd25f0667c341310c1e5274bb1d0da18",
+      "bytes": 12423,
+      "upstream": [
+        "https://static.crates.io/crates/errno/errno-0.3.12.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.12"
+    },
+    {
+      "name": "cargo/errno-dragonfly-0.1.2.crate",
+      "filename": "aa68f1b12764fab894d2755d2518754e71b4fd80ecfb822714a1206c2aab39bf-errno-dragonfly-0.1.2.crate",
+      "sha256": "aa68f1b12764fab894d2755d2518754e71b4fd80ecfb822714a1206c2aab39bf",
+      "bytes": 1810,
+      "upstream": [
+        "https://static.crates.io/crates/errno-dragonfly/errno-dragonfly-0.1.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.2"
+    },
+    {
+      "name": "cargo/euclid-0.22.7.crate",
+      "filename": "b52c2ef4a78da0ba68fbe1fd920627411096d2ac478f7f4c9f3a54ba6705bade-euclid-0.22.7.crate",
+      "sha256": "b52c2ef4a78da0ba68fbe1fd920627411096d2ac478f7f4c9f3a54ba6705bade",
+      "bytes": 75976,
+      "upstream": [
+        "https://static.crates.io/crates/euclid/euclid-0.22.7.crate"
+      ],
+      "preservation": "D",
+      "version": "0.22.7"
+    },
+    {
+      "name": "cargo/fastrand-1.8.0.crate",
+      "filename": "a7a407cfaa3385c4ae6b23e84623d48c2798d06e3e6a1878f7f59f17b3f86499-fastrand-1.8.0.crate",
+      "sha256": "a7a407cfaa3385c4ae6b23e84623d48c2798d06e3e6a1878f7f59f17b3f86499",
+      "bytes": 11369,
+      "upstream": [
+        "https://static.crates.io/crates/fastrand/fastrand-1.8.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.8.0"
+    },
+    {
+      "name": "cargo/fnv-1.0.7.crate",
+      "filename": "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1-fnv-1.0.7.crate",
+      "sha256": "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1",
+      "bytes": 11266,
+      "upstream": [
+        "https://static.crates.io/crates/fnv/fnv-1.0.7.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.7"
+    },
+    {
+      "name": "cargo/foreign-types-0.3.2.crate",
+      "filename": "f6f339eb8adc052cd2ca78910fda869aefa38d22d5cb648e6485e4d3fc06f3b1-foreign-types-0.3.2.crate",
+      "sha256": "f6f339eb8adc052cd2ca78910fda869aefa38d22d5cb648e6485e4d3fc06f3b1",
+      "bytes": 7504,
+      "upstream": [
+        "https://static.crates.io/crates/foreign-types/foreign-types-0.3.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.2"
+    },
+    {
+      "name": "cargo/foreign-types-shared-0.1.1.crate",
+      "filename": "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b-foreign-types-shared-0.1.1.crate",
+      "sha256": "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b",
+      "bytes": 5672,
+      "upstream": [
+        "https://static.crates.io/crates/foreign-types-shared/foreign-types-shared-0.1.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.1"
+    },
+    {
+      "name": "cargo/form_urlencoded-1.1.0.crate",
+      "filename": "a9c384f161156f5260c24a097c56119f9be8c798586aecc13afbcbe7b7e26bf8-form_urlencoded-1.1.0.crate",
+      "sha256": "a9c384f161156f5260c24a097c56119f9be8c798586aecc13afbcbe7b7e26bf8",
+      "bytes": 8734,
+      "upstream": [
+        "https://static.crates.io/crates/form_urlencoded/form_urlencoded-1.1.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.1.0"
+    },
+    {
+      "name": "cargo/futures-0.3.21.crate",
+      "filename": "f73fe65f54d1e12b726f517d3e2135ca3125a437b6d998caf1962961f7172d9e-futures-0.3.21.crate",
+      "sha256": "f73fe65f54d1e12b726f517d3e2135ca3125a437b6d998caf1962961f7172d9e",
+      "bytes": 49935,
+      "upstream": [
+        "https://static.crates.io/crates/futures/futures-0.3.21.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.21"
+    },
+    {
+      "name": "cargo/futures-channel-0.3.21.crate",
+      "filename": "c3083ce4b914124575708913bca19bfe887522d6e2e6d0952943f5eac4a74010-futures-channel-0.3.21.crate",
+      "sha256": "c3083ce4b914124575708913bca19bfe887522d6e2e6d0952943f5eac4a74010",
+      "bytes": 31961,
+      "upstream": [
+        "https://static.crates.io/crates/futures-channel/futures-channel-0.3.21.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.21"
+    },
+    {
+      "name": "cargo/futures-core-0.3.21.crate",
+      "filename": "0c09fd04b7e4073ac7156a9539b57a484a8ea920f79c7c675d05d289ab6110d3-futures-core-0.3.21.crate",
+      "sha256": "0c09fd04b7e4073ac7156a9539b57a484a8ea920f79c7c675d05d289ab6110d3",
+      "bytes": 14601,
+      "upstream": [
+        "https://static.crates.io/crates/futures-core/futures-core-0.3.21.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.21"
+    },
+    {
+      "name": "cargo/futures-executor-0.3.21.crate",
+      "filename": "9420b90cfa29e327d0429f19be13e7ddb68fa1cccb09d65e5706b8c7a749b8a6-futures-executor-0.3.21.crate",
+      "sha256": "9420b90cfa29e327d0429f19be13e7ddb68fa1cccb09d65e5706b8c7a749b8a6",
+      "bytes": 17306,
+      "upstream": [
+        "https://static.crates.io/crates/futures-executor/futures-executor-0.3.21.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.21"
+    },
+    {
+      "name": "cargo/futures-io-0.3.21.crate",
+      "filename": "fc4045962a5a5e935ee2fdedaa4e08284547402885ab326734432bed5d12966b-futures-io-0.3.21.crate",
+      "sha256": "fc4045962a5a5e935ee2fdedaa4e08284547402885ab326734432bed5d12966b",
+      "bytes": 8902,
+      "upstream": [
+        "https://static.crates.io/crates/futures-io/futures-io-0.3.21.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.21"
+    },
+    {
+      "name": "cargo/futures-macro-0.3.21.crate",
+      "filename": "33c1e13800337f4d4d7a316bf45a567dbcb6ffe087f16424852d97e97a91f512-futures-macro-0.3.21.crate",
+      "sha256": "33c1e13800337f4d4d7a316bf45a567dbcb6ffe087f16424852d97e97a91f512",
+      "bytes": 11250,
+      "upstream": [
+        "https://static.crates.io/crates/futures-macro/futures-macro-0.3.21.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.21"
+    },
+    {
+      "name": "cargo/futures-sink-0.3.21.crate",
+      "filename": "21163e139fa306126e6eedaf49ecdb4588f939600f0b1e770f4205ee4b7fa868-futures-sink-0.3.21.crate",
+      "sha256": "21163e139fa306126e6eedaf49ecdb4588f939600f0b1e770f4205ee4b7fa868",
+      "bytes": 7843,
+      "upstream": [
+        "https://static.crates.io/crates/futures-sink/futures-sink-0.3.21.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.21"
+    },
+    {
+      "name": "cargo/futures-task-0.3.21.crate",
+      "filename": "57c66a976bf5909d801bbef33416c41372779507e7a6b3a5e25e4749c58f776a-futures-task-0.3.21.crate",
+      "sha256": "57c66a976bf5909d801bbef33416c41372779507e7a6b3a5e25e4749c58f776a",
+      "bytes": 11815,
+      "upstream": [
+        "https://static.crates.io/crates/futures-task/futures-task-0.3.21.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.21"
+    },
+    {
+      "name": "cargo/futures-util-0.3.21.crate",
+      "filename": "d8b7abd5d659d9b90c8cba917f6ec750a74e2dc23902ef9cd4cc8c8b22e6036a-futures-util-0.3.21.crate",
+      "sha256": "d8b7abd5d659d9b90c8cba917f6ec750a74e2dc23902ef9cd4cc8c8b22e6036a",
+      "bytes": 153768,
+      "upstream": [
+        "https://static.crates.io/crates/futures-util/futures-util-0.3.21.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.21"
+    },
+    {
+      "name": "cargo/gdbstub-0.7.0.crate",
+      "filename": "09a8b954f9d02b74fe8e89a1c77bd9a6b8206713ebf1b272bfad9573b4a86f88-gdbstub-0.7.0.crate",
+      "sha256": "09a8b954f9d02b74fe8e89a1c77bd9a6b8206713ebf1b272bfad9573b4a86f88",
+      "bytes": 147043,
+      "upstream": [
+        "https://static.crates.io/crates/gdbstub/gdbstub-0.7.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.7.0"
+    },
+    {
+      "name": "cargo/gdbstub_arch-0.3.0.crate",
+      "filename": "4e3b1357bd3203fc09a6601327ae0ab38865d14231d0b65d3143f5762cc7977d-gdbstub_arch-0.3.0.crate",
+      "sha256": "4e3b1357bd3203fc09a6601327ae0ab38865d14231d0b65d3143f5762cc7977d",
+      "bytes": 34903,
+      "upstream": [
+        "https://static.crates.io/crates/gdbstub_arch/gdbstub_arch-0.3.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.0"
+    },
+    {
+      "name": "cargo/getrandom-0.2.7.crate",
+      "filename": "4eb1a864a501629691edf6c15a593b7a51eebaa1e8468e9ddc623de7c9b58ec6-getrandom-0.2.7.crate",
+      "sha256": "4eb1a864a501629691edf6c15a593b7a51eebaa1e8468e9ddc623de7c9b58ec6",
+      "bytes": 28854,
+      "upstream": [
+        "https://static.crates.io/crates/getrandom/getrandom-0.2.7.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.7"
+    },
+    {
+      "name": "cargo/getrandom-0.3.4.crate",
+      "filename": "899def5c37c4fd7b2664648c28120ecec138e4d395b459e5ca34f9cce2dd77fd-getrandom-0.3.4.crate",
+      "sha256": "899def5c37c4fd7b2664648c28120ecec138e4d395b459e5ca34f9cce2dd77fd",
+      "bytes": 50932,
+      "upstream": [
+        "https://static.crates.io/crates/getrandom/getrandom-0.3.4.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.4"
+    },
+    {
+      "name": "cargo/gimli-0.28.1.crate",
+      "filename": "4271d37baee1b8c7e4b708028c57d816cf9d2434acb33a549475f78c181f6253-gimli-0.28.1.crate",
+      "sha256": "4271d37baee1b8c7e4b708028c57d816cf9d2434acb33a549475f78c181f6253",
+      "bytes": 270497,
+      "upstream": [
+        "https://static.crates.io/crates/gimli/gimli-0.28.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.28.1"
+    },
+    {
+      "name": "cargo/glob-0.3.0.crate",
+      "filename": "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574-glob-0.3.0.crate",
+      "sha256": "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574",
+      "bytes": 18724,
+      "upstream": [
+        "https://static.crates.io/crates/glob/glob-0.3.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.0"
+    },
+    {
+      "name": "cargo/half-2.4.1.crate",
+      "filename": "6dd08c532ae367adf81c312a4580bc67f1d0fe8bc9c460520283f4c0ff277888-half-2.4.1.crate",
+      "sha256": "6dd08c532ae367adf81c312a4580bc67f1d0fe8bc9c460520283f4c0ff277888",
+      "bytes": 50892,
+      "upstream": [
+        "https://static.crates.io/crates/half/half-2.4.1.crate"
+      ],
+      "preservation": "D",
+      "version": "2.4.1"
+    },
+    {
+      "name": "cargo/hashbrown-0.12.3.crate",
+      "filename": "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888-hashbrown-0.12.3.crate",
+      "sha256": "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888",
+      "bytes": 102968,
+      "upstream": [
+        "https://static.crates.io/crates/hashbrown/hashbrown-0.12.3.crate"
+      ],
+      "preservation": "D",
+      "version": "0.12.3"
+    },
+    {
+      "name": "cargo/hashbrown-0.15.0.crate",
+      "filename": "1e087f84d4f86bf4b218b927129862374b72199ae7d8657835f1e89000eea4fb-hashbrown-0.15.0.crate",
+      "sha256": "1e087f84d4f86bf4b218b927129862374b72199ae7d8657835f1e89000eea4fb",
+      "bytes": 136460,
+      "upstream": [
+        "https://static.crates.io/crates/hashbrown/hashbrown-0.15.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.15.0"
+    },
+    {
+      "name": "cargo/heck-0.4.0.crate",
+      "filename": "2540771e65fc8cb83cd6e8a237f70c319bd5c29f78ed1084ba5d50eeac86f7f9-heck-0.4.0.crate",
+      "sha256": "2540771e65fc8cb83cd6e8a237f70c319bd5c29f78ed1084ba5d50eeac86f7f9",
+      "bytes": 11161,
+      "upstream": [
+        "https://static.crates.io/crates/heck/heck-0.4.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.4.0"
+    },
+    {
+      "name": "cargo/hermit-abi-0.1.19.crate",
+      "filename": "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33-hermit-abi-0.1.19.crate",
+      "sha256": "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33",
+      "bytes": 9979,
+      "upstream": [
+        "https://static.crates.io/crates/hermit-abi/hermit-abi-0.1.19.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.19"
+    },
+    {
+      "name": "cargo/hermit-abi-0.3.1.crate",
+      "filename": "fed44880c466736ef9a5c5b5facefb5ed0785676d0c02d612db14e54f0d84286-hermit-abi-0.3.1.crate",
+      "sha256": "fed44880c466736ef9a5c5b5facefb5ed0785676d0c02d612db14e54f0d84286",
+      "bytes": 13793,
+      "upstream": [
+        "https://static.crates.io/crates/hermit-abi/hermit-abi-0.3.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.1"
+    },
+    {
+      "name": "cargo/idna-0.3.0.crate",
+      "filename": "e14ddfc70884202db2244c223200c204c2bda1bc6e0998d11b5e024d657209e6-idna-0.3.0.crate",
+      "sha256": "e14ddfc70884202db2244c223200c204c2bda1bc6e0998d11b5e024d657209e6",
+      "bytes": 271128,
+      "upstream": [
+        "https://static.crates.io/crates/idna/idna-0.3.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.0"
+    },
+    {
+      "name": "cargo/indexmap-1.9.1.crate",
+      "filename": "10a35a97730320ffe8e2d410b5d3b69279b98d2c14bdb8b70ea89ecf7888d41e-indexmap-1.9.1.crate",
+      "sha256": "10a35a97730320ffe8e2d410b5d3b69279b98d2c14bdb8b70ea89ecf7888d41e",
+      "bytes": 54114,
+      "upstream": [
+        "https://static.crates.io/crates/indexmap/indexmap-1.9.1.crate"
+      ],
+      "preservation": "D",
+      "version": "1.9.1"
+    },
+    {
+      "name": "cargo/indexmap-2.6.0.crate",
+      "filename": "707907fe3c25f5424cce2cb7e1cbcafee6bdbe735ca90ef77c29e84591e5b9da-indexmap-2.6.0.crate",
+      "sha256": "707907fe3c25f5424cce2cb7e1cbcafee6bdbe735ca90ef77c29e84591e5b9da",
+      "bytes": 85204,
+      "upstream": [
+        "https://static.crates.io/crates/indexmap/indexmap-2.6.0.crate"
+      ],
+      "preservation": "D",
+      "version": "2.6.0"
+    },
+    {
+      "name": "cargo/instant-0.1.12.crate",
+      "filename": "7a5bbe824c507c5da5956355e86a746d82e0e1464f65d862cc5e71da70e94b2c-instant-0.1.12.crate",
+      "sha256": "7a5bbe824c507c5da5956355e86a746d82e0e1464f65d862cc5e71da70e94b2c",
+      "bytes": 6128,
+      "upstream": [
+        "https://static.crates.io/crates/instant/instant-0.1.12.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.12"
+    },
+    {
+      "name": "cargo/intrusive-collections-0.10.2.crate",
+      "filename": "4b719c59241cfaac1042a6d26787e28ed7ee4a4e21a5a907786f54222d1b0062-intrusive-collections-0.10.2.crate",
+      "sha256": "4b719c59241cfaac1042a6d26787e28ed7ee4a4e21a5a907786f54222d1b0062",
+      "bytes": 60478,
+      "upstream": [
+        "https://static.crates.io/crates/intrusive-collections/intrusive-collections-0.10.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.10.2"
+    },
+    {
+      "name": "cargo/io-lifetimes-1.0.5.crate",
+      "filename": "1abeb7a0dd0f8181267ff8adc397075586500b81b28a73e8a0208b00fc170fb3-io-lifetimes-1.0.5.crate",
+      "sha256": "1abeb7a0dd0f8181267ff8adc397075586500b81b28a73e8a0208b00fc170fb3",
+      "bytes": 35939,
+      "upstream": [
+        "https://static.crates.io/crates/io-lifetimes/io-lifetimes-1.0.5.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.5"
+    },
+    {
+      "name": "cargo/is-terminal-0.4.4.crate",
+      "filename": "21b6b32576413a8e69b90e952e4a026476040d81017b80445deda5f2d3921857-is-terminal-0.4.4.crate",
+      "sha256": "21b6b32576413a8e69b90e952e4a026476040d81017b80445deda5f2d3921857",
+      "bytes": 7744,
+      "upstream": [
+        "https://static.crates.io/crates/is-terminal/is-terminal-0.4.4.crate"
+      ],
+      "preservation": "D",
+      "version": "0.4.4"
+    },
+    {
+      "name": "cargo/itertools-0.12.1.crate",
+      "filename": "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569-itertools-0.12.1.crate",
+      "sha256": "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569",
+      "bytes": 137761,
+      "upstream": [
+        "https://static.crates.io/crates/itertools/itertools-0.12.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.12.1"
+    },
+    {
+      "name": "cargo/itoa-1.0.2.crate",
+      "filename": "112c678d4050afce233f4f2852bb2eb519230b3cf12f33585275537d7e41578d-itoa-1.0.2.crate",
+      "sha256": "112c678d4050afce233f4f2852bb2eb519230b3cf12f33585275537d7e41578d",
+      "bytes": 11112,
+      "upstream": [
+        "https://static.crates.io/crates/itoa/itoa-1.0.2.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.2"
+    },
+    {
+      "name": "cargo/jobserver-0.1.24.crate",
+      "filename": "af25a77299a7f711a01975c35a6a424eb6862092cc2d6c72c4ed6cbc56dfc1fa-jobserver-0.1.24.crate",
+      "sha256": "af25a77299a7f711a01975c35a6a424eb6862092cc2d6c72c4ed6cbc56dfc1fa",
+      "bytes": 21303,
+      "upstream": [
+        "https://static.crates.io/crates/jobserver/jobserver-0.1.24.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.24"
+    },
+    {
+      "name": "cargo/lazy_static-1.4.0.crate",
+      "filename": "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646-lazy_static-1.4.0.crate",
+      "sha256": "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646",
+      "bytes": 10443,
+      "upstream": [
+        "https://static.crates.io/crates/lazy_static/lazy_static-1.4.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.4.0"
+    },
+    {
+      "name": "cargo/lazycell-1.3.0.crate",
+      "filename": "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55-lazycell-1.3.0.crate",
+      "sha256": "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55",
+      "bytes": 12502,
+      "upstream": [
+        "https://static.crates.io/crates/lazycell/lazycell-1.3.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.3.0"
+    },
+    {
+      "name": "cargo/libc-0.2.188.crate",
+      "filename": "22053b6a34f84abc97f9129e61334f40174659a1b9bd18c970b83db6a9a6348b-libc-0.2.188.crate",
+      "sha256": "22053b6a34f84abc97f9129e61334f40174659a1b9bd18c970b83db6a9a6348b",
+      "bytes": 846082,
+      "upstream": [
+        "https://static.crates.io/crates/libc/libc-0.2.188.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.188"
+    },
+    {
+      "name": "cargo/libdbus-sys-0.2.5.crate",
+      "filename": "06085512b750d640299b79be4bad3d2fa90a9c00b1fd9e1b46364f66f0485c72-libdbus-sys-0.2.5.crate",
+      "sha256": "06085512b750d640299b79be4bad3d2fa90a9c00b1fd9e1b46364f66f0485c72",
+      "bytes": 1557017,
+      "upstream": [
+        "https://static.crates.io/crates/libdbus-sys/libdbus-sys-0.2.5.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.5"
+    },
+    {
+      "name": "cargo/libfuzzer-sys-0.4.4.crate",
+      "filename": "ae185684fe19814afd066da15a7cc41e126886c21282934225d9fc847582da58-libfuzzer-sys-0.4.4.crate",
+      "sha256": "ae185684fe19814afd066da15a7cc41e126886c21282934225d9fc847582da58",
+      "bytes": 126573,
+      "upstream": [
+        "https://static.crates.io/crates/libfuzzer-sys/libfuzzer-sys-0.4.4.crate"
+      ],
+      "preservation": "D",
+      "version": "0.4.4"
+    },
+    {
+      "name": "cargo/libloading-0.7.3.crate",
+      "filename": "efbc0f03f9a775e9f6aed295c6a1ba2253c5757a9e03d55c6caa46a681abcddd-libloading-0.7.3.crate",
+      "sha256": "efbc0f03f9a775e9f6aed295c6a1ba2253c5757a9e03d55c6caa46a681abcddd",
+      "bytes": 27378,
+      "upstream": [
+        "https://static.crates.io/crates/libloading/libloading-0.7.3.crate"
+      ],
+      "preservation": "D",
+      "version": "0.7.3"
+    },
+    {
+      "name": "cargo/libslirp-sys-4.2.1.crate",
+      "filename": "2772370ce9b7fa05c7eae0bd033005e139a64d52cee498a7905b3eb5d243c5f4-libslirp-sys-4.2.1.crate",
+      "sha256": "2772370ce9b7fa05c7eae0bd033005e139a64d52cee498a7905b3eb5d243c5f4",
+      "bytes": 3274,
+      "upstream": [
+        "https://static.crates.io/crates/libslirp-sys/libslirp-sys-4.2.1.crate"
+      ],
+      "preservation": "D",
+      "version": "4.2.1"
+    },
+    {
+      "name": "cargo/libtest-mimic-0.6.0.crate",
+      "filename": "d7b603516767d1ab23d0de09d023e62966c3322f7148297c35cf3d97aa8b37fa-libtest-mimic-0.6.0.crate",
+      "sha256": "d7b603516767d1ab23d0de09d023e62966c3322f7148297c35cf3d97aa8b37fa",
+      "bytes": 24242,
+      "upstream": [
+        "https://static.crates.io/crates/libtest-mimic/libtest-mimic-0.6.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.6.0"
+    },
+    {
+      "name": "cargo/linux-raw-sys-0.1.4.crate",
+      "filename": "f051f77a7c8e6957c0696eac88f26b0117e54f52d3fc682ab19397a8812846a4-linux-raw-sys-0.1.4.crate",
+      "sha256": "f051f77a7c8e6957c0696eac88f26b0117e54f52d3fc682ab19397a8812846a4",
+      "bytes": 878981,
+      "upstream": [
+        "https://static.crates.io/crates/linux-raw-sys/linux-raw-sys-0.1.4.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.4"
+    },
+    {
+      "name": "cargo/linux-raw-sys-0.9.4.crate",
+      "filename": "cd945864f07fe9f5371a27ad7b52a172b4b499999f1d97574c9fa68373937e12-linux-raw-sys-0.9.4.crate",
+      "sha256": "cd945864f07fe9f5371a27ad7b52a172b4b499999f1d97574c9fa68373937e12",
+      "bytes": 2311088,
+      "upstream": [
+        "https://static.crates.io/crates/linux-raw-sys/linux-raw-sys-0.9.4.crate"
+      ],
+      "preservation": "D",
+      "version": "0.9.4"
+    },
+    {
+      "name": "cargo/litrs-0.2.3.crate",
+      "filename": "f9275e0933cf8bb20f008924c0cb07a0692fe54d8064996520bf998de9eb79aa-litrs-0.2.3.crate",
+      "sha256": "f9275e0933cf8bb20f008924c0cb07a0692fe54d8064996520bf998de9eb79aa",
+      "bytes": 36636,
+      "upstream": [
+        "https://static.crates.io/crates/litrs/litrs-0.2.3.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.3"
+    },
+    {
+      "name": "cargo/lock_api-0.4.9.crate",
+      "filename": "435011366fe56583b16cf956f9df0095b405b82d76425bc8981c0e22e60ec4df-lock_api-0.4.9.crate",
+      "sha256": "435011366fe56583b16cf956f9df0095b405b82d76425bc8981c0e22e60ec4df",
+      "bytes": 25685,
+      "upstream": [
+        "https://static.crates.io/crates/lock_api/lock_api-0.4.9.crate"
+      ],
+      "preservation": "D",
+      "version": "0.4.9"
+    },
+    {
+      "name": "cargo/log-0.4.33.crate",
+      "filename": "0ceec5bc11778974d1bcb055b18002eba7f4b3518b6a0081b3af5f21666da9ad-log-0.4.33.crate",
+      "sha256": "0ceec5bc11778974d1bcb055b18002eba7f4b3518b6a0081b3af5f21666da9ad",
+      "bytes": 52997,
+      "upstream": [
+        "https://static.crates.io/crates/log/log-0.4.33.crate"
+      ],
+      "preservation": "D",
+      "version": "0.4.33"
+    },
+    {
+      "name": "cargo/lz4_flex-0.11.1.crate",
+      "filename": "3ea9b256699eda7b0387ffbc776dd625e28bde3918446381781245b7a50349d8-lz4_flex-0.11.1.crate",
+      "sha256": "3ea9b256699eda7b0387ffbc776dd625e28bde3918446381781245b7a50349d8",
+      "bytes": 40041,
+      "upstream": [
+        "https://static.crates.io/crates/lz4_flex/lz4_flex-0.11.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.11.1"
+    },
+    {
+      "name": "cargo/magma-gpu-0.1.80.crate",
+      "filename": "002536499cb45b3509c179f42f8c48729364931668f5a2c1bef8c407addaa629-magma-gpu-0.1.80.crate",
+      "sha256": "002536499cb45b3509c179f42f8c48729364931668f5a2c1bef8c407addaa629",
+      "bytes": 22156,
+      "upstream": [
+        "https://static.crates.io/crates/magma-gpu/magma-gpu-0.1.80.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.80"
+    },
+    {
+      "name": "cargo/malloc_buf-0.0.6.crate",
+      "filename": "62bb907fe88d54d8d9ce32a3cceab4218ed2f6b7d35617cafe9adf84e43919cb-malloc_buf-0.0.6.crate",
+      "sha256": "62bb907fe88d54d8d9ce32a3cceab4218ed2f6b7d35617cafe9adf84e43919cb",
+      "bytes": 1239,
+      "upstream": [
+        "https://static.crates.io/crates/malloc_buf/malloc_buf-0.0.6.crate"
+      ],
+      "preservation": "D",
+      "version": "0.0.6"
+    },
+    {
+      "name": "cargo/managed-0.8.0.crate",
+      "filename": "0ca88d725a0a943b096803bd34e73a4437208b6077654cc4ecb2947a5f91618d-managed-0.8.0.crate",
+      "sha256": "0ca88d725a0a943b096803bd34e73a4437208b6077654cc4ecb2947a5f91618d",
+      "bytes": 14199,
+      "upstream": [
+        "https://static.crates.io/crates/managed/managed-0.8.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.8.0"
+    },
+    {
+      "name": "cargo/memchr-2.5.0.crate",
+      "filename": "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d-memchr-2.5.0.crate",
+      "sha256": "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d",
+      "bytes": 65812,
+      "upstream": [
+        "https://static.crates.io/crates/memchr/memchr-2.5.0.crate"
+      ],
+      "preservation": "D",
+      "version": "2.5.0"
+    },
+    {
+      "name": "cargo/memoffset-0.8.0.crate",
+      "filename": "d61c719bcfbcf5d62b3a09efa6088de8c54bc0bfcd3ea7ae39fcc186108b8de1-memoffset-0.8.0.crate",
+      "sha256": "d61c719bcfbcf5d62b3a09efa6088de8c54bc0bfcd3ea7ae39fcc186108b8de1",
+      "bytes": 8912,
+      "upstream": [
+        "https://static.crates.io/crates/memoffset/memoffset-0.8.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.8.0"
+    },
+    {
+      "name": "cargo/memoffset-0.9.1.crate",
+      "filename": "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a-memoffset-0.9.1.crate",
+      "sha256": "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a",
+      "bytes": 9032,
+      "upstream": [
+        "https://static.crates.io/crates/memoffset/memoffset-0.9.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.9.1"
+    },
+    {
+      "name": "cargo/minimal-lexical-0.2.1.crate",
+      "filename": "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a-minimal-lexical-0.2.1.crate",
+      "sha256": "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a",
+      "bytes": 94841,
+      "upstream": [
+        "https://static.crates.io/crates/minimal-lexical/minimal-lexical-0.2.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.1"
+    },
+    {
+      "name": "cargo/miniz_oxide-0.7.2.crate",
+      "filename": "9d811f3e15f28568be3407c8e7fdb6514c1cda3cb30683f15b6a1a1dc4ea14a7-miniz_oxide-0.7.2.crate",
+      "sha256": "9d811f3e15f28568be3407c8e7fdb6514c1cda3cb30683f15b6a1a1dc4ea14a7",
+      "bytes": 55731,
+      "upstream": [
+        "https://static.crates.io/crates/miniz_oxide/miniz_oxide-0.7.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.7.2"
+    },
+    {
+      "name": "cargo/mio-0.8.11.crate",
+      "filename": "a4a650543ca06a924e8b371db273b2756685faae30f8487da1b56505a8f78b0c-mio-0.8.11.crate",
+      "sha256": "a4a650543ca06a924e8b371db273b2756685faae30f8487da1b56505a8f78b0c",
+      "bytes": 102983,
+      "upstream": [
+        "https://static.crates.io/crates/mio/mio-0.8.11.crate"
+      ],
+      "preservation": "D",
+      "version": "0.8.11"
+    },
+    {
+      "name": "cargo/named-lock-0.3.0.crate",
+      "filename": "0b4a84f3731e71a5792fca72324356bf700c8959d31a2ac34134b25989f254c3-named-lock-0.3.0.crate",
+      "sha256": "0b4a84f3731e71a5792fca72324356bf700c8959d31a2ac34134b25989f254c3",
+      "bytes": 6633,
+      "upstream": [
+        "https://static.crates.io/crates/named-lock/named-lock-0.3.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.0"
+    },
+    {
+      "name": "cargo/nix-0.26.2.crate",
+      "filename": "bfdda3d196821d6af13126e40375cdf7da646a96114af134d5f417a9a1dc8e1a-nix-0.26.2.crate",
+      "sha256": "bfdda3d196821d6af13126e40375cdf7da646a96114af134d5f417a9a1dc8e1a",
+      "bytes": 277973,
+      "upstream": [
+        "https://static.crates.io/crates/nix/nix-0.26.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.26.2"
+    },
+    {
+      "name": "cargo/nix-0.27.1.crate",
+      "filename": "2eb04e9c688eff1c89d72b407f168cf79bb9e867a9d3323ed6c01519eb9cc053-nix-0.27.1.crate",
+      "sha256": "2eb04e9c688eff1c89d72b407f168cf79bb9e867a9d3323ed6c01519eb9cc053",
+      "bytes": 286494,
+      "upstream": [
+        "https://static.crates.io/crates/nix/nix-0.27.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.27.1"
+    },
+    {
+      "name": "cargo/nix-0.28.0.crate",
+      "filename": "ab2156c4fce2f8df6c499cc1c763e4394b7482525bf2a9701c9d79d215f519e4-nix-0.28.0.crate",
+      "sha256": "ab2156c4fce2f8df6c499cc1c763e4394b7482525bf2a9701c9d79d215f519e4",
+      "bytes": 311086,
+      "upstream": [
+        "https://static.crates.io/crates/nix/nix-0.28.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.28.0"
+    },
+    {
+      "name": "cargo/nix-0.31.3.crate",
+      "filename": "cf20d2fde8ff38632c426f1165ed7436270b44f199fc55284c38276f9db47c3d-nix-0.31.3.crate",
+      "sha256": "cf20d2fde8ff38632c426f1165ed7436270b44f199fc55284c38276f9db47c3d",
+      "bytes": 347476,
+      "upstream": [
+        "https://static.crates.io/crates/nix/nix-0.31.3.crate"
+      ],
+      "preservation": "D",
+      "version": "0.31.3"
+    },
+    {
+      "name": "cargo/nom-7.1.1.crate",
+      "filename": "a8903e5a29a317527874d0402f867152a3d21c908bb0b933e416c65e301d4c36-nom-7.1.1.crate",
+      "sha256": "a8903e5a29a317527874d0402f867152a3d21c908bb0b933e416c65e301d4c36",
+      "bytes": 115818,
+      "upstream": [
+        "https://static.crates.io/crates/nom/nom-7.1.1.crate"
+      ],
+      "preservation": "D",
+      "version": "7.1.1"
+    },
+    {
+      "name": "cargo/num-traits-0.2.15.crate",
+      "filename": "578ede34cf02f8924ab9447f50c28075b4d3e5b269972345e7e0372b38c6cdcd-num-traits-0.2.15.crate",
+      "sha256": "578ede34cf02f8924ab9447f50c28075b4d3e5b269972345e7e0372b38c6cdcd",
+      "bytes": 49262,
+      "upstream": [
+        "https://static.crates.io/crates/num-traits/num-traits-0.2.15.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.15"
+    },
+    {
+      "name": "cargo/num_cpus-1.13.1.crate",
+      "filename": "19e64526ebdee182341572e50e9ad03965aa510cd94427a4549448f285e957a1-num_cpus-1.13.1.crate",
+      "sha256": "19e64526ebdee182341572e50e9ad03965aa510cd94427a4549448f285e957a1",
+      "bytes": 14752,
+      "upstream": [
+        "https://static.crates.io/crates/num_cpus/num_cpus-1.13.1.crate"
+      ],
+      "preservation": "D",
+      "version": "1.13.1"
+    },
+    {
+      "name": "cargo/objc-0.2.7.crate",
+      "filename": "915b1b472bc21c53464d6c8461c9d3af805ba1ef837e1cac254428f4a77177b1-objc-0.2.7.crate",
+      "sha256": "915b1b472bc21c53464d6c8461c9d3af805ba1ef837e1cac254428f4a77177b1",
+      "bytes": 22036,
+      "upstream": [
+        "https://static.crates.io/crates/objc/objc-0.2.7.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.7"
+    },
+    {
+      "name": "cargo/object-0.32.2.crate",
+      "filename": "a6a622008b6e321afc04970976f62ee297fdbaa6f95318ca343e3eebb9648441-object-0.32.2.crate",
+      "sha256": "a6a622008b6e321afc04970976f62ee297fdbaa6f95318ca343e3eebb9648441",
+      "bytes": 286994,
+      "upstream": [
+        "https://static.crates.io/crates/object/object-0.32.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.32.2"
+    },
+    {
+      "name": "cargo/once_cell-1.17.0.crate",
+      "filename": "6f61fba1741ea2b3d6a1e3178721804bb716a68a6aeba1149b5d52e3d464ea66-once_cell-1.17.0.crate",
+      "sha256": "6f61fba1741ea2b3d6a1e3178721804bb716a68a6aeba1149b5d52e3d464ea66",
+      "bytes": 32736,
+      "upstream": [
+        "https://static.crates.io/crates/once_cell/once_cell-1.17.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.17.0"
+    },
+    {
+      "name": "cargo/openssl-0.10.51.crate",
+      "filename": "97ea2d98598bf9ada7ea6ee8a30fb74f9156b63bbe495d64ec2b87c269d2dda3-openssl-0.10.51.crate",
+      "sha256": "97ea2d98598bf9ada7ea6ee8a30fb74f9156b63bbe495d64ec2b87c269d2dda3",
+      "bytes": 255686,
+      "upstream": [
+        "https://static.crates.io/crates/openssl/openssl-0.10.51.crate"
+      ],
+      "preservation": "D",
+      "version": "0.10.51"
+    },
+    {
+      "name": "cargo/openssl-macros-0.1.0.crate",
+      "filename": "b501e44f11665960c7e7fcf062c7d96a14ade4aa98116c004b2e37b5be7d736c-openssl-macros-0.1.0.crate",
+      "sha256": "b501e44f11665960c7e7fcf062c7d96a14ade4aa98116c004b2e37b5be7d736c",
+      "bytes": 5566,
+      "upstream": [
+        "https://static.crates.io/crates/openssl-macros/openssl-macros-0.1.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.0"
+    },
+    {
+      "name": "cargo/openssl-sys-0.9.86.crate",
+      "filename": "992bac49bdbab4423199c654a5515bd2a6c6a23bf03f2dd3bdb7e5ae6259bc69-openssl-sys-0.9.86.crate",
+      "sha256": "992bac49bdbab4423199c654a5515bd2a6c6a23bf03f2dd3bdb7e5ae6259bc69",
+      "bytes": 65306,
+      "upstream": [
+        "https://static.crates.io/crates/openssl-sys/openssl-sys-0.9.86.crate"
+      ],
+      "preservation": "D",
+      "version": "0.9.86"
+    },
+    {
+      "name": "cargo/os_str_bytes-6.4.1.crate",
+      "filename": "9b7820b9daea5457c9f21c69448905d723fbd21136ccf521748f23fd49e723ee-os_str_bytes-6.4.1.crate",
+      "sha256": "9b7820b9daea5457c9f21c69448905d723fbd21136ccf521748f23fd49e723ee",
+      "bytes": 23101,
+      "upstream": [
+        "https://static.crates.io/crates/os_str_bytes/os_str_bytes-6.4.1.crate"
+      ],
+      "preservation": "D",
+      "version": "6.4.1"
+    },
+    {
+      "name": "cargo/p9-0.3.2.crate",
+      "filename": "0dc5b2b13cb6a9a5fcf7c668ebf2aef67e0d83d4451c1db95feb9fb0775874f0-p9-0.3.2.crate",
+      "sha256": "0dc5b2b13cb6a9a5fcf7c668ebf2aef67e0d83d4451c1db95feb9fb0775874f0",
+      "bytes": 31304,
+      "upstream": [
+        "https://static.crates.io/crates/p9/p9-0.3.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.2"
+    },
+    {
+      "name": "cargo/p9_wire_format_derive-0.3.0.crate",
+      "filename": "9317f09e751274d3cb2a2678a785c456133a3d1f956f9f79bd460aec84acb600-p9_wire_format_derive-0.3.0.crate",
+      "sha256": "9317f09e751274d3cb2a2678a785c456133a3d1f956f9f79bd460aec84acb600",
+      "bytes": 3759,
+      "upstream": [
+        "https://static.crates.io/crates/p9_wire_format_derive/p9_wire_format_derive-0.3.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.0"
+    },
+    {
+      "name": "cargo/parking_lot-0.12.1.crate",
+      "filename": "3742b2c103b9f06bc9fff0a37ff4912935851bee6d36f3c02bcc755bcfec228f-parking_lot-0.12.1.crate",
+      "sha256": "3742b2c103b9f06bc9fff0a37ff4912935851bee6d36f3c02bcc755bcfec228f",
+      "bytes": 40967,
+      "upstream": [
+        "https://static.crates.io/crates/parking_lot/parking_lot-0.12.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.12.1"
+    },
+    {
+      "name": "cargo/parking_lot_core-0.9.6.crate",
+      "filename": "ba1ef8814b5c993410bb3adfad7a5ed269563e4a2f90c41f5d85be7fb47133bf-parking_lot_core-0.9.6.crate",
+      "sha256": "ba1ef8814b5c993410bb3adfad7a5ed269563e4a2f90c41f5d85be7fb47133bf",
+      "bytes": 32414,
+      "upstream": [
+        "https://static.crates.io/crates/parking_lot_core/parking_lot_core-0.9.6.crate"
+      ],
+      "preservation": "D",
+      "version": "0.9.6"
+    },
+    {
+      "name": "cargo/paste-1.0.7.crate",
+      "filename": "0c520e05135d6e763148b6426a837e239041653ba7becd2e538c076c738025fc-paste-1.0.7.crate",
+      "sha256": "0c520e05135d6e763148b6426a837e239041653ba7becd2e538c076c738025fc",
+      "bytes": 18285,
+      "upstream": [
+        "https://static.crates.io/crates/paste/paste-1.0.7.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.7"
+    },
+    {
+      "name": "cargo/pcap-file-1.1.1.crate",
+      "filename": "6ad13fed1a83120159aea81b265074f21d753d157dd16b10cc3790ecba40a341-pcap-file-1.1.1.crate",
+      "sha256": "6ad13fed1a83120159aea81b265074f21d753d157dd16b10cc3790ecba40a341",
+      "bytes": 30557,
+      "upstream": [
+        "https://static.crates.io/crates/pcap-file/pcap-file-1.1.1.crate"
+      ],
+      "preservation": "D",
+      "version": "1.1.1"
+    },
+    {
+      "name": "cargo/peeking_take_while-0.1.2.crate",
+      "filename": "19b17cddbe7ec3f8bc800887bab5e717348c95ea2ca0b1bf0837fb964dc67099-peeking_take_while-0.1.2.crate",
+      "sha256": "19b17cddbe7ec3f8bc800887bab5e717348c95ea2ca0b1bf0837fb964dc67099",
+      "bytes": 6697,
+      "upstream": [
+        "https://static.crates.io/crates/peeking_take_while/peeking_take_while-0.1.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.2"
+    },
+    {
+      "name": "cargo/percent-encoding-2.2.0.crate",
+      "filename": "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e-percent-encoding-2.2.0.crate",
+      "sha256": "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e",
+      "bytes": 10075,
+      "upstream": [
+        "https://static.crates.io/crates/percent-encoding/percent-encoding-2.2.0.crate"
+      ],
+      "preservation": "D",
+      "version": "2.2.0"
+    },
+    {
+      "name": "cargo/pin-project-lite-0.2.13.crate",
+      "filename": "8afb450f006bf6385ca15ef45d71d2288452bc3683ce2e2cacc0d18e4be60b58-pin-project-lite-0.2.13.crate",
+      "sha256": "8afb450f006bf6385ca15ef45d71d2288452bc3683ce2e2cacc0d18e4be60b58",
+      "bytes": 29141,
+      "upstream": [
+        "https://static.crates.io/crates/pin-project-lite/pin-project-lite-0.2.13.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.13"
+    },
+    {
+      "name": "cargo/pin-utils-0.1.0.crate",
+      "filename": "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184-pin-utils-0.1.0.crate",
+      "sha256": "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184",
+      "bytes": 7580,
+      "upstream": [
+        "https://static.crates.io/crates/pin-utils/pin-utils-0.1.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.0"
+    },
+    {
+      "name": "cargo/pkg-config-0.3.31.crate",
+      "filename": "953ec861398dccce10c670dfeaf3ec4911ca479e9c02154b3a215178c5f566f2-pkg-config-0.3.31.crate",
+      "sha256": "953ec861398dccce10c670dfeaf3ec4911ca479e9c02154b3a215178c5f566f2",
+      "bytes": 20880,
+      "upstream": [
+        "https://static.crates.io/crates/pkg-config/pkg-config-0.3.31.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.31"
+    },
+    {
+      "name": "cargo/ppv-lite86-0.2.16.crate",
+      "filename": "eb9f9e6e233e5c4a35559a617bf40a4ec447db2e84c20b55a6f83167b7e57872-ppv-lite86-0.2.16.crate",
+      "sha256": "eb9f9e6e233e5c4a35559a617bf40a4ec447db2e84c20b55a6f83167b7e57872",
+      "bytes": 22245,
+      "upstream": [
+        "https://static.crates.io/crates/ppv-lite86/ppv-lite86-0.2.16.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.16"
+    },
+    {
+      "name": "cargo/prettyplease-0.2.22.crate",
+      "filename": "479cf940fbbb3426c32c5d5176f62ad57549a0bb84773423ba8be9d089f5faba-prettyplease-0.2.22.crate",
+      "sha256": "479cf940fbbb3426c32c5d5176f62ad57549a0bb84773423ba8be9d089f5faba",
+      "bytes": 58169,
+      "upstream": [
+        "https://static.crates.io/crates/prettyplease/prettyplease-0.2.22.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.22"
+    },
+    {
+      "name": "cargo/proc-macro-crate-1.3.1.crate",
+      "filename": "7f4c021e1093a56626774e81216a4ce732a735e5bad4868a03f3ed65ca0c3919-proc-macro-crate-1.3.1.crate",
+      "sha256": "7f4c021e1093a56626774e81216a4ce732a735e5bad4868a03f3ed65ca0c3919",
+      "bytes": 9678,
+      "upstream": [
+        "https://static.crates.io/crates/proc-macro-crate/proc-macro-crate-1.3.1.crate"
+      ],
+      "preservation": "D",
+      "version": "1.3.1"
+    },
+    {
+      "name": "cargo/proc-macro-error-1.0.4.crate",
+      "filename": "da25490ff9892aab3fcf7c36f08cfb902dd3e71ca0f9f9517bea02a73a5ce38c-proc-macro-error-1.0.4.crate",
+      "sha256": "da25490ff9892aab3fcf7c36f08cfb902dd3e71ca0f9f9517bea02a73a5ce38c",
+      "bytes": 25293,
+      "upstream": [
+        "https://static.crates.io/crates/proc-macro-error/proc-macro-error-1.0.4.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.4"
+    },
+    {
+      "name": "cargo/proc-macro-error-attr-1.0.4.crate",
+      "filename": "a1be40180e52ecc98ad80b184934baf3d0d29f979574e439af5a55274b35f869-proc-macro-error-attr-1.0.4.crate",
+      "sha256": "a1be40180e52ecc98ad80b184934baf3d0d29f979574e439af5a55274b35f869",
+      "bytes": 7971,
+      "upstream": [
+        "https://static.crates.io/crates/proc-macro-error-attr/proc-macro-error-attr-1.0.4.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.4"
+    },
+    {
+      "name": "cargo/proc-macro2-1.0.107.crate",
+      "filename": "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9-proc-macro2-1.0.107.crate",
+      "sha256": "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9",
+      "bytes": 59588,
+      "upstream": [
+        "https://static.crates.io/crates/proc-macro2/proc-macro2-1.0.107.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.107"
+    },
+    {
+      "name": "cargo/protobuf-3.7.2.crate",
+      "filename": "d65a1d4ddae7d8b5de68153b48f6aa3bba8cb002b243dbdbc55a5afbc98f99f4-protobuf-3.7.2.crate",
+      "sha256": "d65a1d4ddae7d8b5de68153b48f6aa3bba8cb002b243dbdbc55a5afbc98f99f4",
+      "bytes": 211978,
+      "upstream": [
+        "https://static.crates.io/crates/protobuf/protobuf-3.7.2.crate"
+      ],
+      "preservation": "D",
+      "version": "3.7.2"
+    },
+    {
+      "name": "cargo/protobuf-codegen-3.7.2.crate",
+      "filename": "5d3976825c0014bbd2f3b34f0001876604fe87e0c86cd8fa54251530f1544ace-protobuf-codegen-3.7.2.crate",
+      "sha256": "5d3976825c0014bbd2f3b34f0001876604fe87e0c86cd8fa54251530f1544ace",
+      "bytes": 58021,
+      "upstream": [
+        "https://static.crates.io/crates/protobuf-codegen/protobuf-codegen-3.7.2.crate"
+      ],
+      "preservation": "D",
+      "version": "3.7.2"
+    },
+    {
+      "name": "cargo/protobuf-parse-3.7.2.crate",
+      "filename": "b4aeaa1f2460f1d348eeaeed86aea999ce98c1bded6f089ff8514c9d9dbdc973-protobuf-parse-3.7.2.crate",
+      "sha256": "b4aeaa1f2460f1d348eeaeed86aea999ce98c1bded6f089ff8514c9d9dbdc973",
+      "bytes": 68279,
+      "upstream": [
+        "https://static.crates.io/crates/protobuf-parse/protobuf-parse-3.7.2.crate"
+      ],
+      "preservation": "D",
+      "version": "3.7.2"
+    },
+    {
+      "name": "cargo/protobuf-support-3.7.2.crate",
+      "filename": "3e36c2f31e0a47f9280fb347ef5e461ffcd2c52dd520d8e216b52f93b0b0d7d6-protobuf-support-3.7.2.crate",
+      "sha256": "3e36c2f31e0a47f9280fb347ef5e461ffcd2c52dd520d8e216b52f93b0b0d7d6",
+      "bytes": 11725,
+      "upstream": [
+        "https://static.crates.io/crates/protobuf-support/protobuf-support-3.7.2.crate"
+      ],
+      "preservation": "D",
+      "version": "3.7.2"
+    },
+    {
+      "name": "cargo/quote-0.3.15.crate",
+      "filename": "7a6e920b65c65f10b2ae65c831a81a073a89edd28c7cce89475bff467ab4167a-quote-0.3.15.crate",
+      "sha256": "7a6e920b65c65f10b2ae65c831a81a073a89edd28c7cce89475bff467ab4167a",
+      "bytes": 12041,
+      "upstream": [
+        "https://static.crates.io/crates/quote/quote-0.3.15.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.15"
+    },
+    {
+      "name": "cargo/quote-1.0.36.crate",
+      "filename": "0fa76aaf39101c457836aec0ce2316dbdc3ab723cdda1c6bd4e6ad4208acaca7-quote-1.0.36.crate",
+      "sha256": "0fa76aaf39101c457836aec0ce2316dbdc3ab723cdda1c6bd4e6ad4208acaca7",
+      "bytes": 28507,
+      "upstream": [
+        "https://static.crates.io/crates/quote/quote-1.0.36.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.36"
+    },
+    {
+      "name": "cargo/r-efi-5.3.0.crate",
+      "filename": "69cdb34c158ceb288df11e18b4bd39de994f6657d83847bdffdbd7f346754b0f-r-efi-5.3.0.crate",
+      "sha256": "69cdb34c158ceb288df11e18b4bd39de994f6657d83847bdffdbd7f346754b0f",
+      "bytes": 64532,
+      "upstream": [
+        "https://static.crates.io/crates/r-efi/r-efi-5.3.0.crate"
+      ],
+      "preservation": "D",
+      "version": "5.3.0"
+    },
+    {
+      "name": "cargo/rand-0.9.2.crate",
+      "filename": "6db2770f06117d490610c7488547d543617b21bfa07796d7a12f6f1bd53850d1-rand-0.9.2.crate",
+      "sha256": "6db2770f06117d490610c7488547d543617b21bfa07796d7a12f6f1bd53850d1",
+      "bytes": 99930,
+      "upstream": [
+        "https://static.crates.io/crates/rand/rand-0.9.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.9.2"
+    },
+    {
+      "name": "cargo/rand_chacha-0.9.0.crate",
+      "filename": "d3022b5f1df60f26e1ffddd6c66e8aa15de382ae63b3a0c1bfc0e4d3e3f325cb-rand_chacha-0.9.0.crate",
+      "sha256": "d3022b5f1df60f26e1ffddd6c66e8aa15de382ae63b3a0c1bfc0e4d3e3f325cb",
+      "bytes": 18258,
+      "upstream": [
+        "https://static.crates.io/crates/rand_chacha/rand_chacha-0.9.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.9.0"
+    },
+    {
+      "name": "cargo/rand_core-0.9.3.crate",
+      "filename": "99d9a13982dcf210057a8a78572b2217b667c3beacbf3a0d8b454f6f82837d38-rand_core-0.9.3.crate",
+      "sha256": "99d9a13982dcf210057a8a78572b2217b667c3beacbf3a0d8b454f6f82837d38",
+      "bytes": 24543,
+      "upstream": [
+        "https://static.crates.io/crates/rand_core/rand_core-0.9.3.crate"
+      ],
+      "preservation": "D",
+      "version": "0.9.3"
+    },
+    {
+      "name": "cargo/rayon-1.7.0.crate",
+      "filename": "1d2df5196e37bcc87abebc0053e20787d73847bb33134a69841207dd0a47f03b-rayon-1.7.0.crate",
+      "sha256": "1d2df5196e37bcc87abebc0053e20787d73847bb33134a69841207dd0a47f03b",
+      "bytes": 169488,
+      "upstream": [
+        "https://static.crates.io/crates/rayon/rayon-1.7.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.7.0"
+    },
+    {
+      "name": "cargo/rayon-core-1.11.0.crate",
+      "filename": "4b8f95bd6966f5c87776639160a66bd8ab9895d9d4ab01ddba9fc60661aebe8d-rayon-core-1.11.0.crate",
+      "sha256": "4b8f95bd6966f5c87776639160a66bd8ab9895d9d4ab01ddba9fc60661aebe8d",
+      "bytes": 73118,
+      "upstream": [
+        "https://static.crates.io/crates/rayon-core/rayon-core-1.11.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.11.0"
+    },
+    {
+      "name": "cargo/redox_syscall-0.2.15.crate",
+      "filename": "534cfe58d6a18cc17120fbf4635d53d14691c1fe4d951064df9bd326178d7d5a-redox_syscall-0.2.15.crate",
+      "sha256": "534cfe58d6a18cc17120fbf4635d53d14691c1fe4d951064df9bd326178d7d5a",
+      "bytes": 24007,
+      "upstream": [
+        "https://static.crates.io/crates/redox_syscall/redox_syscall-0.2.15.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.15"
+    },
+    {
+      "name": "cargo/regex-1.6.0.crate",
+      "filename": "4c4eb3267174b8c6c2f654116623910a0fef09c4753f8dd83db29c48a0df988b-regex-1.6.0.crate",
+      "sha256": "4c4eb3267174b8c6c2f654116623910a0fef09c4753f8dd83db29c48a0df988b",
+      "bytes": 239329,
+      "upstream": [
+        "https://static.crates.io/crates/regex/regex-1.6.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.6.0"
+    },
+    {
+      "name": "cargo/regex-syntax-0.6.27.crate",
+      "filename": "a3f87b73ce11b1619a3c6332f45341e0047173771e8b8b73f87bfeefb7b56244-regex-syntax-0.6.27.crate",
+      "sha256": "a3f87b73ce11b1619a3c6332f45341e0047173771e8b8b73f87bfeefb7b56244",
+      "bytes": 297300,
+      "upstream": [
+        "https://static.crates.io/crates/regex-syntax/regex-syntax-0.6.27.crate"
+      ],
+      "preservation": "D",
+      "version": "0.6.27"
+    },
+    {
+      "name": "cargo/remain-0.2.6.crate",
+      "filename": "5704e2cda92fd54202f05430725317ba0ea7d0c96b246ca0a92e45177127ba3b-remain-0.2.6.crate",
+      "sha256": "5704e2cda92fd54202f05430725317ba0ea7d0c96b246ca0a92e45177127ba3b",
+      "bytes": 14268,
+      "upstream": [
+        "https://static.crates.io/crates/remain/remain-0.2.6.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.6"
+    },
+    {
+      "name": "cargo/remove_dir_all-0.5.3.crate",
+      "filename": "3acd125665422973a33ac9d3dd2df85edad0f4ae9b00dafb1a05e43a9f5ef8e7-remove_dir_all-0.5.3.crate",
+      "sha256": "3acd125665422973a33ac9d3dd2df85edad0f4ae9b00dafb1a05e43a9f5ef8e7",
+      "bytes": 9184,
+      "upstream": [
+        "https://static.crates.io/crates/remove_dir_all/remove_dir_all-0.5.3.crate"
+      ],
+      "preservation": "D",
+      "version": "0.5.3"
+    },
+    {
+      "name": "cargo/rustc-demangle-0.1.23.crate",
+      "filename": "d626bb9dae77e28219937af045c257c28bfd3f69333c512553507f5f9798cb76-rustc-demangle-0.1.23.crate",
+      "sha256": "d626bb9dae77e28219937af045c257c28bfd3f69333c512553507f5f9798cb76",
+      "bytes": 28970,
+      "upstream": [
+        "https://static.crates.io/crates/rustc-demangle/rustc-demangle-0.1.23.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.23"
+    },
+    {
+      "name": "cargo/rustc-hash-1.1.0.crate",
+      "filename": "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2-rustc-hash-1.1.0.crate",
+      "sha256": "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2",
+      "bytes": 9331,
+      "upstream": [
+        "https://static.crates.io/crates/rustc-hash/rustc-hash-1.1.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.1.0"
+    },
+    {
+      "name": "cargo/rustix-0.36.8.crate",
+      "filename": "f43abb88211988493c1abb44a70efa56ff0ce98f233b7b276146f1f3f7ba9644-rustix-0.36.8.crate",
+      "sha256": "f43abb88211988493c1abb44a70efa56ff0ce98f233b7b276146f1f3f7ba9644",
+      "bytes": 290808,
+      "upstream": [
+        "https://static.crates.io/crates/rustix/rustix-0.36.8.crate"
+      ],
+      "preservation": "D",
+      "version": "0.36.8"
+    },
+    {
+      "name": "cargo/rustix-1.0.7.crate",
+      "filename": "c71e83d6afe7ff64890ec6b71d6a69bb8a610ab78ce364b3352876bb4c801266-rustix-1.0.7.crate",
+      "sha256": "c71e83d6afe7ff64890ec6b71d6a69bb8a610ab78ce364b3352876bb4c801266",
+      "bytes": 414500,
+      "upstream": [
+        "https://static.crates.io/crates/rustix/rustix-1.0.7.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.7"
+    },
+    {
+      "name": "cargo/rutabaga_gfx-0.1.80.crate",
+      "filename": "2817d168222af3c49269f583dd8e67429912953ae608f715fd97683ed50320a5-rutabaga_gfx-0.1.80.crate",
+      "sha256": "2817d168222af3c49269f583dd8e67429912953ae608f715fd97683ed50320a5",
+      "bytes": 228815,
+      "upstream": [
+        "https://static.crates.io/crates/rutabaga_gfx/rutabaga_gfx-0.1.80.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.80"
+    },
+    {
+      "name": "cargo/ryu-1.0.10.crate",
+      "filename": "f3f6f92acf49d1b98f7a81226834412ada05458b7364277387724a237f062695-ryu-1.0.10.crate",
+      "sha256": "f3f6f92acf49d1b98f7a81226834412ada05458b7364277387724a237f062695",
+      "bytes": 48485,
+      "upstream": [
+        "https://static.crates.io/crates/ryu/ryu-1.0.10.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.10"
+    },
+    {
+      "name": "cargo/same-file-1.0.6.crate",
+      "filename": "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502-same-file-1.0.6.crate",
+      "sha256": "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502",
+      "bytes": 10183,
+      "upstream": [
+        "https://static.crates.io/crates/same-file/same-file-1.0.6.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.6"
+    },
+    {
+      "name": "cargo/scopeguard-1.1.0.crate",
+      "filename": "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd-scopeguard-1.1.0.crate",
+      "sha256": "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd",
+      "bytes": 11470,
+      "upstream": [
+        "https://static.crates.io/crates/scopeguard/scopeguard-1.1.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.1.0"
+    },
+    {
+      "name": "cargo/scudo-0.1.3.crate",
+      "filename": "12bfcb1ca07a487406afea13bdb7a2f3cf88e67b39c20dfd64e1801909b5c688-scudo-0.1.3.crate",
+      "sha256": "12bfcb1ca07a487406afea13bdb7a2f3cf88e67b39c20dfd64e1801909b5c688",
+      "bytes": 4871,
+      "upstream": [
+        "https://static.crates.io/crates/scudo/scudo-0.1.3.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.3"
+    },
+    {
+      "name": "cargo/scudo-proc-macros-0.1.0.crate",
+      "filename": "b3267c900aee8fbc8451235b70c5e2dae96bb19110eabc325be5d5dfed8e7461-scudo-proc-macros-0.1.0.crate",
+      "sha256": "b3267c900aee8fbc8451235b70c5e2dae96bb19110eabc325be5d5dfed8e7461",
+      "bytes": 3881,
+      "upstream": [
+        "https://static.crates.io/crates/scudo-proc-macros/scudo-proc-macros-0.1.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.0"
+    },
+    {
+      "name": "cargo/scudo-sys-0.2.2.crate",
+      "filename": "bcdbdfb28236bf083b47d0babb07e486bb003ed85011072b023ea4ed27760ddb-scudo-sys-0.2.2.crate",
+      "sha256": "bcdbdfb28236bf083b47d0babb07e486bb003ed85011072b023ea4ed27760ddb",
+      "bytes": 116562,
+      "upstream": [
+        "https://static.crates.io/crates/scudo-sys/scudo-sys-0.2.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.2"
+    },
+    {
+      "name": "cargo/serde-1.0.228.crate",
+      "filename": "9a8e94ea7f378bd32cbbd37198a4a91436180c5bb472411e48b5ec2e2124ae9e-serde-1.0.228.crate",
+      "sha256": "9a8e94ea7f378bd32cbbd37198a4a91436180c5bb472411e48b5ec2e2124ae9e",
+      "bytes": 83652,
+      "upstream": [
+        "https://static.crates.io/crates/serde/serde-1.0.228.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.228"
+    },
+    {
+      "name": "cargo/serde_bytes-0.11.19.crate",
+      "filename": "a5d440709e79d88e51ac01c4b72fc6cb7314017bb7da9eeff678aa94c10e3ea8-serde_bytes-0.11.19.crate",
+      "sha256": "a5d440709e79d88e51ac01c4b72fc6cb7314017bb7da9eeff678aa94c10e3ea8",
+      "bytes": 13427,
+      "upstream": [
+        "https://static.crates.io/crates/serde_bytes/serde_bytes-0.11.19.crate"
+      ],
+      "preservation": "D",
+      "version": "0.11.19"
+    },
+    {
+      "name": "cargo/serde_core-1.0.228.crate",
+      "filename": "41d385c7d4ca58e59fc732af25c3983b67ac852c1a25000afe1175de458b67ad-serde_core-1.0.228.crate",
+      "sha256": "41d385c7d4ca58e59fc732af25c3983b67ac852c1a25000afe1175de458b67ad",
+      "bytes": 63111,
+      "upstream": [
+        "https://static.crates.io/crates/serde_core/serde_core-1.0.228.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.228"
+    },
+    {
+      "name": "cargo/serde_derive-1.0.228.crate",
+      "filename": "d540f220d3187173da220f885ab66608367b6574e925011a9353e4badda91d79-serde_derive-1.0.228.crate",
+      "sha256": "d540f220d3187173da220f885ab66608367b6574e925011a9353e4badda91d79",
+      "bytes": 59605,
+      "upstream": [
+        "https://static.crates.io/crates/serde_derive/serde_derive-1.0.228.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.228"
+    },
+    {
+      "name": "cargo/serde_json-1.0.82.crate",
+      "filename": "82c2c1fdcd807d1098552c5b9a36e425e42e9fbd7c6a37a8425f390f781f7fa7-serde_json-1.0.82.crate",
+      "sha256": "82c2c1fdcd807d1098552c5b9a36e425e42e9fbd7c6a37a8425f390f781f7fa7",
+      "bytes": 144514,
+      "upstream": [
+        "https://static.crates.io/crates/serde_json/serde_json-1.0.82.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.82"
+    },
+    {
+      "name": "cargo/shlex-1.3.0.crate",
+      "filename": "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64-shlex-1.3.0.crate",
+      "sha256": "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64",
+      "bytes": 18713,
+      "upstream": [
+        "https://static.crates.io/crates/shlex/shlex-1.3.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.3.0"
+    },
+    {
+      "name": "cargo/slab-0.4.7.crate",
+      "filename": "4614a76b2a8be0058caa9dbbaf66d988527d86d003c11a94fbd335d7661edcef-slab-0.4.7.crate",
+      "sha256": "4614a76b2a8be0058caa9dbbaf66d988527d86d003c11a94fbd335d7661edcef",
+      "bytes": 16647,
+      "upstream": [
+        "https://static.crates.io/crates/slab/slab-0.4.7.crate"
+      ],
+      "preservation": "D",
+      "version": "0.4.7"
+    },
+    {
+      "name": "cargo/smallvec-1.9.0.crate",
+      "filename": "2fd0db749597d91ff862fd1d55ea87f7855a744a8425a64695b6fca237d1dad1-smallvec-1.9.0.crate",
+      "sha256": "2fd0db749597d91ff862fd1d55ea87f7855a744a8425a64695b6fca237d1dad1",
+      "bytes": 28396,
+      "upstream": [
+        "https://static.crates.io/crates/smallvec/smallvec-1.9.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.9.0"
+    },
+    {
+      "name": "cargo/socket2-0.4.10.crate",
+      "filename": "9f7916fc008ca5542385b89a3d3ce689953c143e9304a9bf8beec1de48994c0d-socket2-0.4.10.crate",
+      "sha256": "9f7916fc008ca5542385b89a3d3ce689953c143e9304a9bf8beec1de48994c0d",
+      "bytes": 45697,
+      "upstream": [
+        "https://static.crates.io/crates/socket2/socket2-0.4.10.crate"
+      ],
+      "preservation": "D",
+      "version": "0.4.10"
+    },
+    {
+      "name": "cargo/static_assertions-1.1.0.crate",
+      "filename": "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f-static_assertions-1.1.0.crate",
+      "sha256": "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f",
+      "bytes": 18480,
+      "upstream": [
+        "https://static.crates.io/crates/static_assertions/static_assertions-1.1.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.1.0"
+    },
+    {
+      "name": "cargo/strsim-0.10.0.crate",
+      "filename": "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623-strsim-0.10.0.crate",
+      "sha256": "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623",
+      "bytes": 11355,
+      "upstream": [
+        "https://static.crates.io/crates/strsim/strsim-0.10.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.10.0"
+    },
+    {
+      "name": "cargo/syn-0.11.11.crate",
+      "filename": "d3b891b9015c88c576343b9b3e41c2c11a51c219ef067b264bd9c8aa9b441dad-syn-0.11.11.crate",
+      "sha256": "d3b891b9015c88c576343b9b3e41c2c11a51c219ef067b264bd9c8aa9b441dad",
+      "bytes": 63309,
+      "upstream": [
+        "https://static.crates.io/crates/syn/syn-0.11.11.crate"
+      ],
+      "preservation": "D",
+      "version": "0.11.11"
+    },
+    {
+      "name": "cargo/syn-1.0.103.crate",
+      "filename": "a864042229133ada95abf3b54fdc62ef5ccabe9515b64717bcb9a1919e59445d-syn-1.0.103.crate",
+      "sha256": "a864042229133ada95abf3b54fdc62ef5ccabe9515b64717bcb9a1919e59445d",
+      "bytes": 236495,
+      "upstream": [
+        "https://static.crates.io/crates/syn/syn-1.0.103.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.103"
+    },
+    {
+      "name": "cargo/syn-2.0.87.crate",
+      "filename": "25aa4ce346d03a6dcd68dd8b4010bcb74e54e62c90c573f394c46eae99aba32d-syn-2.0.87.crate",
+      "sha256": "25aa4ce346d03a6dcd68dd8b4010bcb74e54e62c90c573f394c46eae99aba32d",
+      "bytes": 278076,
+      "upstream": [
+        "https://static.crates.io/crates/syn/syn-2.0.87.crate"
+      ],
+      "preservation": "D",
+      "version": "2.0.87"
+    },
+    {
+      "name": "cargo/syn-3.0.2.crate",
+      "filename": "a207d6d6a2b7fc470b80443726053f18a2481b7e1eee970597051596567987a3-syn-3.0.2.crate",
+      "sha256": "a207d6d6a2b7fc470b80443726053f18a2481b7e1eee970597051596567987a3",
+      "bytes": 312062,
+      "upstream": [
+        "https://static.crates.io/crates/syn/syn-3.0.2.crate"
+      ],
+      "preservation": "D",
+      "version": "3.0.2"
+    },
+    {
+      "name": "cargo/synom-0.11.3.crate",
+      "filename": "a393066ed9010ebaed60b9eafa373d4b1baac186dd7e008555b0f702b51945b6-synom-0.11.3.crate",
+      "sha256": "a393066ed9010ebaed60b9eafa373d4b1baac186dd7e008555b0f702b51945b6",
+      "bytes": 17120,
+      "upstream": [
+        "https://static.crates.io/crates/synom/synom-0.11.3.crate"
+      ],
+      "preservation": "D",
+      "version": "0.11.3"
+    },
+    {
+      "name": "cargo/tempfile-3.3.0.crate",
+      "filename": "5cdb1ef4eaeeaddc8fbd371e5017057064af0911902ef36b39801f67cc6d79e4-tempfile-3.3.0.crate",
+      "sha256": "5cdb1ef4eaeeaddc8fbd371e5017057064af0911902ef36b39801f67cc6d79e4",
+      "bytes": 27578,
+      "upstream": [
+        "https://static.crates.io/crates/tempfile/tempfile-3.3.0.crate"
+      ],
+      "preservation": "D",
+      "version": "3.3.0"
+    },
+    {
+      "name": "cargo/termcolor-1.1.3.crate",
+      "filename": "bab24d30b911b2376f3a13cc2cd443142f0c81dda04c118693e35b3835757755-termcolor-1.1.3.crate",
+      "sha256": "bab24d30b911b2376f3a13cc2cd443142f0c81dda04c118693e35b3835757755",
+      "bytes": 17242,
+      "upstream": [
+        "https://static.crates.io/crates/termcolor/termcolor-1.1.3.crate"
+      ],
+      "preservation": "D",
+      "version": "1.1.3"
+    },
+    {
+      "name": "cargo/textwrap-0.16.0.crate",
+      "filename": "222a222a5bfe1bba4a77b45ec488a741b3cb8872e5e499451fd7d0129c9c7c3d-textwrap-0.16.0.crate",
+      "sha256": "222a222a5bfe1bba4a77b45ec488a741b3cb8872e5e499451fd7d0129c9c7c3d",
+      "bytes": 53722,
+      "upstream": [
+        "https://static.crates.io/crates/textwrap/textwrap-0.16.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.16.0"
+    },
+    {
+      "name": "cargo/thiserror-1.0.38.crate",
+      "filename": "6a9cd18aa97d5c45c6603caea1da6628790b37f7a34b6ca89522331c5180fed0-thiserror-1.0.38.crate",
+      "sha256": "6a9cd18aa97d5c45c6603caea1da6628790b37f7a34b6ca89522331c5180fed0",
+      "bytes": 18947,
+      "upstream": [
+        "https://static.crates.io/crates/thiserror/thiserror-1.0.38.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.38"
+    },
+    {
+      "name": "cargo/thiserror-2.0.19.crate",
+      "filename": "09a43598840e33d5b0331f38c5e30d13bb11c11210a4b58f0d9b18a5a5eefcd9-thiserror-2.0.19.crate",
+      "sha256": "09a43598840e33d5b0331f38c5e30d13bb11c11210a4b58f0d9b18a5a5eefcd9",
+      "bytes": 29026,
+      "upstream": [
+        "https://static.crates.io/crates/thiserror/thiserror-2.0.19.crate"
+      ],
+      "preservation": "D",
+      "version": "2.0.19"
+    },
+    {
+      "name": "cargo/thiserror-impl-1.0.38.crate",
+      "filename": "1fb327af4685e4d03fa8cbcf1716380da910eeb2bb8be417e7f9fd3fb164f36f-thiserror-impl-1.0.38.crate",
+      "sha256": "1fb327af4685e4d03fa8cbcf1716380da910eeb2bb8be417e7f9fd3fb164f36f",
+      "bytes": 15429,
+      "upstream": [
+        "https://static.crates.io/crates/thiserror-impl/thiserror-impl-1.0.38.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.38"
+    },
+    {
+      "name": "cargo/thiserror-impl-2.0.19.crate",
+      "filename": "43cbfe0cf76104d42a574802844187e84a305e531ed54455f11fbde0f10541cd-thiserror-impl-2.0.19.crate",
+      "sha256": "43cbfe0cf76104d42a574802844187e84a305e531ed54455f11fbde0f10541cd",
+      "bytes": 21408,
+      "upstream": [
+        "https://static.crates.io/crates/thiserror-impl/thiserror-impl-2.0.19.crate"
+      ],
+      "preservation": "D",
+      "version": "2.0.19"
+    },
+    {
+      "name": "cargo/thread_local-1.1.8.crate",
+      "filename": "8b9ef9bad013ada3808854ceac7b46812a6465ba368859a37e2100283d2d719c-thread_local-1.1.8.crate",
+      "sha256": "8b9ef9bad013ada3808854ceac7b46812a6465ba368859a37e2100283d2d719c",
+      "bytes": 13962,
+      "upstream": [
+        "https://static.crates.io/crates/thread_local/thread_local-1.1.8.crate"
+      ],
+      "preservation": "D",
+      "version": "1.1.8"
+    },
+    {
+      "name": "cargo/threadpool-1.8.1.crate",
+      "filename": "d050e60b33d41c19108b32cea32164033a9013fe3b46cbd4457559bfbf77afaa-threadpool-1.8.1.crate",
+      "sha256": "d050e60b33d41c19108b32cea32164033a9013fe3b46cbd4457559bfbf77afaa",
+      "bytes": 14408,
+      "upstream": [
+        "https://static.crates.io/crates/threadpool/threadpool-1.8.1.crate"
+      ],
+      "preservation": "D",
+      "version": "1.8.1"
+    },
+    {
+      "name": "cargo/tinyvec-1.6.0.crate",
+      "filename": "87cc5ceb3875bb20c2890005a4e226a4651264a5c75edb2421b52861a0a0cb50-tinyvec-1.6.0.crate",
+      "sha256": "87cc5ceb3875bb20c2890005a4e226a4651264a5c75edb2421b52861a0a0cb50",
+      "bytes": 45991,
+      "upstream": [
+        "https://static.crates.io/crates/tinyvec/tinyvec-1.6.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.6.0"
+    },
+    {
+      "name": "cargo/tinyvec_macros-0.1.0.crate",
+      "filename": "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c-tinyvec_macros-0.1.0.crate",
+      "sha256": "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c",
+      "bytes": 1817,
+      "upstream": [
+        "https://static.crates.io/crates/tinyvec_macros/tinyvec_macros-0.1.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.0"
+    },
+    {
+      "name": "cargo/tokio-1.29.1.crate",
+      "filename": "532826ff75199d5833b9d2c5fe410f29235e25704ee5f0ef599fb51c21f4a4da-tokio-1.29.1.crate",
+      "sha256": "532826ff75199d5833b9d2c5fe410f29235e25704ee5f0ef599fb51c21f4a4da",
+      "bytes": 693627,
+      "upstream": [
+        "https://static.crates.io/crates/tokio/tokio-1.29.1.crate"
+      ],
+      "preservation": "D",
+      "version": "1.29.1"
+    },
+    {
+      "name": "cargo/tokio-macros-2.1.0.crate",
+      "filename": "630bdcf245f78637c13ec01ffae6187cca34625e8c63150d424b59e55af2675e-tokio-macros-2.1.0.crate",
+      "sha256": "630bdcf245f78637c13ec01ffae6187cca34625e8c63150d424b59e55af2675e",
+      "bytes": 11472,
+      "upstream": [
+        "https://static.crates.io/crates/tokio-macros/tokio-macros-2.1.0.crate"
+      ],
+      "preservation": "D",
+      "version": "2.1.0"
+    },
+    {
+      "name": "cargo/toml-0.5.9.crate",
+      "filename": "8d82e1a7758622a465f8cee077614c73484dac5b836c02ff6a40d5d1010324d7-toml-0.5.9.crate",
+      "sha256": "8d82e1a7758622a465f8cee077614c73484dac5b836c02ff6a40d5d1010324d7",
+      "bytes": 55667,
+      "upstream": [
+        "https://static.crates.io/crates/toml/toml-0.5.9.crate"
+      ],
+      "preservation": "D",
+      "version": "0.5.9"
+    },
+    {
+      "name": "cargo/toml_datetime-0.6.8.crate",
+      "filename": "0dd7358ecb8fc2f8d014bf86f6f638ce72ba252a2c3a2572f2a795f1d23efb41-toml_datetime-0.6.8.crate",
+      "sha256": "0dd7358ecb8fc2f8d014bf86f6f638ce72ba252a2c3a2572f2a795f1d23efb41",
+      "bytes": 12028,
+      "upstream": [
+        "https://static.crates.io/crates/toml_datetime/toml_datetime-0.6.8.crate"
+      ],
+      "preservation": "D",
+      "version": "0.6.8"
+    },
+    {
+      "name": "cargo/toml_edit-0.19.15.crate",
+      "filename": "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421-toml_edit-0.19.15.crate",
+      "sha256": "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421",
+      "bytes": 95324,
+      "upstream": [
+        "https://static.crates.io/crates/toml_edit/toml_edit-0.19.15.crate"
+      ],
+      "preservation": "D",
+      "version": "0.19.15"
+    },
+    {
+      "name": "cargo/twox-hash-1.6.3.crate",
+      "filename": "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675-twox-hash-1.6.3.crate",
+      "sha256": "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675",
+      "bytes": 21842,
+      "upstream": [
+        "https://static.crates.io/crates/twox-hash/twox-hash-1.6.3.crate"
+      ],
+      "preservation": "D",
+      "version": "1.6.3"
+    },
+    {
+      "name": "cargo/unicode-bidi-0.3.8.crate",
+      "filename": "099b7128301d285f79ddd55b9a83d5e6b9e97c92e0ea0daebee7263e932de992-unicode-bidi-0.3.8.crate",
+      "sha256": "099b7128301d285f79ddd55b9a83d5e6b9e97c92e0ea0daebee7263e932de992",
+      "bytes": 36575,
+      "upstream": [
+        "https://static.crates.io/crates/unicode-bidi/unicode-bidi-0.3.8.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.8"
+    },
+    {
+      "name": "cargo/unicode-ident-1.0.2.crate",
+      "filename": "15c61ba63f9235225a22310255a29b806b907c9b8c964bcbd0a2c70f3f2deea7-unicode-ident-1.0.2.crate",
+      "sha256": "15c61ba63f9235225a22310255a29b806b907c9b8c964bcbd0a2c70f3f2deea7",
+      "bytes": 34951,
+      "upstream": [
+        "https://static.crates.io/crates/unicode-ident/unicode-ident-1.0.2.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.2"
+    },
+    {
+      "name": "cargo/unicode-normalization-0.1.22.crate",
+      "filename": "5c5713f0fc4b5db668a2ac63cdb7bb4469d8c9fed047b1d0292cc7b0ce2ba921-unicode-normalization-0.1.22.crate",
+      "sha256": "5c5713f0fc4b5db668a2ac63cdb7bb4469d8c9fed047b1d0292cc7b0ce2ba921",
+      "bytes": 122604,
+      "upstream": [
+        "https://static.crates.io/crates/unicode-normalization/unicode-normalization-0.1.22.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.22"
+    },
+    {
+      "name": "cargo/unicode-xid-0.0.4.crate",
+      "filename": "8c1f860d7d29cf02cb2f3f359fd35991af3d30bac52c57d265a3c461074cb4dc-unicode-xid-0.0.4.crate",
+      "sha256": "8c1f860d7d29cf02cb2f3f359fd35991af3d30bac52c57d265a3c461074cb4dc",
+      "bytes": 16034,
+      "upstream": [
+        "https://static.crates.io/crates/unicode-xid/unicode-xid-0.0.4.crate"
+      ],
+      "preservation": "D",
+      "version": "0.0.4"
+    },
+    {
+      "name": "cargo/url-2.3.1.crate",
+      "filename": "0d68c799ae75762b8c3fe375feb6600ef5602c883c5d21eb51c09f22b83c4643-url-2.3.1.crate",
+      "sha256": "0d68c799ae75762b8c3fe375feb6600ef5602c883c5d21eb51c09f22b83c4643",
+      "bytes": 72777,
+      "upstream": [
+        "https://static.crates.io/crates/url/url-2.3.1.crate"
+      ],
+      "preservation": "D",
+      "version": "2.3.1"
+    },
+    {
+      "name": "cargo/userfaultfd-0.8.1.crate",
+      "filename": "18d8b176d4d3e420685e964f87c25df5fdd5b26d7eb0d0e7c892d771f5b81035-userfaultfd-0.8.1.crate",
+      "sha256": "18d8b176d4d3e420685e964f87c25df5fdd5b26d7eb0d0e7c892d771f5b81035",
+      "bytes": 21248,
+      "upstream": [
+        "https://static.crates.io/crates/userfaultfd/userfaultfd-0.8.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.8.1"
+    },
+    {
+      "name": "cargo/userfaultfd-sys-0.5.0.crate",
+      "filename": "d75595d2a62b7db16bd47f5a1ce14e1fe05ccbe27d6c96721a958e0a027cad41-userfaultfd-sys-0.5.0.crate",
+      "sha256": "d75595d2a62b7db16bd47f5a1ce14e1fe05ccbe27d6c96721a958e0a027cad41",
+      "bytes": 7513,
+      "upstream": [
+        "https://static.crates.io/crates/userfaultfd-sys/userfaultfd-sys-0.5.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.5.0"
+    },
+    {
+      "name": "cargo/uuid-1.8.0.crate",
+      "filename": "a183cf7feeba97b4dd1c0d46788634f6221d87fa961b305bed08c851829efcc0-uuid-1.8.0.crate",
+      "sha256": "a183cf7feeba97b4dd1c0d46788634f6221d87fa961b305bed08c851829efcc0",
+      "bytes": 44043,
+      "upstream": [
+        "https://static.crates.io/crates/uuid/uuid-1.8.0.crate"
+      ],
+      "preservation": "D",
+      "version": "1.8.0"
+    },
+    {
+      "name": "cargo/v4l2r-0.0.7.crate",
+      "filename": "2b609e6cc820e3f95dac66f8ef4efbdf1f39b8d119ec16e6476f797ec95ebaa7-v4l2r-0.0.7.crate",
+      "sha256": "2b609e6cc820e3f95dac66f8ef4efbdf1f39b8d119ec16e6476f797ec95ebaa7",
+      "bytes": 96479,
+      "upstream": [
+        "https://static.crates.io/crates/v4l2r/v4l2r-0.0.7.crate"
+      ],
+      "preservation": "D",
+      "version": "0.0.7"
+    },
+    {
+      "name": "cargo/vcpkg-0.2.15.crate",
+      "filename": "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426-vcpkg-0.2.15.crate",
+      "sha256": "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426",
+      "bytes": 228735,
+      "upstream": [
+        "https://static.crates.io/crates/vcpkg/vcpkg-0.2.15.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.15"
+    },
+    {
+      "name": "cargo/version_check-0.9.4.crate",
+      "filename": "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f-version_check-0.9.4.crate",
+      "sha256": "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f",
+      "bytes": 14895,
+      "upstream": [
+        "https://static.crates.io/crates/version_check/version_check-0.9.4.crate"
+      ],
+      "preservation": "D",
+      "version": "0.9.4"
+    },
+    {
+      "name": "cargo/virtio-media-0.0.8.crate",
+      "filename": "0984f4a5a7104e17e083d697e6219dfee642582c4a28e745febe66def6e3bcea-virtio-media-0.0.8.crate",
+      "sha256": "0984f4a5a7104e17e083d697e6219dfee642582c4a28e745febe66def6e3bcea",
+      "bytes": 49223,
+      "upstream": [
+        "https://static.crates.io/crates/virtio-media/virtio-media-0.0.8.crate"
+      ],
+      "preservation": "D",
+      "version": "0.0.8"
+    },
+    {
+      "name": "cargo/vk-parse-0.8.0.crate",
+      "filename": "4c6a0bda9bbe6b9e50e6456c80aa8fe4cca3b21e4311a1130c41e4915ec2e32a-vk-parse-0.8.0.crate",
+      "sha256": "4c6a0bda9bbe6b9e50e6456c80aa8fe4cca3b21e4311a1130c41e4915ec2e32a",
+      "bytes": 22995,
+      "upstream": [
+        "https://static.crates.io/crates/vk-parse/vk-parse-0.8.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.8.0"
+    },
+    {
+      "name": "cargo/vulkano-0.31.1.crate",
+      "filename": "49e6f6f908670b33ec1fcb1e9c25677cb4d6783893f89bc11d49d2eb5061ccb5-vulkano-0.31.1.crate",
+      "sha256": "49e6f6f908670b33ec1fcb1e9c25677cb4d6783893f89bc11d49d2eb5061ccb5",
+      "bytes": 747426,
+      "upstream": [
+        "https://static.crates.io/crates/vulkano/vulkano-0.31.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.31.1"
+    },
+    {
+      "name": "cargo/vulkano-0.33.0.crate",
+      "filename": "1e1f15eeb9d93a05eb3c237332a10806eac1eb82444e54485bfcc1859c483c23-vulkano-0.33.0.crate",
+      "sha256": "1e1f15eeb9d93a05eb3c237332a10806eac1eb82444e54485bfcc1859c483c23",
+      "bytes": 973502,
+      "upstream": [
+        "https://static.crates.io/crates/vulkano/vulkano-0.33.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.33.0"
+    },
+    {
+      "name": "cargo/vulkano-macros-0.33.0.crate",
+      "filename": "895b8a2cac1e7650d2d0552f2392da0970a358515ac11a34adaf19bfdc771b98-vulkano-macros-0.33.0.crate",
+      "sha256": "895b8a2cac1e7650d2d0552f2392da0970a358515ac11a34adaf19bfdc771b98",
+      "bytes": 5995,
+      "upstream": [
+        "https://static.crates.io/crates/vulkano-macros/vulkano-macros-0.33.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.33.0"
+    },
+    {
+      "name": "cargo/walkdir-2.5.0.crate",
+      "filename": "29790946404f91d9c5d06f9874efddea1dc06c5efe94541a7d6863108e3a5e4b-walkdir-2.5.0.crate",
+      "sha256": "29790946404f91d9c5d06f9874efddea1dc06c5efe94541a7d6863108e3a5e4b",
+      "bytes": 23951,
+      "upstream": [
+        "https://static.crates.io/crates/walkdir/walkdir-2.5.0.crate"
+      ],
+      "preservation": "D",
+      "version": "2.5.0"
+    },
+    {
+      "name": "cargo/wasi-0.11.0+wasi-snapshot-preview1.crate",
+      "filename": "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423-wasi-0.11.0+wasi-snapshot-preview1.crate",
+      "sha256": "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423",
+      "bytes": 28131,
+      "upstream": [
+        "https://static.crates.io/crates/wasi/wasi-0.11.0+wasi-snapshot-preview1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.11.0+wasi-snapshot-preview1"
+    },
+    {
+      "name": "cargo/wasip2-1.0.1+wasi-0.2.4.crate",
+      "filename": "0562428422c63773dad2c345a1882263bbf4d65cf3f42e90921f787ef5ad58e7-wasip2-1.0.1+wasi-0.2.4.crate",
+      "sha256": "0562428422c63773dad2c345a1882263bbf4d65cf3f42e90921f787ef5ad58e7",
+      "bytes": 132087,
+      "upstream": [
+        "https://static.crates.io/crates/wasip2/wasip2-1.0.1+wasi-0.2.4.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.1+wasi-0.2.4"
+    },
+    {
+      "name": "cargo/which-4.2.5.crate",
+      "filename": "5c4fb54e6113b6a8772ee41c3404fb0301ac79604489467e0a9ce1f3e97c24ae-which-4.2.5.crate",
+      "sha256": "5c4fb54e6113b6a8772ee41c3404fb0301ac79604489467e0a9ce1f3e97c24ae",
+      "bytes": 9326,
+      "upstream": [
+        "https://static.crates.io/crates/which/which-4.2.5.crate"
+      ],
+      "preservation": "D",
+      "version": "4.2.5"
+    },
+    {
+      "name": "cargo/widestring-1.0.2.crate",
+      "filename": "653f141f39ec16bba3c5abe400a0c60da7468261cc2cbf36805022876bc721a8-widestring-1.0.2.crate",
+      "sha256": "653f141f39ec16bba3c5abe400a0c60da7468261cc2cbf36805022876bc721a8",
+      "bytes": 79706,
+      "upstream": [
+        "https://static.crates.io/crates/widestring/widestring-1.0.2.crate"
+      ],
+      "preservation": "D",
+      "version": "1.0.2"
+    },
+    {
+      "name": "cargo/winapi-0.3.9.crate",
+      "filename": "5c839a674fcd7a98952e593242ea400abe93992746761e38641405d28b00f419-winapi-0.3.9.crate",
+      "sha256": "5c839a674fcd7a98952e593242ea400abe93992746761e38641405d28b00f419",
+      "bytes": 1200382,
+      "upstream": [
+        "https://static.crates.io/crates/winapi/winapi-0.3.9.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.9"
+    },
+    {
+      "name": "cargo/winapi-i686-pc-windows-gnu-0.4.0.crate",
+      "filename": "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6-winapi-i686-pc-windows-gnu-0.4.0.crate",
+      "sha256": "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6",
+      "bytes": 2918815,
+      "upstream": [
+        "https://static.crates.io/crates/winapi-i686-pc-windows-gnu/winapi-i686-pc-windows-gnu-0.4.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.4.0"
+    },
+    {
+      "name": "cargo/winapi-util-0.1.5.crate",
+      "filename": "70ec6ce85bb158151cae5e5c87f95a8e97d2c0c4b001223f33a334e3ce5de178-winapi-util-0.1.5.crate",
+      "sha256": "70ec6ce85bb158151cae5e5c87f95a8e97d2c0c4b001223f33a334e3ce5de178",
+      "bytes": 10164,
+      "upstream": [
+        "https://static.crates.io/crates/winapi-util/winapi-util-0.1.5.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.5"
+    },
+    {
+      "name": "cargo/winapi-x86_64-pc-windows-gnu-0.4.0.crate",
+      "filename": "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f-winapi-x86_64-pc-windows-gnu-0.4.0.crate",
+      "sha256": "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f",
+      "bytes": 2947998,
+      "upstream": [
+        "https://static.crates.io/crates/winapi-x86_64-pc-windows-gnu/winapi-x86_64-pc-windows-gnu-0.4.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.4.0"
+    },
+    {
+      "name": "cargo/windows-0.61.1.crate",
+      "filename": "c5ee8f3d025738cb02bad7868bbb5f8a6327501e870bf51f1b455b0a2454a419-windows-0.61.1.crate",
+      "sha256": "c5ee8f3d025738cb02bad7868bbb5f8a6327501e870bf51f1b455b0a2454a419",
+      "bytes": 9342486,
+      "upstream": [
+        "https://static.crates.io/crates/windows/windows-0.61.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.61.1"
+    },
+    {
+      "name": "cargo/windows-collections-0.2.0.crate",
+      "filename": "3beeceb5e5cfd9eb1d76b381630e82c4241ccd0d27f1a39ed41b2760b255c5e8-windows-collections-0.2.0.crate",
+      "sha256": "3beeceb5e5cfd9eb1d76b381630e82c4241ccd0d27f1a39ed41b2760b255c5e8",
+      "bytes": 13579,
+      "upstream": [
+        "https://static.crates.io/crates/windows-collections/windows-collections-0.2.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.0"
+    },
+    {
+      "name": "cargo/windows-core-0.61.2.crate",
+      "filename": "c0fdd3ddb90610c7638aa2b3a3ab2904fb9e5cdbecc643ddb3647212781c4ae3-windows-core-0.61.2.crate",
+      "sha256": "c0fdd3ddb90610c7638aa2b3a3ab2904fb9e5cdbecc643ddb3647212781c4ae3",
+      "bytes": 36771,
+      "upstream": [
+        "https://static.crates.io/crates/windows-core/windows-core-0.61.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.61.2"
+    },
+    {
+      "name": "cargo/windows-future-0.2.1.crate",
+      "filename": "fc6a41e98427b19fe4b73c550f060b59fa592d7d686537eebf9385621bfbad8e-windows-future-0.2.1.crate",
+      "sha256": "fc6a41e98427b19fe4b73c550f060b59fa592d7d686537eebf9385621bfbad8e",
+      "bytes": 17532,
+      "upstream": [
+        "https://static.crates.io/crates/windows-future/windows-future-0.2.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.1"
+    },
+    {
+      "name": "cargo/windows-implement-0.60.0.crate",
+      "filename": "a47fddd13af08290e67f4acabf4b459f647552718f683a7b415d290ac744a836-windows-implement-0.60.0.crate",
+      "sha256": "a47fddd13af08290e67f4acabf4b459f647552718f683a7b415d290ac744a836",
+      "bytes": 15073,
+      "upstream": [
+        "https://static.crates.io/crates/windows-implement/windows-implement-0.60.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.60.0"
+    },
+    {
+      "name": "cargo/windows-interface-0.59.1.crate",
+      "filename": "bd9211b69f8dcdfa817bfd14bf1c97c9188afa36f4750130fcdf3f400eca9fa8-windows-interface-0.59.1.crate",
+      "sha256": "bd9211b69f8dcdfa817bfd14bf1c97c9188afa36f4750130fcdf3f400eca9fa8",
+      "bytes": 11735,
+      "upstream": [
+        "https://static.crates.io/crates/windows-interface/windows-interface-0.59.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.59.1"
+    },
+    {
+      "name": "cargo/windows-link-0.1.1.crate",
+      "filename": "76840935b766e1b0a05c0066835fb9ec80071d4c09a16f6bd5f7e655e3c14c38-windows-link-0.1.1.crate",
+      "sha256": "76840935b766e1b0a05c0066835fb9ec80071d4c09a16f6bd5f7e655e3c14c38",
+      "bytes": 6154,
+      "upstream": [
+        "https://static.crates.io/crates/windows-link/windows-link-0.1.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.1"
+    },
+    {
+      "name": "cargo/windows-numerics-0.2.0.crate",
+      "filename": "9150af68066c4c5c07ddc0ce30421554771e528bde427614c61038bc2c92c2b1-windows-numerics-0.2.0.crate",
+      "sha256": "9150af68066c4c5c07ddc0ce30421554771e528bde427614c61038bc2c92c2b1",
+      "bytes": 9686,
+      "upstream": [
+        "https://static.crates.io/crates/windows-numerics/windows-numerics-0.2.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.0"
+    },
+    {
+      "name": "cargo/windows-result-0.3.4.crate",
+      "filename": "56f42bd332cc6c8eac5af113fc0c1fd6a8fd2aa08a0119358686e5160d0586c6-windows-result-0.3.4.crate",
+      "sha256": "56f42bd332cc6c8eac5af113fc0c1fd6a8fd2aa08a0119358686e5160d0586c6",
+      "bytes": 13418,
+      "upstream": [
+        "https://static.crates.io/crates/windows-result/windows-result-0.3.4.crate"
+      ],
+      "preservation": "D",
+      "version": "0.3.4"
+    },
+    {
+      "name": "cargo/windows-strings-0.4.2.crate",
+      "filename": "56e6c93f3a0c3b36176cb1327a4958a0353d5d166c2a35cb268ace15e91d3b57-windows-strings-0.4.2.crate",
+      "sha256": "56e6c93f3a0c3b36176cb1327a4958a0353d5d166c2a35cb268ace15e91d3b57",
+      "bytes": 13983,
+      "upstream": [
+        "https://static.crates.io/crates/windows-strings/windows-strings-0.4.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.4.2"
+    },
+    {
+      "name": "cargo/windows-sys-0.42.0.crate",
+      "filename": "5a3e1820f08b8513f676f7ab6c1f99ff312fb97b553d30ff4dd86f9f15728aa7-windows-sys-0.42.0.crate",
+      "sha256": "5a3e1820f08b8513f676f7ab6c1f99ff312fb97b553d30ff4dd86f9f15728aa7",
+      "bytes": 3006791,
+      "upstream": [
+        "https://static.crates.io/crates/windows-sys/windows-sys-0.42.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.42.0"
+    },
+    {
+      "name": "cargo/windows-sys-0.45.0.crate",
+      "filename": "75283be5efb2831d37ea142365f009c02ec203cd29a3ebecbc093d52315b66d0-windows-sys-0.45.0.crate",
+      "sha256": "75283be5efb2831d37ea142365f009c02ec203cd29a3ebecbc093d52315b66d0",
+      "bytes": 2568659,
+      "upstream": [
+        "https://static.crates.io/crates/windows-sys/windows-sys-0.45.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.45.0"
+    },
+    {
+      "name": "cargo/windows-sys-0.48.0.crate",
+      "filename": "677d2418bec65e3338edb076e806bc1ec15693c5d0104683f2efe857f61056a9-windows-sys-0.48.0.crate",
+      "sha256": "677d2418bec65e3338edb076e806bc1ec15693c5d0104683f2efe857f61056a9",
+      "bytes": 2628884,
+      "upstream": [
+        "https://static.crates.io/crates/windows-sys/windows-sys-0.48.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.48.0"
+    },
+    {
+      "name": "cargo/windows-sys-0.59.0.crate",
+      "filename": "1e38bc4d79ed67fd075bcc251a1c39b32a1776bbe92e5bef1f0bf1f8c531853b-windows-sys-0.59.0.crate",
+      "sha256": "1e38bc4d79ed67fd075bcc251a1c39b32a1776bbe92e5bef1f0bf1f8c531853b",
+      "bytes": 2387323,
+      "upstream": [
+        "https://static.crates.io/crates/windows-sys/windows-sys-0.59.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.59.0"
+    },
+    {
+      "name": "cargo/windows-targets-0.42.1.crate",
+      "filename": "8e2522491fbfcd58cc84d47aeb2958948c4b8982e9a2d8a2a35bbaed431390e7-windows-targets-0.42.1.crate",
+      "sha256": "8e2522491fbfcd58cc84d47aeb2958948c4b8982e9a2d8a2a35bbaed431390e7",
+      "bytes": 5524,
+      "upstream": [
+        "https://static.crates.io/crates/windows-targets/windows-targets-0.42.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.42.1"
+    },
+    {
+      "name": "cargo/windows-targets-0.48.5.crate",
+      "filename": "9a2fa6e2155d7247be68c096456083145c183cbbbc2764150dda45a87197940c-windows-targets-0.48.5.crate",
+      "sha256": "9a2fa6e2155d7247be68c096456083145c183cbbbc2764150dda45a87197940c",
+      "bytes": 6904,
+      "upstream": [
+        "https://static.crates.io/crates/windows-targets/windows-targets-0.48.5.crate"
+      ],
+      "preservation": "D",
+      "version": "0.48.5"
+    },
+    {
+      "name": "cargo/windows-targets-0.52.6.crate",
+      "filename": "9b724f72796e036ab90c1021d4780d4d3d648aca59e491e6b98e725b84e99973-windows-targets-0.52.6.crate",
+      "sha256": "9b724f72796e036ab90c1021d4780d4d3d648aca59e491e6b98e725b84e99973",
+      "bytes": 6403,
+      "upstream": [
+        "https://static.crates.io/crates/windows-targets/windows-targets-0.52.6.crate"
+      ],
+      "preservation": "D",
+      "version": "0.52.6"
+    },
+    {
+      "name": "cargo/windows-threading-0.1.0.crate",
+      "filename": "b66463ad2e0ea3bbf808b7f1d371311c80e115c0b71d60efc142cafbcfb057a6-windows-threading-0.1.0.crate",
+      "sha256": "b66463ad2e0ea3bbf808b7f1d371311c80e115c0b71d60efc142cafbcfb057a6",
+      "bytes": 9085,
+      "upstream": [
+        "https://static.crates.io/crates/windows-threading/windows-threading-0.1.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.1.0"
+    },
+    {
+      "name": "cargo/windows_aarch64_gnullvm-0.42.1.crate",
+      "filename": "8c9864e83243fdec7fc9c5444389dcbbfd258f745e7853198f365e3c4968a608-windows_aarch64_gnullvm-0.42.1.crate",
+      "sha256": "8c9864e83243fdec7fc9c5444389dcbbfd258f745e7853198f365e3c4968a608",
+      "bytes": 362795,
+      "upstream": [
+        "https://static.crates.io/crates/windows_aarch64_gnullvm/windows_aarch64_gnullvm-0.42.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.42.1"
+    },
+    {
+      "name": "cargo/windows_aarch64_gnullvm-0.48.5.crate",
+      "filename": "2b38e32f0abccf9987a4e3079dfb67dcd799fb61361e53e2882c3cbaf0d905d8-windows_aarch64_gnullvm-0.48.5.crate",
+      "sha256": "2b38e32f0abccf9987a4e3079dfb67dcd799fb61361e53e2882c3cbaf0d905d8",
+      "bytes": 418492,
+      "upstream": [
+        "https://static.crates.io/crates/windows_aarch64_gnullvm/windows_aarch64_gnullvm-0.48.5.crate"
+      ],
+      "preservation": "D",
+      "version": "0.48.5"
+    },
+    {
+      "name": "cargo/windows_aarch64_gnullvm-0.52.6.crate",
+      "filename": "32a4622180e7a0ec044bb555404c800bc9fd9ec262ec147edd5989ccd0c02cd3-windows_aarch64_gnullvm-0.52.6.crate",
+      "sha256": "32a4622180e7a0ec044bb555404c800bc9fd9ec262ec147edd5989ccd0c02cd3",
+      "bytes": 435718,
+      "upstream": [
+        "https://static.crates.io/crates/windows_aarch64_gnullvm/windows_aarch64_gnullvm-0.52.6.crate"
+      ],
+      "preservation": "D",
+      "version": "0.52.6"
+    },
+    {
+      "name": "cargo/windows_aarch64_msvc-0.42.1.crate",
+      "filename": "4c8b1b673ffc16c47a9ff48570a9d85e25d265735c503681332589af6253c6c7-windows_aarch64_msvc-0.42.1.crate",
+      "sha256": "4c8b1b673ffc16c47a9ff48570a9d85e25d265735c503681332589af6253c6c7",
+      "bytes": 664655,
+      "upstream": [
+        "https://static.crates.io/crates/windows_aarch64_msvc/windows_aarch64_msvc-0.42.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.42.1"
+    },
+    {
+      "name": "cargo/windows_aarch64_msvc-0.48.5.crate",
+      "filename": "dc35310971f3b2dbbf3f0690a219f40e2d9afcf64f9ab7cc1be722937c26b4bc-windows_aarch64_msvc-0.48.5.crate",
+      "sha256": "dc35310971f3b2dbbf3f0690a219f40e2d9afcf64f9ab7cc1be722937c26b4bc",
+      "bytes": 798483,
+      "upstream": [
+        "https://static.crates.io/crates/windows_aarch64_msvc/windows_aarch64_msvc-0.48.5.crate"
+      ],
+      "preservation": "D",
+      "version": "0.48.5"
+    },
+    {
+      "name": "cargo/windows_aarch64_msvc-0.52.6.crate",
+      "filename": "09ec2a7bb152e2252b53fa7803150007879548bc709c039df7627cabbd05d469-windows_aarch64_msvc-0.52.6.crate",
+      "sha256": "09ec2a7bb152e2252b53fa7803150007879548bc709c039df7627cabbd05d469",
+      "bytes": 832615,
+      "upstream": [
+        "https://static.crates.io/crates/windows_aarch64_msvc/windows_aarch64_msvc-0.52.6.crate"
+      ],
+      "preservation": "D",
+      "version": "0.52.6"
+    },
+    {
+      "name": "cargo/windows_i686_gnu-0.42.1.crate",
+      "filename": "de3887528ad530ba7bdbb1faa8275ec7a1155a45ffa57c37993960277145d640-windows_i686_gnu-0.42.1.crate",
+      "sha256": "de3887528ad530ba7bdbb1faa8275ec7a1155a45ffa57c37993960277145d640",
+      "bytes": 733428,
+      "upstream": [
+        "https://static.crates.io/crates/windows_i686_gnu/windows_i686_gnu-0.42.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.42.1"
+    },
+    {
+      "name": "cargo/windows_i686_gnu-0.48.5.crate",
+      "filename": "a75915e7def60c94dcef72200b9a8e58e5091744960da64ec734a6c6e9b3743e-windows_i686_gnu-0.48.5.crate",
+      "sha256": "a75915e7def60c94dcef72200b9a8e58e5091744960da64ec734a6c6e9b3743e",
+      "bytes": 844891,
+      "upstream": [
+        "https://static.crates.io/crates/windows_i686_gnu/windows_i686_gnu-0.48.5.crate"
+      ],
+      "preservation": "D",
+      "version": "0.48.5"
+    },
+    {
+      "name": "cargo/windows_i686_gnu-0.52.6.crate",
+      "filename": "8e9b5ad5ab802e97eb8e295ac6720e509ee4c243f69d781394014ebfe8bbfa0b-windows_i686_gnu-0.52.6.crate",
+      "sha256": "8e9b5ad5ab802e97eb8e295ac6720e509ee4c243f69d781394014ebfe8bbfa0b",
+      "bytes": 880402,
+      "upstream": [
+        "https://static.crates.io/crates/windows_i686_gnu/windows_i686_gnu-0.52.6.crate"
+      ],
+      "preservation": "D",
+      "version": "0.52.6"
+    },
+    {
+      "name": "cargo/windows_i686_gnullvm-0.52.6.crate",
+      "filename": "0eee52d38c090b3caa76c563b86c3a4bd71ef1a819287c19d586d7334ae8ed66-windows_i686_gnullvm-0.52.6.crate",
+      "sha256": "0eee52d38c090b3caa76c563b86c3a4bd71ef1a819287c19d586d7334ae8ed66",
+      "bytes": 475940,
+      "upstream": [
+        "https://static.crates.io/crates/windows_i686_gnullvm/windows_i686_gnullvm-0.52.6.crate"
+      ],
+      "preservation": "D",
+      "version": "0.52.6"
+    },
+    {
+      "name": "cargo/windows_i686_msvc-0.42.1.crate",
+      "filename": "bf4d1122317eddd6ff351aa852118a2418ad4214e6613a50e0191f7004372605-windows_i686_msvc-0.42.1.crate",
+      "sha256": "bf4d1122317eddd6ff351aa852118a2418ad4214e6613a50e0191f7004372605",
+      "bytes": 722583,
+      "upstream": [
+        "https://static.crates.io/crates/windows_i686_msvc/windows_i686_msvc-0.42.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.42.1"
+    },
+    {
+      "name": "cargo/windows_i686_msvc-0.48.5.crate",
+      "filename": "8f55c233f70c4b27f66c523580f78f1004e8b5a8b659e05a4eb49d4166cca406-windows_i686_msvc-0.48.5.crate",
+      "sha256": "8f55c233f70c4b27f66c523580f78f1004e8b5a8b659e05a4eb49d4166cca406",
+      "bytes": 864300,
+      "upstream": [
+        "https://static.crates.io/crates/windows_i686_msvc/windows_i686_msvc-0.48.5.crate"
+      ],
+      "preservation": "D",
+      "version": "0.48.5"
+    },
+    {
+      "name": "cargo/windows_i686_msvc-0.52.6.crate",
+      "filename": "240948bc05c5e7c6dabba28bf89d89ffce3e303022809e73deaefe4f6ec56c66-windows_i686_msvc-0.52.6.crate",
+      "sha256": "240948bc05c5e7c6dabba28bf89d89ffce3e303022809e73deaefe4f6ec56c66",
+      "bytes": 901163,
+      "upstream": [
+        "https://static.crates.io/crates/windows_i686_msvc/windows_i686_msvc-0.52.6.crate"
+      ],
+      "preservation": "D",
+      "version": "0.52.6"
+    },
+    {
+      "name": "cargo/windows_x86_64_gnu-0.42.1.crate",
+      "filename": "c1040f221285e17ebccbc2591ffdc2d44ee1f9186324dd3e84e99ac68d699c45-windows_x86_64_gnu-0.42.1.crate",
+      "sha256": "c1040f221285e17ebccbc2591ffdc2d44ee1f9186324dd3e84e99ac68d699c45",
+      "bytes": 697614,
+      "upstream": [
+        "https://static.crates.io/crates/windows_x86_64_gnu/windows_x86_64_gnu-0.42.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.42.1"
+    },
+    {
+      "name": "cargo/windows_x86_64_gnu-0.48.5.crate",
+      "filename": "53d40abd2583d23e4718fddf1ebec84dbff8381c07cae67ff7768bbf19c6718e-windows_x86_64_gnu-0.48.5.crate",
+      "sha256": "53d40abd2583d23e4718fddf1ebec84dbff8381c07cae67ff7768bbf19c6718e",
+      "bytes": 801619,
+      "upstream": [
+        "https://static.crates.io/crates/windows_x86_64_gnu/windows_x86_64_gnu-0.48.5.crate"
+      ],
+      "preservation": "D",
+      "version": "0.48.5"
+    },
+    {
+      "name": "cargo/windows_x86_64_gnu-0.52.6.crate",
+      "filename": "147a5c80aabfbf0c7d901cb5895d1de30ef2907eb21fbbab29ca94c5b08b1a78-windows_x86_64_gnu-0.52.6.crate",
+      "sha256": "147a5c80aabfbf0c7d901cb5895d1de30ef2907eb21fbbab29ca94c5b08b1a78",
+      "bytes": 836363,
+      "upstream": [
+        "https://static.crates.io/crates/windows_x86_64_gnu/windows_x86_64_gnu-0.52.6.crate"
+      ],
+      "preservation": "D",
+      "version": "0.52.6"
+    },
+    {
+      "name": "cargo/windows_x86_64_gnullvm-0.42.1.crate",
+      "filename": "628bfdf232daa22b0d64fdb62b09fcc36bb01f05a3939e20ab73aaf9470d0463-windows_x86_64_gnullvm-0.42.1.crate",
+      "sha256": "628bfdf232daa22b0d64fdb62b09fcc36bb01f05a3939e20ab73aaf9470d0463",
+      "bytes": 362788,
+      "upstream": [
+        "https://static.crates.io/crates/windows_x86_64_gnullvm/windows_x86_64_gnullvm-0.42.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.42.1"
+    },
+    {
+      "name": "cargo/windows_x86_64_gnullvm-0.48.5.crate",
+      "filename": "0b7b52767868a23d5bab768e390dc5f5c55825b6d30b86c844ff2dc7414044cc-windows_x86_64_gnullvm-0.48.5.crate",
+      "sha256": "0b7b52767868a23d5bab768e390dc5f5c55825b6d30b86c844ff2dc7414044cc",
+      "bytes": 418486,
+      "upstream": [
+        "https://static.crates.io/crates/windows_x86_64_gnullvm/windows_x86_64_gnullvm-0.48.5.crate"
+      ],
+      "preservation": "D",
+      "version": "0.48.5"
+    },
+    {
+      "name": "cargo/windows_x86_64_gnullvm-0.52.6.crate",
+      "filename": "24d5b23dc417412679681396f2b49f3de8c1473deb516bd34410872eff51ed0d-windows_x86_64_gnullvm-0.52.6.crate",
+      "sha256": "24d5b23dc417412679681396f2b49f3de8c1473deb516bd34410872eff51ed0d",
+      "bytes": 435707,
+      "upstream": [
+        "https://static.crates.io/crates/windows_x86_64_gnullvm/windows_x86_64_gnullvm-0.52.6.crate"
+      ],
+      "preservation": "D",
+      "version": "0.52.6"
+    },
+    {
+      "name": "cargo/windows_x86_64_msvc-0.42.1.crate",
+      "filename": "447660ad36a13288b1db4d4248e857b510e8c3a225c822ba4fb748c0aafecffd-windows_x86_64_msvc-0.42.1.crate",
+      "sha256": "447660ad36a13288b1db4d4248e857b510e8c3a225c822ba4fb748c0aafecffd",
+      "bytes": 664606,
+      "upstream": [
+        "https://static.crates.io/crates/windows_x86_64_msvc/windows_x86_64_msvc-0.42.1.crate"
+      ],
+      "preservation": "D",
+      "version": "0.42.1"
+    },
+    {
+      "name": "cargo/windows_x86_64_msvc-0.48.5.crate",
+      "filename": "ed94fce61571a4006852b7389a063ab983c02eb1bb37b47f8272ce92d06d9538-windows_x86_64_msvc-0.48.5.crate",
+      "sha256": "ed94fce61571a4006852b7389a063ab983c02eb1bb37b47f8272ce92d06d9538",
+      "bytes": 798412,
+      "upstream": [
+        "https://static.crates.io/crates/windows_x86_64_msvc/windows_x86_64_msvc-0.48.5.crate"
+      ],
+      "preservation": "D",
+      "version": "0.48.5"
+    },
+    {
+      "name": "cargo/windows_x86_64_msvc-0.52.6.crate",
+      "filename": "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec-windows_x86_64_msvc-0.52.6.crate",
+      "sha256": "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec",
+      "bytes": 832564,
+      "upstream": [
+        "https://static.crates.io/crates/windows_x86_64_msvc/windows_x86_64_msvc-0.52.6.crate"
+      ],
+      "preservation": "D",
+      "version": "0.52.6"
+    },
+    {
+      "name": "cargo/winnow-0.5.40.crate",
+      "filename": "f593a95398737aeed53e489c785df13f3618e41dbcd6718c6addbf1395aa6876-winnow-0.5.40.crate",
+      "sha256": "f593a95398737aeed53e489c785df13f3618e41dbcd6718c6addbf1395aa6876",
+      "bytes": 159316,
+      "upstream": [
+        "https://static.crates.io/crates/winnow/winnow-0.5.40.crate"
+      ],
+      "preservation": "D",
+      "version": "0.5.40"
+    },
+    {
+      "name": "cargo/wio-0.2.2.crate",
+      "filename": "5d129932f4644ac2396cb456385cbf9e63b5b30c6e8dc4820bdca4eb082037a5-wio-0.2.2.crate",
+      "sha256": "5d129932f4644ac2396cb456385cbf9e63b5b30c6e8dc4820bdca4eb082037a5",
+      "bytes": 11214,
+      "upstream": [
+        "https://static.crates.io/crates/wio/wio-0.2.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.2.2"
+    },
+    {
+      "name": "cargo/wit-bindgen-0.46.0.crate",
+      "filename": "f17a85883d4e6d00e8a97c586de764dabcc06133f7f1d55dce5cdc070ad7fe59-wit-bindgen-0.46.0.crate",
+      "sha256": "f17a85883d4e6d00e8a97c586de764dabcc06133f7f1d55dce5cdc070ad7fe59",
+      "bytes": 60508,
+      "upstream": [
+        "https://static.crates.io/crates/wit-bindgen/wit-bindgen-0.46.0.crate"
+      ],
+      "preservation": "D",
+      "version": "0.46.0"
+    },
+    {
+      "name": "cargo/xml-rs-0.8.19.crate",
+      "filename": "0fcb9cbac069e033553e8bb871be2fbdffcab578eb25bd0f7c508cedc6dcd75a-xml-rs-0.8.19.crate",
+      "sha256": "0fcb9cbac069e033553e8bb871be2fbdffcab578eb25bd0f7c508cedc6dcd75a",
+      "bytes": 54051,
+      "upstream": [
+        "https://static.crates.io/crates/xml-rs/xml-rs-0.8.19.crate"
+      ],
+      "preservation": "D",
+      "version": "0.8.19"
+    },
+    {
+      "name": "cargo/zerocopy-0.7.32.crate",
+      "filename": "74d4d3961e53fa4c9a25a8637fc2bfaf2595b3d3ae34875568a5cf64787716be-zerocopy-0.7.32.crate",
+      "sha256": "74d4d3961e53fa4c9a25a8637fc2bfaf2595b3d3ae34875568a5cf64787716be",
+      "bytes": 151096,
+      "upstream": [
+        "https://static.crates.io/crates/zerocopy/zerocopy-0.7.32.crate"
+      ],
+      "preservation": "D",
+      "version": "0.7.32"
+    },
+    {
+      "name": "cargo/zerocopy-0.8.14.crate",
+      "filename": "a367f292d93d4eab890745e75a778da40909cab4d6ff8173693812f79c4a2468-zerocopy-0.8.14.crate",
+      "sha256": "a367f292d93d4eab890745e75a778da40909cab4d6ff8173693812f79c4a2468",
+      "bytes": 229188,
+      "upstream": [
+        "https://static.crates.io/crates/zerocopy/zerocopy-0.8.14.crate"
+      ],
+      "preservation": "D",
+      "version": "0.8.14"
+    },
+    {
+      "name": "cargo/zerocopy-derive-0.7.32.crate",
+      "filename": "9ce1b18ccd8e73a9321186f97e46f9f04b778851177567b1975109d26a08d2a6-zerocopy-derive-0.7.32.crate",
+      "sha256": "9ce1b18ccd8e73a9321186f97e46f9f04b778851177567b1975109d26a08d2a6",
+      "bytes": 37623,
+      "upstream": [
+        "https://static.crates.io/crates/zerocopy-derive/zerocopy-derive-0.7.32.crate"
+      ],
+      "preservation": "D",
+      "version": "0.7.32"
+    },
+    {
+      "name": "cargo/zerocopy-derive-0.8.14.crate",
+      "filename": "d3931cb58c62c13adec22e38686b559c86a30565e16ad6e8510a337cedc611e1-zerocopy-derive-0.8.14.crate",
+      "sha256": "d3931cb58c62c13adec22e38686b559c86a30565e16ad6e8510a337cedc611e1",
+      "bytes": 80308,
+      "upstream": [
+        "https://static.crates.io/crates/zerocopy-derive/zerocopy-derive-0.8.14.crate"
+      ],
+      "preservation": "D",
+      "version": "0.8.14"
+    },
+    {
+      "name": "cargo/zeroize-1.5.7.crate",
+      "filename": "c394b5bd0c6f669e7275d9c20aa90ae064cb22e75a1cad54e1b34088034b149f-zeroize-1.5.7.crate",
+      "sha256": "c394b5bd0c6f669e7275d9c20aa90ae064cb22e75a1cad54e1b34088034b149f",
+      "bytes": 18861,
+      "upstream": [
+        "https://static.crates.io/crates/zeroize/zeroize-1.5.7.crate"
+      ],
+      "preservation": "D",
+      "version": "1.5.7"
+    },
+    {
+      "name": "cargo/zstd-0.13.2.crate",
+      "filename": "fcf2b778a664581e31e389454a7072dab1647606d44f7feea22cd5abb9c9f3f9-zstd-0.13.2.crate",
+      "sha256": "fcf2b778a664581e31e389454a7072dab1647606d44f7feea22cd5abb9c9f3f9",
+      "bytes": 30251,
+      "upstream": [
+        "https://static.crates.io/crates/zstd/zstd-0.13.2.crate"
+      ],
+      "preservation": "D",
+      "version": "0.13.2"
+    },
+    {
+      "name": "cargo/zstd-safe-7.2.1.crate",
+      "filename": "54a3ab4db68cea366acc5c897c7b4d4d1b8994a9cd6e6f841f8964566a419059-zstd-safe-7.2.1.crate",
+      "sha256": "54a3ab4db68cea366acc5c897c7b4d4d1b8994a9cd6e6f841f8964566a419059",
+      "bytes": 21122,
+      "upstream": [
+        "https://static.crates.io/crates/zstd-safe/zstd-safe-7.2.1.crate"
+      ],
+      "preservation": "D",
+      "version": "7.2.1"
+    },
+    {
+      "name": "cargo/zstd-sys-2.0.13+zstd.1.5.6.crate",
+      "filename": "38ff0f21cfee8f97d94cef41359e0c89aa6113028ab0291aa8ca0038995a95aa-zstd-sys-2.0.13+zstd.1.5.6.crate",
+      "sha256": "38ff0f21cfee8f97d94cef41359e0c89aa6113028ab0291aa8ca0038995a95aa",
+      "bytes": 749090,
+      "upstream": [
+        "https://static.crates.io/crates/zstd-sys/zstd-sys-2.0.13+zstd.1.5.6.crate"
+      ],
+      "preservation": "D",
+      "version": "2.0.13+zstd.1.5.6"
+    }
+  ],
+  "git": [
+    {
+      "name": "hexagonrpc",
+      "repository": "hexagonrpc",
+      "upstream": "https://github.com/linux-msm/hexagonrpc.git",
+      "commit": "598b591ae9da6a6cfe2ca5ea78998019ca6395ea",
+      "own_ref": "refs/heads/preserved/598b591ae9da6a6cfe2ca5ea78998019ca6395ea"
+    },
+    {
+      "name": "libssc",
+      "repository": "libssc",
+      "upstream": "https://codeberg.org/DylanVanAssche/libssc.git",
+      "commit": "54dd13e36d65c21263cf5b0f4a70c230a77b26bc",
+      "own_ref": "refs/heads/preserved/54dd13e36d65c21263cf5b0f4a70c230a77b26bc"
+    },
+    {
+      "name": "iio-sensor-proxy",
+      "repository": "iio-sensor-proxy",
+      "upstream": "https://gitlab.freedesktop.org/hadess/iio-sensor-proxy.git",
+      "commit": "0085ddf8ecb173a1c5fcf2344aa40e561125354f",
+      "own_ref": "refs/heads/preserved/0085ddf8ecb173a1c5fcf2344aa40e561125354f"
+    },
+    {
+      "name": "crosvm",
+      "repository": "crosvm",
+      "upstream": "https://github.com/google/crosvm.git",
+      "commit": "96e84c3f680e34e82e932ef911ae97d734121758",
+      "own_ref": "refs/heads/preserved/96e84c3f680e34e82e932ef911ae97d734121758"
+    },
+    {
+      "name": "iris-vaapi-git",
+      "repository": "qualcomm-iris-vaapi",
+      "upstream": "https://github.com/phxinyang/qualcomm-iris-vaapi.git",
+      "commit": "f587b14e6b22955c7250a45ff5f43588bbce2114",
+      "own_ref": "refs/heads/preserved/f587b14e6b22955c7250a45ff5f43588bbce2114"
+    },
+    {
+      "name": "edk2-gunyah",
+      "repository": "edk2-gunyah",
+      "upstream": "https://github.com/Droid-VM/edk2-gunyah.git",
+      "commit": "e7abefdb313562522d95e18ae96faed8f7a20b4b",
+      "own_ref": "refs/tags/expanded-e7abefdb3135"
+    }
+  ]
+}

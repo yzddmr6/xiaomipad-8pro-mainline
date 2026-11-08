@@ -47,3 +47,6 @@ authorized_keys
 known_hosts
 ssh_host_*
 *calibration*.json
+
+# Locked upstream source snapshots, with provenance and licenses.
+!/third_party/*/source.tar
