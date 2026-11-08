@@ -12,8 +12,8 @@ minimum frequencies and keep the GPU minimum at 160 MHz.
 | performance | piano-performance | 3532800 | 4320000 | 1 | 160000000 / 1100000000 |
 
 
-These limits and GNOME switching have been checked on piano26. The v0.5.0
-packaged profiles and service configuration have also been checked on piano27:
+These limits and GNOME switching have been checked on the device. The v0.5.0
+packaged profiles and service configuration have also been checked:
 all three modes match their CPU/GPU limits, and Power Saver persists across a
 cold boot. Performance permits CPU boost; it does not promise sustained
 all-core performance.

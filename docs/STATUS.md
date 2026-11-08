@@ -93,7 +93,7 @@ results do not establish support for other models, capacities or accessories.
 
 ### v0.7.1
 
-- GPU compute performance improves by about 24% in Geekbench 6 Vulkan, with some workloads nearly doubling; the kernel remains piano40.
+- GPU compute performance improves by about 24% in Geekbench 6 Vulkan, with some workloads nearly doubling; the kernel is unchanged from v0.7.0.
 
 ### v0.7.0
 
