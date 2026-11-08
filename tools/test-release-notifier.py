@@ -189,13 +189,21 @@ class Notifications(unittest.TestCase):
                 def run():
                     proc = subprocess.Popen(['/usr/bin/python3', '-c', code, 'notify'], env=env,
                                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    deadline = time.monotonic()+8
-                    while proc.poll() is None and time.monotonic()<deadline:
-                        GLib.MainContext.default().iteration(False)
-                        time.sleep(.005)
+                    # Include interpreter startup under arm64 emulation. A main
+                    # loop also avoids repeatedly entering PyGObject's event policy.
+                    deadline = time.monotonic()+30
+                    loop = GLib.MainLoop()
+                    def completed():
+                        if proc.poll() is not None or time.monotonic() >= deadline:
+                            loop.quit()
+                            return False
+                        return True
+                    GLib.timeout_add(50, completed)
+                    loop.run()
                     if proc.poll() is None:
                         proc.kill()
-                        self.fail('notification action/close did not terminate receiver')
+                        output = proc.communicate()
+                        self.fail(f'receiver timeout; Notify calls={len(calls)}, output={output!r}')
                     return proc.communicate(), proc.returncode
                 for i, action in enumerate(('view', 'default', 'close'), 2):
                     url = repository + f'/releases/tag/v{i}.0'
