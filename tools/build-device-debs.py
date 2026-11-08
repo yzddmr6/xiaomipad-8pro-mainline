@@ -71,6 +71,7 @@ def main():
         ap.add_argument('--' + name, type=Path)
     ap.add_argument('--snap-graphics-build', type=Path, help='Verified build-mesa-root.py output')
     ap.add_argument('--version', required=True)
+    ap.add_argument('--release-version', help='Project release advertised by the desktop notifier; defaults to --version')
     ap.add_argument('--mesa-dependency-root', type=Path, help='ARM64 SDK for Mesa dependency scanning')
     select = ap.add_mutually_exclusive_group()
     select.add_argument('--support-only', action='store_true', help='Rebuild only the small device integration package')
@@ -219,9 +220,6 @@ def main():
         support = stages / 'piano-device-support'
         shutil.copytree(repo / 'packaging/piano-device-support', support, ignore=untracked)
         tree(repo / 'packaging/piano-device-support', support, '.')
-        release_file = support / 'usr/share/mainline-release/version'
-        release_file.parent.mkdir(parents=True, exist_ok=True)
-        release_file.write_text(a.version + '\n')
         for p in support.rglob('*'):
             if p.is_file() and p.read_bytes().startswith(b'#!'):
                 p.chmod(0o755)
@@ -323,6 +321,9 @@ def main():
     shutil.copytree(repo / 'packaging/piano-ubuntu-desktop', desktop, ignore=untracked)
     tree(repo / 'packaging/piano-ubuntu-desktop', desktop, '.')
     shutil.copytree(repo / 'packaging/release-notifier', desktop, dirs_exist_ok=True, ignore=untracked)
+    release_file = desktop / 'usr/share/mainline-release/version'
+    release_file.parent.mkdir(parents=True, exist_ok=True)
+    release_file.write_text((a.release_version or a.version) + '\n')
     tree(repo / 'packaging/release-notifier', desktop, '.')
     shutil.copytree(repo / 'packaging/firefox-snap-migration', desktop, dirs_exist_ok=True, ignore=untracked)
     tree(repo / 'packaging/firefox-snap-migration', desktop, '.')
