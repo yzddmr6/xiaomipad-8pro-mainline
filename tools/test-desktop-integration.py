@@ -42,6 +42,12 @@ class DesktopIntegration(unittest.TestCase):
                             'gstreamer1.0-plugins-bad', 'gstreamer1.0-libav'):
                 self.assertEqual(dependencies.split(', ').count(package), 1)
             self.assertFalse(list(root.rglob('__pycache__')))
+            helper = 'usr/libexec/firefox-snap-remove'
+            self.assertEqual((root / helper).read_bytes(),
+                             (REPO / 'packaging/firefox-snap-migration' / helper).read_bytes())
+            self.assertFalse((root / 'usr/libexec/piano/firefox-snap-remove').exists())
+            self.assertIn('ExecStart=/usr/libexec/firefox-snap-remove /var/lib/piano/firefox-snap-removed',
+                          (root / 'usr/lib/systemd/system/piano-firefox-snap-remove.service').read_text())
             self.assertFalse((root / 'usr/local').exists())
             self.assertFalse((root / 'etc/mpv').exists())
             self.assertFalse(list(root.rglob('powerprofilesctl')))

@@ -381,3 +381,13 @@ edk2-gunyah firmware (BSD-2-Clause-Patent) and selected signed DroidVM guest
 drivers with their original BSD notices. The VNC/simplefb crosvm additions
 retain DroidVM's GPL-2.0-or-later notices and additional permissions.
 See device/virtualization/windows/NOTICE and the packaged per-file notices.
+
+Firefox snap migration
+----------------------
+packaging/firefox-snap-migration adapts the user-data guard and non-purging
+removal from yzddmr6/onepluspad-2pro-mainline commit
+3a703b964838c5c986daa34a45b2e8b24a501ca4, packaging/erhai-firefox/tree/usr/lib/systemd/system/erhai-firefox-snap-removal.service.
+https://github.com/yzddmr6/onepluspad-2pro-mainline
+Copyright (C) 2026 yzddmr6; GPL-2.0-only. This repository maintains the shared
+helper; existing data paths (including dangling symlinks) retain the snap and
+produce a journal message. The completion marker is optional.

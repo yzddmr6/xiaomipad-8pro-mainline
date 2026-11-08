@@ -350,6 +350,8 @@ def main():
     tree(repo / 'packaging/piano-ubuntu-desktop', desktop, '.')
     shutil.copytree(repo / 'packaging/release-notifier', desktop, dirs_exist_ok=True, ignore=untracked)
     tree(repo / 'packaging/release-notifier', desktop, '.')
+    shutil.copytree(repo / 'packaging/firefox-snap-migration', desktop, dirs_exist_ok=True, ignore=untracked)
+    tree(repo / 'packaging/firefox-snap-migration', desktop, '.')
     copy(repo / 'device/keyboard/README.md', desktop,
          'usr/share/doc/piano-ubuntu-desktop/keyboard.md')
     # Distribution-specific configuration consumes the board profiles once.
