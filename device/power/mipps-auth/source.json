@@ -14,9 +14,9 @@
   "patches": [
     {
       "file": "patches/0001-use-xiaomi-mca-and-keep-auth-device-only.patch",
-      "sha256": "795ecc563e74734e6713379be667f81ace8cc0d83b24e42d0156487950cb949a"
+      "sha256": "3c8c76a8ac974f8aad51437d402d028da879322939e9970428168809ee82ab9c"
     }
   ],
-  "patched_sha256": "f3d707d1d146f6be6a9cb7b8e883496fe9f7f7ec7c4acdcbab74f9a1c41df2ec",
+  "patched_sha256": "299322a77166437109ea6eb1a9180768f2dc24916cf14ff56a27a9c6b90b06a3",
   "exit_condition": "Use a distribution package when it includes the piano MCA relay path and stock command order; remove this pinned input then."
 }

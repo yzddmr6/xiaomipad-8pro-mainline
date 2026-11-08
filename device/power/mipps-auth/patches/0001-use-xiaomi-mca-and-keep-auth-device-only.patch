@@ -28,17 +28,35 @@
      if pd_auth is None:
          pd_auth = pd_verified(root)
      return notify_charge_profile(root, pd_auth, state_file, timeout)
-@@ -714,6 +717,13 @@
-         else:
+@@ -715,6 +718,31 @@
              print("warning: no Type-C partner found for once-per-attach state",
                    file=sys.stderr)
+ 
++    if current_adapter_svid(root) != XIAOMI_SVID:
++        # piano: the charger firmware reads the adapter identity (and so its
++        # SVID) only with the data role DFP, and swaps the role on request.
++        # Ask for it before giving up; a partner event arrives while the port
++        # is still a sink, so the online trigger cannot wait for SVID 2717.
++        if (not args.no_data_role_swap and
++                os.path.exists(os.path.join(root, "data_role")) and
++                wait_real_type(root, args.timeout) in ("PD", "PD_PPS")):
++            set_verify_process(root, "1")
++            ensure_charger_dfp(root, args.timeout)
++            deadline = time.monotonic() + 2.0
++            while time.monotonic() < deadline:
++                if current_adapter_svid(root) == XIAOMI_SVID:
++                    break
++                time.sleep(0.1)
++            if current_adapter_svid(root) != XIAOMI_SVID:
++                set_verify_process(root, "0")
 +
 +    if current_adapter_svid(root) != XIAOMI_SVID:
-+        # A partner event can precede SVID discovery. Keep the online trigger
++        # Not a Xiaomi adapter, or no identity yet. Keep the online trigger
 +        # armed so the kernel's later Xiaomi identity event can start auth.
 +        write_state_file(USB_ONLINE_STATE_FILE, "0")
 +        print("MiPPS auth skipped: current charger is not Xiaomi")
 +        return
- 
++
      state, _ = vdm_state(root)
      if auth_already_completed(root, state) and not args.force:
+         print(f"sysfs={root}")

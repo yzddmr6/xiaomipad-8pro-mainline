@@ -9,7 +9,10 @@ hashes, applies the patch with zero fuzz, checks the resulting hash, and builds
 `piano-mipps-auth`. `--support-only` also builds this dependency.
 
 The local patch selects `xiaomi-mca-usb`, refuses a charger whose current SVID
-is not Xiaomi `0x2717`, and suppresses desktop notifications. The protocol,
+is not Xiaomi `0x2717`, but first requests the DFP data role when a PD source
+is attached: the piano charger firmware reads the adapter identity only as DFP,
+so checking the SVID before the role swap skipped every first attach. It
+suppresses desktop notifications. The protocol,
 public seed/key tables, command timeouts, one retry and adapter-ID recovery
 remain the pinned community implementation. These protocol constants are
 upstream input, not calibration or credentials extracted from this tablet.
