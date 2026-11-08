@@ -1,69 +1,50 @@
-# Contributing
+# 参与贡献
 
-## Where to send changes
+[English](CONTRIBUTING.en.md)
 
-Send integration, device userspace, packaging and documentation issues and pull requests to
-[xiaomipad-8pro-mainline](https://github.com/yzddmr6/xiaomipad-8pro-mainline), targeting `main`.
-Send kernel drivers, DTS and configuration to
-[linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano), targeting `piano/dev`.
-Follow the execution boundaries in [AGENTS.md](AGENTS.md).
+## 改动发到哪里
 
-Open an issue before proposing changes to release-related files or policy. Maintainers allocate ABI
-numbers when packaging any installable kernel, including candidates; ordinary PRs do not reserve
-numbers or edit `kernel/abi.json` or release locks. See
-[installable kernel packaging](docs/RELEASE.md#installable-kernel-packaging-maintainers).
-Maintainers prepare release notes through
-[release preparation](docs/RELEASE.md#release-preparation-maintainers).
-Update English and Chinese counterparts together.
+- 集成、设备用户态、打包、安装工具和文档：本仓 [xiaomipad-8pro-mainline](https://github.com/yzddmr6/xiaomipad-8pro-mainline)，目标分支 `main`。
+- 内核驱动、设备树和内核配置：[linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano)，目标分支 `piano/dev`。
+- 两边都要改时分别提 PR，互相链接并写明合入顺序。
+- 发布相关文件或项目规则要改，先开 issue 讨论。
 
-## Commits and attribution
+## 提交前逐项核对
 
-Use [Git's author and committer semantics](https://git-scm.com/docs/git-commit#_commit_information):
-the author is the person who wrote the change; the committer is the person applying it.
-Imported commits retain their original author, date and existing trailers. Give an accessible
-upstream source link and identify local changes separately.
+每一项都要能在 PR 里看到对应的事实；不适用的写“不适用”和理由。纯文档只做文档检查；工具按实际影响验证：改变构建配置、镜像内容、安装或恢复行为的，验证对应产物与设备边界，不能因为工具在主机上运行就免测；能用可靠的离线检查覆盖的，不重复做破坏性操作。
 
-In this integration repository, disclose AI assistance with a `Co-Authored-By:` trailer.
-An assistant must not add anyone's `Signed-off-by:` or `Tested-by:`; those attestations come from
-the person concerned. This does not prohibit factual `Fixes:`, `Link:` or `Reported-by:` trailers:
-use them as described in the kernel's
-[submitting-patches](https://docs.kernel.org/process/submitting-patches.html).
+1. **一个 PR 一个主题。** 一个功能或一个修复，能单独评审、单独回退。笔、闪光灯、指纹这样的功能各提一个 PR；重构、格式调整与功能分开。删掉已经合入、被替代或与主题无关的提交。每个提交是一个逻辑改动、能单独构建，提交说明写清问题和为什么要改。
+2. **基于目标分支的最新提交。** 你的 `origin` 多半是自己的 fork：先加上本项目仓库（`git remote add upstream https://github.com/yzddmr6/xiaomipad-8pro-mainline.git`）并 `git fetch upstream`，再 rebase 到 `upstream/main` 的最新提交，自己解决冲突。检查完整的最终差异（`git diff upstream/main...HEAD`）；发生过冲突的文件，对照重放前后的内容确认没有遗漏或误删。`--stat` 只用来看范围。
+3. **说的和做的一致。** 标题、正文和 `Fixes:` 里关于功能与修复的说法，要与最终差异和实际调用路径一致；修 bug 给出在当前目标分支上的复现方法或源码依据。测试结论写明被测版本、场景和结果；rebase 或改代码之后，说明哪些旧的测试结果仍然适用、哪些已经补测。
+4. **按发布方式构建。** 用[构建指南](docs/BUILD.md)里的入口和完整发布配置（`kernel/source.json` 列出的全部内核配置片段、匹配的内核模块与 DTB、软件包与服务）构建，写明被测的提交或产物。调用的接口、sysfs 节点和服务要在被测组合里真实存在：来自目标分支、本 PR 或明确链接的配套 PR；写明提供方和合入顺序，并验证可选提供方缺席时的行为。不要凭假定的接口写实现；只编译通过不等于能用。
+5. **硬件参数有依据。** 固定内存地址、寄存器值、时序、电压电流等参数给出原厂或上游依据，并对所有已支持的变体成立：两种屏（CSOT、BOE）、不同内存与存储容量、外设有或没有。改共享代码要说明对现有使用者的影响。
+6. **真机回测。** 在自己的设备上装上改动（写明是 RAM 启动还是已装系统），至少确认：
+   - 冷启动能进入登录界面或桌面；
+   - `dmesg` 与改动前相比没有新增 `Oops`、`BUG`、`WARNING`、`hung task`、`soft lockup` 或 `Call trace`；
+   - 挂起后能唤醒，睡眠时长按墙上时间核对（`tools/piano-suspend-check.py`）；改动涉及电源或充电时，在电池供电下也测一次；
+   - 显示与触控的生命周期：熄屏再亮屏、锁屏后解锁、长时间熄屏后唤醒；
+   - 改动涉及的子系统真实可用；新增的可选功能缺失或失败时，不拖垮与它无关的既有功能（开机、触控、挂起），必要依赖失败时正确报错并回收资源。错误路径优先用源码审查或离线故障注入核对，不要为了勾选去卸载或重绑正在使用的硬件驱动。
 
-Keep each commit to one logical change and buildable on its own. Explain the problem and why the
-change is needed. For kernel contributions, follow `Documentation/process/` in the kernel tree:
-[submitting-patches](https://docs.kernel.org/process/submitting-patches.html),
-[coding-assistants](https://docs.kernel.org/process/coding-assistants.html) and
-[generated-content](https://docs.kernel.org/process/generated-content.html).
-The human kernel contributor reviews the submission and supplies their own DCO sign-off;
-the upstream documents govern tool attribution there.
+   没有把握的新功能默认关闭；不加没有协议依据的周期轮询、重试、延时或唤醒。
+7. **署名与来源。** 用你自己的身份提交（作者是写代码的人，提交者是应用改动的人）。导入别人的代码时保留原作者、原日期和原有尾注，给出能访问的来源链接，本地修改另成提交，并在 [NOTICE](NOTICE) 登记组件、来源、许可与本地改动（SPDX/REUSE）。原厂文件的收录按[固件说明](firmware/README.md)。用了 AI 的，每个相关提交用 `Co-Authored-By:` 尾注写明实际使用的模型，例如 `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`，用了几个模型写几条；PR 里写明实际使用的工具、模型和用在哪些部分；不附提示词或会话记录；已合入的提交不为补这一行而改写。AI 不能替任何人加 `Signed-off-by:`、`Tested-by:`，也不能声称做过没做的测试。
+8. **不越权。** 普通 PR 不分配内核 ABI 编号，不改 `kernel/abi.json` 和发布版本记录，不扩大权限或写入范围，也不替维护者宣布批准、授权、测试结论或发布。与本主题直接相关的源码、补丁或依赖更新，同步更新对应的哈希并说明来源与复验结果；不要只为让校验通过而改期望值。ABI 由维护者在打包任何可安装内核时分配（见[发布文档](docs/RELEASE.md#installable-kernel-packaging-maintainers)），发布说明由维护者准备。
+9. **不带个人数据。** 提交、生成的文件和默认日志输出里不能有序列号、蓝牙/Wi-Fi 地址、逐机标定、凭据、备份、个人路径和会话记录。贴日志前先脱敏。
 
-## Evidence
+## 设计约定
 
-A hardware report includes:
+- 优先用发行版的包；缺能力时固定上游来源、只带最小补丁，并写明什么时候可以去掉。沿用上游的构建系统。
+- 硬件协议和设备用户态走标准 Linux 子系统接口，不依赖特定发行版、包管理器、桌面或固定账户；打包按 [Debian Policy](https://www.debian.org/doc/debian-policy/)，服务单元和桌面策略与硬件处理分开。
+- 构建与打包工具不隐式访问设备；输入固定、可公开获取，不依赖私有路径、别人工作区的产物或另一台设备的标定。
 
-- Device model and panel variant, stock build, kernel release and commit, and integration commit
-  or image identity.
-- Reproduction steps, expected and observed results, and sanitized logs.
-- What was tested, what remains untested, and whether this was an offline check, a RAM boot,
-  an installed-system cold boot or an upgrade.
+<a id="evidence"></a>
+## PR 与问题报告里要写的
 
-Apply the [privacy boundary](AGENTS.md) before attaching evidence. Compilation, QEMU, a probe or
-an active service does not establish hardware support. Results from another variant do not
-establish support for this one. Current tested behavior belongs in
-[STATUS.md](docs/STATUS.md) and the [support matrix](README.en.md#hardware-support).
+按 [PR 模板](.github/pull_request_template.md) 填写：问题与改动；主题、目标分支与基于的提交、依赖与合入顺序；来源与许可；AI 协助（工具、模型与用途）；验证——机型与屏型、内存与存储、原厂系统版本、内核版本与提交、集成提交或镜像（可贴 `piano-check --markdown` 的输出）、测试方式（离线、RAM 启动、已装系统冷启动、升级）、命令与结果、脱敏日志；没测到或有限制的部分。
 
-Optional hardware must not disrupt boot, touch or suspend when absent or failing. Do not add
-periodic polling or wakeups without protocol evidence and device tests. Keep an unverified
-feature disabled by default.
+编译、QEMU、probe 成功或服务处于 active 都不证明硬件可用；另一种屏或另一台设备上的结果，不证明这一种也可用。当前的支持情况见 [STATUS](docs/STATUS.md) 和[硬件支持表](README.md)。
 
-## Sources and integration
+## 合入方式
 
-Preserve upstream authorship and per-file licenses. Record imported components, their pinned
-sources, licenses and local changes in [NOTICE](NOTICE); use
-[SPDX identifiers and REUSE metadata](https://reuse.software/spec-3.3/).
-Stock-file inclusion is governed by the [firmware policy](firmware/README.md).
+维护者每个版本审一次待合入的 PR。能合的直接合；有小问题时，维护者可能合入后自己补修、拆分或只摘取一部分，并在 PR 里说明。维护者整合后的组合按同一份清单验收。
 
-Prefer distribution packages. Where a required capability is missing, pin upstream sources and
-minimal patches and state when the override can be removed. Reuse upstream build systems.
-Keep package recipes, service units and desktop policy separate from hardware processing;
-use [Debian Policy](https://www.debian.org/doc/debian-policy/) for Debian packaging conventions.
+中英文文档一起更新。文档里的命令不代表授权你去刷写、清空或重启别人的设备。
