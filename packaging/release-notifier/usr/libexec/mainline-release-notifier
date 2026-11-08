@@ -12,6 +12,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+import uuid
 
 from gi.repository import Gio, GLib
 
@@ -20,6 +21,67 @@ RELEASE = Path('/usr/share/mainline-release/version')
 APP = 'mainline-release-notifier'
 BUS = 'org.freedesktop.Notifications'
 OBJECT = '/org/freedesktop/Notifications'
+PORTAL = 'org.freedesktop.portal.Desktop'
+PORTAL_OBJECT = '/org/freedesktop/portal/desktop'
+
+
+def open_uri(bus, url, activation_token=None):
+    """Let the desktop own the browser, independently of this service."""
+    token = 'release_' + uuid.uuid4().hex
+    sender = bus.get_unique_name()[1:].replace('.', '_')
+    handle = f'{PORTAL_OBJECT}/request/{sender}/{token}'
+    options = {'handle_token': GLib.Variant('s', token)}
+    if activation_token:
+        options['activation_token'] = GLib.Variant('s', activation_token)
+    loop = GLib.MainLoop()
+    response = None
+
+    def completed(connection, sender, path, interface, name, parameters):
+        nonlocal response
+        if path == handle:
+            response = parameters.unpack()[0]
+            loop.quit()
+
+    # Subscribe before calling: the portal may finish before OpenURI returns.
+    subscription = bus.signal_subscribe(
+        PORTAL, 'org.freedesktop.portal.Request', 'Response', None, None,
+        Gio.DBusSignalFlags.NONE, completed)
+    try:
+        try:
+            handle = bus.call_sync(
+                PORTAL, PORTAL_OBJECT, 'org.freedesktop.portal.OpenURI', 'OpenURI',
+                GLib.Variant('(ssa{sv})', ('', url, options)),
+                GLib.VariantType.new('(o)'), Gio.DBusCallFlags.NONE,
+                5000, None).unpack()[0]
+        except GLib.Error as error:
+            # Older/minimal sessions may lack the portal or its OpenURI API.
+            # A scope inherits the session environment while giving xdg-open
+            # and all its descendants a cgroup independent of this service.
+            unavailable = ('ServiceUnknown', 'NameHasNoOwner', 'UnknownMethod',
+                           'UnknownInterface')
+            if Gio.DBusError.get_remote_error(error) not in tuple(
+                    'org.freedesktop.DBus.Error.' + name for name in unavailable):
+                raise
+            environment = os.environ.copy()
+            if activation_token:
+                environment['XDG_ACTIVATION_TOKEN'] = activation_token
+            # The shell exits only after creating the opener inside the scope;
+            # the scope lives until all descendants finish, even if xdg-open
+            # waits for a foreground browser. No detached-launch race here.
+            subprocess.run([
+                'systemd-run', '--user', '--scope', '--collect', '--quiet', '--',
+                'sh', '-c', 'xdg-open "$1" &', 'xdg-open', url],
+                env=environment, stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+            return
+        # A handle means accepted, not opened. Keep the D-Bus connection alive
+        # until Response; disconnecting sooner can cancel an app chooser.
+        if response is None:
+            loop.run()
+        if response not in (0, 1):  # 1 is an explicit user cancellation.
+            raise ValueError('Desktop portal could not open the release notes')
+    finally:
+        bus.signal_unsubscribe(subscription)
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -115,21 +177,26 @@ def notify(product, repository, state):
     loop = GLib.MainLoop()
     notification_id = None
     activation_token = None
+    opening = False
 
     def signal(connection, sender, path, interface, name, parameters):
-        nonlocal activation_token
+        nonlocal activation_token, opening
         values = parameters.unpack()
         if values[0] != notification_id:
             return
         if name == 'ActivationToken':
             activation_token = values[1]
         elif name == 'ActionInvoked' and values[1] in ('default', 'view'):
-            environment = os.environ.copy()
-            if activation_token:
-                environment['XDG_ACTIVATION_TOKEN'] = activation_token
-            subprocess.run(['xdg-open', url], env=environment, check=False)
-            loop.quit()
-        elif name == 'NotificationClosed':
+            if opening:
+                return
+            opening = True
+            try:
+                open_uri(bus, url, activation_token)
+            except (OSError, ValueError, GLib.Error, subprocess.CalledProcessError) as error:
+                print(f'{APP}: {error}', file=sys.stderr)
+            finally:
+                loop.quit()
+        elif name == 'NotificationClosed' and not opening:
             loop.quit()
 
     subscription = bus.signal_subscribe(BUS, BUS, None, OBJECT, None,

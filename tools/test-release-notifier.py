@@ -128,6 +128,12 @@ class Releases(unittest.TestCase):
             self.assertTrue(n.chinese())
 
 
+PORTAL_XML = '''<node><interface name="org.freedesktop.portal.OpenURI">
+<method name="OpenURI"><arg type="s" direction="in"/><arg type="s" direction="in"/>
+<arg type="a{sv}" direction="in"/><arg type="o" direction="out"/></method>
+</interface></node>'''
+
+
 XML = '''<node><interface name="org.freedesktop.Notifications">
 <method name="Notify"><arg type="s" direction="in"/><arg type="u" direction="in"/>
 <arg type="s" direction="in"/><arg type="s" direction="in"/><arg type="s" direction="in"/>
@@ -148,6 +154,29 @@ class Notifications(unittest.TestCase):
                       'org.freedesktop.DBus', 'RequestName',
                       GLib.Variant('(su)', (n.BUS, 0)), None,
                       Gio.DBusCallFlags.NONE, 2000, None)
+        bus.call_sync('org.freedesktop.DBus', '/org/freedesktop/DBus',
+                      'org.freedesktop.DBus', 'RequestName',
+                      GLib.Variant('(su)', (n.PORTAL, 0)), None,
+                      Gio.DBusCallFlags.NONE, 2000, None)
+        browsers = []
+        portal_calls = []
+        def portal(connection, sender, path, interface, name, params, invocation):
+            parent, url, options = params.unpack()
+            portal_calls.append((parent, url, options))
+            handle = n.PORTAL_OBJECT + '/request/' + sender[1:].replace('.', '_') + '/' + options['handle_token']
+            invocation.return_value(GLib.Variant('(o)', (handle,)))
+            def opened():
+                # Launch from the portal, after returning the request handle.
+                # This process must outlive the notification receiver.
+                browsers.append(subprocess.Popen(['sleep', '60'],
+                                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL))
+                connection.emit_signal(sender, handle, 'org.freedesktop.portal.Request',
+                                       'Response', GLib.Variant('(ua{sv})', (0, {})))
+                return False
+            GLib.timeout_add(75, opened)
+        portal_registration = bus.register_object(n.PORTAL_OBJECT,
+            Gio.DBusNodeInfo.new_for_xml(PORTAL_XML).interfaces[0], portal, None, None)
         calls = []
         action = 'view'
         fail = False
@@ -161,6 +190,8 @@ class Notifications(unittest.TestCase):
                 invocation.return_value(GLib.Variant('(u)', (42,)))
                 def emit():
                     signal, values = ('NotificationClosed', GLib.Variant('(uu)', (42, 2))) if action == 'close' else ('ActionInvoked', GLib.Variant('(us)', (42, action)))
+                    connection.emit_signal(sender, n.OBJECT, n.BUS, 'ActivationToken',
+                                           GLib.Variant('(us)', (42, 'test-token')))
                     connection.emit_signal(sender, n.OBJECT, n.BUS, signal, values)
                     return False
                 GLib.timeout_add(50, emit)
@@ -215,8 +246,13 @@ class Notifications(unittest.TestCase):
                     count = len(calls)
                     self.assertEqual(run()[1], 0)
                     self.assertEqual(len(calls), count)
-                self.assertEqual((root/'opened').read_text().splitlines(),
+                self.assertEqual([entry[1] for entry in portal_calls],
                                  [repository+'/releases/tag/v2.0', repository+'/releases/tag/v3.0'])
+                self.assertTrue(all(entry[0] == '' and entry[2]['activation_token'] == 'test-token'
+                                    for entry in portal_calls))
+                self.assertEqual(len(browsers), 2)
+                self.assertTrue(all(proc.poll() is None for proc in browsers))
+                self.assertFalse((root/'opened').exists(), 'portal path must not call xdg-open')
                 fail = True
                 n.write_json(state/'pending.json', {'version':'5.0', 'url':repository+'/releases/tag/v5.0'})
                 self.assertNotEqual(run()[1], 0)
@@ -227,10 +263,62 @@ class Notifications(unittest.TestCase):
                 self.assertEqual(calls[-1][3], '有新版本可用')
                 self.assertEqual(calls[-1][5][3], '查看更新说明')
         finally:
+            for proc in browsers:
+                proc.terminate()
+                proc.wait(timeout=5)
+            bus.unregister_object(portal_registration)
+            bus.call_sync('org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus',
+                          'ReleaseName', GLib.Variant('(s)', (n.PORTAL,)), None,
+                          Gio.DBusCallFlags.NONE, 2000, None)
             bus.unregister_object(registration)
             bus.call_sync('org.freedesktop.DBus', '/org/freedesktop/DBus', 'org.freedesktop.DBus',
                           'ReleaseName', GLib.Variant('(s)', (n.BUS,)), None,
                           Gio.DBusCallFlags.NONE, 2000, None)
+
+
+class OpenURI(unittest.TestCase):
+    def test_only_missing_portal_falls_back_to_scope(self):
+        for error_name in ('ServiceUnknown', 'UnknownMethod', 'AccessDenied', 'NoReply'):
+            with self.subTest(error_name=error_name):
+                bus = mock.Mock()
+                bus.get_unique_name.return_value = ':1.42'
+                bus.call_sync.side_effect = Gio.dbus_error_new_for_dbus_error(
+                    'org.freedesktop.DBus.Error.' + error_name, 'test')
+                with mock.patch.object(n.subprocess, 'run') as run:
+                    if error_name in ('AccessDenied', 'NoReply'):
+                        with self.assertRaises(GLib.Error):
+                            n.open_uri(bus, 'https://example.invalid/', 'activation')
+                        run.assert_not_called()
+                    else:
+                        n.open_uri(bus, 'https://example.invalid/', 'activation')
+                        argv = run.call_args.args[0]
+                        self.assertEqual(argv[:4], ['systemd-run', '--user', '--scope', '--collect'])
+                        self.assertEqual(argv[-1], 'https://example.invalid/')
+                        self.assertEqual(run.call_args.kwargs['env']['XDG_ACTIVATION_TOKEN'], 'activation')
+                        self.assertTrue(run.call_args.kwargs['check'])
+                bus.signal_unsubscribe.assert_called_once()
+
+    def test_response_cancellation_and_failure_do_not_fall_back(self):
+        for response in (0, 1, 2):
+            with self.subTest(response=response):
+                bus = mock.Mock()
+                bus.get_unique_name.return_value = ':1.42'
+                def reply(*args):
+                    token = args[4].unpack()[2]['handle_token']
+                    handle = n.PORTAL_OBJECT + '/request/1_42/' + token
+                    callback = bus.signal_subscribe.call_args.args[-1]
+                    callback(bus, n.PORTAL, handle, 'org.freedesktop.portal.Request',
+                             'Response', GLib.Variant('(ua{sv})', (response, {})))
+                    return GLib.Variant('(o)', (handle,))
+                bus.call_sync.side_effect = reply
+                with mock.patch.object(n.subprocess, 'run') as run:
+                    if response == 2:
+                        with self.assertRaises(ValueError):
+                            n.open_uri(bus, 'https://example.invalid/')
+                    else:
+                        n.open_uri(bus, 'https://example.invalid/')
+                    run.assert_not_called()
+                bus.signal_unsubscribe.assert_called_once()
 
 
 if __name__ == '__main__':
