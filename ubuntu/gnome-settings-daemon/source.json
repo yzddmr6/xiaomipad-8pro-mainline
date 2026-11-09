@@ -32,7 +32,7 @@
     "keyring_sha256": "80a36b0a6de2f69f49d2df75ef473ccde121e9e190b9ea01d20a4f63778d5c31",
     "dsc_maintainer_signature": "Not separately verified"
   },
-  "state": "AUTHENTICATED_PATCHED_SOURCE_NOT_BINARY_OR_HARDWARE_VERIFIED",
+  "state": "AUTHENTICATED_PATCHED_SOURCE_AND_BINARY_TESTS_PASSED_NOT_HARDWARE_VERIFIED",
   "patches": [
     {
       "file": "power-button-lock.patch",
