@@ -11,6 +11,14 @@ The release asset `piano-ubuntu-<version>-packages.zip` is the upgrade package: 
 directory holds every project package installed in that release's image. Always install the
 whole set together, never a single package.
 
+## Upgrading from v1.1.0 to v1.1.1
+
+Use `piano-ubuntu-v1.1.1-packages.zip`, install the complete package set using this page’s instructions, and reboot; no repartitioning or root-image flash is needed. This release updates the matching kernel (Linux 7.2.15) and camera loopback module, the device-support package, the sensor proxy, the graphics driver (Mesa 26.2.6), the snap graphics package and `piano-ubuntu-desktop`; the other default packages are the same as in 1.1.0.
+
+Charger authentication moves into the kernel, so APT removes the old `piano-mipps-auth` package during the upgrade; this replacement is expected, and the old package should not be reinstalled. `piano-charging.service` continues to provide charging policy. Existing battery-protection settings and per-unit calibration are retained, and no pen-calibration extraction is required.
+
+Keep the previous kernel, rollback boot set and complete v1.1.0 `packages.zip` so that matching software can be restored if needed. Reboot normally after installing the new version before using charging and sensor features.
+
 ## Upgrading from v1.0.0 to v1.1.0
 
 Use `piano-ubuntu-v1.1.0-packages.zip` and install the whole set with the steps below, then reboot. This release brings a new kernel (Linux 7.2.15) with its matching camera loopback package, an updated device-support package and `piano-ubuntu-desktop` 1.1.0; the other default packages are the same as in 1.0.0. The optional VM packages are unchanged and need no reinstall. After the reboot, “Preserve Battery Health” is available in Settings → Power. The previous kernel and rollback boot set are kept; no repartitioning or root image reflash is needed.

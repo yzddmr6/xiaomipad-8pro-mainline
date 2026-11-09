@@ -1,6 +1,6 @@
 # Release history and current support
 
-Current release: **v1.1.0**. See the [README](../README.en.md#hardware-support) or
+Current release: **v1.1.1**. See the [README](../README.en.md#hardware-support) or
 [中文 README](../README.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
@@ -18,8 +18,8 @@ Waydroid runs Android apps with software rendering.
 
 The system player (GStreamer), Firefox (H.264/HEVC/VP9) and Chrome (H.264/VP9) use
 hardware decoding automatically; AV1 uses software decoding. H.264/H.265 hardware
-encoding is verified at 1080p and 4K. Multi-finger touch and volume keys work. USB PD chargers fast-charge at 9 V, below stock
-fast-charging power; Preserve Battery Health stops charging at 80% and resumes at 75%. Keep the default
+encoding is verified at 1080p and 4K. Multi-finger touch and volume keys work. The original adapter supports PPS fast
+charging, with current adjusted to charge level and temperature; Preserve Battery Health continues to stop charging at 80% and resume at 75%. Keep the default
 speaker volume cap because speaker protection is absent. System time is set from the network after boot.
 Sensor calibration defaults are included; see the
 [calibration instructions](../device/sensors/README.zh-CN.md) to use your own tablet's calibration.
@@ -30,7 +30,7 @@ Not yet supported: stylus, fingerprint, disk hibernation and hardware clock writ
 
 Results are from one Xiaomi Pad 8 Pro (`piano`), model 25091RP04C (China), with
 Snapdragon SM8750P, 16 GB RAM, 512 GB UFS and an unlocked bootloader. The stock build
-is OS3.0.303.0.WPYCNXM on slot A. Software is Linux 7.2.10 with the piano patches,
+is OS3.0.303.0.WPYCNXM on slot A. Software is Linux 7.2.15 with the piano patches,
 Ubuntu 26.04 Desktop ARM64 and Mesa 26.2 for desktop and snap applications; sensors
 use the default calibration. The kernel input is pinned in
 [kernel/source.json](../kernel/source.json). The v0.2.0 fresh installation was
@@ -38,6 +38,17 @@ verified on this unit; later versions were tested on the installed system. These
 results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
+
+### v1.1.1
+
+- PPS fast charging with the original adapter adjusts current to charge level and temperature, while keeping Preserve Battery Health.
+- Suspending right after turning the screen on no longer wakes the tablet immediately through the keyboard.
+- Ambient-light readings no longer stop after the sensor is switched off and on.
+- Rear torch control, with a check tool that verifies readback and restores the previous setting.
+- Mesa 26.2.6, with upstream synchronization, rendering and concurrency fixes.
+- A desktop notification appears when a new release is available; it can be turned off in settings.
+- Migrating from the Firefox snap keeps existing user data.
+- [Documentation and an offline preparation tool](RESTORE-STOCK.en.md) for restoring HyperOS from a dual-boot installation; the tool checks the tablet’s own GPT backups and does not flash the device.
 
 ### v1.1.0
 
