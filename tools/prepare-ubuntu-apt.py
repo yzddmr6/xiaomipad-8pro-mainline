@@ -38,6 +38,8 @@ def main():
     parser.add_argument('--rootfs', required=True, type=Path, help='Pristine Desktop SquashFS')
     parser.add_argument('--snapshot', required=True, help='Ubuntu snapshot UTC timestamp, YYYYMMDDTHHMMSSZ')
     parser.add_argument('--output', required=True, type=Path, help='New isolated APT directory')
+    parser.add_argument('--archive-cache', type=Path, action='append', default=[],
+                        help='Seed APT archives from existing deb caches; signed indexes still select versions')
     parser.add_argument('--download', action='store_true', help='Download only; never invoke dpkg installation')
     parser.add_argument('--mozilla-firefox', action='store_true',
                         help='Include the locked Mozilla Firefox deb and its signed repository policy')
@@ -175,6 +177,14 @@ def main():
         result['index_sha256'] = {p.name: sha(p) for p in sorted((out / 'state/lists').iterdir())
                                   if p.is_file() and p.name != 'lock'}
         if args.download:
+            # APT cleanly ignores unselected archives; omit them from the input lock.
+            selected = {line.split()[1] for line in (out / 'uris.log').read_text().splitlines()
+                        if line.startswith("'") and len(line.split()) >= 4}
+            for cache in args.archive_cache:
+                for name in sorted(selected):
+                    cached = cache / name
+                    if cached.is_file():
+                        shutil.copyfile(cached, out / 'cache/archives' / name)
             apt('download', ['--download-only', *downgrade, '--assume-yes', *removal_guard, 'install', *args.packages])
             for path in sorted((out / 'cache/archives').glob('*.deb')):
                 fields = Deb822(subprocess.check_output(['dpkg-deb', '--field', str(path)], text=True))

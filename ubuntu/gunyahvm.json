@@ -5,24 +5,23 @@
   "packages": [
     {
       "package": "gunyahvm",
-      "file": null,
-      "sha256": null
+      "file": "gunyahvm_1.0.0-1_arm64.deb",
+      "sha256": "99397d5993d2a9a91b28568e2a43cf5cf6018240e5c63feae399897c013f121e"
     },
     {
       "package": "gunyahvm-runtime",
-      "file": null,
-      "sha256": null
+      "file": "gunyahvm-runtime_1.0.0-1_arm64.deb",
+      "sha256": "077bead1f2c2906b4157f2a92a78def41b13a8b84a7539e984d97f8e8ba01352"
     },
     {
       "package": "gunyahvm-guest-kernel",
-      "file": null,
-      "sha256": null
+      "file": "gunyahvm-guest-kernel_1.0.0-1_arm64.deb",
+      "sha256": "2cd25676fea74d83db27a31735ab8cd20858998bc5c69dda4b2426777efbe170"
     },
     {
       "package": "gunyahvm-guest-mesa",
-      "file": null,
-      "sha256": null
+      "file": "gunyahvm-guest-mesa_1.0.0-1_arm64.deb",
+      "sha256": "3175f37788948cf3b7c22c35930cff96e0ff7019710cb57f9ee11b6f062b29f1"
     }
-  ],
-  "gate": "⟦DRAFT:G-GUNYAH⟧"
+  ]
 }
