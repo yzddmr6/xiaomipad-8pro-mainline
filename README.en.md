@@ -281,5 +281,5 @@ Per-file origins, commits and changes are recorded in [NOTICE](NOTICE). Unless a
 | Stylus | Xiaomi Focus Pen Pro (P81C) | 🟡 Partial | Position, pressure, hover and squeeze side button at 120 Hz; barrel slide gestures are not integrated |
 
 ⟦DRAFT:G-GUNYAH⟧
-| Graphical VM manager | GunyahVM | ✅ Preinstalled | Create and manage virtual machines from the application menu |
+| Graphical VM manager | GunyahVM | ✅ Preinstalled | Open from the Dock or application menu to create and manage virtual machines |
 -->

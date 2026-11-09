@@ -282,5 +282,5 @@ fastboot -s <serial> reboot
 | 手写笔 | Xiaomi Focus Pen Pro（P81C） | 🟡 部分支持 | 120 Hz 下的位置、压感、悬停与轻捏侧键；笔身滑动手势未接入 |
 
 ⟦DRAFT:G-GUNYAH⟧
-| 图形虚拟机管理器 | GunyahVM | ✅ 预装 | 从应用菜单创建和管理虚拟机 |
+| 图形虚拟机管理器 | GunyahVM | ✅ 预装 | 从 Dock 或应用菜单打开，创建和管理虚拟机 |
 -->
