@@ -149,6 +149,7 @@ Not yet supported: stylus, fingerprint.
 | Video decoding | Qualcomm Iris / V4L2 | ✅ works | Automatic hardware decoding in the system player (GStreamer), Firefox (H.264/HEVC/VP9) and Chrome (H.264/VP9); AV1 uses software decoding |
 | Video encoding | Qualcomm Iris / V4L2 | ✅ works | H.264/H.265 at 1080p and 4K verified |
 | Cameras | Rear S5KJN1SQ03, front OV32D40 | ✅ works | Front and rear cameras available in camera apps; fixed rear focus, suited to subjects beyond close range |
+| Rear torch | Qualcomm PMIC LED | 🟡 partial | Torch control through the system LED interface; camera applications need to integrate their own flash controls |
 | Accelerometer, gyro, light, proximity | SSC / hexagonrpcd / libssc | ✅ works | SensorProxy reports orientation and ambient light |
 | Auto-rotation | SensorProxy / Mutter | ✅ works | Rotates with the keyboard detached; locked by GNOME's rule while the keyboard is attached |
 

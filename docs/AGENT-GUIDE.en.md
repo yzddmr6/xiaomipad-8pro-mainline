@@ -1026,8 +1026,8 @@ python3 tools/check-piano-flash.py --torch 64 # check a torch value and restore 
 ```
 
 The flash of the camera is a standard LED class device, so a program of the distribution can use it
-and no helper of this repository is needed at runtime. The script reads the state of the controller;
-the light itself is only visible on the tablet.
+and no helper of this repository is needed at runtime. The script checks controller readback;
+it does not measure optical output.
 
 
 ## 9. Evidence and documentation
