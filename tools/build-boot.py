@@ -383,6 +383,9 @@ def main():
         # Documents intent only: the RAM root is the initramfs and has no root= device.
         cmdline += ' ro'
     if ubuntu:
+        # Root download/verification can outlast the default probe deadline.
+        # Keep late module dependencies deferrable; the RAM session is bounded.
+        cmdline += ' deferred_probe_timeout=-1'
         cmdline += (f' piano.rootfs.sha256={args.rootfs_sha256} piano.session={args.session_seconds}'
                     f' piano.rootfs.transport={args.root_transport}')
     source, kout = args.kernel_source.resolve(), args.kernel_out.resolve()

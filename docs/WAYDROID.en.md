@@ -41,6 +41,30 @@ sudo systemctl restart waydroid-container
 
 Open “Waydroid” from the app grid, or run `waydroid show-full-ui` in a terminal. The first start takes about half a minute, during which the Android system UI restarts a few times before it settles. Android uses the tablet's current network connection.
 
+## Black browser pages and embedded sign-in pages
+
+Some ARM64_ONLY images declare an OMX media service that they do not provide. This blocks media services, shared storage and WebView together: Android Settings can work while Jelly pages, WebView-based sign-in flows or shared-storage features do not. See the [upstream Waydroid issue](https://github.com/waydroid/waydroid/issues/2453).
+
+If the log repeatedly waits for `android.hardware.media.omx@1.0::IOmxStore/default`, apply the following correction while Waydroid is running. The tool checks that no OMX service is supplied and removes only the invalid declaration. It does not change the original images, graphics backend or WebView. Merge any existing custom VINTF overlay instead of overwriting it.
+
+```bash
+(
+set -e
+curl -fL -o /tmp/waydroid-omx-overlay.py https://raw.githubusercontent.com/yzddmr6/xiaomipad-8pro-mainline/v1.2.0/tools/waydroid-omx-overlay.py
+sudo test ! -e /var/lib/waydroid/overlay/vendor/etc/vintf/manifest.xml
+sudo python3 /tmp/waydroid-omx-overlay.py --rootfs /var/lib/waydroid/rootfs --output /var/tmp/waydroid-omx-manifest.xml
+waydroid session stop
+sudo systemctl stop waydroid-container
+sudo install -D -m 644 /var/tmp/waydroid-omx-manifest.xml /var/lib/waydroid/overlay/vendor/etc/vintf/manifest.xml
+sudo systemctl start waydroid-container
+waydroid show-full-ui
+)
+```
+
+The tool refuses this correction when a newer image supplies OMX or no longer declares it. After an image update, check whether upstream has fixed the issue and remove `overlay/vendor/etc/vintf/manifest.xml` when it is no longer needed.
+
+This does not install missing Android apps or proprietary media features. Redirects to a private URL scheme for an uninstalled app can still produce `ERR_UNKNOWN_URL_SCHEME` in Jelly; normal web rendering and app links are separate features.
+
 ## Remove
 
 ```bash

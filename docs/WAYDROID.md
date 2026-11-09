@@ -41,6 +41,30 @@ sudo systemctl restart waydroid-container
 
 从应用列表打开“Waydroid”，或在终端运行 `waydroid show-full-ui`。首次启动约需半分钟，期间 Android 系统界面会反复重启几次，之后恢复正常。Android 通过平板当前的网络上网。
 
+## 浏览器和应用登录页黑屏
+
+部分 ARM64_ONLY 镜像声明了不存在的 OMX 媒体服务，导致媒体服务、共享存储和 WebView 一起阻塞。表现为 Android 设置正常，但 Jelly 网页、使用 WebView 的登录页或共享存储相关功能无法使用；这不等于整个 Android 图形栈不可用。参见 [Waydroid 上游问题](https://github.com/waydroid/waydroid/issues/2453)。
+
+如果日志反复等待 `android.hardware.media.omx@1.0::IOmxStore/default`，可在 Waydroid 正在运行时使用下面的修正。工具先检查镜像确实没有 OMX 服务，只移除无效声明；不改原始镜像、图形后端或 WebView。已有自定义 VINTF 覆盖文件时，应先合并其中的改动，不要直接覆盖。
+
+```bash
+(
+set -e
+curl -fL -o /tmp/waydroid-omx-overlay.py https://raw.githubusercontent.com/yzddmr6/xiaomipad-8pro-mainline/v1.2.0/tools/waydroid-omx-overlay.py
+sudo test ! -e /var/lib/waydroid/overlay/vendor/etc/vintf/manifest.xml
+sudo python3 /tmp/waydroid-omx-overlay.py --rootfs /var/lib/waydroid/rootfs --output /var/tmp/waydroid-omx-manifest.xml
+waydroid session stop
+sudo systemctl stop waydroid-container
+sudo install -D -m 644 /var/tmp/waydroid-omx-manifest.xml /var/lib/waydroid/overlay/vendor/etc/vintf/manifest.xml
+sudo systemctl start waydroid-container
+waydroid show-full-ui
+)
+```
+
+新的镜像若已经提供 OMX 服务或删掉无效声明，工具会拒绝应用这项修正。镜像更新后应检查上游是否已修复，并移除不再需要的 `overlay/vendor/etc/vintf/manifest.xml`。
+
+该修正不添加缺失的 Android App 或专有媒体能力。网页跳转到未安装 App 的私有链接时，Jelly 仍可能显示 `ERR_UNKNOWN_URL_SCHEME`；普通网页显示和这类 App 链接是不同功能。
+
 ## 卸载
 
 ```bash

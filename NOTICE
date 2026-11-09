@@ -452,3 +452,11 @@ https://github.com/yzddmr6/onepluspad-2pro-mainline
 Copyright (C) 2026 yzddmr6; GPL-2.0-only. This repository maintains the shared
 helper; existing data paths (including dangling symlinks) retain the snap and
 produce a journal message. The completion marker is optional.
+
+Waydroid OMX overlay helper
+--------------------------
+Source: https://github.com/yzddmr6/onepluspad-2pro-mainline
+Snapshot: 1de3301a698fcd2eadcb2610bf478a8cffcad1f9.
+License: GPL-2.0-only; LICENSES/GPL-2.0-only.txt.
+File: tools/waydroid-omx-overlay.py, imported without changes.
+Workaround: https://github.com/waydroid/waydroid/issues/2453.

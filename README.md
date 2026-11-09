@@ -171,7 +171,7 @@ Firefox 播放部分 HEVC 视频可能有轻微丢帧。Chromium snap 不支持�
 | 功能 | 实现 | 状态 | 说明 |
 |---|---|---|---|
 | 命令行虚拟机 | Gunyah / crosvm | ✅ 可选功能 | Ubuntu/Windows ARM 客体、SSH/VNC、NAT 和持久磁盘；[使用指南](docs/VIRTUALIZATION.zh-CN.md) |
-| Android 应用 | Waydroid | 🟡 部分支持 | 可选安装，运行 Android 应用并联网；仅软件渲染，无 GPU 加速；[安装与设置](docs/WAYDROID.md) |
+| Android 应用 | Waydroid | 🟡 部分支持 | ⟦DRAFT:G-WAYDROID⟧ 可选安装，运行 Android 应用并联网；提供网页黑屏的 OMX 声明修正；仅软件渲染，无 GPU 加速；[安装与设置](docs/WAYDROID.md) |
 
 ## 使用与维护
 
