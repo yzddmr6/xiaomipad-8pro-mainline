@@ -39,6 +39,16 @@ results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
 
+### v1.2.0
+
+⟦DRAFT:G-LIGHT⟧ Automatic GNOME backlight adjustment from ambient light.
+
+⟦DRAFT:G-FLASH⟧ A photo application with rear fill light and automatic light shutdown.
+
+⟦DRAFT:G-PEN⟧ Focus Pen Pro position, pressure, hover and squeeze input at 120 Hz.
+
+⟦DRAFT:G-GUNYAH⟧ Preinstalled GunyahVM graphical virtual-machine management.
+
 ### v1.1.1
 
 - PPS fast charging with the original adapter adjusts current to charge level and temperature, while keeping Preserve Battery Health.

@@ -11,6 +11,21 @@ The release asset `piano-ubuntu-<version>-packages.zip` is the upgrade package: 
 directory holds every project package installed in that release's image. Always install the
 whole set together, never a single package.
 
+
+## Upgrading from v1.1.1 to v1.2.0
+
+⟦DRAFT:G-PACKAGE⟧
+Install the complete package set and reboot using the steps below. This updates the Linux 7.2.15 kernel and matching camera module, device support and Fill Light Camera application. Existing user settings, finger calibration and rollback boot sets are preserved.
+
+⟦DRAFT:G-PEN⟧
+Focus Pen Pro (P81C) input uses 120 Hz. To add pen calibration to an existing installation, run `tools/extract-thp-calibration.py` with the tablet’s matching original INI, `--merge-existing` pointing to its existing calibration and `--output` pointing to a new private file. The tool rejects a different panel and preserves finger geometry and orientation. Install the resulting file as `/etc/piano/thp-calibration.json` (root-owned, mode 0600) before rebooting. Keep the old file for rollback; never share calibration between tablets.
+
+⟦DRAFT:G-FLASH⟧
+Open Fill Light Camera and select the rear camera. “Photo fill light” illuminates the scene while exposure settles and the photograph is captured. This is continuous fill during capture, not an exposure-triggered high-power strobe. Snapshot and other webcam applications keep using the standard camera outputs.
+
+⟦DRAFT:G-GUNYAH⟧
+GunyahVM is included in the complete package set and opens from the application menu.
+
 ## Upgrading from v1.1.0 to v1.1.1
 
 Use `piano-ubuntu-v1.1.1-packages.zip`, install the complete package set using this page’s instructions, and reboot; no repartitioning or root-image flash is needed. This release updates the matching kernel (Linux 7.2.15) and camera loopback module, the device-support package, the sensor proxy, the graphics driver (Mesa 26.2.6), the snap graphics package and `piano-ubuntu-desktop`; the other default packages are the same as in 1.1.0.

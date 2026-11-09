@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "purpose": "1.1.1 candidate: charging, keyboard wake, ambient light and serial-free boot on Linux 7.2.15",
+  "purpose": "1.2.0 feature candidate on Linux 7.2.15",
   "upstream_url": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
   "upstream_tag": "v7.2.15",
   "upstream_commit": "497791a0a96b866d90add64041c47acdff49cae6",
   "url": "https://github.com/yzddmr6/linux-sm8750-piano",
-  "commit": "d50fa91b421ae2041e0e65ff6e038b4e818fb708",
-  "branch": "piano/v1.1.1",
+  "commit": "946e2d7c87c20eca092212684b879c865b4417ce",
+  "branch": "piano/v1.2-features",
   "config": "arch/arm64/configs/piano-diagnostic.config",
   "release_config_fragments": [
     "arch/arm64/configs/piano-diagnostic.config",
@@ -19,5 +19,5 @@
     "arch/arm64/configs/piano-release.config"
   ],
   "note": "The kernel release fragments remain in the kernel source and are merged in order. tools/build-kernel.sh then applies kernel_release to CONFIG_LOCALVERSION for package ABI allocation without a kernel-only release commit; all other configuration remains unchanged. kernel/abi.json binds the final commit and .config.",
-  "kernel_release": "7.2.15-piano64"
+  "kernel_release": "7.2.15-piano69"
 }

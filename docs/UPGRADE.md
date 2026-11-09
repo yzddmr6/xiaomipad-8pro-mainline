@@ -7,6 +7,21 @@
 
 发布附件里的 `piano-ubuntu-<版本>-packages.zip` 就是升级包：解压后 `debs/` 下是该版本安装在镜像里的全部项目软件包。总是整组一起安装，不要只装其中一个。
 
+
+## 从 v1.1.1 升级到 v1.2.0
+
+⟦DRAFT:G-PACKAGE⟧
+按下方步骤整组安装全部软件包并重启。本版更新 Linux 7.2.15 内核与配套相机模块、设备支持包和“补光相机”应用。保留用户设置、手指标定与回退镜像组。
+
+⟦DRAFT:G-PEN⟧
+Focus Pen Pro（P81C）使用 120 Hz。给已有系统补笔标定时，用本机匹配的原厂 INI 运行 `tools/extract-thp-calibration.py`，`--merge-existing` 指向原有标定，`--output` 指向一个新的私有文件。工具会拒绝不同面板，并保留手指几何与方向设置。将结果以 root 所有、0600 权限安装为 `/etc/piano/thp-calibration.json`，再重启。旧文件留作回退；不可在平板之间交换标定。
+
+⟦DRAFT:G-FLASH⟧
+打开“补光相机”，选择后置摄像头，勾选“拍照补光”。灯在测光和取帧期间连续照明，完成后关闭；这不是与曝光信号同步的高功率闪光。Snapshot 和其他相机应用继续使用标准摄像头输出。
+
+⟦DRAFT:G-GUNYAH⟧
+整组软件包预装 GunyahVM，可从应用菜单打开。
+
 ## 从 v1.1.0 升级到 v1.1.1
 
 使用 `piano-ubuntu-v1.1.1-packages.zip`，按本页步骤整组安装全部软件包并重启；无需重分区或重刷根镜像。本版更新配套内核（Linux 7.2.15）与相机回环模块、设备支持包、传感器代理、图形驱动（Mesa 26.2.6）、snap 图形支持包和 `piano-ubuntu-desktop`，其余默认包与 1.1.0 相同。

@@ -270,3 +270,17 @@ fastboot -s <serial> reboot
 [MIT](LICENSE)；若干改编自 GPL-2.0-only 来源的工具保持 GPL-2.0-only。内核为 GPL-2.0。第三方组件保留各自
 许可（见 `LICENSES/`）。原厂固件与静态传感器配置的分发政策和自备提取文件的方法统一见
 [firmware/README.md](firmware/README.md#distribution-policy)。
+
+<!--
+⟦DRAFT:G-LIGHT⟧
+| 自动亮度 | SensorProxy / GNOME | ✅ 可用 | 在设置 → 电源中开启，随环境光调整屏幕背光 |
+
+⟦DRAFT:G-FLASH⟧
+| 拍照补光 | 后置 LED / V4L2 | ✅ 可用 | “补光相机”应用可开启拍照补光，取帧完成或退出后自动关灯 |
+
+⟦DRAFT:G-PEN⟧
+| 手写笔 | Xiaomi Focus Pen Pro（P81C） | 🟡 部分支持 | 120 Hz 下的位置、压感、悬停与轻捏侧键；笔身滑动手势未接入 |
+
+⟦DRAFT:G-GUNYAH⟧
+| 图形虚拟机管理器 | GunyahVM | ✅ 预装 | 从应用菜单创建和管理虚拟机 |
+-->

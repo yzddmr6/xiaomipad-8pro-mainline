@@ -269,3 +269,17 @@ Related projects (used as references):
 - [blu-sharky/debian-piano](https://github.com/blu-sharky/debian-piano) (MIT).
 
 Per-file origins, commits and changes are recorded in [NOTICE](NOTICE). Unless a file's SPDX header says otherwise, original integration code is [MIT](LICENSE); a few tools adapted from GPL-2.0-only sources stay GPL-2.0-only. The kernel is GPL-2.0. Third-party components keep their own licences (see `LICENSES/`). Stock firmware and static sensor configuration follow the [firmware distribution policy](firmware/README.md#distribution-policy), which also describes using your own extraction.
+
+<!--
+⟦DRAFT:G-LIGHT⟧
+| Automatic brightness | SensorProxy / GNOME | ✅ Working | Enable in Settings → Power to adjust the backlight with ambient light |
+
+⟦DRAFT:G-FLASH⟧
+| Photo fill light | Rear LED / V4L2 | ✅ Working | Enable photo fill light in Fill Light Camera; the light turns off after capture or when the application exits |
+
+⟦DRAFT:G-PEN⟧
+| Stylus | Xiaomi Focus Pen Pro (P81C) | 🟡 Partial | Position, pressure, hover and squeeze side button at 120 Hz; barrel slide gestures are not integrated |
+
+⟦DRAFT:G-GUNYAH⟧
+| Graphical VM manager | GunyahVM | ✅ Preinstalled | Create and manage virtual machines from the application menu |
+-->
