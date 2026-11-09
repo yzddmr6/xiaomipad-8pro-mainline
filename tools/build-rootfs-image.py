@@ -287,6 +287,31 @@ def dpkg_status(text):
     return packages
 
 
+def final_package_plan(expected, requested, local, kernel_bound, before_text, after_text):
+    """Audit installation and intentional autoremove as separate transitions."""
+    def installed(text):
+        return {fields[1]: fields[2] for line in text.splitlines()
+                if len(fields := line.split('|')) == 4 and fields[0].strip() == 'ii'}
+    before, after = installed(before_text), installed(after_text)
+    base = {p: v for p, v in expected.items() if p not in kernel_bound}
+    bad_inputs = sorted(p for p, v in base.items() if before.get(p) != v)
+    if bad_inputs:
+        raise ValueError(f'Input packages were not installed before kernel purge: {bad_inputs}')
+    required = {p.split('=', 1)[0].split(':', 1)[0] for p in requested} | set(local)
+    missing = sorted(required - after.keys())
+    if missing:
+        raise ValueError(f'Required packages disappeared during kernel purge: {missing}')
+    # Only inputs present at the exact requested version before the recorded
+    # purge may disappear. Every requested or explicitly supplied package stays
+    # mandatory, including packages already supplied by the Desktop base.
+    removed = base.keys() - after.keys()
+    final = {p: v for p, v in expected.items() if p not in removed}
+    final.update({p: after[p] for p in required if p not in final})
+    return final, {'inputs_verified_before_purge': sorted(base),
+                   'required_retained': sorted(required),
+                   'inputs_removed_by_kernel_purge': sorted(removed)}
+
+
 def verify(fs, scratch, expected_packages, release, caps, set_hashes, boot_hashes, kernel_zram):
     """The offline release checks of docs/RELEASE.md on the finished image."""
     checks = {}
@@ -721,7 +746,11 @@ def main():
         final = out / 'root.ext4'
         image.replace(final)
         t = lap('e2fsck', t)
-        expected = {d['package']: d['version'] for _, d in debs}
+        expected, result['package_plan'] = final_package_plan(
+            {d['package']: d['version'] for _, d in debs}, apt['requested'],
+            {d['package'] for _, d in debs if d['source'] == 'piano'}, kernel_bound,
+            (guest_dir / 'dpkg-query-base.txt').read_text(),
+            (guest_dir / 'dpkg-query.txt').read_text())
         scratch = out / 'scratch'
         scratch.mkdir()
         report = verify(Debugfs(a.debugfs.resolve(), final, env), scratch, expected, release, caps,
