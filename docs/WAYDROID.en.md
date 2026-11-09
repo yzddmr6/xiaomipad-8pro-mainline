@@ -43,7 +43,7 @@ Open “Waydroid” from the app grid, or run `waydroid show-full-ui` in a termi
 
 ## Black browser pages and embedded sign-in pages
 
-Some ARM64_ONLY images declare an OMX media service that they do not provide. This blocks media services, shared storage and WebView together: Android Settings can work while Jelly pages, WebView-based sign-in flows or shared-storage features do not. See the [upstream Waydroid issue](https://github.com/waydroid/waydroid/issues/2453).
+Some ARM64_ONLY images declare an OMX media service that they do not provide. This blocks media services, shared storage and WebView together: Android Settings can work while Jelly pages or WebView-based sign-in pages stay black or load incompletely, or shared-storage features fail. See the [upstream Waydroid issue](https://github.com/waydroid/waydroid/issues/2453).
 
 If the log repeatedly waits for `android.hardware.media.omx@1.0::IOmxStore/default`, apply the following correction while Waydroid is running. The tool checks that no OMX service is supplied and removes only the invalid declaration. It does not change the original images, graphics backend or WebView. Merge any existing custom VINTF overlay instead of overwriting it.
 

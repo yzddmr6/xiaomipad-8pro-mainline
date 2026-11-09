@@ -41,7 +41,7 @@ results do not establish support for other models, capacities or accessories.
 
 ### v1.2.0
 
-⟦DRAFT:G-WAYDROID⟧ A guarded overlay correction restores web pages and shared storage in Waydroid images that declare an absent OMX service.
+A guarded overlay correction restores web pages and shared storage in Waydroid images that declare an absent OMX service.
 
 ⟦DRAFT:G-PACKAGE⟧ The default packages remove the legacy USB debug console; normal maintenance uses developer-mode SSH.
 

@@ -173,7 +173,7 @@ Not yet supported: disk hibernation, hardware clock writes (time is set from the
 | Feature | Implementation | Status | Notes |
 |---|---|---|---|
 | Command-line VMs | Gunyah / crosvm | ✅ optional | Ubuntu and Windows ARM guests, SSH/VNC, NAT and persistent disks; [user guide](docs/VIRTUALIZATION.md) |
-| Android apps | Waydroid | 🟡 partial | ⟦DRAFT:G-WAYDROID⟧ Optional install; runs Android apps with networking; includes an OMX declaration correction for black web pages; software rendering only, no GPU acceleration; [installation and setup](docs/WAYDROID.en.md) |
+| Android apps | Waydroid | 🟡 partial | Optional install; runs Android apps with networking; includes an OMX declaration correction for incomplete web pages; software rendering only, no GPU acceleration; [installation and setup](docs/WAYDROID.en.md) |
 
 ## Usage and Maintenance
 

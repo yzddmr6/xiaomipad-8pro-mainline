@@ -43,7 +43,7 @@ sudo systemctl restart waydroid-container
 
 ## 浏览器和应用登录页黑屏
 
-部分 ARM64_ONLY 镜像声明了不存在的 OMX 媒体服务，导致媒体服务、共享存储和 WebView 一起阻塞。表现为 Android 设置正常，但 Jelly 网页、使用 WebView 的登录页或共享存储相关功能无法使用；这不等于整个 Android 图形栈不可用。参见 [Waydroid 上游问题](https://github.com/waydroid/waydroid/issues/2453)。
+部分 ARM64_ONLY 镜像声明了不存在的 OMX 媒体服务，导致媒体服务、共享存储和 WebView 一起阻塞。表现为 Android 设置正常，但 Jelly 网页或使用 WebView 的登录页黑屏、内容加载不完整，或共享存储相关功能无法使用；这不等于整个 Android 图形栈不可用。参见 [Waydroid 上游问题](https://github.com/waydroid/waydroid/issues/2453)。
 
 如果日志反复等待 `android.hardware.media.omx@1.0::IOmxStore/default`，可在 Waydroid 正在运行时使用下面的修正。工具先检查镜像确实没有 OMX 服务，只移除无效声明；不改原始镜像、图形后端或 WebView。已有自定义 VINTF 覆盖文件时，应先合并其中的改动，不要直接覆盖。
 

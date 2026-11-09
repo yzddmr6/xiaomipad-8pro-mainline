@@ -14,8 +14,7 @@ whole set together, never a single package.
 
 ## Upgrading from v1.1.1 to v1.2.0
 
-⟦DRAFT:G-WAYDROID⟧
-If an existing Waydroid installation shows black web pages, apply the OMX declaration overlay in the [Waydroid guide](WAYDROID.en.md#black-browser-pages-and-embedded-sign-in-pages). The system upgrade does not modify Android images.
+If an existing Waydroid installation shows black or incomplete web pages, apply the OMX declaration overlay in the [Waydroid guide](WAYDROID.en.md#black-browser-pages-and-embedded-sign-in-pages). The system upgrade does not modify Android images.
 
 ⟦DRAFT:G-PACKAGE⟧
 Install the complete package set and reboot using the steps below. This updates the Linux 7.2.15 kernel and matching camera module, device support and Fill Light Camera application, plus the matched GSD/common packages. Installing the complete set also updates their exact APT version pins. Existing user settings, finger calibration and rollback boot sets are preserved. The upgrade also removes the old USB debug console. Use developer-mode SSH for normal remote maintenance; the separate RAM diagnostics package is excluded from the upgrade set.
