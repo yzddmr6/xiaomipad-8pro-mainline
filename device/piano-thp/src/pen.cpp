@@ -33,7 +33,7 @@ bool PenPressureSource::feed(const uint8_t *data, size_t bytes, uint64_t timesta
         }
         return true;
     }
-    if (data[0] == 2) {
+    if (data[0] == 2 && bytes == 2 && (data[1] == 0x6e || data[1] == 0)) {
         // The squeeze reports 6e while the button is held and 00 when it is
         // released.
         squeeze_ = data[1] == 0x6e;
@@ -94,6 +94,10 @@ bool PenPipeline::feedReport(const uint8_t *data, size_t bytes, uint64_t timesta
         if (core_->report5(data, bytes, timestamp_ns, &report_error))
             return false;
     }
+    // BLE button events must not wait for the next matrix frame.
+    // expire() releases stale proximity before publishing the button.
+    expire(timestamp_ns);
+    state_.squeeze = state_.proximity && pressure_.squeeze();
     return true;
 }
 

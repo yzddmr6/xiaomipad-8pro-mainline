@@ -245,8 +245,23 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument("--merge-existing", type=Path,
+                        help="Add pen facts to matching private calibration, preserving finger/orientation settings")
     args = parser.parse_args()
     result = extract(args.input)
+    if args.merge_existing:
+        if 'pen' not in result:
+            raise ValueError('The selected vendor file has no usable pen profile')
+        existing = json.loads(args.merge_existing.read_text())
+        for key in ('schema', 'rows', 'columns', 'units_per_pixel', 'calibration'):
+            if existing.get(key) != result[key]:
+                raise ValueError('Vendor profile does not match existing finger calibration: ' + key)
+        if existing.get('project_vendor_id', result['project_vendor_id']) != result['project_vendor_id']:
+            raise ValueError('Vendor profile belongs to another touch panel')
+        existing['pen'] = result['pen']
+        existing['pen_source_sha256'] = result['source_sha256']
+        existing['project_vendor_id'] = result['project_vendor_id']
+        result = existing
     descriptor = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, 'w') as stream:
         json.dump(result, stream, indent=2)

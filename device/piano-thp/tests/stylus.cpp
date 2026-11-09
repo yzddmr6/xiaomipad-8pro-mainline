@@ -236,6 +236,13 @@ int main()
         uint8_t squeeze[2] = { 2, 0x6e };
         check(source.feed(squeeze, sizeof(squeeze), 3000, &message), "the squeeze was not read");
         check(source.squeeze(), "the squeeze was not kept");
+        uint8_t unknown[2] = { 2, 0x50 };
+        check(!source.feed(unknown, sizeof(unknown), 3500, &message),
+              "an unconfirmed report2 usage was interpreted as squeeze release");
+        check(source.squeeze(), "an unknown button changed the squeeze state");
+        uint8_t truncated[1] = { 2 };
+        check(!source.feed(truncated, sizeof(truncated), 3600, &message),
+              "a truncated button report was consumed");
         uint8_t released[2] = { 2, 0x00 };
         check(source.feed(released, sizeof(released), 4000, &message), "the release was not read");
         check(!source.squeeze(), "the squeeze was not released");

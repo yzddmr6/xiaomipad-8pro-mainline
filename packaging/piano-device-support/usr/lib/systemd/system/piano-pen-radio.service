@@ -27,6 +27,6 @@ DevicePolicy=closed
 DeviceAllow=char-input r
 UMask=0077
 
-# Manual opt-in until hardware acceptance; the package does not enable this unit.
+# Radio initialization is event-driven; a system without a pen stays idle.
 [Install]
 WantedBy=multi-user.target
