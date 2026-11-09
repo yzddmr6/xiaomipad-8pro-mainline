@@ -6,6 +6,8 @@ Before=systemd-user-sessions.service display-manager.service
 
 [Service]
 Type=notify
+RuntimeDirectory=piano-camera
+RuntimeDirectoryMode=0755
 NotifyAccess=main
 EnvironmentFile=-/etc/piano/camera.conf
 ExecCondition=/bin/sh -c 'test "$${CAMERA_START:-1}" = 1'

@@ -251,7 +251,7 @@ static int topo_open_devnode(const struct topo *tp, uint32_t entity_id)
 {
 	for (unsigned int i = 0; i < tp->t.num_links; i++) {
 		const struct media_v2_link *l = &tp->links[i];
-		char path[64], line[256], dev[128] = "";
+		char path[64], line[256], dev[256] = "";
 		FILE *f;
 
 		if ((l->flags & MEDIA_LNK_FL_LINK_TYPE) !=
@@ -457,8 +457,8 @@ static void loopback_uevent(int fd)
 	ufd = open(path, O_WRONLY | O_CLOEXEC);
 	if (ufd < 0)
 		return;
-	if (write(ufd, "change", 6) < 0)
-		;
+	if (write(ufd, "change", 6) != 6)
+		logmsg(NULL, "camera change uevent failed: %s", strerror(errno));
 	close(ufd);
 }
 
@@ -575,8 +575,11 @@ static void apply_wb(struct cam *c)
 		 (int)lround(c->bgain * WB_UNITY));
 }
 
+#include "photo.h"
+
 static void cam_stop(struct cam *c)
 {
+	if (photo.cam == c) photo_end("ERR camera stopped");
 	struct v4l2_requestbuffers rb = {
 		.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE,
 		.memory = V4L2_MEMORY_MMAP,
@@ -1310,6 +1313,7 @@ static void cam_frame(struct cam *c)
 			control_update(c, &s);
 		}
 		af_update(c, y, c->bpl);
+		photo_frame(c, y, uv, b.sequence);
 
 		out = y;
 		if (output_bgrx) {
@@ -1437,10 +1441,13 @@ int main(void)
 		return 1;
 	}
 	logmsg(NULL, "ready, %u camera(s)", ncams);
+	photo.listener = photo_listen();
+	if (photo.listener < 0)
+		logmsg(NULL, "photo socket unavailable: %s", strerror(errno));
 	notify_ready();
 
 	while (!quit) {
-		struct pollfd pfd[2 * NUM_CAMS];
+		struct pollfd pfd[2 * NUM_CAMS + 2];
 		struct cam *owner[2 * NUM_CAMS];
 		bool is_vid[2 * NUM_CAMS];
 		unsigned int n = 0;
@@ -1462,13 +1469,18 @@ int main(void)
 			}
 		}
 
-		if (poll(pfd, n, 1000) < 0) {
+		pfd[n] = (struct pollfd){ .fd = photo.listener, .events = POLLIN };
+		pfd[n + 1] = (struct pollfd){ .fd = photo.client, .events = POLLIN };
+		if (poll(pfd, n + 2, 1000) < 0) {
 			if (errno == EINTR)
 				continue;
 			logmsg(NULL, "poll: %s", strerror(errno));
 			break;
 		}
 
+		/* Disconnect/cancel before consuming a ready capture buffer. */
+		photo_events(pfd[n + 1].revents);
+		if (pfd[n].revents & POLLIN) photo_accept();
 		for (unsigned int i = 0; i < n; i++) {
 			if (!pfd[i].revents)
 				continue;
@@ -1483,6 +1495,8 @@ int main(void)
 
 	for (unsigned int i = 0; i < NUM_CAMS; i++)
 		cam_stop(&cams[i]);
+	photo_end(NULL);
+	if (photo.listener >= 0) close(photo.listener);
 	logmsg(NULL, "exit");
 
 	return 0;

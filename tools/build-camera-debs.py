@@ -108,8 +108,10 @@ def main():
     packages = []
     module_name = 'piano-camera-loopback-' + release
     for name, depends, files in [
-        ('piano-camerad', 'libc6 (>= 2.38), python3, python3-numpy, v4l-utils, procps, kmod, init-system-helpers, piano-camera-loopback', {
+        ('piano-camerad', 'libc6 (>= 2.38), python3, python3-numpy, python3-gi, python3-gst-1.0, gir1.2-gtk-4.0, gir1.2-gdkpixbuf-2.0, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, v4l-utils, procps, kmod, init-system-helpers, piano-camera-loopback', {
             'usr/lib/piano/piano-camerad': (out / 'piano-camerad', 0o755),
+            'usr/bin/piano-camera': (source / 'piano-camera.py', 0o755),
+            'usr/share/applications/io.github.yzddmr6.PianoCamera.desktop': (source / 'io.github.yzddmr6.PianoCamera.desktop', 0o644),
             'usr/lib/systemd/system/piano-camerad.service': (REPO / 'packaging/piano-camerad/usr/lib/systemd/system/piano-camerad.service', 0o644),
             'usr/sbin/piano-camera-test': (REPO / 'tools/piano-camera-test.py', 0o755),
             'usr/share/wireplumber/wireplumber.conf.d/50-piano-camera.conf': (source / '50-piano-camera.conf', 0o644),
@@ -125,7 +127,7 @@ def main():
     ]:
         if a.loopback_only and name == 'piano-camerad':
             continue
-        version = '0.1+20261103.1' if name == 'piano-camerad' else '0.1+20261014.3'
+        version = '0.1+20261109.1' if name == 'piano-camerad' else '0.1+20261014.3'
         stage = out / (name + '.stage')
         stage.mkdir()
         for target, (path, mode) in files.items():

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Fill Light Camera
+Name[zh_CN]=补光相机
+Comment=Take photos with optional rear fill light
+Comment[zh_CN]=拍摄照片，可选后置补光
+Exec=piano-camera
+Icon=camera-photo-symbolic
+Terminal=false
+Categories=GNOME;GTK;AudioVideo;Video;
+StartupNotify=true
