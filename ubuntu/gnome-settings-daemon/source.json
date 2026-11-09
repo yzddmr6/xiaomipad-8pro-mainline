@@ -43,8 +43,13 @@
       "file": "ambient-zero.patch",
       "sha256": "7433c04de915141ee1358aec5816974e6644419119e2236503d512c49d9b34e8",
       "license": "GPL-2.0-or-later"
+    },
+    {
+      "file": "test-inhibition-order.patch",
+      "sha256": "01ecad1e55dd495ee6d8f5434608c84ce8da8528ab4458522b93c6d0b6b40d1d",
+      "license": "GPL-2.0-or-later"
     }
   ],
-  "changelog_entry_sha256": "592d2f568e6f29e5114b4d25272faf3a76ee0c6dae0ceb1cb378f98ff452da08",
+  "changelog_entry_sha256": "6e8c9f20cf5dd8eacd92416655db7051ee90b77e4dccfe2c458412fdb4c64376",
   "exit_condition": "Drop when upstream or Ubuntu supplies equivalent functionality and native regression passes."
 }

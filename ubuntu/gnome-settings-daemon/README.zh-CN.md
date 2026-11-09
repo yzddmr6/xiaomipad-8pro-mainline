@@ -69,6 +69,8 @@ cp "$assets/power-button-lock.patch" source/debian/patches/piano-power-button-lo
 printf '\n%s\n' piano-power-button-lock.patch >>source/debian/patches/series
 cp "$assets/ambient-zero.patch" source/debian/patches/piano-ambient-zero.patch
 printf '%s\n' piano-ambient-zero.patch >>source/debian/patches/series
+cp "$assets/test-inhibition-order.patch" source/debian/patches/piano-test-inhibition-order.patch
+printf '%s\n' piano-test-inhibition-order.patch >>source/debian/patches/series
 { cat "$assets/changelog-entry"; printf '\n'; cat source/debian/changelog; } >source/debian/changelog.new
 mv source/debian/changelog.new source/debian/changelog
 (cd source && dpkg-source --before-build . && dpkg-source -b .)
@@ -85,3 +87,5 @@ mv source/debian/changelog.new source/debian/changelog
 
 退出条件：上游合并或所选 Ubuntu 源包提供等价实现，且本机短按、长按、已灭屏唤屏、睡眠恢复、
 失败安全行为及卸载回退通过后，撤去本地补丁和依赖版本覆盖。自动睡眠仍是独立策略。
+
+`test-inhibition-order.patch` 只修正上游测试的前提顺序：先取得并观察到 idle 抑制器，再启用 5 秒休眠策略。否则缓慢执行时可能先休眠，随后才建立抑制器。原有功能断言和业务计时均保留，运行时电源策略不变。上游测试提供等价的顺序保证后删除此补丁。

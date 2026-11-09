@@ -1,0 +1,38 @@
+Description: Establish idle inhibition before arming the short suspend timeout
+Author: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
+Forwarded: no
+ .
+ The assertion covers an inhibited session. Configuring the five-second
+ timeout before acquiring the inhibitor lets a slow test setup legitimately
+ suspend first. Wait for the existing property-change notification before
+ arming that timeout; retain every functional assertion and timeout.
+
+--- a/plugins/power/test.py
++++ b/plugins/power/test.py
+@@ -510,16 +510,21 @@
+ 
+         idle_delay = round(gsdpowerconstants.MINIMUM_IDLE_DIM_DELAY / gsdpowerconstants.IDLE_DELAY_TO_IDLE_DIM_MULTIPLIER)
+ 
+-        self.settings_session['idle-delay'] = idle_delay
+-        self.settings_gsd_power['sleep-inactive-battery-timeout'] = 5
+-        self.settings_gsd_power['sleep-inactive-battery-type'] = 'suspend'
+-        Gio.Settings.sync()
+-
+         # create inhibitor
+         inhibit_id = self.obj_session_mgr.Inhibit(
+             'testsuite', dbus.UInt32(0), 'for testing',
+             dbus.UInt32(gsdpowerenums.GSM_INHIBITOR_FLAG_IDLE | gsdpowerenums.GSM_INHIBITOR_FLAG_SUSPEND),
+             dbus_interface='org.gnome.SessionManager')
++        # Establish the inhibitor before arming the short idle timeout. Under
++        # slow execution the old order could suspend before Inhibit reached
++        # the session manager, invalidating the premise of this test.
++        self.plugin_log.check_line(b'Received gnome session inhibitor change', timeout=10)
++
++        self.settings_session['idle-delay'] = idle_delay
++        self.settings_gsd_power['sleep-inactive-battery-timeout'] = 5
++        self.settings_gsd_power['sleep-inactive-battery-type'] = 'suspend'
++        Gio.Settings.sync()
++
+         self.check_no_suspend(idle_delay + 2)
+         self.check_no_dim(0)
+ 
