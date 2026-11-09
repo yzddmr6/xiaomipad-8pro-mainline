@@ -64,10 +64,14 @@ class Camera(Gtk.Application):
         win.present()
         self.start_preview()
 
-    def start_preview(self):
+    def stop_preview(self):
         if self.pipeline:
+            self.pipeline.get_bus().remove_signal_watch()
             self.pipeline.set_state(Gst.State.NULL)
             self.pipeline = None
+
+    def start_preview(self):
+        self.stop_preview()
         if not self.devices:
             self.status.set_label('未找到相机')
             self.shutter.set_sensitive(False)
@@ -89,12 +93,14 @@ class Camera(Gtk.Application):
             if self.pipeline.set_state(Gst.State.PLAYING) == Gst.StateChangeReturn.FAILURE:
                 raise RuntimeError('无法启动预览')
         except Exception as exc:
+            self.stop_preview()
             self.status.set_label(str(exc))
 
     def preview_error(self, _bus, message):
         error, _debug = message.parse_error()
         self.status.set_label(str(error))
         self.shutter.set_sensitive(False)
+        self.stop_preview()
         with self.lock:
             if self.pending:
                 try:
@@ -210,9 +216,7 @@ class Camera(Gtk.Application):
                     pass
                 self.pending.close()
                 self.pending = None
-        if self.pipeline:
-            self.pipeline.set_state(Gst.State.NULL)
-            self.pipeline = None
+        self.stop_preview()
 
 
 if __name__ == '__main__':
