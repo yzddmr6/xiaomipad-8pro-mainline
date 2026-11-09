@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: MIT
 """Append the new favorite once; leave defaults and later user removals alone."""
-from gi.repository import Gio
+import gi
+gi.require_version("GioUnix", "2.0")
+from gi.repository import Gio, GioUnix
 
 APP = 'io.github.yzddmr6.GunyahVM.desktop'
 SCHEMA = 'io.github.yzddmr6.piano.desktop'
@@ -26,4 +28,4 @@ def migrate(shell, migration, installed):
 
 if __name__ == '__main__':
     migrate(Gio.Settings.new('org.gnome.shell'), Gio.Settings.new(SCHEMA),
-            Gio.DesktopAppInfo.new(APP) is not None)
+            GioUnix.DesktopAppInfo.new(APP) is not None)
