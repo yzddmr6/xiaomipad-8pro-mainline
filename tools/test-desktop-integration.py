@@ -63,8 +63,8 @@ class DesktopIntegration(unittest.TestCase):
             for name in ('lists/partial', 'empty', 'cache', 'prefs'):
                 (d / name).mkdir(parents=True)
             (d / 'sources.list').write_text('deb [trusted=yes] https://example.invalid/ubuntu resolute main\n')
-            versions = {'gnome-settings-daemon': '50.0-1ubuntu1+piano1',
-                        'gnome-settings-daemon-common': '50.0-1ubuntu1+piano1',
+            versions = {'gnome-settings-daemon': '50.0-1ubuntu1+piano2',
+                        'gnome-settings-daemon-common': '50.0-1ubuntu1+piano2',
                         'gnome-control-center': '1:50.0-0ubuntu6+piano2',
                         'gnome-control-center-data': '1:50.0-0ubuntu6+piano2'}
             (d / 'status').write_text('\n'.join(

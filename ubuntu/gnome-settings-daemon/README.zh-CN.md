@@ -1,7 +1,7 @@
 # gnome-settings-daemon：电源键锁屏动作源包补丁
 
-固定 Ubuntu 26.04 源包 `50.0-1ubuntu1`，本地版本 `50.0-1ubuntu1+piano1`。
-已完成源包认证与 ARM64 原生构建；配套运行时包的固定摘要与发布接入见 [Ubuntu 集成](../README.md)。
+固定 Ubuntu 26.04 源包 `50.0-1ubuntu1`，本地版本 `50.0-1ubuntu1+piano2`。
+源包已认证；按 Ubuntu 发行版流程构建 ARM64 软件包。配套运行时包的固定摘要与发布接入见 [Ubuntu 集成](../README.md)。
 补丁按原文件 GPL-2.0-or-later 分发，许可见 [COPYING](COPYING)，不适用集成仓的 MIT 许可。
 
 ## 行为与来源
@@ -26,6 +26,8 @@ Shell 的 `org.gnome.ScreenSaver.Lock`，成功返回后调用 `SetActive(true)`
 后者仅作设计参考，不导入其 500 ms 限流或旧显示 API。补丁头保留作者和来源。
 控制中心复用已有 “Lock Screen” / “锁定屏幕” 翻译，允许 tablet/handset 显示该行；
 VM 仍隐藏。控制中心构建及运行时均要求含新 enum/schema 的 GSD 本地版本。
+
+环境光补丁 `ambient-zero.patch` 保留 GSD 原有的认领、平滑与 Shell 背光接口：已建立归一化基准后，0 lux 作为有效黑暗参与目标计算；负数和非有限读数不参与。需要重新建立基准时，0 lux 不提供除数，等待正读数，保留用户手动亮度控制。
 
 ## 认证并准备源包
 
@@ -65,6 +67,8 @@ VERIFY
 dpkg-source -x gnome-settings-daemon_50.0-1ubuntu1.dsc source
 cp "$assets/power-button-lock.patch" source/debian/patches/piano-power-button-lock.patch
 printf '\n%s\n' piano-power-button-lock.patch >>source/debian/patches/series
+cp "$assets/ambient-zero.patch" source/debian/patches/piano-ambient-zero.patch
+printf '%s\n' piano-ambient-zero.patch >>source/debian/patches/series
 { cat "$assets/changelog-entry"; printf '\n'; cat source/debian/changelog; } >source/debian/changelog.new
 mv source/debian/changelog.new source/debian/changelog
 (cd source && dpkg-source --before-build . && dpkg-source -b .)

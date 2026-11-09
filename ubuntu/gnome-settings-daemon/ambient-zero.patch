@@ -1,0 +1,40 @@
+From: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
+Subject: power: consume valid zero ambient-light readings
+
+A sensor reporting darkness as zero lux must lower the existing normalized
+brightness target. Keep the existing filter and defer normalization itself
+until a positive reading supplies a scale. Reject negative and non-finite
+measurements instead of passing invalid arithmetic to Shell.
+
+Co-Authored-By: gpt-6-astra <noreply@openai.com>
+
+--- a/plugins/power/gsd-power-manager.c
++++ b/plugins/power/gsd-power-manager.c
+@@ -21,6 +21,7 @@
+  */
+ 
+ #include "config.h"
++#include <math.h>
+ 
+ #include <stdlib.h>
+ #include <string.h>
+@@ -2964,9 +2965,18 @@
+         if (val_has == NULL || !g_variant_get_boolean (val_has))
+                 return;
+         val_als = g_dbus_proxy_get_cached_property (manager->iio_proxy, "LightLevel");
+-        if (val_als == NULL || g_variant_get_double (val_als) <= 0.f)
++        if (val_als == NULL)
+                 return;
+         ambient_last_absolute = g_variant_get_double (val_als);
++        if (!isfinite (ambient_last_absolute) || ambient_last_absolute < 0.f)
++                return;
++
++        /* Zero is valid darkness after a baseline exists, but cannot define
++         * the normalization scale. Keep a pending user renormalization until
++         * a positive reading arrives rather than dividing by zero.
++         */
++        if (manager->ambient_norm_required && ambient_last_absolute == 0.f)
++                return;
+         g_debug ("Read absolute light level: %f", ambient_last_absolute);
+ 
+         /* the user has asked to renormalize */

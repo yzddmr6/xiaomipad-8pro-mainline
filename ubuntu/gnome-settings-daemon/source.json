@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "base_version": "50.0-1ubuntu1",
-  "local_version": "50.0-1ubuntu1+piano1",
+  "local_version": "50.0-1ubuntu1+piano2",
   "files": [
     {
       "file": "gnome-settings-daemon_50.0.orig.tar.xz",
@@ -38,8 +38,13 @@
       "file": "power-button-lock.patch",
       "sha256": "bf44c2aa151eab024ee884a5a2c7ae7775697165d0a78252ec37938a548f44a2",
       "license": "GPL-2.0-or-later"
+    },
+    {
+      "file": "ambient-zero.patch",
+      "sha256": "7433c04de915141ee1358aec5816974e6644419119e2236503d512c49d9b34e8",
+      "license": "GPL-2.0-or-later"
     }
   ],
-  "changelog_entry_sha256": "8e701ba1ed7b50f48db5600f00ccd607b22b7fc92c4cee1c038965ca9783dd78",
+  "changelog_entry_sha256": "592d2f568e6f29e5114b4d25272faf3a76ee0c6dae0ceb1cb378f98ff452da08",
   "exit_condition": "Drop when upstream or Ubuntu supplies equivalent functionality and native regression passes."
 }
