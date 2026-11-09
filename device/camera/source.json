@@ -21,14 +21,16 @@
       "Acquire exposure again after a lasting large luma error (scene change) instead of closing it at the 6%-per-update steady rate.",
       "Frame integrity from Project-SunUEFI tools/patches/piano-camerad-frame-integrity.patch (9b4e382, slwyts): read back capture/loopback formats, honour data_offset/bytesused, requeue incomplete frames, publish only complete loopback frames; loopback check extended to the BGRx output.",
       "Startup and re-acquisition exposure steps of up to 2x (SunUEFI used 1.5x), as the original community daemon allowed; measured on the tablet.",
-      "Expose bounded photo capture using standard V4L2 torch control, drain pre-light buffers and wait for existing AE readiness; return that capture frame via sealed memfd. Client disconnect, stream stop and capture timeout turn the light off. A readable loopback fd is required for each photo."
+      "Expose bounded photo capture using standard V4L2 torch control, drain pre-light buffers and wait for existing AE readiness; return that capture frame via sealed memfd. Client disconnect, stream stop and capture timeout turn the light off. A readable loopback fd is required for each photo.",
+      "After daemon termination, clear flash-class torch brightness through LED sysfs; V4L2 last-close alone restores access but leaves torch state unchanged."
     ],
     "upstream_sha256": "c2ab6391fa41d21d1c3e4359dc0adf671261417dbda180724faf8b2758932d47",
     "local_files": {
       "nv12-bgrx.h": "54f95cb2dd5704bff292531a713d12ffb9f121e2802fc448f81582512d3238f4",
       "photo.h": "3b003442de93c3e3e7949a0837d7073c6b9a7734a51c507ea64136c4bdb80f44",
       "piano-camera.py": "8c275dcded94795749e95ea054c5985b542589d53820f6991fdbba2e7f2df96b",
-      "io.github.yzddmr6.PianoCamera.desktop": "517f485b8ad636e9b29474034db58a773fc1cea3ad2feaa03c3301a0dd3196c9"
+      "io.github.yzddmr6.PianoCamera.desktop": "517f485b8ad636e9b29474034db58a773fc1cea3ad2feaa03c3301a0dd3196c9",
+      "piano-camera-light-off": "278c85b166b35252f83905acd709b037eb5501cbf5f29e4d110acc9c3121d987"
     }
   },
   "loopback": {

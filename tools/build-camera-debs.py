@@ -111,6 +111,7 @@ def main():
         ('piano-camerad', 'libc6 (>= 2.38), python3, python3-numpy, python3-gi, python3-gst-1.0, gir1.2-gtk-4.0, gir1.2-gdkpixbuf-2.0, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, v4l-utils, procps, kmod, init-system-helpers, piano-camera-loopback', {
             'usr/lib/piano/piano-camerad': (out / 'piano-camerad', 0o755),
             'usr/bin/piano-camera': (source / 'piano-camera.py', 0o755),
+            'usr/lib/piano/piano-camera-light-off': (source / 'piano-camera-light-off', 0o755),
             'usr/share/applications/io.github.yzddmr6.PianoCamera.desktop': (source / 'io.github.yzddmr6.PianoCamera.desktop', 0o644),
             'usr/lib/systemd/system/piano-camerad.service': (REPO / 'packaging/piano-camerad/usr/lib/systemd/system/piano-camerad.service', 0o644),
             'usr/sbin/piano-camera-test': (REPO / 'tools/piano-camera-test.py', 0o755),

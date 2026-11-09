@@ -13,6 +13,7 @@ EnvironmentFile=-/etc/piano/camera.conf
 ExecCondition=/bin/sh -c 'test "$${CAMERA_START:-1}" = 1'
 ExecStartPre=/sbin/modprobe v4l2loopback
 ExecStart=/usr/lib/piano/piano-camerad
+ExecStopPost=/usr/lib/piano/piano-camera-light-off
 Restart=on-failure
 RestartSec=2
 

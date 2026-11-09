@@ -1,0 +1,9 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# V4L2 close restores LED sysfs access but does not turn off torch mode.
+# systemd runs this after the daemon's fds close, including abnormal exits.
+set -eu
+for led in /sys/class/leds/*; do
+    [ -f "$led/flash_strobe" ] || continue
+    printf '0\n' > "$led/brightness"
+done
