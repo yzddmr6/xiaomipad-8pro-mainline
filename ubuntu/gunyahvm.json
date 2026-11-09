@@ -1,27 +1,27 @@
 {
   "schema": 1,
-  "version": "1.0.0-1",
+  "version": "1.0.1-1",
   "desktop_id": "io.github.yzddmr6.GunyahVM.desktop",
   "packages": [
     {
       "package": "gunyahvm",
-      "file": "gunyahvm_1.0.0-1_arm64.deb",
-      "sha256": "99397d5993d2a9a91b28568e2a43cf5cf6018240e5c63feae399897c013f121e"
+      "file": "gunyahvm_1.0.1-1_arm64.deb",
+      "sha256": "1c208ea33086dc334b3ec0ee316d56d963421e78886ea2009346cde30cd52ac0"
     },
     {
       "package": "gunyahvm-runtime",
-      "file": "gunyahvm-runtime_1.0.0-1_arm64.deb",
-      "sha256": "077bead1f2c2906b4157f2a92a78def41b13a8b84a7539e984d97f8e8ba01352"
+      "file": "gunyahvm-runtime_1.0.1-1_arm64.deb",
+      "sha256": "05e73519f23a42c81fd832a50aa07fa5a1090e524a028ff43026f3d04c72aa0a"
     },
     {
       "package": "gunyahvm-guest-kernel",
-      "file": "gunyahvm-guest-kernel_1.0.0-1_arm64.deb",
-      "sha256": "2cd25676fea74d83db27a31735ab8cd20858998bc5c69dda4b2426777efbe170"
+      "file": "gunyahvm-guest-kernel_1.0.1-1_arm64.deb",
+      "sha256": "ced77217e3f29d3d3fe310fca61a1fb503d0774b94a88afc5b64ec468a8dc127"
     },
     {
       "package": "gunyahvm-guest-mesa",
-      "file": "gunyahvm-guest-mesa_1.0.0-1_arm64.deb",
-      "sha256": "3175f37788948cf3b7c22c35930cff96e0ff7019710cb57f9ee11b6f062b29f1"
+      "file": "gunyahvm-guest-mesa_1.0.1-1_arm64.deb",
+      "sha256": "6d98ee7dc1e407b13c99df4bcc6465d68996b84bb648232f4f03acf4ffbc15ad"
     }
   ]
 }
