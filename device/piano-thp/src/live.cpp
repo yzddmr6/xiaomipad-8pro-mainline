@@ -116,6 +116,9 @@ int main(int argc, char **argv) {
         pen_action([&] {
             const auto document = nvt::readCalibrationDocument(argv[1]);
             if (document.contains("pen")) {
+                if (!panel_identity.reported || !panel_identity.unknown.empty() ||
+                    !file.project_vendor_id || nvt::calibrationMismatch(vendor, file.project_vendor_id))
+                    throw std::runtime_error("pen calibration must match the detected touch panel");
                 facts = nvt::readStylusCalibration(document);
                 monitor = std::make_unique<nvt::PenMonitor>();
             }
