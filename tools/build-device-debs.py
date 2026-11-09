@@ -74,6 +74,7 @@ def main():
     ap.add_argument('--release-version', help='Project release advertised by the desktop notifier; defaults to --version')
     ap.add_argument('--mesa-dependency-root', type=Path, help='ARM64 SDK for Mesa dependency scanning')
     select = ap.add_mutually_exclusive_group()
+    select.add_argument('--ram-debug-only', action='store_true', help='Build only the opt-in RAM diagnostics package; never part of the product set')
     select.add_argument('--support-only', action='store_true', help='Rebuild only the small device integration package')
     select.add_argument('--desktop-only', action='store_true', help='Build desktop policy without rebuilding locked support/Mesa inputs')
     select.add_argument('--mesa-only', action='store_true', help='Build only the verified desktop Mesa package')
@@ -94,7 +95,7 @@ def main():
         ap.error('--snap-graphics-only requires --snap-graphics-build')
     if a.mesa_only and not a.mesa_build:
         ap.error('--mesa-only requires --mesa-build')
-    if not (a.desktop_only or a.snap_graphics_only or a.mesa_only):
+    if not (a.desktop_only or a.snap_graphics_only or a.mesa_only or a.ram_debug_only):
         # The support package carries the device integration only; the desktop
         # package needs the verified Mesa build, so --support-only does not.
         required = ('thp_live', 'busybox', 'avbtool')
@@ -170,6 +171,18 @@ def main():
         deb = a.output / f'{name}_{a.version}_arm64.deb'
         subprocess.run(['dpkg-deb', '--root-owner-group', '-Zxz', '-z1', '--build', str(root), str(deb)], check=True)
         receipts[name] = {'file': deb.name, 'sha256': sha(deb), 'files': owned}
+
+    if a.ram_debug_only:
+        debug = stages / 'piano-ram-debug'
+        shutil.copytree(repo / 'packaging/piano-ram-debug', debug, ignore=untracked)
+        tree(repo / 'packaging/piano-ram-debug', debug, '.')
+        for p in debug.rglob('*'):
+            if p.is_file() and p.read_bytes().startswith(b'#!'):
+                p.chmod(0o755)
+        package('piano-ram-debug', debug, 'piano-device-support (>= 1.2.0)',
+                'Explicit RAM-only development console assets (not a product dependency)')
+        (a.output / 'manifest.json').write_text(json.dumps(receipts, indent=2) + '\n')
+        return
 
     if a.snap_graphics_build:
         build = a.snap_graphics_build
@@ -287,7 +300,10 @@ def main():
                 # piano-thp.service is udev-activated only; remove the multi-user.target link
                 # and deb-systemd-helper state left by versions that enabled it.
                 ' deb-systemd-helper purge piano-thp.service >/dev/null\n'
-                ' deb-systemd-helper enable piano-slot-success.service piano-debug.service '
+                # Retire the old default console and its persistent enablement.
+                ' deb-systemd-invoke stop piano-debug.service >/dev/null || true\n'
+                ' deb-systemd-helper purge piano-debug.service >/dev/null\n'
+                ' deb-systemd-helper enable piano-slot-success.service '
                 'piano-debug-timeout.service piano-emergency-android.service piano-pen-radio.service >/dev/null\n'
                 # Shipped unit files change between versions (restart policy, dependencies);
                 # the running manager must read them before the next activation.

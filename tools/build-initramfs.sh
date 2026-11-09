@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-2.0-only
 # Adapted from the erhai initramfs builder; see NOTICE.
+# RAM diagnostics/maintenance only, never a persistent product initrd.
+# Persistent products use dracut and opt-in developer-mode SSH.
 set -euo pipefail
 umask 022
 repo=$(cd -- "$(dirname -- "$0")/.." && pwd)
 if [[ ${1:-} == --help ]]; then
 	echo 'Usage: BUSYBOX=... GEN_INIT_CPIO=... OUT_DIR=... [FIRMWARE_DIR=...] [MODULES_DIR=...] build-initramfs.sh'
+	echo 'RAM diagnostics only; do not install this initramfs for persistent boots.'
 	echo 'MODULES_DIR: optional verified stage-kernel-modules output; no automatic module loading.'
 	echo 'MESA_DIR: optional locked build-mesa output; isolated RAM desktop graphics only.'
 	echo 'MAINTENANCE_DIR: optional prepare-maintenance-payload.py output for piano.diag=maintenance;'

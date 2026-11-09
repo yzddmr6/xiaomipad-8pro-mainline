@@ -220,7 +220,7 @@ step report
 cp "$T/var/log/dpkg.log" "$OUT/dpkg.log"
 in_target dpkg-query -W -f '${db:Status-Abbrev}|${Package}|${Version}|${Architecture}\n' >"$OUT/dpkg-query.txt"
 for u in piano-devmode.service piano-devmode-ssh.socket ssh.socket ssh.service piano-slot-success.service \
-		piano-debug.service piano-debug-timeout.service gdm.service; do
+		piano-debug-timeout.service gdm.service; do
 	echo "$u $(systemctl --root="$T" is-enabled "$u" 2>/dev/null || true)"
 done >"$OUT/units.txt"
 mkdir "$OUT/ubuntu-set"

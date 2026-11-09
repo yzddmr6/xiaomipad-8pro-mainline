@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""Emit a bounded native-display capture for the existing debug-console runner,
-or judge saved captures. This tool itself never connects to a device.
+"""Emit a bounded native-display capture for developer-mode SSH, or judge saved
+captures. This tool itself never connects to a device. Legacy console transport
+is only supported by an explicitly prepared piano-ram-debug RAM boot; the
+normal support package does not provide that console.
 
 script() defaults to a gated native INTF/TOP0 counter probe. An external
 legacy scanout probe can still be supplied; its splash colours are historical

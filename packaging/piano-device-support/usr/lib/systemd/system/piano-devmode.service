@@ -4,8 +4,8 @@
 # `systemctl enable --now piano-devmode.service`, and the enablement state is
 # the only persisted switch.  The unit is wanted by usb-gadget.target, which
 # udev starts once the USB device controller exists.
-# Debug boots (piano.debug=1) own the same USB identity and addresses through
-# piano-debug.service, so developer mode stays off there.
+# Explicit RAM diagnostics (the separate piano-ram-debug package) reserve
+# piano.debug=1 and the USB identity; normal products provide developer SSH.
 [Unit]
 Description=Piano developer mode (SSH over USB)
 ConditionKernelCommandLine=!piano.debug=1

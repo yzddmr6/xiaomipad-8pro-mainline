@@ -41,6 +41,8 @@ results do not establish support for other models, capacities or accessories.
 
 ### v1.2.0
 
+⟦DRAFT:G-PACKAGE⟧ The default packages remove the legacy USB debug console; normal maintenance uses developer-mode SSH.
+
 ⟦DRAFT:G-LIGHT⟧ Automatic GNOME backlight adjustment from ambient light.
 
 ⟦DRAFT:G-FLASH⟧ A photo application with rear fill light and automatic light shutdown.

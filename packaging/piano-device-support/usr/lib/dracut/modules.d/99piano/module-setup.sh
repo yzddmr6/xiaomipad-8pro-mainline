@@ -11,12 +11,8 @@ install() {
     inst_simple "$moddir/init" /init
     inst_simple /usr/libexec/piano/busybox
     inst_simple /usr/libexec/piano/usb-diag
-    inst_simple /usr/libexec/piano/debug-console
-    inst_simple /usr/libexec/piano/debug-shell
     inst_simple /etc/piano-network
-    inst_simple /usr/lib/systemd/system/piano-debug.service
     mkdir -p "$initdir/usr/lib/systemd/system/sysinit.target.wants"
-    ln_r /usr/lib/systemd/system/piano-debug.service /usr/lib/systemd/system/sysinit.target.wants/piano-debug.service
     inst_simple /usr/libexec/piano/debug-timeout
     inst_simple /usr/lib/systemd/system/piano-debug-timeout.service
     ln_r /usr/lib/systemd/system/piano-debug-timeout.service /usr/lib/systemd/system/sysinit.target.wants/piano-debug-timeout.service

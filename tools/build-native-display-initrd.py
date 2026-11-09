@@ -3,8 +3,9 @@
 """Repack an explicitly hash-pinned piano dracut initrd for one bounded RAM hardware test.
 
 MODULES_DIR (or --modules-dir) must be stage-kernel-modules.py --all output.
-No package, root image or device is changed. The existing dracut/debug flow is
-retained, with a pre-pivot hook carrying matching modules into the disk root.
+No package, root image or device is changed. --ram-debug explicitly selects
+the separate RAM console assets; a pre-pivot hook carries matching modules
+and the ephemeral console across switch-root.
 """
 import argparse
 import hashlib
@@ -21,6 +22,9 @@ from kernel_modules import sha, verified_subset, verified_modules
 
 REPO = Path(__file__).resolve().parents[1]
 SUPPORT = REPO / 'packaging/piano-device-support'
+RAM_DEBUG = REPO / 'packaging/piano-ram-debug/usr/share/piano-ram-debug'
+DEBUG_FILES = ('usr/libexec/piano/debug-console', 'usr/libexec/piano/debug-shell',
+               'usr/lib/systemd/system/piano-debug.service')
 RETURN_FILES = ('usr/libexec/piano/debug-timeout',
                 'usr/lib/systemd/system/piano-debug-timeout.service')
 
@@ -41,6 +45,7 @@ def stage_return(stage, units):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('--ram-debug', action='store_true', required=True, help='Explicitly include the RAM-only console; never use this initrd for persistent installation')
     ap.add_argument('--purpose', choices=('native-display', 'keyboard', 'iris'), default='native-display')
     ap.add_argument('--base-initrd', type=Path, required=True)
     ap.add_argument('--base-sha256', required=True)
@@ -107,6 +112,20 @@ def main():
     units = target / 'systemd'
     units.mkdir()
     stage_return(stage, units)
+    for name in DEBUG_FILES:
+        dest = stage / name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(RAM_DEBUG / Path(name).name, dest)
+        dest.chmod(0o755 if '/libexec/' in name else 0o644)
+    debug_unit = (RAM_DEBUG / 'piano-debug.service').read_text().replace(
+        '/usr/libexec/piano/debug-console', '/run/piano-native-display/debug-console').replace(
+        '[Service]', '[Service]\nEnvironment=PIANO_DEBUG_SHELL=/run/piano-native-display/debug-shell')
+    (units / 'piano-debug.service').write_text(debug_unit)
+    for root in (stage / 'usr/lib/systemd/system', units):
+        link = root / 'sysinit.target.wants/piano-debug.service'
+        link.parent.mkdir(parents=True, exist_ok=True)
+        link.unlink(missing_ok=True)
+        link.symlink_to('../piano-debug.service')
     # Reuse the developer SSH listener/authentication, with ownership assigned
     # to the existing debug service for this boot. No persistent enablement.
     for name in ('piano-devmode-ssh.socket', 'piano-devmode-ssh@.service'):
@@ -163,7 +182,7 @@ def main():
     # firmware update and the current bounded-return helper/units.
     changes = [n for n, h in old_files.items()
                if n not in entries or hashlib.sha256(entries[n][1]).hexdigest() != h]
-    if any(n not in RETURN_FILES and not n.startswith(('usr/lib/modules/', 'usr/lib/firmware/'))
+    if any(n not in RETURN_FILES + DEBUG_FILES and not n.startswith(('usr/lib/modules/', 'usr/lib/firmware/'))
            for n in changes):
         raise ValueError(f'Unexpected base initrd changes: {changes}')
     # Keep the complete module/firmware payload, but compress it enough for the

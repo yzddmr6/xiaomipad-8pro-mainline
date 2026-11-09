@@ -15,7 +15,7 @@ whole set together, never a single package.
 ## Upgrading from v1.1.1 to v1.2.0
 
 ⟦DRAFT:G-PACKAGE⟧
-Install the complete package set and reboot using the steps below. This updates the Linux 7.2.15 kernel and matching camera module, device support and Fill Light Camera application, plus the matched GSD/common packages. Installing the complete set also updates their exact APT version pins. Existing user settings, finger calibration and rollback boot sets are preserved.
+Install the complete package set and reboot using the steps below. This updates the Linux 7.2.15 kernel and matching camera module, device support and Fill Light Camera application, plus the matched GSD/common packages. Installing the complete set also updates their exact APT version pins. Existing user settings, finger calibration and rollback boot sets are preserved. The upgrade also removes the old USB debug console. Use developer-mode SSH for normal remote maintenance; the separate RAM diagnostics package is excluded from the upgrade set.
 
 ⟦DRAFT:G-PEN⟧
 Focus Pen Pro (P81C) input uses 120 Hz. To add pen calibration to an existing installation, run `tools/extract-thp-calibration.py` with the tablet’s matching original INI, `--merge-existing` pointing to its existing calibration and `--output` pointing to a new private file. The tool rejects a different panel and preserves finger geometry and orientation. Install the resulting file as `/etc/piano/thp-calibration.json` (root-owned, mode 0600) before rebooting. Keep the old file for rollback; never share calibration between tablets.

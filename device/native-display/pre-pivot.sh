@@ -16,6 +16,9 @@ piano_display_handoff() (
     # Keep the complete tree in /run across switch-root. The bind mount hides
     # the installed tree for this boot only; it does not create files on disk.
     "$B" mkdir -p /run/piano-native-display /run/systemd/system || exit 1
+    # Explicit RAM-only payload: none of these console files are installed on disk.
+    "$B" touch /run/piano-ram-debug || exit 1
+    "$B" cp /usr/libexec/piano/debug-console /usr/libexec/piano/debug-shell /run/piano-native-display/ || exit 1
     "$B" cp /usr/libexec/piano/debug-timeout /run/piano-native-display/debug-timeout || exit 1
     "$B" cp -a /usr/lib/modules /run/piano-native-display/modules || exit 1
     (cd /run/piano-native-display/modules && "$B" sha256sum -c /etc/piano-native-display/modules.sha256) \

@@ -1,6 +1,8 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-2.0-only
 set -eu
+# Only the explicit RAM initrd or its ephemeral switch-root handoff may run this.
+[ -e /etc/initrd-release ] || [ -e /run/piano-ram-debug ] || exit 1
 bb=/usr/libexec/piano/busybox
 "$bb" mkdir -p /run/piano-debug-bin
 for app in mount mkdir cat sleep ln ip touch udhcpd; do
@@ -26,4 +28,4 @@ EOF
     "$bb" touch /run/udhcpd.leases
     "$bb" udhcpd /run/udhcpd.conf
 fi
-exec "$bb" telnetd -F -b "$PIANO_DEVICE_IP:2323" -l /usr/libexec/piano/debug-shell
+exec "$bb" telnetd -F -b "$PIANO_DEVICE_IP:2323" -l "${PIANO_DEBUG_SHELL:-/usr/libexec/piano/debug-shell}"
