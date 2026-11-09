@@ -24,7 +24,7 @@ Focus Pen Pro (P81C) input uses 120 Hz. To add pen calibration to an existing in
 Open Fill Light Camera and select the rear camera. “Photo fill light” illuminates the scene while exposure settles and the photograph is captured. This is continuous fill during capture, not an exposure-triggered high-power strobe. Snapshot and other webcam applications keep using the standard camera outputs.
 
 ⟦DRAFT:G-GUNYAH⟧
-GunyahVM is included in the complete package set and opens from the application menu.
+The complete package set includes GunyahVM and all its companion packages. The first login after upgrade appends GunyahVM to Dock favorites, preserving the existing entries and order; removing it later is respected. New accounts receive it in their default Dock, and it is also available in the application menu. GunyahVM’s own logind/udev and polkit rules grant access to the active local desktop session without manual group membership.
 
 ## Upgrading from v1.1.0 to v1.1.1
 

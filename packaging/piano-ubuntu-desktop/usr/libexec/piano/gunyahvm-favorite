@@ -1,0 +1,29 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: MIT
+"""Append the new favorite once; leave defaults and later user removals alone."""
+from gi.repository import Gio
+
+APP = 'io.github.yzddmr6.GunyahVM.desktop'
+SCHEMA = 'io.github.yzddmr6.piano.desktop'
+KEY = 'gunyahvm-favorite-added'
+
+
+def migrate(shell, migration, installed):
+    if not installed or migration.get_boolean(KEY):
+        return
+    if not migration.is_writable(KEY):
+        return
+    current = shell.get_user_value('favorite-apps')
+    # A fresh account follows the packaged default without creating an override.
+    if current is not None and APP not in current.unpack():
+        if not shell.is_writable('favorite-apps'):
+            return
+        if not shell.set_strv('favorite-apps', [*current.unpack(), APP]):
+            return
+    migration.set_boolean(KEY, True)
+    Gio.Settings.sync()
+
+
+if __name__ == '__main__':
+    migrate(Gio.Settings.new('org.gnome.shell'), Gio.Settings.new(SCHEMA),
+            Gio.DesktopAppInfo.new(APP) is not None)

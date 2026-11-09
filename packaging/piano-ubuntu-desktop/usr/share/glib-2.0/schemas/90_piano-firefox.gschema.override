@@ -1,6 +1,6 @@
-# Replace only the snap launcher from Ubuntu's 10_ubuntu-settings override.
+# Keep the distribution favorites, replace the Firefox snap launcher and add GunyahVM.
 [org.gnome.shell]
-favorite-apps=['ubuntu-desktop-bootstrap_ubuntu-desktop-bootstrap.desktop', 'firefox.desktop', 'org.gnome.Evolution.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Rhythmbox3.desktop', 'libreoffice-writer.desktop', 'snap-store_snap-store.desktop', 'org.gnome.Yelp.desktop']
+favorite-apps=['ubuntu-desktop-bootstrap_ubuntu-desktop-bootstrap.desktop', 'firefox.desktop', 'org.gnome.Evolution.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Rhythmbox3.desktop', 'libreoffice-writer.desktop', 'snap-store_snap-store.desktop', 'org.gnome.Yelp.desktop', 'io.github.yzddmr6.GunyahVM.desktop']
 
 [org.gnome.shell:ubuntu]
-favorite-apps=['ubuntu-desktop-bootstrap_ubuntu-desktop-bootstrap.desktop', 'firefox.desktop', 'thunderbird_thunderbird.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Rhythmbox3.desktop', 'libreoffice-writer.desktop', 'snap-store_snap-store.desktop', 'org.gnome.Yelp.desktop']
+favorite-apps=['ubuntu-desktop-bootstrap_ubuntu-desktop-bootstrap.desktop', 'firefox.desktop', 'thunderbird_thunderbird.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Rhythmbox3.desktop', 'libreoffice-writer.desktop', 'snap-store_snap-store.desktop', 'org.gnome.Yelp.desktop', 'io.github.yzddmr6.GunyahVM.desktop']

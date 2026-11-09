@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="io.github.yzddmr6.piano.desktop" path="/io/github/yzddmr6/piano/desktop/">
+    <key name="gunyahvm-favorite-added" type="b">
+      <default>false</default>
+      <summary>GunyahVM favorite migration completed</summary>
+      <description>Allows users to remove the favorite after its one-time addition.</description>
+    </key>
+  </schema>
+</schemalist>
