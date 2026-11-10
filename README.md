@@ -171,6 +171,7 @@ Firefox 播放部分 HEVC 视频可能有轻微丢帧。Chromium snap 不支持�
 | 功能 | 实现 | 状态 | 说明 |
 |---|---|---|---|
 | 命令行虚拟机 | Gunyah / crosvm | ✅ 可选功能 | Ubuntu/Windows ARM 客体、SSH/VNC、NAT 和持久磁盘；[使用指南](docs/VIRTUALIZATION.zh-CN.md) |
+| 图形虚拟机管理器 | GunyahVM | ✅ 预装 | 从 Dock 或应用菜单打开，创建和管理虚拟机 |
 | Android 应用 | Waydroid | 🟡 部分支持 | 可选安装，运行 Android 应用并联网；提供网页加载异常的 OMX 声明修正；仅软件渲染，无 GPU 加速；[安装与设置](docs/WAYDROID.md) |
 
 ## 使用与维护
@@ -281,6 +282,4 @@ fastboot -s <serial> reboot
 ⟦DRAFT:G-PEN⟧
 | 手写笔 | Xiaomi Focus Pen Pro（P81C） | 🟡 部分支持 | 120 Hz 下的位置、压感、悬停与轻捏侧键；笔身滑动手势未接入 |
 
-⟦DRAFT:G-GUNYAH⟧
-| 图形虚拟机管理器 | GunyahVM | ✅ 预装 | 从 Dock 或应用菜单打开，创建和管理虚拟机 |
 -->

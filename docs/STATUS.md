@@ -43,7 +43,7 @@ results do not establish support for other models, capacities or accessories.
 
 A guarded overlay correction restores web pages and shared storage in Waydroid images that declare an absent OMX service.
 
-⟦DRAFT:G-PACKAGE⟧ The default packages remove the legacy USB debug console; normal maintenance uses developer-mode SSH.
+The default packages remove the legacy USB debug console; normal maintenance uses developer-mode SSH.
 
 ⟦DRAFT:G-LIGHT⟧ Automatic GNOME backlight adjustment from ambient light.
 
@@ -51,7 +51,7 @@ A guarded overlay correction restores web pages and shared storage in Waydroid i
 
 ⟦DRAFT:G-PEN⟧ Focus Pen Pro position, pressure, hover and squeeze input at 120 Hz.
 
-⟦DRAFT:G-GUNYAH⟧ Preinstalled GunyahVM graphical virtual-machine management.
+Preinstalled GunyahVM graphical virtual-machine management.
 
 ### v1.1.1
 

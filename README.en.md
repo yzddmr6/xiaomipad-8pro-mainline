@@ -173,6 +173,7 @@ Not yet supported: disk hibernation, hardware clock writes (time is set from the
 | Feature | Implementation | Status | Notes |
 |---|---|---|---|
 | Command-line VMs | Gunyah / crosvm | ✅ optional | Ubuntu and Windows ARM guests, SSH/VNC, NAT and persistent disks; [user guide](docs/VIRTUALIZATION.md) |
+| Graphical VM manager | GunyahVM | ✅ Preinstalled | Open from the Dock or application menu to create and manage virtual machines |
 | Android apps | Waydroid | 🟡 partial | Optional install; runs Android apps with networking; includes an OMX declaration correction for incomplete web pages; software rendering only, no GPU acceleration; [installation and setup](docs/WAYDROID.en.md) |
 
 ## Usage and Maintenance
@@ -280,6 +281,4 @@ Per-file origins, commits and changes are recorded in [NOTICE](NOTICE). Unless a
 ⟦DRAFT:G-PEN⟧
 | Stylus | Xiaomi Focus Pen Pro (P81C) | 🟡 Partial | Position, pressure, hover and squeeze side button at 120 Hz; barrel slide gestures are not integrated |
 
-⟦DRAFT:G-GUNYAH⟧
-| Graphical VM manager | GunyahVM | ✅ Preinstalled | Open from the Dock or application menu to create and manage virtual machines |
 -->
