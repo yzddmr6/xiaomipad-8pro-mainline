@@ -149,7 +149,6 @@
 | 摄像头 | 后摄 S5KJN1SQ03、前摄 OV32D40 | ✅ 可用 | 前后摄像头可在相机应用中使用；后摄固定焦距，适合非近距离拍摄 |
 | 后置补光灯 | Qualcomm PMIC LED | 🟡 部分支持 | 支持通过系统 LED 接口控制常亮补光；相机应用中的闪光按钮需要由应用接入 |
 | 加速度、陀螺、光感、距离 | SSC / hexagonrpcd / libssc | ✅ 可用 | SensorProxy 可报告方向和环境光 |
-| 自动亮度 | SensorProxy / GNOME | ✅ 可用 | 在设置 → 电源中开启，随环境光调整屏幕背光 |
 | 自动旋转 | SensorProxy / Mutter | ✅ 可用 | 拆下键盘后自动旋转；装着键盘时按 GNOME 规则锁定 |
 
 Firefox 播放部分 HEVC 视频可能有轻微丢帧。Chromium snap 不支持此硬解集成。

@@ -45,8 +45,6 @@ A guarded overlay correction restores web pages and shared storage in Waydroid i
 
 The default packages remove the legacy USB debug console; normal maintenance uses developer-mode SSH.
 
-Automatic GNOME backlight adjustment from ambient light.
-
 Preinstalled GunyahVM graphical virtual-machine management.
 
 ### v1.1.1
