@@ -24,6 +24,7 @@ same layout.  Subcommands and layout follow liuqin-switch (MIT) and the erhai
 switch design; no code is copied.
 """
 import argparse
+import ctypes
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -307,6 +308,36 @@ def cmd_import(host, args):
         report['sha256'] = expected
         candidates = ('android',) if android else slot.UBUNTU_SETS
         existing = slot.occupant(expected, {n: sums[n] for n in candidates if n in sums})
+        if existing == 'ubuntu.prev':
+            # A rollback import must select the requested set, not merely find it.
+            # Validate both stored copies before exchanging their names under
+            # the slot lock; RENAME_EXCHANGE never leaves either name absent.
+            for name in slot.UBUNTU_SETS:
+                slot.check_set(host, name, ctx.parts, 'ubuntu')
+            if args.dry_run:
+                report['result'] = 'would-import'
+                return report
+            store = slot.store(host)
+            with slot.signals_blocked():
+                libc = ctypes.CDLL(None, use_errno=True)
+                exchange = libc.renameat2
+                exchange.argtypes = [ctypes.c_int, ctypes.c_char_p,
+                                     ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
+                exchange.restype = ctypes.c_int
+                if exchange(-100, os.fsencode(store / 'ubuntu'),
+                            -100, os.fsencode(store / 'ubuntu.prev'), 2):
+                    err = ctypes.get_errno()
+                    raise OSError(err, os.strerror(err))
+                fd = os.open(store, os.O_RDONLY | os.O_DIRECTORY)
+                try:
+                    os.fsync(fd)
+                finally:
+                    os.close(fd)
+                message = 'Promoted store/ubuntu.prev to store/ubuntu'
+                report['state'] = record(host, args.command, 'imported', ctx.parts, message)
+            report['result'] = 'imported'
+            say(host, message)
+            return report
         if existing:
             report['result'] = 'unchanged'
             say(host, f'The source already matches store/{existing}')

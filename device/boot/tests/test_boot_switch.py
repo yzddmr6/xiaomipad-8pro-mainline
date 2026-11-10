@@ -526,6 +526,33 @@ class ImportUbuntu(Base):
         self.assertEqual((rc, report['result']), (0, 'imported'), report)
         self.assertEqual((self.store / 'ubuntu/boot.img').read_bytes(), self.release['boot'])
 
+    def test_previous_source_promotes_then_switches(self):
+        current = self.p.sets['ubuntu']
+        previous = self.p.sets['ubuntu.prev']
+        self.p.fill_slot(current)
+        source = self.p.image_dir('rollback-copy', previous)
+        rc, report = self.run_tool('import-ubuntu', '--from', str(source))
+        self.assertEqual((rc, report['result']), (0, 'imported'), report)
+        self.assertEqual(self.p.slot_content(), current, 'import must not write the slot')
+        for name in slot.NAMES:
+            self.assertEqual((self.store / 'ubuntu' / (name + '.img')).read_bytes(), previous[name])
+            self.assertEqual((self.store / 'ubuntu.prev' / (name + '.img')).read_bytes(), current[name])
+        self.assertEqual(self.run_tool('to-ubuntu')[0], 0)
+        self.assertEqual(self.p.slot_content(), previous, 'the documented rollback must select the old set')
+        self.assertEqual(self.run_tool('verify')[0], 0)
+        self.assertEqual(self.run_tool('import-ubuntu', '--from', str(source))[1]['result'], 'unchanged')
+
+    def test_previous_source_dry_run_preserves_both_sets(self):
+        self.p.fill_slot(self.p.sets['ubuntu'])
+        before = {str(p.relative_to(self.store)): p.read_bytes()
+                  for p in self.store.rglob('*') if p.is_file() and p.name != '.lock'}
+        rc, report = self.run_tool('import-ubuntu', '--from', str(self.store / 'ubuntu.prev'), '--dry-run')
+        self.assertEqual((rc, report['result']), (0, 'would-import'), report)
+        after = {str(p.relative_to(self.store)): p.read_bytes()
+                 for p in self.store.rglob('*') if p.is_file() and p.name != '.lock'}
+        self.assertEqual(after, before)
+        self.assert_slot('ubuntu')
+
     def test_refuses_debug_session(self):
         self.p.cmdline(fp.UBUNTU_CMDLINE + ' piano.debug=1 piano.debug_timeout=900')
         self.refused('not-booted-from-slot', 'import-ubuntu')

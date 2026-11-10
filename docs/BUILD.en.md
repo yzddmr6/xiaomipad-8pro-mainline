@@ -176,6 +176,8 @@ python3 tools/build-firmware-deb.py --topology out/audio/Piano-Capture-Diag-tplg
   extraction in the same layout. Every file is checked against its lock.
 - Raise `--version` on every device package rebuild so that dpkg installs it as an upgrade.
 
+For 1.2.0, build the device support and desktop integration packages with `--version 1.2.0.1 --release-version 1.2.0` to update an installed earlier candidate.
+
 ## 6. Boot image set
 
 `build-persistent-boot.py` builds the signed v4 `boot`, `init_boot` and `vendor_boot` images for

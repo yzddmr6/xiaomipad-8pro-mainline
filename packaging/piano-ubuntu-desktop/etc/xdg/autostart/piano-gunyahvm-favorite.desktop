@@ -4,4 +4,3 @@ Name=GunyahVM desktop integration
 Exec=/usr/libexec/piano/gunyahvm-favorite
 OnlyShowIn=GNOME;
 NoDisplay=true
-X-GNOME-Autostart-Phase=Applications
