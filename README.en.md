@@ -127,9 +127,8 @@ Current support and improvements by release are in [docs/STATUS.md](docs/STATUS.
 | System monitor | GNOME Resources | ✅ works | The task manager shows per-core CPU frequency and temperature, the GPU model, frequency, temperature and utilisation, per-application GPU usage, and the temperature of each battery; a Temperature page lists every temperature sensor by device with history graphs |
 | Touchscreen | Novatek NT36532E (THP over SPI) | ✅ works | Single- and multi-finger touch and gestures at 60/90/120/144 Hz and after screen off/on and suspend; the panel type (CSOT or BOE) is detected automatically and loads its own touch firmware and orientation |
 | Magnetic keyboard | Nanosic WN8030 | ✅ works | Typing, key wake with the screen off and wake from suspend |
-| Stylus | Xiaomi Focus Pen Pro (P81C) | 🟡 Partial | Position, pressure, hover and squeeze side button at 120 Hz; barrel slide gestures are not integrated |
 
-Not yet supported: fingerprint.
+Not yet supported: stylus, fingerprint.
 
 ### Wireless and USB
 

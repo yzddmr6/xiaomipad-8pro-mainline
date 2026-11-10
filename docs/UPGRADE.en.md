@@ -11,14 +11,11 @@ The release asset `piano-ubuntu-<version>-packages.zip` is the upgrade package: 
 directory holds every project package installed in that release's image. Always install the
 whole set together, never a single package.
 
-
 ## Upgrading from v1.1.1 to v1.2.0
 
 If an existing Waydroid installation shows black or incomplete web pages, apply the OMX declaration overlay in the [Waydroid guide](WAYDROID.en.md#black-browser-pages-and-embedded-sign-in-pages). The system upgrade does not modify Android images.
 
 Install the complete package set and reboot using the steps below. This updates the Linux 7.2.15 kernel and matching camera module, device support and Fill Light Camera application, plus the matched GSD/common packages. Installing the complete set also updates their exact APT version pins. Existing user settings, finger calibration and rollback boot sets are preserved. The upgrade also removes the old USB debug console. Use developer-mode SSH for normal remote maintenance; the separate RAM diagnostics package is excluded from the upgrade set.
-
-Focus Pen Pro (P81C) input uses 120 Hz. To add pen calibration to an existing installation, run `tools/extract-thp-calibration.py` with the tablet’s matching original INI, `--merge-existing` pointing to its existing calibration and `--output` pointing to a new private file. The tool rejects a different panel and preserves finger geometry and orientation. Install the resulting file as `/etc/piano/thp-calibration.json` (root-owned, mode 0600) before rebooting. Keep the old file for rollback; never share calibration between tablets.
 
 Open Fill Light Camera and select the rear camera. “Photo fill light” illuminates the scene while exposure settles and the photograph is captured. This is continuous fill during capture, not an exposure-triggered high-power strobe. Snapshot and other webcam applications keep using the standard camera outputs.
 

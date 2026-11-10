@@ -24,7 +24,7 @@ speaker volume cap because speaker protection is absent. System time is set from
 Sensor calibration defaults are included; see the
 [calibration instructions](../device/sensors/README.zh-CN.md) to use your own tablet's calibration.
 
-Not yet supported: fingerprint, disk hibernation and hardware clock writes.
+Not yet supported: stylus, fingerprint, disk hibernation and hardware clock writes.
 
 ## Test configuration
 
@@ -48,8 +48,6 @@ The default packages remove the legacy USB debug console; normal maintenance use
 Automatic GNOME backlight adjustment from ambient light.
 
 A photo application with rear fill light and automatic light shutdown.
-
-Focus Pen Pro position, pressure, hover and squeeze input at 120 Hz.
 
 Preinstalled GunyahVM graphical virtual-machine management.
 
