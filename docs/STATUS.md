@@ -47,8 +47,6 @@ The default packages remove the legacy USB debug console; normal maintenance use
 
 Automatic GNOME backlight adjustment from ambient light.
 
-A photo application with rear fill light and automatic light shutdown.
-
 Preinstalled GunyahVM graphical virtual-machine management.
 
 ### v1.1.1

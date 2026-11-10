@@ -15,9 +15,7 @@ whole set together, never a single package.
 
 If an existing Waydroid installation shows black or incomplete web pages, apply the OMX declaration overlay in the [Waydroid guide](WAYDROID.en.md#black-browser-pages-and-embedded-sign-in-pages). The system upgrade does not modify Android images.
 
-Install the complete package set and reboot using the steps below. This updates the Linux 7.2.15 kernel and matching camera module, device support and Fill Light Camera application, plus the matched GSD/common packages. Installing the complete set also updates their exact APT version pins. Existing user settings, finger calibration and rollback boot sets are preserved. The upgrade also removes the old USB debug console. Use developer-mode SSH for normal remote maintenance; the separate RAM diagnostics package is excluded from the upgrade set.
-
-Open Fill Light Camera and select the rear camera. “Photo fill light” illuminates the scene while exposure settles and the photograph is captured. This is continuous fill during capture, not an exposure-triggered high-power strobe. Snapshot and other webcam applications keep using the standard camera outputs.
+Install the complete package set and reboot using the steps below. This updates the Linux 7.2.15 kernel and matching camera module, device support, plus the matched GSD/common packages. Installing the complete set also updates their exact APT version pins. Existing user settings, finger calibration and rollback boot sets are preserved. The upgrade also removes the old USB debug console. Use developer-mode SSH for normal remote maintenance; the separate RAM diagnostics package is excluded from the upgrade set.
 
 The complete package set includes GunyahVM 1.0.1 and all its companion packages. The first login after upgrade appends GunyahVM to Dock favorites, preserving the existing entries and order; removing it later is respected. New accounts receive it in their default Dock, and it is also available in the application menu. GunyahVM’s own logind/udev and polkit rules grant access to the active local desktop session without manual group membership.
 
