@@ -125,8 +125,9 @@
 | 系统监控 | GNOME Resources | ✅ 可用 | 任务管理器可看 CPU 各核频率与温度，GPU 型号、频率、温度和占用率，每个应用的 GPU 占用，以及两块电池各自的温度；“温度”页按设备列出全部温度传感器并显示历史曲线 |
 | 触摸屏 | Novatek NT36532E（THP，SPI） | ✅ 可用 | 单指与多指触控、手势可用，支持 60/90/120/144 Hz 及关屏、待机恢复；自动识别屏型（CSOT 或 BOE）并加载对应的触控固件和方向 |
 | 磁吸键盘 | Nanosic WN8030 | ✅ 可用 | 支持打字、熄屏按键唤醒和待机唤醒 |
+| 手写笔 | Xiaomi Focus Pen Pro（P81C） | 🟡 部分支持 | 120 Hz 下的位置、压感、悬停与轻捏侧键；笔身滑动手势未接入 |
 
-暂不支持：手写笔、指纹。
+暂不支持：指纹。
 
 ### 无线与 USB
 
@@ -147,8 +148,9 @@
 | 视频硬解 | 高通 Iris / V4L2 | ✅ 可用 | 系统播放器（GStreamer）、Firefox（H.264/HEVC/VP9）、Chrome（H.264/VP9）自动硬件解码；AV1 为软件解码 |
 | 视频硬编 | 高通 Iris / V4L2 | ✅ 可用 | H.264/H.265 1080p、4K 编码已验证 |
 | 摄像头 | 后摄 S5KJN1SQ03、前摄 OV32D40 | ✅ 可用 | 前后摄像头可在相机应用中使用；后摄固定焦距，适合非近距离拍摄 |
-| 后置补光灯 | Qualcomm PMIC LED | 🟡 部分支持 | 支持通过系统 LED 接口控制常亮补光；相机应用中的闪光按钮需要由应用接入 |
+| 拍照补光 | 后置 LED / V4L2 | ✅ 可用 | “补光相机”应用可开启拍照补光，取帧完成或退出后自动关灯 |
 | 加速度、陀螺、光感、距离 | SSC / hexagonrpcd / libssc | ✅ 可用 | SensorProxy 可报告方向和环境光 |
+| 自动亮度 | SensorProxy / GNOME | ✅ 可用 | 在设置 → 电源中开启，随环境光调整屏幕背光 |
 | 自动旋转 | SensorProxy / Mutter | ✅ 可用 | 拆下键盘后自动旋转；装着键盘时按 GNOME 规则锁定 |
 
 Firefox 播放部分 HEVC 视频可能有轻微丢帧。Chromium snap 不支持此硬解集成。
@@ -271,15 +273,3 @@ fastboot -s <serial> reboot
 [MIT](LICENSE)；若干改编自 GPL-2.0-only 来源的工具保持 GPL-2.0-only。内核为 GPL-2.0。第三方组件保留各自
 许可（见 `LICENSES/`）。原厂固件与静态传感器配置的分发政策和自备提取文件的方法统一见
 [firmware/README.md](firmware/README.md#distribution-policy)。
-
-<!--
-⟦DRAFT:G-LIGHT⟧
-| 自动亮度 | SensorProxy / GNOME | ✅ 可用 | 在设置 → 电源中开启，随环境光调整屏幕背光 |
-
-⟦DRAFT:G-FLASH⟧
-| 拍照补光 | 后置 LED / V4L2 | ✅ 可用 | “补光相机”应用可开启拍照补光，取帧完成或退出后自动关灯 |
-
-⟦DRAFT:G-PEN⟧
-| 手写笔 | Xiaomi Focus Pen Pro（P81C） | 🟡 部分支持 | 120 Hz 下的位置、压感、悬停与轻捏侧键；笔身滑动手势未接入 |
-
--->

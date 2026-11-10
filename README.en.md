@@ -127,8 +127,9 @@ Current support and improvements by release are in [docs/STATUS.md](docs/STATUS.
 | System monitor | GNOME Resources | ✅ works | The task manager shows per-core CPU frequency and temperature, the GPU model, frequency, temperature and utilisation, per-application GPU usage, and the temperature of each battery; a Temperature page lists every temperature sensor by device with history graphs |
 | Touchscreen | Novatek NT36532E (THP over SPI) | ✅ works | Single- and multi-finger touch and gestures at 60/90/120/144 Hz and after screen off/on and suspend; the panel type (CSOT or BOE) is detected automatically and loads its own touch firmware and orientation |
 | Magnetic keyboard | Nanosic WN8030 | ✅ works | Typing, key wake with the screen off and wake from suspend |
+| Stylus | Xiaomi Focus Pen Pro (P81C) | 🟡 Partial | Position, pressure, hover and squeeze side button at 120 Hz; barrel slide gestures are not integrated |
 
-Not yet supported: stylus, fingerprint.
+Not yet supported: fingerprint.
 
 ### Wireless and USB
 
@@ -149,8 +150,9 @@ Not yet supported: stylus, fingerprint.
 | Video decoding | Qualcomm Iris / V4L2 | ✅ works | Automatic hardware decoding in the system player (GStreamer), Firefox (H.264/HEVC/VP9) and Chrome (H.264/VP9); AV1 uses software decoding |
 | Video encoding | Qualcomm Iris / V4L2 | ✅ works | H.264/H.265 at 1080p and 4K verified |
 | Cameras | Rear S5KJN1SQ03, front OV32D40 | ✅ works | Front and rear cameras available in camera apps; fixed rear focus, suited to subjects beyond close range |
-| Rear torch | Qualcomm PMIC LED | 🟡 partial | Torch control through the system LED interface; camera applications need to integrate their own flash controls |
+| Photo fill light | Rear LED / V4L2 | ✅ Working | Enable photo fill light in Fill Light Camera; the light turns off after capture or when the application exits |
 | Accelerometer, gyro, light, proximity | SSC / hexagonrpcd / libssc | ✅ works | SensorProxy reports orientation and ambient light |
+| Automatic brightness | SensorProxy / GNOME | ✅ Working | Enable in Settings → Power to adjust the backlight with ambient light |
 | Auto-rotation | SensorProxy / Mutter | ✅ works | Rotates with the keyboard detached; locked by GNOME's rule while the keyboard is attached |
 
 Some HEVC videos may drop a small number of frames in Firefox. Chromium snap is not covered by this acceleration integration.
@@ -270,15 +272,3 @@ Related projects (used as references):
 - [blu-sharky/debian-piano](https://github.com/blu-sharky/debian-piano) (MIT).
 
 Per-file origins, commits and changes are recorded in [NOTICE](NOTICE). Unless a file's SPDX header says otherwise, original integration code is [MIT](LICENSE); a few tools adapted from GPL-2.0-only sources stay GPL-2.0-only. The kernel is GPL-2.0. Third-party components keep their own licences (see `LICENSES/`). Stock firmware and static sensor configuration follow the [firmware distribution policy](firmware/README.md#distribution-policy), which also describes using your own extraction.
-
-<!--
-⟦DRAFT:G-LIGHT⟧
-| Automatic brightness | SensorProxy / GNOME | ✅ Working | Enable in Settings → Power to adjust the backlight with ambient light |
-
-⟦DRAFT:G-FLASH⟧
-| Photo fill light | Rear LED / V4L2 | ✅ Working | Enable photo fill light in Fill Light Camera; the light turns off after capture or when the application exits |
-
-⟦DRAFT:G-PEN⟧
-| Stylus | Xiaomi Focus Pen Pro (P81C) | 🟡 Partial | Position, pressure, hover and squeeze side button at 120 Hz; barrel slide gestures are not integrated |
-
--->

@@ -1,6 +1,6 @@
 # Release history and current support
 
-Current release: **v1.1.1**. See the [README](../README.en.md#hardware-support) or
+Current release: **v1.2.0**. See the [README](../README.en.md#hardware-support) or
 [中文 README](../README.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
@@ -24,7 +24,7 @@ speaker volume cap because speaker protection is absent. System time is set from
 Sensor calibration defaults are included; see the
 [calibration instructions](../device/sensors/README.zh-CN.md) to use your own tablet's calibration.
 
-Not yet supported: stylus, fingerprint, disk hibernation and hardware clock writes.
+Not yet supported: fingerprint, disk hibernation and hardware clock writes.
 
 ## Test configuration
 
@@ -45,11 +45,11 @@ A guarded overlay correction restores web pages and shared storage in Waydroid i
 
 The default packages remove the legacy USB debug console; normal maintenance uses developer-mode SSH.
 
-⟦DRAFT:G-LIGHT⟧ Automatic GNOME backlight adjustment from ambient light.
+Automatic GNOME backlight adjustment from ambient light.
 
-⟦DRAFT:G-FLASH⟧ A photo application with rear fill light and automatic light shutdown.
+A photo application with rear fill light and automatic light shutdown.
 
-⟦DRAFT:G-PEN⟧ Focus Pen Pro position, pressure, hover and squeeze input at 120 Hz.
+Focus Pen Pro position, pressure, hover and squeeze input at 120 Hz.
 
 Preinstalled GunyahVM graphical virtual-machine management.
 
