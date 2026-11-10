@@ -59,6 +59,20 @@ class DesktopIntegration(unittest.TestCase):
             for script in ('postinst', 'prerm', 'postrm'):
                 subprocess.run(['sh', '-n', str(root / 'DEBIAN' / script)], check=True)
 
+    def test_prompting_requires_kernel_notification_capability(self):
+        config = (REPO / 'packaging/piano-ubuntu-desktop/etc/systemd/user/'
+                  'snap.prompting-client.daemon.service.d/90-piano-kernel.conf').read_text()
+        with tempfile.TemporaryDirectory() as tmp:
+            conditions = [line.replace('/sys/', tmp + '/sys/')
+                          for line in config.splitlines() if line.startswith('Condition')]
+            self.assertEqual(len(conditions), 1)
+            command = ['systemd-analyze', 'condition', *conditions]
+            self.assertNotEqual(subprocess.run(command, capture_output=True).returncode, 0)
+            node = Path(conditions[0].split('=', 1)[1])
+            node.parent.mkdir(parents=True)
+            node.touch()
+            self.assertEqual(subprocess.run(command, capture_output=True).returncode, 0)
+
     def test_pins_keep_local_versions_against_future_ubuntu_updates(self):
         # No apt update or network: synthetic index plus the real shipped preferences.
         with tempfile.TemporaryDirectory() as tmp:
