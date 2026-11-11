@@ -114,11 +114,18 @@ def main():
                        'tr "\\000" "\\n" < /proc/device-tree/compatible | grep -Eq "xiaomi,liuqin|qcom,sm8450"; then\n'
                        '  echo "This graphics cohort is not for this device" >&2; exit 1\nfi\n')
         for path in legacy:
-            script += f'dpkg-maintscript-helper rm_conffile {path} {a.version} piano-mesa -- "$@"\n'
+            # Old manually-built packages also shipped ordinary /etc files.
+            # dpkg removes those itself. Only registered conffiles need the
+            # helper, including its purge handling of backup suffixes.
+            script += ("if dpkg-query -W -f='${Conffiles}\\n' piano-mesa 2>/dev/null | "
+                       "awk '$1 == \"" + path + "\" { found=1 } END { exit !found }'; then\n"
+                       f'  dpkg-maintscript-helper rm_conffile {path} {a.version} piano-mesa -- "$@"\n'
+                       'fi\n')
         if phase in ('postinst', 'postrm'):
             script += 'ldconfig\n'
         f = stage / 'DEBIAN' / phase; f.write_text(script); f.chmod(0o755)
     doc = stage / 'usr/share/doc/piano-mesa'; doc.mkdir(parents=True)
+    shutil.copyfile(REPO / 'LICENSE', doc / 'copyright')
     (doc / 'build.json').write_text(json.dumps(dict(source=source, layout='ubuntu-multiarch',
         ubuntu=lock, packages=records, pin_sha256=sha(conf)), indent=2)+'\n')
     for tool in ('release-repository.py', 'check-host-mesa.py'):
