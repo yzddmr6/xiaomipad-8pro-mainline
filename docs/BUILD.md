@@ -164,7 +164,7 @@ python3 tools/build-firmware-deb.py --topology out/audio/Piano-Capture-Diag-tplg
   每个文件均按身份锁核对。两份音频拓扑的构建与检查说明见[音频文档](../device/audio/README.md#build)。
 - 每次重建设备包都提高 `--version`，使 dpkg 将其作为升级安装。
 
-1.2.1 沿用已发布的设备支持包 `1.2.0.1` 与同一内核；桌面集成包为 `1.2.1.2`，其 `--release-version` 为 `1.2.1`。发布包复用已验收的原始归档，不重新压缩 deb。
+1.2.1 沿用已发布的设备支持包 `1.2.0.1` 与同一内核；桌面集成包为 `1.2.1.3`，其 `--release-version` 为 `1.2.1`。桌面包构建设置 `SOURCE_DATE_EPOCH=0` 固定归档时间戳；发布包复用已验收的原始归档，不重新压缩 deb。
 
 1.2.0 的设备支持包使用 `--version 1.2.0.1`，桌面集成包使用 `--version 1.2.0.2`；两者均使用 `--release-version 1.2.0`。
 

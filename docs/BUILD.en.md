@@ -174,7 +174,7 @@ python3 tools/build-firmware-deb.py --topology out/audio/Piano-Capture-Diag-tplg
   extraction in the same layout. Every file is checked against its lock.
 - Raise `--version` on every device package rebuild so that dpkg installs it as an upgrade.
 
-For 1.2.1, retain the released device-support package `1.2.0.1` and unchanged kernel. Desktop integration is `1.2.1.2` with `--release-version 1.2.1`. Reuse the validated package archives without recompressing debs.
+For 1.2.1, retain the released device-support package `1.2.0.1` and unchanged kernel. Desktop integration is `1.2.1.3` with `--release-version 1.2.1`. Build the desktop package with `SOURCE_DATE_EPOCH=0` to fix archive timestamps. Reuse the validated package archives without recompressing debs.
 
 For 1.2.0, use `--version 1.2.0.1` for device support and `--version 1.2.0.2` for desktop integration; use `--release-version 1.2.0` for both.
 

@@ -26,6 +26,8 @@ class DesktopIntegration(unittest.TestCase):
             control = subprocess.check_output(['dpkg-deb', '-f', str(deb)], text=True)
             root = out / 'extract'
             subprocess.run(['dpkg-deb', '-R', str(deb), str(root)], check=True)
+            author = (root / 'usr/share/gnome-control-center/port-author.ini').read_text()
+            self.assertIn('URL=https://github.com/yzddmr6/xiaomipad-8pro-mainline', author)
             conffiles = (root / 'DEBIAN/conffiles').read_text().splitlines()
             self.assertIn('/etc/tuned/piano-ppd.conf', conffiles)
             self.assertFalse((root / 'etc/tuned/ppd.conf').exists())
@@ -82,8 +84,8 @@ class DesktopIntegration(unittest.TestCase):
             (d / 'sources.list').write_text('deb [trusted=yes] https://example.invalid/ubuntu resolute main\n')
             versions = {'gnome-settings-daemon': '50.0-1ubuntu1+piano2',
                         'gnome-settings-daemon-common': '50.0-1ubuntu1+piano2',
-                        'gnome-control-center': '1:50.3-0ubuntu0.2+piano1',
-                        'gnome-control-center-data': '1:50.3-0ubuntu0.2+piano1'}
+                        'gnome-control-center': '1:50.3-0ubuntu0.2+piano2',
+                        'gnome-control-center-data': '1:50.3-0ubuntu0.2+piano2'}
             (d / 'status').write_text('\n'.join(
                 f'Package: {name}\nStatus: install ok installed\nArchitecture: arm64\n'
                 f'Version: {version}\nDescription: synthetic installed package\n'

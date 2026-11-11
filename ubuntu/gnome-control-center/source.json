@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "base_version": "1:50.3-0ubuntu0.2",
-  "local_version": "1:50.3-0ubuntu0.2+piano1",
+  "local_version": "1:50.3-0ubuntu0.2+piano2",
   "files": [
     {
       "file": "gnome-control-center_50.3.orig.tar.xz",
@@ -46,10 +46,10 @@
     },
     {
       "file": "about-author.patch",
-      "sha256": "09ada539175ca84adf05f4395ca06729c1ae33ece15d902e6d088cbafac62eca",
+      "sha256": "a39cabe28d8da185b6d9d6e05ba04b6d12cfcd5c5e9aaa5b0e93a98f0c7b6a5d",
       "license": "GPL-2.0-or-later"
     }
   ],
-  "changelog_entry_sha256": "988bca51e7016405ad741ac90d281fd7bea1995d86e7945aee514bb16b61cd64",
+  "changelog_entry_sha256": "0c187ff6e6bac5bbf9c43e406ef54eca4c9cdb415f651d16914183b676197d1f",
   "exit_condition": "Drop when upstream or Ubuntu supplies equivalent functionality and native regression passes."
 }

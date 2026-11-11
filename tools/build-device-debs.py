@@ -364,7 +364,7 @@ def main():
          'usr/share/pipewire/client.conf.d/50-piano-speaker-upmix.conf')
     (desktop / 'usr/libexec/piano/gunyahvm-favorite').chmod(0o755)
     # fake-hwclock: the RTC cannot be set; it restores the time saved at shutdown or hourly.
-    package('piano-ubuntu-desktop', desktop, 'gunyahvm (>= 1.1.0-1), resources (= 1.10.2-0ubuntu3.1+piano2), gnome-settings-daemon (= 50.0-1ubuntu1+piano2), gnome-settings-daemon-common (= 50.0-1ubuntu1+piano2), gnome-control-center (= 1:50.3-0ubuntu0.2+piano1), gnome-control-center-data (= 1:50.3-0ubuntu0.2+piano1), piano-mesa, piano-iris-vaapi (>= 0.1.0+git.f587b14-0piano4), gdm3, gnome-shell (>= 50), colord, colord-data, python3-gi, fake-hwclock, python3, console-setup, snapd, init-system-helpers, tuned-ppd (>= 2.25.1), showtime, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, gstreamer1.0-plugins-bad, gstreamer1.0-libav',
+    package('piano-ubuntu-desktop', desktop, 'gunyahvm (>= 1.1.0-1), resources (= 1.10.2-0ubuntu3.1+piano2), gnome-settings-daemon (= 50.0-1ubuntu1+piano2), gnome-settings-daemon-common (= 50.0-1ubuntu1+piano2), gnome-control-center (= 1:50.3-0ubuntu0.2+piano2), gnome-control-center-data (= 1:50.3-0ubuntu0.2+piano2), piano-mesa, piano-iris-vaapi (>= 0.1.0+git.f587b14-0piano4), gdm3, gnome-shell (>= 50), colord, colord-data, python3-gi, fake-hwclock, python3, console-setup, snapd, init-system-helpers, tuned-ppd (>= 2.25.1), showtime, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, gstreamer1.0-plugins-bad, gstreamer1.0-libav',
             'Piano Ubuntu desktop defaults: graphics, clock without RTC, speaker up-mix and UCM, '
             'GNOME Shell 50 on-screen keyboard guard',
             '#!/bin/sh\nset -e\nif [ "$1" = configure ]; then\n'
