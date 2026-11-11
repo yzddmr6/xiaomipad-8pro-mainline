@@ -1,6 +1,6 @@
 # Release history and current support
 
-Current release: **v1.2.0**. See the [README](../README.en.md#hardware-support) or
+Current release: **v1.2.1**. See the [README](../README.en.md#hardware-support) or
 [中文 README](../README.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
@@ -38,6 +38,14 @@ verified on this unit; later versions were tested on the installed system. These
 results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
+
+### v1.2.1
+
+- Host Mesa uses standard Ubuntu library paths, allowing sandboxed web processes to use Adreno 830 acceleration.
+- Vulkan lists the Adreno 830 once instead of twice.
+- Settings is updated to 50.3, retaining the power-button lock option.
+- Complete release batches support upgrading and rolling back userspace packages together with the boot set.
+- GunyahVM 1.1.0 keeps accelerated Linux guests working with the updated graphics packages.
 
 ### v1.2.0
 

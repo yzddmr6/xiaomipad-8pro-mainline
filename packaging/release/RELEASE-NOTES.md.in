@@ -1,4 +1,4 @@
-# Ubuntu for Xiaomi Pad 8 Pro $release_name
+# Ubuntu for Xiaomi Pad 8 Pro $release_name$title_suffix_zh
 
 适用于小米平板 8 Pro 的 Ubuntu 26.04 Desktop ARM64，与 Android 双系统共存。$summary_zh
 
@@ -6,7 +6,7 @@
 
 $updates_zh
 
-## 获取、安装与升级
+$upgrade_section_zh## 获取、安装与升级
 
 [全新安装]($repo_url/blob/$release_name/docs/INSTALL.md) · [已安装用户升级]($repo_url/blob/$release_name/docs/UPGRADE.md) · [构建指南]($repo_url/blob/$release_name/docs/BUILD.md) · [内核源码]($kernel_url/tree/$release_name)
 
@@ -22,7 +22,7 @@ $limits_zh
 
 ---
 
-# Ubuntu for Xiaomi Pad 8 Pro $release_name
+# Ubuntu for Xiaomi Pad 8 Pro $release_name$title_suffix_en
 
 Ubuntu 26.04 Desktop ARM64 for Xiaomi Pad 8 Pro, dual-booting alongside Android. $summary_en
 
@@ -30,7 +30,7 @@ Ubuntu 26.04 Desktop ARM64 for Xiaomi Pad 8 Pro, dual-booting alongside Android.
 
 $updates_en
 
-## Get, install and upgrade
+$upgrade_section_en## Get, install and upgrade
 
 [Fresh installation]($repo_url/blob/$release_name/docs/INSTALL.en.md) · [Upgrade an existing installation]($repo_url/blob/$release_name/docs/UPGRADE.en.md) · [Build guide]($repo_url/blob/$release_name/docs/BUILD.en.md) · [Kernel source]($kernel_url/tree/$release_name)
 

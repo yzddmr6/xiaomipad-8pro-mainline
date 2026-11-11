@@ -23,8 +23,6 @@ lifetimes. This is a concurrency regression, not complete GPU or suspend
 coverage. A new process must load the updated libraries; an existing desktop
 session retains its old mapped libraries until logout or reboot.
 
-⟦DRAFT:离线候选与真机迁移门槛⟧
-
 宿主采用 [Ubuntu 回移打包锁](ubuntu/source.json)：Canonical 的 resolute
 `26.2.4-1ubuntu1~26.04.1` 打包加上游 26.2.6，六个补丁内容不变。
 `build-host-mesa.py` 保留 Ubuntu arm64 驱动集、GLVND、编译加固与测试。

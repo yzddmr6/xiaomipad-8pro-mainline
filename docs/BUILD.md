@@ -164,11 +164,11 @@ python3 tools/build-firmware-deb.py --topology out/audio/Piano-Capture-Diag-tplg
   每个文件均按身份锁核对。两份音频拓扑的构建与检查说明见[音频文档](../device/audio/README.md#build)。
 - 每次重建设备包都提高 `--version`，使 dpkg 将其作为升级安装。
 
+1.2.1 沿用已发布的设备支持包 `1.2.0.1` 与同一内核；桌面集成包为 `1.2.1.2`，其 `--release-version` 为 `1.2.1`。发布包复用已验收的原始归档，不重新压缩 deb。
+
 1.2.0 的设备支持包使用 `--version 1.2.0.1`，桌面集成包使用 `--version 1.2.0.2`；两者均使用 `--release-version 1.2.0`。
 
 ## 宿主 Mesa 同名包与本地 APT 批次
-
-⟦DRAFT:离线候选与真机迁移门槛⟧
 
 源码和认证信息固定在 [mesa/ubuntu/source.json](../mesa/ubuntu/source.json)。
 以 Canonical 的 resolute-proposed 回移打包为基线；只更新上游版本、加入六个
@@ -411,3 +411,5 @@ RAM 硬件检查使用 600 秒。到期后停止显示管理器与用户 slice�
 
 `build-native-display-initrd.py` 从本仓库更新 helper 和 unit，经 `/run` 带入已安装根系统，
 不依赖根系统预装该修正。调试镜像的构建、硬件检查及恢复操作分开执行。
+
+用 `build-release.py --release-repository <新批次> --previous-release-repository <旧批次>` 将两批完整仓库一同放入升级附件。

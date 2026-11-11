@@ -12,9 +12,7 @@ directory holds every project package installed in that release's image. Always 
 whole set together, never a single package.
 
 
-## 1.2.0 → 1.2.1
-
-⟦DRAFT:complete offline APT and device migration/rollback gates⟧
+## v1.2.0 → v1.2.1
 
 Host Mesa now uses Ubuntu package names and standard multiarch directories, so
 sandboxed web processes can discover the device drivers. The driver version and
@@ -24,7 +22,9 @@ including all Mesa development and OpenCL packages; only the required runtime
 subset is installed by default. libdrm consists of original Ubuntu binaries and
 is not pinned, allowing normal Ubuntu updates.
 
-Verify the release attachment checksums and extract both batches. The previous
+Shut down running virtual machines normally before upgrading. This batch includes GunyahVM 1.1.0 and Settings 50.3.
+
+Verify the release attachment checksums and extract this release’s packages attachment, which contains both batches. The previous
 batch must contain the exact installed release packages and their Mesa/libdrm
 versions; the tool refuses an incomplete rollback inventory. Copy both repository
 directories to the tablet, then run there:

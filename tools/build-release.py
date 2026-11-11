@@ -158,6 +158,7 @@ def main():
                     help='FILL limit per sparse image (on free blocks for the ext4 root)')
     ap.add_argument('--allow-fill', action='store_true', help='Report FILL beyond the limit without stopping')
     ap.add_argument('--release-repository', type=Path, help='Complete local APT batch retained in package attachments')
+    ap.add_argument('--previous-release-repository', type=Path, help='Complete previous batch supplied for upgrade rollback')
     ap.add_argument('--output', type=Path, required=True, help='New release directory')
     ap.add_argument('--changes', type=Path, required=True,
                     help='Bilingual summary, updates and known limitations (UTF-8)')
@@ -285,6 +286,14 @@ def main():
         shutil.copytree(a.release_repository, out / 'repositories' / batch['id'])
     elif rootfs.get('release_repository'):
         raise ValueError('root image requires its complete --release-repository')
+
+    if a.previous_release_repository:
+        if not a.release_repository:
+            raise ValueError('previous batch requires the current release repository')
+        previous = module.verify(a.previous_release_repository)
+        if previous['product'] != batch['product'] or previous['id'] == batch['id']:
+            raise ValueError('previous batch belongs to another product or duplicates the current batch')
+        shutil.copytree(a.previous_release_repository, out / 'repositories' / previous['id'])
 
     optional_packages = stage_virtualization(a.virtualization_packages, a.virtualization_source, out, rootfs['packages'])
     files = sorted(p for p in out.rglob('*') if p.is_file())

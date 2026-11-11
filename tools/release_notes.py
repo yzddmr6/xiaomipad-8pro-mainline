@@ -38,7 +38,16 @@ def change_sections(changes):
         body, last_separator, limitations = rest.partition(f'\n\n## {limits}\n\n')
         if not separator or not last_separator or not all((summary.strip(), body.strip(), limitations.strip())):
             raise ValueError(f'changes ({language}) require a summary, updates and known limitations')
-        result.update({f'summary_{language}': summary.strip(),
+        theme_prefix = '主题：' if language == 'zh' else 'Theme: '
+        title_suffix = ''
+        if summary.startswith(theme_prefix):
+            theme, _, summary = summary.partition('\n\n')
+            title_suffix = ' — ' + theme.removeprefix(theme_prefix).strip()
+        advice_heading = '升级须知' if language == 'zh' else 'Upgrade notes'
+        body, has_advice, advice = body.partition(f'\n\n## {advice_heading}\n\n')
+        result.update({f'title_suffix_{language}': title_suffix,
+                       f'upgrade_section_{language}': f'## {advice_heading}\n\n{advice.strip()}\n\n' if has_advice else '',
+                       f'summary_{language}': summary.strip(),
                        f'updates_{language}': body.strip(), f'limits_{language}': limitations.strip()})
     return result
 
@@ -60,9 +69,11 @@ def validate_notes(notes, version):
     for half, headings, licensing, support in zip(halves,
             (['更新', '获取、安装与升级', '已知限制'], ['Changes', 'Get, install and upgrade', 'Known limitations']),
             ('来源与许可：', 'Sources and licensing:'), ('完整功能', 'Full hardware support')):
-        if not half.strip().startswith(f'# Ubuntu for Xiaomi Pad 8 Pro {version}\n'):
+        if not re.match(rf'^# Ubuntu for Xiaomi Pad 8 Pro {re.escape(version)}(?: — [^\n]+)?\n', half.strip()):
             raise ValueError('release title differs from the manifest')
-        if re.findall(r'^## (.+)$', half, re.M) != headings:
+        advice = '升级须知' if headings[0] == '更新' else 'Upgrade notes'
+        expected_headings = headings[:1] + ([advice] if f'## {advice}\n' in half else []) + headings[1:]
+        if re.findall(r'^## (.+)$', half, re.M) != expected_headings:
             raise ValueError('release sections are missing or out of order')
         updates = half.split(f'## {headings[0]}\n', 1)[1].split(f'## {headings[1]}\n', 1)[0]
         bullets = [line for line in updates.splitlines() if line.startswith('- ')]

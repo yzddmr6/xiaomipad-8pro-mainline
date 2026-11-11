@@ -57,8 +57,6 @@ exact dependencies must also be removed or replaced for that rollback.
 
 ## 宿主 Mesa 与发布批次
 
-⟦DRAFT:离线候选与真机迁移门槛⟧
-
 宿主 Mesa 的发行版打包基线、快照和认证链见
 [mesa/ubuntu/source.json](../mesa/ubuntu/source.json)。使用 Canonical 的 resolute
 回移包，保留 GLVND 与完整 arm64 驱动集；六个设备补丁由共用源码锁校验。
