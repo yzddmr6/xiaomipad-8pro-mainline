@@ -26,6 +26,8 @@ class DesktopIntegration(unittest.TestCase):
             control = subprocess.check_output(['dpkg-deb', '-f', str(deb)], text=True)
             root = out / 'extract'
             subprocess.run(['dpkg-deb', '-R', str(deb), str(root)], check=True)
+            author = (root / 'usr/share/gnome-control-center/port-author.ini').read_text()
+            self.assertIn('URL=https://github.com/yzddmr6/xiaomipad-8pro-mainline', author)
             conffiles = (root / 'DEBIAN/conffiles').read_text().splitlines()
             self.assertIn('/etc/tuned/piano-ppd.conf', conffiles)
             self.assertFalse((root / 'etc/tuned/ppd.conf').exists())

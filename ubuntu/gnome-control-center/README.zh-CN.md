@@ -91,3 +91,14 @@ x86 主机使用 qemu-user 时设置 `QEMU_CPU=max,pauth-impdef=on`。
 
 退出条件：上游合并或所选 Ubuntu 源包提供等价实现，且本机短按、长按、已灭屏唤屏、睡眠恢复、
 失败安全行为及卸载回退通过后，撤去电源键补丁和依赖版本覆盖。自动睡眠仍是独立策略。作者行补丁随本地控制中心包保留。
+
+关于页的作者行由设备集成包提供 `/usr/share/gnome-control-center/port-author.ini`：
+
+```ini
+[Author]
+Name=yzddmr6
+URL=https://github.com/yzddmr6/xiaomipad-8pro-mainline
+```
+
+共享二进制不包含设备型号或项目链接。未提供有效 HTTPS 配置时隐藏作者行；
+其他设备提供自己的配置即可使用相同的包。
