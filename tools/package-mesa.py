@@ -108,29 +108,21 @@ def main():
     legacy = ('/etc/ld.so.conf.d/00-piano-mesa.conf', '/etc/piano-mesa-prefix',
               '/etc/piano-mesa.json', '/etc/piano-mesa.sha256')
     for phase in ('preinst', 'postinst', 'postrm'):
-        script = '#!/bin/sh\nset -e\n'
+        script = '#!/bin/sh\nset -e\n' + (REPO / 'mesa/ubuntu/conffile-migration.sh').read_text() + '\n'
         if phase == 'preinst':
             script += ('if [ -r /proc/device-tree/compatible ] && '
                        'tr "\\000" "\\n" < /proc/device-tree/compatible | grep -Eq "xiaomi,liuqin|qcom,sm8450"; then\n'
                        '  echo "This graphics cohort is not for this device" >&2; exit 1\nfi\n')
         for path in legacy:
-            # Old manually-built packages also shipped ordinary /etc files.
-            # dpkg removes those itself. Only registered conffiles need the
-            # helper, including its purge handling of backup suffixes.
-            script += ("if dpkg-query -W -f='${Conffiles}\\n' piano-mesa 2>/dev/null | "
-                       "awk '$1 == \"" + path + "\" { found=1 } END { exit !found }'; then\n"
-                       f'  dpkg-maintscript-helper rm_conffile {path} {a.version} piano-mesa -- "$@"\n'
-                       'fi\n')
+            script += f'retire_mesa_conffile piano-mesa {a.version} {path} "$@"\n'
         if phase in ('postinst', 'postrm'):
             script += 'ldconfig\n'
         f = stage / 'DEBIAN' / phase; f.write_text(script); f.chmod(0o755)
     doc = stage / 'usr/share/doc/piano-mesa'; doc.mkdir(parents=True)
     shutil.copyfile(REPO / 'LICENSE', doc / 'copyright')
     (doc / 'build.json').write_text(json.dumps(dict(source=source, layout='ubuntu-multiarch',
-        ubuntu=lock, packages=records, pin_sha256=sha(conf)), indent=2)+'\n')
-    for tool in ('release-repository.py', 'check-host-mesa.py'):
-        dest = stage / 'usr/libexec/piano' / tool; dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(REPO / 'tools' / tool, dest); dest.chmod(0o755)
+        ubuntu=lock, packages=records, pin_sha256=sha(conf),
+        recipe_sha256=sha(__file__), conffile_migration_sha256=sha(REPO / 'mesa/ubuntu/conffile-migration.sh')), indent=2)+'\n')
     package = output / f'piano-mesa_{a.version}_arm64.deb'
     subprocess.run(['dpkg-deb','--root-owner-group','-Zxz','-z1','--build',str(stage),str(package)],check=True,
                    env=dict(os.environ,SOURCE_DATE_EPOCH='1794355200'))

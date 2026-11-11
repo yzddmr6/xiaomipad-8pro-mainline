@@ -64,6 +64,10 @@ def inventory(repo, identifier, product, default_names):
         run(['dpkg-scanpackages', 'pool', '/dev/null'], cwd=repo, stdout=out)
     shutil.copyfile(__file__, repo / 'install.py')
     (repo / 'install.py').chmod(0o755)
+    checker = Path(__file__).with_name('check-host-mesa.py')
+    if checker.is_file():
+        shutil.copyfile(checker, repo / checker.name)
+        (repo / checker.name).chmod(0o755)
     (repo / 'SHA256SUMS').write_text(''.join(
         f'{sha(p)}  {p.relative_to(repo)}\n' for p in sorted(repo.rglob('*'))
         if p.is_file() and p.name != 'SHA256SUMS'))
@@ -116,7 +120,7 @@ def keep(repo, store):
     m = verify(repo)
     dest = store / m['id']
     if dest.exists():
-        if verify(dest) != m:
+        if verify(dest) != m or sha(dest / 'SHA256SUMS') != sha(repo / 'SHA256SUMS'):
             raise ValueError('release identifier already has different contents')
     else:
         tmp = store / ('.' + m['id'] + '.incoming')

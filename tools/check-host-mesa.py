@@ -77,7 +77,9 @@ def webkit_probe():
                     parent=int(re.search(r'^PPid:\s+(\d+)',(Path('/proc')/str(parent)/'status').read_text(),re.M)[1])
                 if parent == os.getpid() and b'WebKitWebProcess' in cmd:
                     maps=(proc/'maps').read_text()
-                    records.append(dict(pid=int(proc.name),maps=sorted(set(re.findall(r'/\S*(?:libgallium|_dri)[^\s]*',maps)))))
+                    records.append(dict(pid=int(proc.name),maps=sorted(set(re.findall(r'/\S*(?:libgallium|_dri)[^\s]*',maps))),
+                        mount_namespace=os.readlink(proc/'ns/mnt'),
+                        sandboxed=os.readlink(proc/'ns/mnt')!=os.readlink('/proc/self/ns/mnt') and bool(re.search(r'^Seccomp:\s+2$',status,re.M))))
             except (OSError,ValueError,TypeError):pass
         return records
 
@@ -148,7 +150,7 @@ def main():
     if os.geteuid()!=0 or not a.session_pid:ap.error('root and a real graphical session PID are required')
     proc=Path('/proc')/str(a.session_pid);uid=proc.stat().st_uid;user=pwd.getpwuid(uid)
     env=dict(item.decode().split('=',1) for item in (proc/'environ').read_bytes().split(b'\0') if b'=' in item)
-    session={k:v for k,v in env.items() if k in ('DISPLAY','WAYLAND_DISPLAY','XDG_RUNTIME_DIR','DBUS_SESSION_BUS_ADDRESS','XAUTHORITY','HOME','PATH','LANG')}
+    session=dict(env)  # Reproduce the graphical process environment, including driver overrides.
     script=str(Path(__file__).resolve());checks={}
     def execute(name,argv,renderer=True):
         try:
@@ -174,7 +176,7 @@ def main():
     if web and web.returncode==0:
         try:
             result=json.loads(web.stdout.strip().splitlines()[-1]);children=result['web_processes']+result['webgl_processes']
-            checks['webkit']['pass_'] &= bool(re.search(r'Adreno.*830',result['renderer'],re.I)) and result['pixel']==[255,0,0,255] and bool(result['web_processes']) and bool(result['webgl_processes']) and all(c['maps'] for c in children) and all(p.startswith('/usr/lib/aarch64-linux-gnu/') for c in children for p in c['maps'])
+            checks['webkit']['pass_'] &= bool(re.search(r'Adreno.*830',result['renderer'],re.I)) and result['pixel']==[255,0,0,255] and bool(result['web_processes']) and bool(result['webgl_processes']) and all(c['maps'] and c['sandboxed'] for c in children) and all(p.startswith('/usr/lib/aarch64-linux-gnu/') for c in children for p in c['maps'])
         except (ValueError,KeyError,IndexError):checks['webkit']['pass_']=False
     vulkan=execute('vulkan',as_user(session,['vulkaninfo','--summary']))
     if vulkan:
