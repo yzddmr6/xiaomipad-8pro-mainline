@@ -1,0 +1,31 @@
+{
+  "build_root": {
+    "archive": "ubuntu-base-26.04-base-arm64.tar.gz",
+    "url": "https://cdimage.ubuntu.com/ubuntu-base/releases/26.04/release/ubuntu-base-26.04-base-arm64.tar.gz",
+    "sha256": "b2b46a37324ea1954e93f293fe6d7c2241daf2fc298c4022e6e4caceeed74cab"
+  },
+  "apt": {
+    "snapshot": "20260924T000000Z",
+    "uri": "https://snapshot.ubuntu.com/ubuntu/20260924T000000Z/",
+    "suites": [
+      "resolute",
+      "resolute-updates",
+      "resolute-security"
+    ],
+    "components": [
+      "main",
+      "universe"
+    ],
+    "note": "Archive signatures are checked with the keyring shipped in build_root; the pinned snapshot fixes the build-dependency versions."
+  },
+  "local_build_dependencies": [
+    {
+      "file": "gnome-settings-daemon-common_50.0-1ubuntu1+piano2_all.deb",
+      "sha256": "5e730d798c4443553f061294f1536190a04a3ba42ae1cdbe4a06a42b139f2c30"
+    },
+    {
+      "file": "gnome-settings-daemon-dev_50.0-1ubuntu1+piano2_arm64.deb",
+      "sha256": "c30f8a19a2802f4450c6bdcd99bcfbac2e73d2b43e55e4533759e8947ef95dc4"
+    }
+  ]
+}
