@@ -39,7 +39,7 @@ class DesktopIntegration(unittest.TestCase):
                 self.assertEqual(p.read_bytes(), (REPO / 'device/power/tuned/profiles' /
                                                  p.parent.name / 'tuned.conf').read_bytes())
             self.assertIn('tuned-ppd (>= 2.25.1)', control)
-            self.assertIn('gunyahvm (>= 1.0.0-1)', control)
+            self.assertIn('gunyahvm (>= 1.1.0-1)', control)
             self.assertTrue(os.access(root / 'usr/libexec/piano/gunyahvm-favorite', os.X_OK))
             self.assertIn('OnlyShowIn=GNOME;', (root / 'etc/xdg/autostart/piano-gunyahvm-favorite.desktop').read_text())
             dependencies = next(line for line in control.splitlines() if line.startswith('Depends: '))
