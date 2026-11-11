@@ -244,6 +244,7 @@ def main():
         copy(repo / 'device/boot/piano-emergency-android', support, 'usr/libexec/piano/piano-emergency-android', 0o755)
         copy(repo / 'device/boot/piano-boot-switch', support, 'usr/sbin/piano-boot-switch', 0o755)
         copy(repo / 'device/boot/piano-slot-success', support, 'usr/sbin/piano-slot-success', 0o755)
+        copy(repo / 'device/boot/switch-common.sh', support, 'usr/lib/piano/boot/switch-common.sh', 0o644)
         copy(repo / 'device/boot/piano_bootslot.py', support, 'usr/lib/piano/boot/piano_bootslot.py', 0o644)
         copy(a.thp_live, support, 'usr/libexec/piano/piano-thp-live', 0o755)
         copy(a.busybox, support, 'usr/libexec/piano/busybox', 0o755)

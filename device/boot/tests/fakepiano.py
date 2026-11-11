@@ -224,6 +224,10 @@ class FakePiano:
     def __init__(self, root, boot_lun_name='sde', layout='xiaomi', occupant='ubuntu',
                  ufs=(UFS_DEVICE, UFS_NODE, UFS_COMPATIBLE, UFS_DRIVER)):
         self.root = Path(root)
+        battery = self.root / 'sys/class/power_supply/battery'
+        battery.mkdir(parents=True)
+        (battery / 'type').write_text('Battery\n')
+        (battery / 'capacity').write_text('80\n')
         for d in ('proc/self', 'run', 'dev', 'etc/piano', 'sys/firmware/devicetree/base', 'var/lib/piano'):
             (self.root / d).mkdir(parents=True, exist_ok=True)
         self.ufs_device = ufs[0]

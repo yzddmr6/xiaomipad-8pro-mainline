@@ -17,6 +17,10 @@
 
 set -u
 
+. "${0%/*}/switch-common.sh"
+PROG=piano-switch
+DEV_DIR=
+
 : "${PIANO_PATH:=/system/bin}"
 PATH=$PIANO_PATH:$PATH
 export PATH
@@ -34,6 +38,7 @@ MNT=$PIANO_STATE/mnt
 LOCK=$PIANO_STATE/lock
 MOUNTED=0
 LOCKED=0
+[ "$PIANO_SWITCH_TEST" != 1 ] || DEV_DIR=$PIANO_STATE
 
 log() {
 	line="$(date '+%Y-%m-%dT%H:%M:%S%z') $*"
@@ -109,7 +114,7 @@ verify_set() {
 read_slot() {
 	for p in $NAMES; do
 		eval "n=\$NODE_$p"
-		sha "$n" || die "cannot read $n"
+		sha "$n" || { log "cannot read $n"; return 1; }
 		eval "CUR_$p=\$H"
 	done
 }
@@ -127,14 +132,26 @@ write_set() {
 	for p in $NAMES; do
 		eval "n=\$NODE_$p want=\$SUM_$1_$p"
 		log "writing $1/$p.img to ${p}_a"
-		dd if="$MNT/$PIANO_STORE/$1/$p.img" of="$n" bs=1048576 conv=notrunc,fsync 2>>"$LOG" ||
+		run_logged dd if="$MNT/$PIANO_STORE/$1/$p.img" of="$n" bs=1048576 conv=notrunc,fsync ||
 			{ log "dd failed on ${p}_a"; return 1; }
 		sha "$n" || { log "cannot read back ${p}_a"; return 1; }
 		[ "$H" = "$want" ] || { log "readback mismatch on ${p}_a: $H"; return 1; }
 		log "readback ok ${p}_a"
 	done
-	read_slot
+	read_slot || return 1
 	slot_is "$1" || { log "final readback of slot A differs from the $1 set"; return 1; }
+}
+
+finish_switch() {
+	[ "$CHECK" = 0 ] && [ "$REBOOT" = 1 ] || return 0
+	umount "$MNT" || { log 'FAILED: image ready, but unmount failed; not rebooting'; return 1; }
+	MOUNTED=0
+	sync
+	log "rebooting"
+	run_logged svc power reboot || {
+		log 'FAILED: Ubuntu images are ready, but reboot failed; save your work and reboot manually.'
+		return 1
+	}
 }
 
 CHECK=0
@@ -154,11 +171,9 @@ log "start: $([ "$CHECK" = 1 ] && echo check || echo switch), uid $(id -u)"
 [ "$PIANO_SWITCH_TEST" = 1 ] || [ "$(id -u)" = 0 ] || die "root is required"
 device=$(getprop ro.product.device)
 [ "$device" = piano ] || die "this is '$device', not piano"
-slot=$(grep '^androidboot\.slot_suffix' "$PIANO_BOOTCONFIG" 2>/dev/null)
-case $slot in
-*'"_a"') ;;
-*) die "active slot is not _a (bootconfig: ${slot:-unreadable})" ;;
-esac
+slot=$(switch_bootconfig_slots "$PIANO_BOOTCONFIG")
+[ "$slot" = _a ] || die "active slot is not _a (bootconfig: ${slot:-unreadable})"
+require_switch_battery
 
 mkdir "$LOCK" 2>/dev/null || die "another switch is running (or remove a stale $LOCK)"
 LOCKED=1
@@ -191,11 +206,12 @@ MOUNTED=1
 
 verify_set ubuntu
 verify_set android
-read_slot
+read_slot || die "cannot read slot A"
 log "slot A: init_boot $CUR_init_boot vendor_boot $CUR_vendor_boot boot $CUR_boot"
 if slot_is ubuntu; then
-	log "slot A already holds the ubuntu set; nothing written, not rebooting"
-	exit 0
+	log "slot A already holds the ubuntu set; nothing written"
+	finish_switch
+	exit $?
 fi
 slot_is android || die "slot A does not hold the stored android set; boot Ubuntu and run 'piano-boot-switch import-android' (or refresh /$PIANO_STORE/android) before switching from Android"
 if [ "$CHECK" = 1 ]; then
@@ -212,7 +228,13 @@ for p in $NAMES; do
 done
 if ! write_set ubuntu; then
 	log "restoring the android set"
-	if write_set android; then
+	restore_ok=1
+	for restore_part in $NAMES; do
+		eval "restore_node=\$NODE_$restore_part restore_want=\$SUM_android_$restore_part"
+		run_logged dd if="$MNT/$PIANO_STORE/android/$restore_part.img" of="$restore_node" bs=1048576 conv=notrunc,fsync || restore_ok=0
+		if ! sha "$restore_node" || [ "$H" != "$restore_want" ]; then restore_ok=0; fi
+	done
+	if [ "$restore_ok" = 1 ]; then
 		log "FAILED: slot A holds the android set again; not rebooting"
 		exit 2
 	fi
@@ -220,11 +242,6 @@ if ! write_set ubuntu; then
 	exit 3
 fi
 
-umount "$MNT" && MOUNTED=0
-sync
 log "switched: slot A holds the ubuntu set"
-if [ "$REBOOT" = 1 ]; then
-	log "rebooting"
-	svc power reboot
-fi
-exit 0
+finish_switch
+exit $?

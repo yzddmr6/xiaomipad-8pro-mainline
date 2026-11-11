@@ -22,6 +22,10 @@ if [ -x "$APPLETS/dd" ]; then REAL_DD=$APPLETS/dd; else REAL_DD=$(command -v dd)
 export REAL_DD
 
 T=$(mktemp -d)
+mkdir "$T/module"
+cp "$SCRIPT" "$T/module/"
+cp "$HERE/../../../boot/switch-common.sh" "$T/module/"
+SCRIPT=$T/module/piano-switch.sh
 trap 'chmod -R u+w "$T" 2>/dev/null; rm -rf "$T"' 0
 NAMES="init_boot vendor_boot boot"
 
@@ -43,7 +47,9 @@ STORE=src/var/lib/piano/switch
 setup() {
 	N=$((N + 1))
 	W=$T/case$N
-	mkdir -p "$W/byname" "$W/state" "$W/$STORE"
+	mkdir -p "$W/byname" "$W/state/power_supply/battery" "$W/$STORE"
+	printf 'Battery\n' > "$W/state/power_supply/battery/type"
+	printf '80\n' > "$W/state/power_supply/battery/capacity"
 	cp -r "$T/base/android" "$T/base/ubuntu" "$W/$STORE/"
 	for p in $NAMES; do
 		cp "$T/base/${1:-android}/$p.img" "$W/${p}_a"
@@ -151,12 +157,12 @@ check "no reboot" eval '! rebooted'
 check "cleaned up" clean
 end
 
-begin "slot already ubuntu: nothing written, no reboot"
+begin "slot already ubuntu: nothing written, still reboots"
 setup ubuntu; mkroot; run --
 check "rc 0" [ "$RC" = 0 ]
 check "message" has "already holds the ubuntu set"
 check "no writes" no_writes
-check "no reboot" eval '! rebooted'
+check "reboot" rebooted
 check "cleaned up" clean
 end
 
@@ -284,6 +290,37 @@ begin "rejects unknown arguments"
 setup; mkroot; run -- --force
 check "rc 64" [ "$RC" = 64 ]
 check "no writes" no_writes
+end
+
+for level in 39 unknown missing; do
+	begin "refuses battery $level before any write"
+	setup; mkroot
+	if [ "$level" = missing ]; then rm "$W/state/power_supply/battery/capacity"
+	else printf '%s\n' "$level" > "$W/state/power_supply/battery/capacity"; fi
+	run --
+	refused "$CASE" 1 '40%'
+	end
+done
+begin "battery 40 permits switching"
+setup; mkroot; echo 40 > "$W/state/power_supply/battery/capacity"; run --
+check 'rc 0' [ "$RC" = 0 ]; check 'reboot' rebooted
+end
+begin "conflicting bootconfig refuses slot"
+setup; mkroot; printf 'androidboot.slot_suffix = "_b"\nandroidboot.slot_suffix = "_a"\n' > "$W/bootconfig"; run --
+refused "$CASE" 1 'active slot is not _a'
+end
+begin "reboot failure is not success and keeps stderr"
+setup ubuntu; mkroot; run FAIL_REBOOT=1 --
+check 'rc nonzero' [ "$RC" != 0 ]
+check 'diagnostic retained' has 'INJECTED reboot failure'
+check 'diagnostic logged' grep -qF 'INJECTED reboot failure' "$W/state/switch.log"
+check 'no partition rewrite' no_writes
+end
+begin "already-target check and no-reboot suppress reboot"
+setup ubuntu; mkroot; run -- --check
+check 'rc 0' [ "$RC" = 0 ]; check 'no reboot' eval '! rebooted'
+run -- --no-reboot
+check 'rc 0' [ "$RC" = 0 ]; check 'no reboot' eval '! rebooted'
 end
 
 echo "$PASS passed, $FAIL failed ($TEST_SH${APPLETS:+, applets $APPLETS})"

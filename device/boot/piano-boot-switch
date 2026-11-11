@@ -33,6 +33,7 @@ from pathlib import Path
 import pwd
 import shutil
 import sys
+import subprocess
 
 sys.path.insert(0, '/usr/lib/piano/boot')
 import piano_bootslot as slot  # noqa: E402
@@ -58,8 +59,14 @@ def say(host, message, error=False):
     host.log(PROG, message, error)
     log = slot.store(host) / 'switch.log'
     if log.parent.is_dir():
-        with open(log, 'a') as f:
-            f.write(f'{now()} {"ERROR " if error else ""}{message}\n')
+        try:
+            with open(log, 'a') as f:
+                f.write(f'{now()} {"ERROR " if error else ""}{message}\n')
+        except OSError as exc:
+            # The journal and stderr already carry the result. A full log
+            # filesystem must not interrupt rollback or claim no writes.
+            print(f'{PROG}: cannot append switch.log: {exc}', file=sys.stderr, flush=True)
+            host.log(PROG, f'cannot append switch.log: {exc}', error=True)
 
 
 def record(host, command, result, parts, message):
@@ -109,8 +116,7 @@ class Context:
 
 
 def write_set(parts, directory, sums):
-    for n in slot.NAMES:
-        part = parts[n]
+    for n, part in parts.items():
         fd = os.open(part.node, os.O_RDWR | os.O_CLOEXEC)
         try:
             with open(directory / (n + '.img'), 'rb') as src:
@@ -191,11 +197,30 @@ def cmd_verify(host, args):
     return report
 
 
+def require_switch_battery(host):
+    helper = Path(slot.__file__).with_name('switch-common.sh')
+    result = subprocess.run(['sh', str(helper), '--battery',
+                             str(host.path('/sys/class/power_supply'))],
+                            capture_output=True, text=True)
+    if result.stderr:
+        say(host, result.stderr.rstrip(), error=True)
+    if result.returncode or not result.stdout.strip().isdigit():
+        raise slot.Refusal('battery-unknown',
+                           'Cannot read battery charge; switching requires at least 40%. '
+                           '无法读取电量，切换需要至少 40%。')
+    level = int(result.stdout.strip())
+    if level < 40:
+        raise slot.Refusal('battery-low',
+                           f'Battery {level}%; switching requires at least 40%. '
+                           '电量不足，切换需要至少 40%。')
+
+
 def cmd_switch(host, args):
     target = 'android' if args.command == 'to-android' else 'ubuntu'
     ctx = Context(host, write=not args.dry_run)
     report = {'target': target}
     with slot.slot_lock(host):
+        require_switch_battery(host)
         sums, _ = slot.known_sums(host)
         current = slot.occupant(slot.slot_hashes(ctx.parts), sums)
         report['occupant_before'] = current or 'unknown'
@@ -222,26 +247,35 @@ def cmd_switch(host, args):
         with slot.signals_blocked():
             try:
                 write_set(ctx.parts, directory, target_sums)
+                if slot.slot_hashes(ctx.parts) != target_sums:
+                    raise OSError('Final partition hashes differ from the target')
                 result, message = 'written', f'Slot A now holds store/{target}'
             except Exception as error:  # every failure must attempt the verified way back
                 message = f'Writing store/{target} failed: {error}'
                 try:
-                    write_set(ctx.parts, rollback, rollback_sums)
+                    errors = []
+                    for name, part in ctx.parts.items():
+                        try:
+                            write_set({name: part}, rollback, rollback_sums)
+                        except Exception as restore_error:
+                            errors.append(f'{name}: {restore_error}')
+                    if errors:
+                        raise OSError('; '.join(errors))
                     result, message = 'rolled-back', message + f'; store/{current} was written back'
                 except Exception as again:
                     result = 'rollback-failed'
                     message += (f'; writing store/{current} back also failed: {again}. '
                                 'Do not reboot into slot A; recover from Fastboot')
-            state = record(host, args.command, result, ctx.parts, message)
-            if result == 'written' and state['occupant'] != target:
-                result = 'final-mismatch'
-                message = f'Slot A does not read back as store/{target} after the write; recover from Fastboot'
+            say(host, message, error=result != 'written')
+            try:
                 state = record(host, args.command, result, ctx.parts, message)
+            except (OSError, ValueError, slot.Refusal) as error:
+                raise Failed(result if result != 'written' else 'record-failed',
+                             f'{message}; could not record final state: {error}; not rebooting') from error
             report['state'] = state
         report['result'] = result
         if result != 'written':
             raise Failed(result, message)
-        say(host, message)
         return report
 
 

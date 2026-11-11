@@ -6,11 +6,12 @@ set -eu
 HERE=$(cd "${0%/*}" && pwd)
 OUT=${1:?usage: build.sh OUTDIR}
 VERSION=$(sed -n 's/^version=//p' "$HERE/module/module.prop")
-FILES="module.prop customize.sh action.sh piano-switch.sh LICENSE"
+FILES="module.prop customize.sh action.sh piano-switch.sh switch-common.sh LICENSE"
 STAGE=$(mktemp -d)
 trap 'rm -rf "$STAGE"' 0
 cp "$HERE/module/module.prop" "$HERE/module/customize.sh" "$HERE/module/action.sh" \
 	"$HERE/module/piano-switch.sh" "$STAGE/"
+cp "$HERE/../../boot/switch-common.sh" "$STAGE/switch-common.sh"
 cp "$HERE/../../../LICENSE" "$STAGE/LICENSE"
 chmod 0644 "$STAGE"/*
 export TZ=UTC0

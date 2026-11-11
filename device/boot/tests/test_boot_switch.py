@@ -593,5 +593,97 @@ class Cli(unittest.TestCase):
             tool.main(['to-android', '--only-if-ubuntu'], host=slot.Host('/nonexistent'))
 
 
+
+class Battery(Base):
+    def test_battery_gate(self):
+        battery = self.p.root / 'sys/class/power_supply/battery'
+        for target in ('to-android', 'to-ubuntu'):
+            for value in ('0', '39', '', 'garbage', '-1', '101', '40.0'):
+                with self.subTest(target=target, value=value):
+                    (battery / 'capacity').write_text(value)
+                    self.p.host.events.clear()
+                    code = 'battery-low' if value in ('0', '39') else 'battery-unknown'
+                    self.refused(code, target, '--desktop')
+                    self.assertNotIn(['systemctl', 'reboot'], self.runs())
+        (battery / 'capacity').unlink()
+        self.refused('battery-unknown', 'to-android')
+        shutil.rmtree(battery.parent)
+        self.refused('battery-unknown', 'to-android')
+
+    def test_battery_notification(self):
+        (self.p.root / 'sys/class/power_supply/battery/capacity').write_text('39')
+        before = self.p.slot_content()
+        rc, report = self.run_tool('to-android', '--desktop',
+                                   env={'PKEXEC_UID': str(os.getuid())})
+        self.assertEqual((rc, report['code']), (1, 'battery-low'))
+        self.assertEqual(before, self.p.slot_content())
+        self.assertIn('40%', self.runs()[0][-4])
+        self.assertIn('40%', (self.store / 'switch.log').read_text())
+
+    def test_boundary_and_repeat_reboot(self):
+        (self.p.root / 'sys/class/power_supply/battery/capacity').write_text('40')
+        for target in ('android', 'ubuntu'):
+            rc, report = self.run_tool('to-' + target)
+            self.assertEqual(rc, 0, report)
+            with mock.patch.object(tool, 'write_set', side_effect=AssertionError('unexpected rewrite')):
+                rc, report = self.run_tool('to-' + target, '--desktop')
+            self.assertEqual((rc, report['result']), (0, 'unchanged'))
+            self.assertIn(['systemctl', 'reboot'], self.runs())
+            self.p.host.events.clear()
+
+    def test_status_and_verify_do_not_require_charge(self):
+        shutil.rmtree(self.p.root / 'sys/class/power_supply')
+        for command in ('status', 'verify'):
+            self.assertEqual(self.run_tool(command)[0], 0)
+
+
+class RecoveryFailures(Base):
+    def test_rollback_continues_after_one_restore_fails(self):
+        original = tool.write_set
+        calls = []
+
+        def write(parts, directory, sums):
+            calls.append((directory.name, tuple(parts)))
+            if directory.name == 'android':
+                original(parts, directory, sums)
+                raise OSError('target write failed')
+            if 'boot' in parts:
+                raise OSError('boot restore failed')
+            original(parts, directory, sums)
+
+        with mock.patch.object(tool, 'write_set', side_effect=write):
+            rc, report = self.run_tool('to-android', '--desktop')
+        self.assertEqual((rc, report['result']), (1, 'rollback-failed'))
+        self.assertEqual({name for kind, names in calls if kind == 'ubuntu' for name in names}, set(slot.NAMES))
+        content = self.p.slot_content()
+        for name in ('init_boot', 'vendor_boot'):
+            self.assertEqual(content[name], self.p.sets['ubuntu'][name])
+        self.assertNotIn(['systemctl', 'reboot'], self.runs())
+
+    def test_final_read_error_rolls_back(self):
+        original = slot.slot_hashes
+        calls = 0
+
+        def hashes(parts):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                raise OSError('final read failed')
+            return original(parts)
+
+        with mock.patch.object(slot, 'slot_hashes', side_effect=hashes):
+            rc, report = self.run_tool('to-android', '--desktop')
+        self.assertEqual((rc, report['result']), (1, 'rolled-back'))
+        self.assert_slot('ubuntu')
+
+    def test_record_failure_does_not_claim_nothing_written(self):
+        with mock.patch.object(tool, 'record', side_effect=OSError('disk full')):
+            rc, report = self.run_tool('to-android', '--desktop')
+        self.assertEqual((rc, report['result']), (1, 'record-failed'))
+        self.assert_slot('android')
+        self.assertNotIn('nothing was written', report['message'])
+        self.assertNotIn(['systemctl', 'reboot'], self.runs())
+
+
 if __name__ == '__main__':
     unittest.main()

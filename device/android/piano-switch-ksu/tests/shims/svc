@@ -2,3 +2,7 @@
 # SPDX-License-Identifier: MIT
 # Test shim: record the reboot request.
 echo "svc $*" >>"$SHIM_LOG"
+if [ "${FAIL_REBOOT:-0}" = 1 ]; then
+    echo 'INJECTED reboot failure' >&2
+    exit 1
+fi
