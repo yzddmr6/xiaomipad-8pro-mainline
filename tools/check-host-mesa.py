@@ -75,7 +75,7 @@ def webkit_probe():
                 while parent > 1 and parent not in ancestors and parent != os.getpid():
                     ancestors.add(parent)
                     parent=int(re.search(r'^PPid:\s+(\d+)',(Path('/proc')/str(parent)/'status').read_text(),re.M)[1])
-                if parent == os.getpid() and b'WebKitWebProcess' in cmd:
+                if parent == os.getpid() and Path(os.readlink(proc/'exe')).name == 'WebKitWebProcess':
                     maps=(proc/'maps').read_text()
                     records.append(dict(pid=int(proc.name),maps=sorted(set(re.findall(r'/\S*(?:libgallium|_dri)[^\s]*',maps))),
                         mount_namespace=os.readlink(proc/'ns/mnt'),
@@ -85,7 +85,10 @@ def webkit_probe():
 
     def activate(app):
         window=Gtk.ApplicationWindow(application=app);window.set_title('Graphics check');window.set_default_size(96,96)
-        view=WebKit.WebView();view.get_settings().set_enable_webgl(True)
+        context=WebKit.WebContext.new()
+        # GTK3 embedders must opt into WebKit's sandbox; GTK4 enables it by default.
+        if hasattr(context,'set_sandbox_enabled'):context.set_sandbox_enabled(True)
+        view=WebKit.WebView.new_with_context(context);view.get_settings().set_enable_webgl(True)
         if gtk4:window.set_child(view)
         else:window.add(view)
         def webgl_done(view, task, unused):
