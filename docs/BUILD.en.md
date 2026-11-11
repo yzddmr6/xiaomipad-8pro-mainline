@@ -216,7 +216,9 @@ Create a preceding batch containing all previous release archives and the exact
 installed Mesa/libdrm dependency versions. The transaction tool refuses missing
 rollback packages; see [UPGRADE](UPGRADE.en.md). `tools/check-host-mesa.py` checks a
 real graphical session, WebKit web process and running GunyahVM virgl guest;
-missing evidence fails. The older `build-mesa.sh` private prefix is for isolated
+missing required environments fail. Install `python3-gi`, `gir1.2-webkit2-4.1`
+(or the GTK4 `gir1.2-webkit-6.0`) and `vulkan-tools` for the check; these diagnostic
+dependencies are not imposed on a Mesa-only system. The older `build-mesa.sh` private prefix is for isolated
 diagnostics and the separate Snap workflow, not the host package layout.
 
 ## 6. Boot image set

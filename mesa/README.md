@@ -35,7 +35,7 @@ session retains its old mapped libraries until logout or reboot.
 `libdrm` 使用锁文件指定的 Ubuntu 原样二进制，不重建、不钉版本。
 `tools/fetch-host-mesa.py` 下载并校验全部固定输入；在独立 ARM64 resolute
 根中执行 `build-host-mesa.py prepare` 和 `build-host-mesa.py build`。
-完整调用见 [BUILD](../docs/BUILD.md)。构建根须有
+完整调用见 [BUILD](https://github.com/yzddmr6/xiaomipad-8pro-mainline/blob/main/docs/BUILD.md)。构建根须有
 `/etc/mesa-disposable-build-root`，不能在已安装的桌面系统中直接运行构建动作。
 
 `tools/package-mesa.py --mesa-build BUILD --output OUTPUT --version VERSION
@@ -45,7 +45,7 @@ session retains its old mapped libraries until logout or reboot.
 Mesa 精确版本优先级 1001，其他版本 -1。更新前必须整组重建，退出本机补丁后
 发布同时撤下 pin 和精确依赖的过渡包，或让桌面包直接依赖发行版运行库；版本排序本身不绕过精确钉版本。发布检查须比较 Ubuntu 的基线更新。
 
-安装与整版回退使用 [UPGRADE](../docs/UPGRADE.md) 中的批次命令。
+安装与整版回退使用 [UPGRADE](https://github.com/yzddmr6/xiaomipad-8pro-mainline/blob/main/docs/UPGRADE.md) 中的批次命令。
 过渡包撤除自己旧版本拥有的 `/opt` 文件和注册项；不删除其他包或管理员拥有的文件。
 Snap provider 使用独立运行时和既有配方，宿主升级不改变它。
 

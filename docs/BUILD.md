@@ -202,7 +202,9 @@ Ubuntu 输入里被这些显式包替换的同名版本不重复安装。不要�
 迁移前用 `release-repository.py create` 把上一版发布包与原来安装的 Mesa/libdrm
 依赖精确版本组成上一批仓库。升级工具会拒绝缺少回退包的批次，详见
 [UPGRADE](UPGRADE.md)。运行时守卫为 `tools/check-host-mesa.py`，需要实际图形会话、
-WebKit 网页进程和正在运行的 GunyahVM virgl 来宾；缺证据会失败。
+WebKit 网页进程和正在运行的 GunyahVM virgl 来宾；缺少所需环境会失败。
+检查环境安装 `python3-gi`、`gir1.2-webkit2-4.1`（或 GTK4 的 `gir1.2-webkit-6.0`）
+和 `vulkan-tools`；这些诊断依赖不强加给只使用 Mesa 的系统。
 
 ## 6. 启动镜像组
 
