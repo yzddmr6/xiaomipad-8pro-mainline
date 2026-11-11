@@ -1,6 +1,6 @@
 # gnome-control-center：电源键锁屏动作与关于页作者行源包补丁
 
-固定 Ubuntu 26.04 源包 `1:50.3-0ubuntu0.2`，本地版本 `1:50.3-0ubuntu0.2+piano1`。
+固定 Ubuntu 26.04 源包 `1:50.3-0ubuntu0.2`，本地版本 `1:50.3-0ubuntu0.2+piano2`。
 已完成源包认证与 ARM64 构建；配套运行时包的固定摘要与发布接入见 [Ubuntu 集成](../README.md)。
 补丁按原文件 GPL-2.0-or-later 分发，许可见 [COPYING](COPYING)，不适用集成仓的 MIT 许可。
 

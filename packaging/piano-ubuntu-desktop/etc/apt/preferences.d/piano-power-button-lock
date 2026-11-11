@@ -6,7 +6,7 @@ Pin: version 50.0-1ubuntu1+piano2
 Pin-Priority: 1001
 
 Package: gnome-control-center gnome-control-center-data
-Pin: version 1:50.3-0ubuntu0.2+piano1
+Pin: version 1:50.3-0ubuntu0.2+piano2
 Pin-Priority: 1001
 
 Package: gnome-settings-daemon gnome-settings-daemon-common gnome-control-center gnome-control-center-data
