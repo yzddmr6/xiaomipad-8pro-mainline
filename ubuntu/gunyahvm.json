@@ -1,27 +1,40 @@
 {
   "schema": 1,
-  "version": "1.0.1-1",
+  "version": "1.1.0-1",
   "desktop_id": "io.github.yzddmr6.GunyahVM.desktop",
   "packages": [
     {
       "package": "gunyahvm",
-      "file": "gunyahvm_1.0.1-1_arm64.deb",
-      "sha256": "1c208ea33086dc334b3ec0ee316d56d963421e78886ea2009346cde30cd52ac0"
+      "version": "1.1.0-1",
+      "architecture": "arm64",
+      "file": "gunyahvm_1.1.0-1_arm64.deb",
+      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.1.0/gunyahvm_1.1.0-1_arm64.deb",
+      "sha256": "aab1e84535dbf9fde2633f8ae4061c6bf7597e3c2bad989fe7e3ad1043e09492"
     },
     {
       "package": "gunyahvm-runtime",
-      "file": "gunyahvm-runtime_1.0.1-1_arm64.deb",
-      "sha256": "05e73519f23a42c81fd832a50aa07fa5a1090e524a028ff43026f3d04c72aa0a"
+      "version": "1.1.0-1",
+      "architecture": "arm64",
+      "file": "gunyahvm-runtime_1.1.0-1_arm64.deb",
+      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.1.0/gunyahvm-runtime_1.1.0-1_arm64.deb",
+      "sha256": "86fbe3a5a6c81ccccf844cfeab2f4e54f4a7516b7404f4fd58b5b3142234a870"
     },
     {
       "package": "gunyahvm-guest-kernel",
-      "file": "gunyahvm-guest-kernel_1.0.1-1_arm64.deb",
-      "sha256": "ced77217e3f29d3d3fe310fca61a1fb503d0774b94a88afc5b64ec468a8dc127"
+      "version": "1.1.0-1",
+      "architecture": "arm64",
+      "file": "gunyahvm-guest-kernel_1.1.0-1_arm64.deb",
+      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.1.0/gunyahvm-guest-kernel_1.1.0-1_arm64.deb",
+      "sha256": "71daab1beefc22fb343bf7aedbc765b48542035488019ba3b1653129ddc072a3"
     },
     {
       "package": "gunyahvm-guest-mesa",
-      "file": "gunyahvm-guest-mesa_1.0.1-1_arm64.deb",
-      "sha256": "6d98ee7dc1e407b13c99df4bcc6465d68996b84bb648232f4f03acf4ffbc15ad"
+      "version": "1.1.0-1",
+      "architecture": "arm64",
+      "file": "gunyahvm-guest-mesa_1.1.0-1_arm64.deb",
+      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.1.0/gunyahvm-guest-mesa_1.1.0-1_arm64.deb",
+      "sha256": "5af1c4baac5e13570dc0046a788ef3e82a0fb7eaf191670811739cb96f89d578"
     }
-  ]
+  ],
+  "release_url": "https://github.com/yzddmr6/GunyahVM/releases/tag/v1.1.0"
 }
