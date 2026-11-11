@@ -1,7 +1,7 @@
 # gnome-control-center：电源键锁屏动作与关于页作者行源包补丁
 
-固定 Ubuntu 26.04 源包 `1:50.0-0ubuntu6`，本地版本 `1:50.0-0ubuntu6+piano2`。
-已完成源包认证与 ARM64 原生构建；配套运行时包的固定摘要与发布接入见 [Ubuntu 集成](../README.md)。
+固定 Ubuntu 26.04 源包 `1:50.3-0ubuntu0.2`，本地版本 `1:50.3-0ubuntu0.2+piano1`。
+已完成源包认证与 ARM64 构建；配套运行时包的固定摘要与发布接入见 [Ubuntu 集成](../README.md)。
 补丁按原文件 GPL-2.0-or-later 分发，许可见 [COPYING](COPYING)，不适用集成仓的 MIT 许可。
 
 ## 行为与来源
@@ -68,7 +68,7 @@ for item in lock['patches']:
     assert digest(pathlib.Path(sys.argv[1]).parent / item['file']) == item['sha256']
 assert digest(pathlib.Path(sys.argv[1]).parent / 'changelog-entry') == lock['changelog_entry_sha256']
 VERIFY
-dpkg-source -x gnome-control-center_50.0-0ubuntu6.dsc source
+dpkg-source -x gnome-control-center_50.3-0ubuntu0.2.dsc source
 cp "$assets/power-button-lock.patch" source/debian/patches/piano-power-button-lock.patch
 cp "$assets/about-author.patch" source/debian/patches/piano-about-author.patch
 printf '\n%s\n%s\n' piano-power-button-lock.patch piano-about-author.patch >>source/debian/patches/series
@@ -80,6 +80,8 @@ mv source/debian/changelog.new source/debian/changelog
 
 随后在独立 Ubuntu 26.04 ARM64 构建环境安装源包声明的 Build-Depends，运行
 `dpkg-buildpackage -b -us -uc`，保留 buildinfo/changes、工具版本和所有 deb 的 SHA256。
+[build-root.json](build-root.json) 固定 Ubuntu Base、APT 快照和本地 GSD 构建依赖的摘要；
+x86 主机使用 qemu-user 时设置 `QEMU_CPU=max,pauth-impdef=on`。
 先构建并安装 GSD 的 dev/common 包到构建环境，再构建控制中心。不要用 `-d` 绕过依赖检查。
 设备包打包器不编译 GNOME 源包；使用上述发行版构建流程，发布时显式传入配套运行时 deb。
 

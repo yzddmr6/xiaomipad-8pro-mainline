@@ -799,31 +799,31 @@
       "preservation": "D"
     },
     {
-      "name": "gnome-control-center_50.0.orig.tar.xz",
-      "filename": "20e8d5b13b9f390581004cab34b74372c0ff4a16f9c11bffd93d8386fbcdeeb3-gnome-control-center_50.0.orig.tar.xz",
-      "sha256": "20e8d5b13b9f390581004cab34b74372c0ff4a16f9c11bffd93d8386fbcdeeb3",
+      "name": "gnome-control-center_50.3.orig.tar.xz",
+      "filename": "06eebb0fd3056c4d8d78bbd3754c96108f381d70b760da423c5024946944287c-gnome-control-center_50.3.orig.tar.xz",
+      "sha256": "06eebb0fd3056c4d8d78bbd3754c96108f381d70b760da423c5024946944287c",
       "upstream": [
-        "https://snapshot.ubuntu.com/ubuntu/20261015T000000Z/pool/main/g/gnome-control-center/gnome-control-center_50.0.orig.tar.xz"
+        "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/main/g/gnome-control-center/gnome-control-center_50.3.orig.tar.xz"
       ],
       "recipe": "ubuntu/gnome-control-center/source.json",
       "preservation": "D"
     },
     {
-      "name": "gnome-control-center_50.0-0ubuntu6.debian.tar.xz",
-      "filename": "b94b041ccc08cc3cc6a198405a0e745f27bca22ea1407fc42b95e20053b29021-gnome-control-center_50.0-0ubuntu6.debian.tar.xz",
-      "sha256": "b94b041ccc08cc3cc6a198405a0e745f27bca22ea1407fc42b95e20053b29021",
+      "name": "gnome-control-center_50.3-0ubuntu0.2.debian.tar.xz",
+      "filename": "1a3f03ee31cad2a2652727919ce50ef41a3a71278ae565051444e765ea38150b-gnome-control-center_50.3-0ubuntu0.2.debian.tar.xz",
+      "sha256": "1a3f03ee31cad2a2652727919ce50ef41a3a71278ae565051444e765ea38150b",
       "upstream": [
-        "https://snapshot.ubuntu.com/ubuntu/20261015T000000Z/pool/main/g/gnome-control-center/gnome-control-center_50.0-0ubuntu6.debian.tar.xz"
+        "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/main/g/gnome-control-center/gnome-control-center_50.3-0ubuntu0.2.debian.tar.xz"
       ],
       "recipe": "ubuntu/gnome-control-center/source.json",
       "preservation": "D"
     },
     {
-      "name": "gnome-control-center_50.0-0ubuntu6.dsc",
-      "filename": "343381fe6c233a914924cc57940d31bbb7a4ce82b7dbb89d3c957f492b25cd3a-gnome-control-center_50.0-0ubuntu6.dsc",
-      "sha256": "343381fe6c233a914924cc57940d31bbb7a4ce82b7dbb89d3c957f492b25cd3a",
+      "name": "gnome-control-center_50.3-0ubuntu0.2.dsc",
+      "filename": "5492fede7a7499080ef0b7f375c32c24894bad43504199229a1a68d564ab5562-gnome-control-center_50.3-0ubuntu0.2.dsc",
+      "sha256": "5492fede7a7499080ef0b7f375c32c24894bad43504199229a1a68d564ab5562",
       "upstream": [
-        "https://snapshot.ubuntu.com/ubuntu/20261015T000000Z/pool/main/g/gnome-control-center/gnome-control-center_50.0-0ubuntu6.dsc"
+        "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/main/g/gnome-control-center/gnome-control-center_50.3-0ubuntu0.2.dsc"
       ],
       "recipe": "ubuntu/gnome-control-center/source.json",
       "preservation": "D"
