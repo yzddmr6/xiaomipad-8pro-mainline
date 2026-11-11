@@ -81,9 +81,10 @@ def validate_notes(notes, version):
             raise ValueError('each release update must start with a bold label')
         if support not in half or 'SHA256SUMS.assets' not in half:
             raise ValueError('release support or download guidance is missing')
+        license_lines = [line for line in half.splitlines() if line.startswith(licensing)]
         last = half.strip().splitlines()[-1]
-        if not last.startswith(licensing) or 'https://launchpad.net/ubuntu/+source/busybox/' not in last:
-            raise ValueError('release body must end with licensing and the BusyBox source link')
+        if len(license_lines) != 1 or 'https://launchpad.net/ubuntu/+source/busybox/' not in license_lines[0] or '/docs/INSTALL' not in last:
+            raise ValueError('release body needs licensing, the BusyBox source link and final installation links')
 
 
 def render_notes(rootfs, stock_build, integration_commit, kernel_source, changes):

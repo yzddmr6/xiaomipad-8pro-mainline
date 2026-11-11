@@ -105,7 +105,7 @@ if [ -d "$IN/release-repository" ]; then
     install -d "$T/var/lib/piano/releases/$batch"
     cp -a "$IN/release-repository/." "$T/var/lib/piano/releases/$batch/"
     printf 'deb [trusted=yes] file:/var/lib/piano/releases/%s ./\n' "$batch" > "$T/etc/apt/sources.list.d/piano-release.list"
-    in_target apt-get -o Dir::Etc::sourcelist=piano-release.list -o Dir::Etc::sourceparts=- \
+    in_target apt-get -o Dir::Etc::sourcelist=/etc/apt/sources.list.d/piano-release.list -o Dir::Etc::sourceparts=- \
         -o APT::Get::List-Cleanup=0 update
     install -d "$T/var/cache/apt/archives"
     for deb in "$T/var/lib/piano/releases/$batch/pool/"*.deb; do

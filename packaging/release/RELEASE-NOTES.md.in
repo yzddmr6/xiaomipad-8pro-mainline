@@ -20,6 +20,8 @@ $limits_zh
 
 来源与许可：见 [README 致谢与许可证]($repo_url/blob/$release_name/README.md#致谢与许可证)；维护镜像内 BusyBox $busybox_version 的对应源码见 [Ubuntu 源码包](https://launchpad.net/ubuntu/+source/busybox/$busybox_version)。
 
+[安装说明]($repo_url/blob/$release_name/docs/INSTALL.md) · [升级与回退]($repo_url/blob/$release_name/docs/UPGRADE.md)
+
 ---
 
 # Ubuntu for Xiaomi Pad 8 Pro $release_name$title_suffix_en
@@ -43,3 +45,5 @@ $limits_en
 Kernel: Linux $kernel_version; stock baseline: `$stock_build` (slot A). Full hardware support is listed in the [README hardware support table]($repo_url/blob/$release_name/README.en.md#hardware-support).
 
 Sources and licensing: see [README acknowledgments and licensing]($repo_url/blob/$release_name/README.en.md#acknowledgments-and-licensing); the maintenance image's BusyBox $busybox_version source is available as an [Ubuntu source package](https://launchpad.net/ubuntu/+source/busybox/$busybox_version).
+
+[Installation guide]($repo_url/blob/$release_name/docs/INSTALL.en.md) · [Upgrade and rollback]($repo_url/blob/$release_name/docs/UPGRADE.en.md)
