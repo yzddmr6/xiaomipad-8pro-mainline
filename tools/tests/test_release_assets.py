@@ -32,9 +32,7 @@ def notes_for(version='v1.2.3', update='- **Test**: Keep $literal and `code`.'):
 
 
 def write_sums(directory):
-    paths = sorted(p for p in directory.rglob('*') if p.is_file() and p.name != 'SHA256SUMS')
-    # Include the independent boot/SHA256SUMS too.
-    paths += [directory / 'boot/SHA256SUMS']
+    paths = sorted(p for p in directory.rglob('*') if p.is_file() and p != directory / 'SHA256SUMS')
     (directory / 'SHA256SUMS').write_text(''.join(
         f'{tool.sha(p)}  {p.relative_to(directory).as_posix()}\n' for p in paths))
 
@@ -51,6 +49,9 @@ def release(tmp_path):
         'optional/virtualization/piano-vm.deb': b'optional VM package',
         'optional/virtualization/piano-vm-windows.deb': b'optional Windows package',
         'optional/virtualization/piano-virtualization-source.tar.zst': b'corresponding source',
+        'repositories/piano-test/pool/libgbm-dev.deb': b'optional same-source package',
+        'repositories/piano-test/Packages': b'local APT index',
+        'repositories/piano-test/SHA256SUMS': b'local repository checksums',
         'debs/package.deb': b'deb data', 'tools/switch.py': b'#!/usr/bin/python3\n',
         'rootfs/root.sparse.img': os.urandom(24_000), 'rootfs/manifest.json': b'{}\n',
         'rootfs/verification.json': b'{"passed": true}\n',
@@ -93,6 +94,9 @@ def test_roundtrip_and_documented_shell_commands(release, tmp_path, part_bytes):
     assert 'optional/virtualization/piano-vm.deb' in package_zip['contents']
     assert 'optional/virtualization/piano-vm-windows.deb' in package_zip['contents']
     assert 'optional/virtualization/piano-virtualization-source.tar.zst' in package_zip['contents']
+    assert 'repositories/piano-test/pool/libgbm-dev.deb' in package_zip['contents']
+    assert 'repositories/piano-test/Packages' in package_zip['contents']
+    assert 'repositories/piano-test/SHA256SUMS' in package_zip['contents']
     parts = manifest['rootfs_parts']
     assert all((assets / n).stat().st_size == part_bytes for n in parts[:-1])
     # Exercise exactly the user-facing shell recipe as well as the Python CLI.

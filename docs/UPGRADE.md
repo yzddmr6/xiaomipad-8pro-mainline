@@ -7,6 +7,54 @@
 
 发布附件里的 `piano-ubuntu-<版本>-packages.zip` 就是升级包：解压后 `debs/` 下是该版本安装在镜像里的全部项目软件包。总是整组一起安装，不要只装其中一个。
 
+
+## 1.2.0 → 1.2.1
+
+⟦DRAFT:完整离线 APT 与真机迁移、回退门槛⟧
+
+宿主 Mesa 改为 Ubuntu 同名包，安装到标准多架构目录，使网页进程和其他沙箱
+能够使用设备驱动。保留原驱动版本和补丁；Snap 图形提供者不变。
+升级附件包含按整版组织的 `repositories/piano-1.2.1/`，完整 Mesa 同源包
+供以后安装开发包和 OpenCL 使用，默认只安装桌面所需子集。
+libdrm 使用 Ubuntu 原样包，不钉版本，后续正常接收 Ubuntu 更新。
+
+先校验发布附件的校验文件，并解压新、旧两批仓库。旧批次必须包括已安装发布包
+及其 Mesa/libdrm 依赖的精确版本；缺包时升级工具会拒绝继续，不会仅保存启动镜像。
+把两个仓库目录传到平板后，在平板运行：
+
+```sh
+sudo systemd-run --unit=piano-release-upgrade --setenv=DEBIAN_FRONTEND=noninteractive \
+  /usr/bin/python3 /home/<USER>/repositories/piano-1.2.1/install.py upgrade \
+  /home/<USER>/repositories/piano-1.2.1 \
+  --previous /home/<USER>/repositories/piano-1.2.0
+journalctl -f -u piano-release-upgrade
+sudo dpkg --audit
+sudo reboot
+```
+
+工具将完整批次保留在 `/var/lib/piano/releases/`，在修改包之前保存当前启动
+镜像组及已安装包版本。相同批次可重复运行；若安装中断，先运行
+`sudo dpkg --configure -a`、`sudo apt-get -f install`，再重跑同一升级命令。
+已有个人文件和应用数据不在回退范围内。
+
+### 整版回退
+
+通过终端或开发者 SSH 通道运行；无图形界面时也可使用。不要先切回旧内核。
+
+```sh
+sudo systemd-run --unit=piano-release-rollback --setenv=DEBIAN_FRONTEND=noninteractive \
+  /usr/bin/python3 /var/lib/piano/releases/piano-1.2.1/install.py rollback --product piano
+journalctl -f -u piano-release-rollback
+sudo dpkg --audit
+sudo reboot
+```
+
+回退先把发布管理的用户态包整组恢复为上一批精确版本，随后恢复已保存的启动镜像组。
+Mesa 回退会恢复旧的 `/opt` 库和注册，并移除新过渡包拥有的精确钉版本文件。
+任一步失败都会停止，不会宣布回退完成。新旧仓库及启动镜像组应保留到新版本稳定。
+Fastboot 仅恢复启动分区，不能恢复用户态包；只能进入恢复系统时，先修复根分区内的
+软件包，再使用对应旧启动组。不要把“换回启动镜像”当作整版回退。
+
 ## 从 v1.1.1 升级到 v1.2.0
 
 已安装 Waydroid 且网页黑屏或加载不完整的用户，请按 [Waydroid 指南](WAYDROID.md#浏览器和应用登录页黑屏)应用 OMX 声明覆盖修正；系统升级不会修改 Android 镜像。

@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""Stage the locked, isolated Mesa build for a RAM diagnostic (no device I/O)."""
+"""Stage the isolated Mesa build for RAM diagnostics only (no device I/O).
+
+Host packages use build-host-mesa.py and package-mesa.py. This diagnostic prefix
+check never constrains their standard multiarch installation paths."""
 import argparse
 import hashlib
 import json
@@ -35,7 +38,7 @@ def main():
             raise ValueError('Mesa additional patch differs from the recorded build')
     prefix = lock['prefix'].lstrip('/')
     if not prefix.startswith('opt/piano/') or '..' in Path(prefix).parts:
-        raise ValueError('Mesa must remain in its isolated /opt/piano prefix')
+        raise ValueError('RAM diagnostic Mesa must use its isolated /opt/piano prefix')
     source = args.mesa_build / 'stage'
     tree = source / prefix
     files, links = {}, {}

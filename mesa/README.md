@@ -23,15 +23,31 @@ lifetimes. This is a concurrency regression, not complete GPU or suspend
 coverage. A new process must load the updated libraries; an existing desktop
 session retains its old mapped libraries until logout or reboot.
 
-The installed package needs no environment: it registers its prefix with the
-dynamic linker in `/etc/ld.so.conf.d/00-piano-mesa.conf`, ahead of the
-distribution directories, so every process resolves Mesa's libraries to this
-build. The variables above only select a candidate build that is not installed.
+⟦DRAFT:离线候选与真机迁移门槛⟧
 
-Build only the desktop package with `tools/build-device-debs.py --mesa-only
---mesa-build BUILD --output OUTPUT --version VERSION`. The builder validates
-the source lock and every payload file. The snap provider must be rebuilt
-separately; changing the desktop deb does not update an installed snap.
+宿主采用 [Ubuntu 回移打包锁](ubuntu/source.json)：Canonical 的 resolute
+`26.2.4-1ubuntu1~26.04.1` 打包加上游 26.2.6，六个补丁内容不变。
+`build-host-mesa.py` 保留 Ubuntu arm64 驱动集、GLVND、编译加固与测试。
+产物为发行版同名包，安装到 `/usr/lib/aarch64-linux-gnu`；EGL 和 Vulkan
+沿用发行版注册目录。`piano-mesa` 仅保留过渡依赖与自动生成的精确版本策略。
+标准路径下运行上述压力测试时，直接执行 `./shared-context-stress Adreno`。
+
+`libdrm` 使用锁文件指定的 Ubuntu 原样二进制，不重建、不钉版本。
+`tools/fetch-host-mesa.py` 下载并校验全部固定输入；在独立 ARM64 resolute
+根中执行 `build-host-mesa.py prepare` 和 `build-host-mesa.py build`。
+完整调用见 [BUILD](../docs/BUILD.md)。构建根须有
+`/etc/mesa-disposable-build-root`，不能在已安装的桌面系统中直接运行构建动作。
+
+`tools/package-mesa.py --mesa-build BUILD --output OUTPUT --version VERSION
+--release-id BATCH --ubuntu-inputs INPUTS` 生成过渡包及版本化本地 APT 仓库。
+整组同源二进制保留在仓库中，包括后装的开发包和 OpenCL 包；默认桌面仅安装
+运行时子集。包名单由 `debian/control`、原生构建选中的二进制及实际产物核对生成，
+Mesa 精确版本优先级 1001，其他版本 -1。更新前必须整组重建，退出本机补丁后
+发布同时撤下 pin 和精确依赖的过渡包，或让桌面包直接依赖发行版运行库；版本排序本身不绕过精确钉版本。发布检查须比较 Ubuntu 的基线更新。
+
+安装与整版回退使用 [UPGRADE](../docs/UPGRADE.md) 中的批次命令。
+过渡包撤除自己旧版本拥有的 `/opt` 文件和注册项；不删除其他包或管理员拥有的文件。
+Snap provider 使用独立运行时和既有配方，宿主升级不改变它。
 
 Remove the local shared-context change when the pinned upstream contains an
 equivalent fix and the regression passes. No upstream submission is implied.
@@ -46,18 +62,10 @@ fence alone must not suppress implicit synchronization.
 sequence allocator fix, including its original attribution. A830 revision-1
 speedbin matching and the shared-context publication fix remain necessary.
 
-Both desktop and gpu-2404 use `tools/build-mesa.py`, `--optimization=2` and
-`b_ndebug=true`. Configuration and target compile commands are checked before
-compilation. The desktop uses a private prefix, non-GLVND Mesa libraries and
-Turnip; gpu-2404 retains its GLVND provider layout. Both include softpipe.
-`tools/build-mesa.sh` is only a compatibility wrapper around this recipe.
-
-`piano-mesa` supplies the common desktop binaries. The OnePlus integration uses
-an `erhai-mesa` transitional package depending on it; there is no second Mesa
-binary build. Once all supported upgrade paths have migrated and desktop
-metapackages depend directly on `piano-mesa`, the transitional package can be
-retired. The source lock, patches and recipe are maintained here; downstream
-imports record this repository's commit and file hashes.
+宿主包使用 Ubuntu 的 `debian/rules`。`build-mesa.py`、`build-mesa.sh` 与
+`prepare-mesa-initramfs.py` 的隔离前缀只用于既有诊断配方和 snap 构建，
+不再决定宿主产品的安装目录。OnePlus 使用同一组宿主 Mesa 二进制，
+通过 `erhai-mesa` 过渡包迁移；来源仓库提交和文件哈希由下游导入记录保存。
 
 `turnip-a8xx-runtime-unroll.patch` adds bounded runtime loop unrolling and read scheduling for A8xx compute shaders; remove it when the pinned upstream includes equivalent changes.
 `turnip-ssbo-wide-reads.patch` uses exact-width aligned read-only SSBO accesses with matching descriptor strides; remove it when the pinned upstream includes equivalent changes.

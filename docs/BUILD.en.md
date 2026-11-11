@@ -136,12 +136,11 @@ make -C device/piano-thp OUT="$PWD/out/piano-thp-arm64" CXX=aarch64-linux-gnu-g+
   JSON_INCLUDE="$PWD/out/json-include" LDFLAGS='-static-libstdc++ -static-libgcc -Wl,-z,relro,-z,now' \
   all test RUNNER='qemu-aarch64-static -L /usr/aarch64-linux-gnu'
 # expect three "PASS:" lines from the unit tests run under qemu-user
-# Mesa 26.2.6 with the A830 patch
-MESA_SOURCE_ARCHIVE=<official Mesa archive> CROSS_FILE=<arm64 cross file> TARGET_ROOT=<arm64 SDK> \
-  OUT_DIR="$PWD/out/mesa" bash tools/build-mesa.sh
+# Prepare the complete Ubuntu host Mesa cohort as described below.
 # piano-device-support, piano-mesa, piano-ubuntu-desktop
 python3 tools/build-device-debs.py --output out/device-debs --version 0.1+<YYYYMMDD>.<n> \
-  --thp-live out/piano-thp-arm64/piano-thp-live --mesa-build out/mesa \
+  --thp-live out/piano-thp-arm64/piano-thp-live --mesa-build out/host-mesa-build \
+  --release-id piano-<release> --mesa-ubuntu-inputs out/host-mesa-inputs \
   --busybox tools/local/busybox-arm64/usr/bin/busybox --avbtool tools/local/aosp-avb/avbtool.py
 # capture topology (AudioReach checkout at device/audio/source.json), then piano-local-firmware
 mkdir -p out/audio
@@ -170,13 +169,55 @@ python3 tools/build-firmware-deb.py --topology out/audio/Piano-Capture-Diag-tplg
 
   The v0.6.1 `piano-thp-live` (SHA-256 `a6d6c50b670333740b4e4cd3a0fd03d469158c00d462fb4ac69321c77b9400ba`) was built this way, with the unpacked g++, and
   rebuilds byte-identically from tag v0.6.1.
-- `build-mesa.sh` calls the shared `build-mesa.py` recipe and verifies the official archive against `mesa/source.json`. Mesa installs under
-  `/opt/piano/mesa-26.2.6` and does not replace Ubuntu's Mesa packages.
+- `build-mesa.sh` calls the shared `build-mesa.py` recipe and verifies the official archive against `mesa/source.json`. The isolated prefix is used only for diagnostics and the separate Snap workflow; host packages use the Ubuntu recipe below.
 - `build-firmware-deb.py` takes `firmware/` by default; `--firmware-tree <dir>` uses your own
   extraction in the same layout. Every file is checked against its lock.
 - Raise `--version` on every device package rebuild so that dpkg installs it as an upgrade.
 
 For 1.2.0, use `--version 1.2.0.1` for device support and `--version 1.2.0.2` for desktop integration; use `--release-version 1.2.0` for both.
+
+## Host Mesa packages and local release repositories
+
+⟦DRAFT:offline candidate and device migration gates⟧
+
+[mesa/ubuntu/source.json](../mesa/ubuntu/source.json) fixes the Canonical resolute
+backport packaging, archive snapshots and authenticated hashes. Build upstream
+26.2.6 with the six unchanged patches, Ubuntu's complete ARM64 driver selection,
+GLVND and distribution build flags. libdrm uses original Ubuntu binaries and is
+not rebuilt or pinned. The Snap provider retains its separate build recipe.
+
+```sh
+python3 tools/fetch-host-mesa.py --output out/host-mesa-inputs
+python3 tools/build-host-mesa.py prepare --inputs out/host-mesa-inputs --work out/host-mesa-build
+# Inside an isolated ARM64 resolute build root, configure the locked snapshots,
+# copy the checkout/inputs/work there and install build-essential, dpkg-dev, python3.
+sudo touch /etc/mesa-disposable-build-root
+sudo python3 tools/build-host-mesa.py build --inputs out/host-mesa-inputs \
+  --work out/host-mesa-build --jobs "$(nproc)"
+python3 tools/package-mesa.py --mesa-build out/host-mesa-build --output out/host-mesa-package \
+  --version <increasing-transition-version> --release-id piano-<release> \
+  --ubuntu-inputs out/host-mesa-inputs --release-packages <other-release-packages>
+```
+
+Use disk-backed build storage. Prefer native ARM64; qemu-user requires
+`QEMU_CPU=max,pauth-impdef=on`. Retain `.buildinfo`, `.changes`, package inventories
+and build-environment versions. Deliver all binary packages from the source,
+including development and OpenCL packages; install only the runtime subset.
+
+Pass the complete batch to both `build-rootfs-image.py` and `build-release.py`
+with `--release-repository`. The root retains the local repository, while explicit
+`--deb` arguments select only runtime and device packages. Matching explicit
+packages supersede older Ubuntu inputs. APT resolves other dependencies from the
+local pool. Do not pass the entire Mesa pool as `--deb`. The attachment builder
+includes the complete repository in the packages archive and checks its identity
+against the root-image input.
+
+Create a preceding batch containing all previous release archives and the exact
+installed Mesa/libdrm dependency versions. The transaction tool refuses missing
+rollback packages; see [UPGRADE](UPGRADE.en.md). `tools/check-host-mesa.py` checks a
+real graphical session, WebKit web process and running GunyahVM virgl guest;
+missing evidence fails. The older `build-mesa.sh` private prefix is for isolated
+diagnostics and the separate Snap workflow, not the host package layout.
 
 ## 6. Boot image set
 

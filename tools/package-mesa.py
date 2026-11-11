@@ -1,140 +1,153 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""Package the shared, verified ARM64 desktop Mesa build without device access."""
+"""Package the standard Ubuntu Mesa cohort and its upgrade-compatible metadata."""
 import argparse
 import hashlib
 import json
 import os
-import re
 from pathlib import Path
+import re
 import shutil
-import shlex
 import subprocess
 
 REPO = Path(__file__).resolve().parents[1]
+RUNTIME = ('libgbm1', 'libegl-mesa0', 'libglx-mesa0', 'libgl1-mesa-dri',
+           'mesa-libgallium', 'mesa-vulkan-drivers')
 
+def sha(p):
+    with Path(p).open('rb') as f:
+        return hashlib.file_digest(f, 'sha256').hexdigest()
 
-def sha(path):
-    with path.open('rb') as stream:
-        return hashlib.file_digest(stream, 'sha256').hexdigest()
-
+def metadata(p):
+    s = subprocess.check_output(['dpkg-deb', '-f', str(p)], text=True)
+    return dict(l.split(': ', 1) for l in s.splitlines() if ': ' in l and not l.startswith(' '))
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--mesa-build', type=Path, required=True)
-    parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--version', required=True)
-    parser.add_argument('--dependency-root', type=Path,
-                        help='ARM64 SDK used for symbol-version dependency scanning; native root by default')
-    args = parser.parse_args()
-    build, output = args.mesa_build.resolve(), args.output.resolve()
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('--mesa-build', type=Path, required=True, help='build-host-mesa work directory')
+    ap.add_argument('--ubuntu-inputs', type=Path, required=True, help='Verified original Ubuntu libdrm downloads')
+    ap.add_argument('--output', type=Path, required=True)
+    ap.add_argument('--version', required=True, help='increasing piano-mesa transition version')
+    ap.add_argument('--release-id', required=True, help='whole release batch identifier, for example piano-1.2.1')
+    ap.add_argument('--release-packages', type=Path, action='append', default=[], help='additional packages supplied by this release')
+    a = ap.parse_args()
+    build, output = a.mesa_build.resolve(), a.output.resolve()
+    lock = json.loads((REPO / 'mesa/ubuntu/source.json').read_text())
     source = json.loads((REPO / 'mesa/source.json').read_text())
-    result = json.loads((build / 'build-result.json').read_text())
-    identity = json.loads((build / 'input.json').read_text())
-    manifest = json.loads((build / 'manifest.json').read_text())
-    if (result['profile'] != 'desktop' or result['input_sha256'] != sha(build / 'input.json')
-            or result['target_compilers_sha256'] != sha(build / 'target-compilers.json')
-            or manifest['build_input_sha256'] != result['input_sha256']
-            or manifest['files'] != result['files_sha256']
-            or identity['source'] != source or identity['recipe_sha256'] != sha(REPO / 'tools/build-mesa.py')):
-        parser.error('incompatible or unverified desktop build')
+    prepared = json.loads((build / 'prepared.json').read_text())
+    if prepared['lock'] != lock or prepared['mesa'] != source:
+        ap.error('build inputs differ from the source locks')
+    receipt = json.loads((build / 'packages.json').read_text())
+    # Ubuntu's automatic debug packages are outside debian/control and use
+    # .ddeb. Preserve them too, under .deb names so the same APT index serves
+    # the complete actual build output without another repository type.
+    for path in sorted(build.glob('mesa/*.ddeb')):
+        receipt.append(dict(file=str(path.relative_to(build)), sha256=sha(path)))
     output.mkdir(parents=True, exist_ok=True)
+    repo_id = a.release_id
+    repo = output / repo_id
+    repo.mkdir()
+    pool = repo / 'pool'; pool.mkdir()
+    records, names, pin_groups = [], set(), {}
+    for component in ('mesa',):
+        src = build / (build / component / 'source-path').read_text().strip()
+        declared = set(re.findall(r'^Package: (\S+)', (src / 'debian/control').read_text(), re.M))
+        actual = set()
+        for row in receipt:
+            if not row['file'].startswith(component + '/'):
+                continue
+            p = build / row['file']
+            if sha(p) != row['sha256']:
+                ap.error('package hash mismatch: ' + str(p))
+            m = metadata(p)
+            name = m['Package']
+            if (name not in declared and name.removesuffix('-dbgsym') not in declared) or name in names:
+                ap.error('unexpected or duplicate binary package: ' + name)
+            if m['Version'] != lock['components'][component]['local_version'] or m['Architecture'] not in ('arm64', 'all'):
+                ap.error('package version/architecture differs from cohort')
+            actual.add(name); names.add(name)
+            filename = p.with_suffix('.deb').name
+            shutil.copyfile(p, pool / filename)
+            records.append(dict(package=name, version=m['Version'], architecture=m['Architecture'],
+                                source=component, file='pool/' + filename, sha256=sha(p), bytes=p.stat().st_size))
+        native_names = json.loads((build / 'binary-packages.json').read_text())[component]
+        if native_names and not set(native_names).issubset(actual):
+            ap.error('missing binary packages: ' + str(set(native_names) - actual))
+        if not actual:
+            ap.error('component contains no packages: ' + component)
+        pin_groups[component] = sorted(actual)
+    for item in lock['ubuntu_binaries']['files']:
+        p = a.ubuntu_inputs / item['file']
+        if sha(p) != item['sha256'] or metadata(p)['Version'] != item['version']:
+            ap.error('Ubuntu libdrm binary differs from lock: ' + str(p))
+        shutil.copyfile(p, pool / p.name)
+        records.append(dict(package=item['package'], version=item['version'], architecture=item['architecture'],
+                            source='libdrm', file='pool/' + p.name, sha256=sha(p), bytes=p.stat().st_size))
+    if not set(RUNTIME).issubset(names):
+        ap.error('missing runtime package')
+    pin = ''
+    for component, packages in pin_groups.items():
+        joined = ' '.join(packages)
+        pin += (f'Package: {joined}\nPin: version {lock["components"][component]["local_version"]}\n'
+                'Pin-Priority: 1001\n\n'
+                f'Package: {joined}\nPin: version *\nPin-Priority: -1\n\n')
     stage = output / 'stages/piano-mesa'
-    subprocess.run(['python3', str(REPO / 'tools/prepare-mesa-initramfs.py'),
-                    '--mesa-build', str(build), '--stage', str(stage)], check=True,
-                   stdout=subprocess.DEVNULL)
-    prefix = stage / source['prefix'].lstrip('/')
-    ldconf = stage / 'etc/ld.so.conf.d/00-piano-mesa.conf'
-    ldconf.parent.mkdir(parents=True)
-    ldconf.write_text(source['prefix'] + '/lib\n')
-    icds = list((prefix / 'share/vulkan/icd.d').glob('*.json'))
-    if len(icds) != 1:
-        parser.error('expected exactly one Turnip ICD')
-    icd = stage / 'usr/share/vulkan/icd.d/piano_freedreno.json'
-    icd.parent.mkdir(parents=True)
-    icd.symlink_to('/' + str(icds[0].relative_to(stage)))
-    # dpkg's symbols databases provide the minimum ABI versions. Private Mesa
-    # libraries are shipped together and have no distribution shlibs entries.
-    scan = output / 'dependency-scan'
-    (scan / 'debian').mkdir(parents=True)
-    (scan / 'debian/control').write_text('Source: piano-mesa\n\nPackage: piano-mesa\nArchitecture: arm64\n')
-    configured = json.loads((build / 'configured.json').read_text())
-    sysroots = [x.split('=', 1)[1] for x in configured['compilers']['host']['c']['exelist']
-                if x.startswith('--sysroot=')]
-    root = (args.dependency_root.resolve() if args.dependency_root
-            else Path(sysroots[0]) if sysroots else Path('/'))
-    libraries = [p for p in prefix.rglob('*') if p.is_file() and not p.is_symlink()
-                 and p.read_bytes()[:4] == b'\x7fELF']
-    private_shlibs = []
-    for library in libraries:
-        dynamic = subprocess.check_output(['readelf', '-d', str(library)], text=True)
-        match = re.search(r'\(SONAME\).*\[([^]]+)\]', dynamic)
-        if match:
-            soname = re.fullmatch(r'(.+)\.so\.(.+)', match[1])
-            if soname:
-                private_shlibs.append(f'{soname[1]} {soname[2]} piano-mesa')
-    (scan / 'debian/shlibs.local').write_text('\n'.join(sorted(set(private_shlibs))) + '\n')
-    if root == Path('/'):
-        command = ['dpkg-shlibdeps', '-O', '--ignore-missing-info', '-xpiano-mesa', '-l' + str(prefix / 'lib'),
-                   *['-e' + str(p) for p in libraries]]
-    else:
-        # Run the target's dpkg tools inside its own root: host dpkg cannot
-        # resolve ownership of sysroot-prefixed libraries using target lists.
-        inside = '/tmp/piano-mesa-shlibdeps'
-        mountpoint = root / inside.lstrip('/')
-        mountpoint.mkdir(parents=True, exist_ok=True)
-        (scan / 'package').mkdir()
-        library_dir = inside + '/package' + source['prefix'] + '/lib'
-        scan_args = ['dpkg-shlibdeps', '-O', '--ignore-missing-info', '-xpiano-mesa', '-l' + library_dir,
-                     *['-e' + inside + '/package/' + str(p.relative_to(stage)) for p in libraries]]
-        script = ('set -eu; mount --bind "$1" "$2/package"; mount --rbind "$2" "$3"; '
-                  'exec chroot "$4" /usr/bin/env -i PATH=/usr/bin:/bin LC_ALL=C '
-                  'QEMU_CPU=max,pauth-impdef=on /bin/sh -c "$5"')
-        command = ['unshare', '--map-root-user', '--mount', '--net', '--pid', '--fork', '--kill-child',
-                   'sh', '-c', script, 'sh', str(stage), str(scan), str(mountpoint), str(root),
-                   'cd ' + shlex.quote(inside) + ' && ' + shlex.join(scan_args)]
-    proc = subprocess.run(command, cwd=scan, text=True, capture_output=True,
-                          env=dict(os.environ, QEMU_CPU='max,pauth-impdef=on'))
-    (scan / 'scan.log').write_text(proc.stdout + proc.stderr)
-    proc.check_returncode()
-    if not proc.stdout.startswith('shlibs:Depends='):
-        raise RuntimeError('dependency scan returned no Depends')
-    depends = proc.stdout.strip().split('=', 1)[1]
-    if 'libc6' not in depends:
-        raise RuntimeError('dependency scan did not resolve target libc')
-    control = stage / 'DEBIAN'
-    control.mkdir()
-    (control / 'control').write_text(
-        f'Package: piano-mesa\nVersion: {args.version}\nArchitecture: arm64\n'
+    (stage / 'DEBIAN').mkdir(parents=True)
+    depends = ', '.join(f'{n} (= {lock["components"]["mesa"]["local_version"]})' for n in RUNTIME)
+    (stage / 'DEBIAN/control').write_text(
+        f'Package: piano-mesa\nVersion: {a.version}\nArchitecture: arm64\n'
         'Maintainer: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>\n'
-        'Section: libs\nPriority: optional\n'
-        f'Depends: {depends}\n'
-        'Description: Shared Adreno 830 Freedreno and Turnip drivers\n'
-        ' Private Mesa libraries selected through the system dynamic linker.\n')
-    for name, cases in [('postinst', 'configure'), ('postrm', 'remove|purge|disappear')]:
-        p = control / name
-        p.write_text(f'#!/bin/sh\nset -e\ncase "$1" in {cases}) ldconfig ;; esac\n')
-        p.chmod(0o755)
-    doc = stage / 'usr/share/doc/piano-mesa'
-    doc.mkdir(parents=True)
-    shutil.copy2(build / ('mesa-' + source['version']) / 'docs/license.rst', doc / 'copyright')
-    provenance = {'source': source, 'build': result,
-                  'configured': {k: configured[k] for k in
-                                 ('optimization', 'b_ndebug', 'target_compile_commands_checked')},
-                  'compilers': {lang: {k: compiler[k] for k in ('id', 'version', 'full_version')}
-                                for lang, compiler in configured['compilers']['host'].items()},
-                  'depends': depends, 'packager_sha256': sha(Path(__file__))}
-    (doc / 'build.json').write_text(json.dumps(provenance, indent=2) + '\n')
-    package = output / f'piano-mesa_{args.version}_arm64.deb'
-    subprocess.run(['dpkg-deb', '--root-owner-group', '-Zxz', '-z1', '--build', str(stage), str(package)],
-                   check=True, env=dict(os.environ, SOURCE_DATE_EPOCH=(build / 'source-date-epoch').read_text().strip(),
-                                        DPKG_DEB_THREADS_MAX=str(os.cpu_count() or 1)))
-    receipt = {'file': package.name, 'sha256': sha(package), 'depends': provenance['depends'],
-               'files': {str(p.relative_to(stage)): sha(p) for p in sorted(stage.rglob('*'))
-                         if p.is_file() and not p.is_symlink() and control not in p.parents}}
-    (output / 'mesa-package.json').write_text(json.dumps(receipt, indent=2) + '\n')
-    print(json.dumps({'file': package.name, 'sha256': receipt['sha256']}))
+        'Section: oldlibs\nPriority: optional\n'
+        f'Depends: {depends}, python3, init-system-helpers\n'
+        'Description: Matched Ubuntu graphics packages for supported SM8750 tablets\n'
+        ' Transition from the former private Mesa prefix to standard system packages.\n')
+    conf = stage / 'etc/apt/preferences.d/piano-host-mesa'
+    conf.parent.mkdir(parents=True); conf.write_text(pin)
+    # Generated cohort policy is an ordinary dpkg-owned file: downgrading to the
+    # old transition package removes it instead of retaining an obsolete conffile.
+    legacy = ('/etc/ld.so.conf.d/00-piano-mesa.conf', '/etc/piano-mesa-prefix',
+              '/etc/piano-mesa.json', '/etc/piano-mesa.sha256')
+    for phase in ('preinst', 'postinst', 'postrm'):
+        script = '#!/bin/sh\nset -e\n'
+        if phase == 'preinst':
+            script += ('if [ -r /proc/device-tree/compatible ] && '
+                       'tr "\\000" "\\n" < /proc/device-tree/compatible | grep -Eq "xiaomi,liuqin|qcom,sm8450"; then\n'
+                       '  echo "This graphics cohort is not for this device" >&2; exit 1\nfi\n')
+        for path in legacy:
+            script += f'dpkg-maintscript-helper rm_conffile {path} {a.version} piano-mesa -- "$@"\n'
+        if phase in ('postinst', 'postrm'):
+            script += 'ldconfig\n'
+        f = stage / 'DEBIAN' / phase; f.write_text(script); f.chmod(0o755)
+    doc = stage / 'usr/share/doc/piano-mesa'; doc.mkdir(parents=True)
+    (doc / 'build.json').write_text(json.dumps(dict(source=source, layout='ubuntu-multiarch',
+        ubuntu=lock, packages=records, pin_sha256=sha(conf)), indent=2)+'\n')
+    for tool in ('release-repository.py', 'check-host-mesa.py'):
+        dest = stage / 'usr/libexec/piano' / tool; dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(REPO / 'tools' / tool, dest); dest.chmod(0o755)
+    package = output / f'piano-mesa_{a.version}_arm64.deb'
+    subprocess.run(['dpkg-deb','--root-owner-group','-Zxz','-z1','--build',str(stage),str(package)],check=True,
+                   env=dict(os.environ,SOURCE_DATE_EPOCH='1794355200'))
+    shutil.copyfile(package,pool/package.name)
+    records.append(dict(package='piano-mesa',version=a.version,architecture='arm64',source='piano-mesa',
+                        file='pool/'+package.name,sha256=sha(package),bytes=package.stat().st_size))
+    for directory in a.release_packages:
+        for p in directory.rglob('*.deb'):
+            dest = pool / p.name
+            if dest.exists() and sha(dest) != sha(p):
+                ap.error('conflicting release package: ' + p.name)
+            shutil.copyfile(p, dest)
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('release_repository', REPO / 'tools/release-repository.py')
+    module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+    defaults = {'piano-mesa'}
+    for directory in a.release_packages:
+        defaults.update(metadata(p)['Package'] for p in directory.rglob('*.deb'))
+    module.inventory(repo, repo_id, 'piano', defaults)
+    module.verify(repo)
+    result=dict(file=package.name,sha256=sha(package),depends=depends,repository=repo.name,
+                repository_manifest_sha256=sha(repo/'manifest.json'),files={})
+    (output/'mesa-package.json').write_text(json.dumps(result,indent=2)+'\n')
+    print(json.dumps(result))
 
-
-if __name__ == '__main__':
+if __name__=='__main__':
     main()

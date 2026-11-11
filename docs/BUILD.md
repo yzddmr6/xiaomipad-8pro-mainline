@@ -128,12 +128,11 @@ make -C device/piano-thp OUT="$PWD/out/piano-thp-arm64" CXX=aarch64-linux-gnu-g+
   JSON_INCLUDE="$PWD/out/json-include" LDFLAGS='-static-libstdc++ -static-libgcc -Wl,-z,relro,-z,now' \
   all test RUNNER='qemu-aarch64-static -L /usr/aarch64-linux-gnu'
 # 预期单元测试在 qemu-user 下输出三行 "PASS:"
-# Mesa 26.2.6 与 A830 补丁
-MESA_SOURCE_ARCHIVE=<official Mesa archive> CROSS_FILE=<arm64 cross file> TARGET_ROOT=<arm64 SDK> \
-  OUT_DIR="$PWD/out/mesa" bash tools/build-mesa.sh
+# 宿主 Mesa 先按下节生成 out/host-mesa-build 的完整同源包
 # piano-device-support、piano-mesa、piano-ubuntu-desktop
 python3 tools/build-device-debs.py --output out/device-debs --version 0.1+<YYYYMMDD>.<n> \
-  --thp-live out/piano-thp-arm64/piano-thp-live --mesa-build out/mesa \
+  --thp-live out/piano-thp-arm64/piano-thp-live --mesa-build out/host-mesa-build \
+  --release-id piano-<发布版本> --mesa-ubuntu-inputs out/host-mesa-inputs \
   --busybox tools/local/busybox-arm64/usr/bin/busybox --avbtool tools/local/aosp-avb/avbtool.py
 # 音频拓扑（AudioReach 检出到 device/audio/source.json 指定提交），然后构建 piano-local-firmware
 mkdir -p out/audio
@@ -160,13 +159,50 @@ python3 tools/build-firmware-deb.py --topology out/audio/Piano-Capture-Diag-tplg
   ```
 
   v0.6.1 的 `piano-thp-live`（SHA-256 `a6d6c50b670333740b4e4cd3a0fd03d469158c00d462fb4ac69321c77b9400ba`）按此方法用解包的 g++ 构建，可从标签 v0.6.1 逐字节重建。
-- `build-mesa.sh` 调用共用的 `build-mesa.py`，核对 `mesa/source.json` 中的官方源码包 SHA-256。安装前缀为 `/opt/piano/mesa-26.2.6`，
-  不替换 Ubuntu 的 Mesa 包。
+- `build-mesa.sh` 调用共用的 `build-mesa.py`，核对 `mesa/source.json` 中的官方源码包 SHA-256。该配方仅用于隔离诊断和独立 snap 运行时；宿主包使用下述 Ubuntu 同名包配方。
 - `build-firmware-deb.py` 默认从 `firmware/` 取文件；`--firmware-tree <dir>` 可指定相同布局的本机提取目录。
   每个文件均按身份锁核对。两份音频拓扑的构建与检查说明见[音频文档](../device/audio/README.md#build)。
 - 每次重建设备包都提高 `--version`，使 dpkg 将其作为升级安装。
 
 1.2.0 的设备支持包使用 `--version 1.2.0.1`，桌面集成包使用 `--version 1.2.0.2`；两者均使用 `--release-version 1.2.0`。
+
+## 宿主 Mesa 同名包与本地 APT 批次
+
+⟦DRAFT:离线候选与真机迁移门槛⟧
+
+源码和认证信息固定在 [mesa/ubuntu/source.json](../mesa/ubuntu/source.json)。
+以 Canonical 的 resolute-proposed 回移打包为基线；只更新上游版本、加入六个
+已锁定补丁，不裁剪 Ubuntu arm64 驱动，不改变 GLVND。libdrm 直接使用锁定的
+Ubuntu 二进制。宿主构建与 snap provider 构建互不替代。
+
+```sh
+python3 tools/fetch-host-mesa.py --output out/host-mesa-inputs
+python3 tools/build-host-mesa.py prepare --inputs out/host-mesa-inputs --work out/host-mesa-build
+# 以下在独立的 ARM64 resolute 构建根内；先配置锁文件所列 Ubuntu 快照，
+# 将本仓、inputs、work 放到根内，并安装 build-essential、dpkg-dev、python3。
+sudo touch /etc/mesa-disposable-build-root
+sudo python3 tools/build-host-mesa.py build --inputs out/host-mesa-inputs \
+  --work out/host-mesa-build --jobs "$(nproc)"
+python3 tools/package-mesa.py --mesa-build out/host-mesa-build --output out/host-mesa-package \
+  --version <递增的过渡包版本> --release-id piano-<发布版本> --ubuntu-inputs out/host-mesa-inputs \
+  --release-packages <本版其余发布包目录>
+```
+
+构建目录必须位于磁盘上。原生 ARM64 优先；qemu-user 需设置
+`QEMU_CPU=max,pauth-impdef=on`。保留 `.buildinfo`、`.changes`、生成的包清单和
+构建环境版本记录。构建产生完整同源二进制，不能只发布运行时包。
+
+`build-rootfs-image.py --release-repository <批次目录>` 将整个本地仓库保留在
+根镜像中。`--deb` 只指定过渡包和所需运行时子集及设备包；APT 自动补齐依赖。
+Ubuntu 输入里被这些显式包替换的同名版本不重复安装。不要把整个 Mesa pool
+当作 `--deb` 列表，否则开发和调试用途的包也会成为默认安装项。
+`build-release.py` 使用同一 `--release-repository`；`package-release-assets.py`
+把完整仓库放进 packages 附件，仓库清单必须与根镜像输入一致。
+
+迁移前用 `release-repository.py create` 把上一版发布包与原来安装的 Mesa/libdrm
+依赖精确版本组成上一批仓库。升级工具会拒绝缺少回退包的批次，详见
+[UPGRADE](UPGRADE.md)。运行时守卫为 `tools/check-host-mesa.py`，需要实际图形会话、
+WebKit 网页进程和正在运行的 GunyahVM virgl 来宾；缺证据会失败。
 
 ## 6. 启动镜像组
 

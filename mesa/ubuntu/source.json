@@ -1,0 +1,224 @@
+{
+  "schema": 2,
+  "components": {
+    "mesa": {
+      "base_version": "26.2.4-1ubuntu1~26.04.1",
+      "local_version": "26.2.6-0ubuntu0~sm8750.1",
+      "files": [
+        {
+          "file": "mesa_26.2.4-1ubuntu1~26.04.1.debian.tar.xz",
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/main/m/mesa/mesa_26.2.4-1ubuntu1~26.04.1.debian.tar.xz",
+          "sha256": "6d28d333fca5ca097e9a0066aaa33a6d9543d401477c78bb7af79c8f5ddca077",
+          "sha512": "e022446306154c0c4619ecfc7f110055f7c0f1e8c26686c882c03a9326595277d0a3042792d959ee7f099dc9766cbc663283e52c03863d2abe5022c11117b467",
+          "bytes": 108228
+        },
+        {
+          "file": "mesa_26.2.4-1ubuntu1~26.04.1.dsc",
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/main/m/mesa/mesa_26.2.4-1ubuntu1~26.04.1.dsc",
+          "sha256": "ecdaf1d2c13b2acf51245b88d56f2bcade8af029e3cf1a8224bfaeb936bf0705",
+          "sha512": "b639d423e67d4171c6db05b50533d9c39efb476d5c2224cfa1936f52f7383a4c65921b57878cc158cb3227f0bbf7e6b3f7f7a594ab943070382eee61b5c8888b",
+          "bytes": 6069
+        }
+      ],
+      "authentication": {
+        "chain": "Ubuntu Archive InRelease -> indexed Sources/Packages -> archive hashes",
+        "inrelease_url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/dists/resolute-proposed/InRelease",
+        "inrelease_sha256": "219ea7a5fd494c4700e0f8be710743d62c387f7fa2bfdf0d2ee7369dd18c5960",
+        "archive_key_fingerprint": "F6ECB3762474EDA9D21B7022871920D1991BC93C",
+        "keyring_sha256": "80a36b0a6de2f69f49d2df75ef473ccde121e9e190b9ea01d20a4f63778d5c31",
+        "indexes": {
+          "main/source/Sources.xz": {
+            "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/dists/resolute-proposed/main/source/Sources.xz",
+            "sha256": "a6622f392a6976a1dc2eba90eb008457f211f905177cbab212e3dabe564b0d5c",
+            "sha512": "cfb63718f2d890a2692e212e0750cfb9ba2e7d86f45c52b795883e58c061137976f51dffc9dd7e53fdb92bf5561cb0cee5b65c89d45d2fee1e15f517fc3a1b65"
+          },
+          "main/binary-arm64/Packages.xz": {
+            "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/dists/resolute-proposed/main/binary-arm64/Packages.xz",
+            "sha256": "80b38e56ace1b2debc1de70c48e3e5b35fa88a5f6646765e639d4b1887423463",
+            "sha512": "6462d1c27a89b172e8bc510b265cfdf12147f713aa93d055bf4673d6aca4e4dcec45421c634f58c12d923feb6d54d2dab478aeead24bc8a989721920ebac6c7d"
+          },
+          "universe/binary-arm64/Packages.xz": {
+            "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/dists/resolute-proposed/universe/binary-arm64/Packages.xz",
+            "sha256": "679ffcfc097d5451f4192481b5e726469002f933f9f4bf76d2c4c86a690cd2d5",
+            "sha512": "dff45ab3e08120aadeb309987d87f66b3ffe6cd6efce17033caf24c1134a177345cf0ceb4f9bf4597c81d3e475dbe6845b09ee9130f1a200d051452ea33bf27d"
+          }
+        }
+      }
+    }
+  },
+  "ubuntu_binaries": {
+    "source": "libdrm",
+    "version": "2.4.134-3~ubuntu0.26.04.1",
+    "policy": "Original Ubuntu binaries, unmodified and unpinned; normal Ubuntu updates take over.",
+    "files": [
+      {
+        "package": "libdrm-amdgpu1",
+        "version": "2.4.134-3~ubuntu0.26.04.1",
+        "architecture": "arm64",
+        "file": "libdrm-amdgpu1_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/main/libd/libdrm/libdrm-amdgpu1_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "sha256": "e1e9b7ff3b3040cfa5cdf77afef451af7a1c11eb85b9032d6c24698b7f57df8d",
+        "sha512": "d144e18a6870dae62e37b5571e2efa3344348f9e964c569d88f4ef10cb4871163a493926aa42ca602e5cc51a15a7b0cd531ed4e075a882ef9f463e981033e9f9",
+        "bytes": 22996
+      },
+      {
+        "package": "libdrm-common",
+        "version": "2.4.134-3~ubuntu0.26.04.1",
+        "architecture": "all",
+        "file": "libdrm-common_2.4.134-3~ubuntu0.26.04.1_all.deb",
+        "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/main/libd/libdrm/libdrm-common_2.4.134-3~ubuntu0.26.04.1_all.deb",
+        "sha256": "8ce768d299c8bce7b12f10cb2547cabb51b4f85263e9e84995dfaaf687d41980",
+        "sha512": "9faf09ce435433da7ee6bde9e3b05d76bf9a2b348482f0281fa3e1379236100a7170858509420d121fdf8af49db27249fbb7c198414a61ccc3f716bce8172493",
+        "bytes": 8438
+      },
+      {
+        "package": "libdrm-dev",
+        "version": "2.4.134-3~ubuntu0.26.04.1",
+        "architecture": "arm64",
+        "file": "libdrm-dev_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/main/libd/libdrm/libdrm-dev_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "sha256": "5736a5589d9b4fece1cbffc6ec5d8fe20adcc3793cbdcc5634415c79df639ae3",
+        "sha512": "1b7a1c331d45e06d0487da73d84a28c282ea68bf1f0ffde10ac8eb050224b9f18356d4265dae15e34521fd6ee3f09288456c4eb24fcf9e68ada66b90c809382c",
+        "bytes": 351412
+      },
+      {
+        "package": "libdrm-etnaviv1",
+        "version": "2.4.134-3~ubuntu0.26.04.1",
+        "architecture": "arm64",
+        "file": "libdrm-etnaviv1_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/main/libd/libdrm/libdrm-etnaviv1_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "sha256": "e161f90181333543b940fdad254e17c6740207d74005d6ba616eacd51dff2831",
+        "sha512": "f99b41e392b37c40973d98307c8fa93ba104190f1902cade53f258e9cc217926ab35e2fce7575051ebc529d82a6507de97828c98722bab1d3cde8e81262c83b8",
+        "bytes": 13050
+      },
+      {
+        "package": "libdrm-freedreno1",
+        "version": "2.4.134-3~ubuntu0.26.04.1",
+        "architecture": "arm64",
+        "file": "libdrm-freedreno1_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/main/libd/libdrm/libdrm-freedreno1_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "sha256": "8d011cbd516f44257125716363248a886fc0cc052d83dd1d23a1d8ec2dee9d7c",
+        "sha512": "cc016a60544ce889ff3a63cbff67c9fdab62f2028eaf27d38979ff755bc081c1cf570dcb1607b32cee6a94b363f4dd93c7b85e69f2418a60b84e13f61f5901fd",
+        "bytes": 20264
+      },
+      {
+        "package": "libdrm-intel1",
+        "version": "2.4.134-3~ubuntu0.26.04.1",
+        "architecture": "arm64",
+        "file": "libdrm-intel1_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/main/libd/libdrm/libdrm-intel1_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "sha256": "b0dfc61513ab7674216aa54c360f20c8d2d725bef75d3677b7ae811b981a1cda",
+        "sha512": "387d5e91e916e3458efa85f8ac3f785b0e8aa61c2b9944273bbb2c599a7bdccdc8f157c6453faec1c1113db3f4b03b248212521ee73064c1aa1fcb07ed2e0fce",
+        "bytes": 65786
+      },
+      {
+        "package": "libdrm-nouveau2",
+        "version": "2.4.134-3~ubuntu0.26.04.1",
+        "architecture": "arm64",
+        "file": "libdrm-nouveau2_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/main/libd/libdrm/libdrm-nouveau2_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "sha256": "dbd9a0e1de559969bf629b5afc62ef188734bd278bad6bac4a5c1900290bd331",
+        "sha512": "702a277121688a30d1bf9472e7cee3c784e651dc27ecd632badcba044995d35519690156f1046bc6ba09af1712ff17ab30c88a5cd3e2230d9e00e3c8c8d14966",
+        "bytes": 18480
+      },
+      {
+        "package": "libdrm-radeon1",
+        "version": "2.4.134-3~ubuntu0.26.04.1",
+        "architecture": "arm64",
+        "file": "libdrm-radeon1_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/main/libd/libdrm/libdrm-radeon1_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "sha256": "eeb03449700797f9214b3de7cee3cab26feb99eb5aa0f80cc747cbe87025e4b5",
+        "sha512": "bad0bbfd5e3d56eb0d1ed272bd6232d5d6036bf5ba2b48db251f881f6a5ac479fc5a749e5f70cdc47eae0e22a5c990372404d9d1d463472f568baa60d0f0e88b",
+        "bytes": 20940
+      },
+      {
+        "package": "libdrm-tegra0",
+        "version": "2.4.134-3~ubuntu0.26.04.1",
+        "architecture": "arm64",
+        "file": "libdrm-tegra0_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/main/libd/libdrm/libdrm-tegra0_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "sha256": "b419b9cf966d49734fbf243dc59cb6248154a0c1b9b27ca0bb1bd119dfe02754",
+        "sha512": "c5e04224aa2435583dfdae349dc21947ab6963bd545c7fd6f7263774ef46b1650548a07e65e5734e16f4224022953697dbb283995242c3f00a819e864775c8aa",
+        "bytes": 10156
+      },
+      {
+        "package": "libdrm2",
+        "version": "2.4.134-3~ubuntu0.26.04.1",
+        "architecture": "arm64",
+        "file": "libdrm2_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/main/libd/libdrm/libdrm2_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "sha256": "ca1b5f816ea8792ba7d075db7f0736a5864c98b9e0343f69e0f857c72f649560",
+        "sha512": "e727d188830ec0ad7bc3107059e554b770fc8a85b99b841b415b54041e0116a6baa73c7183d0ad060ee7ea715c12d15e33edcc63d14749f4ee0c6b59d6280818",
+        "bytes": 41450
+      },
+      {
+        "package": "libdrm-tests",
+        "version": "2.4.134-3~ubuntu0.26.04.1",
+        "architecture": "arm64",
+        "file": "libdrm-tests_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/universe/libd/libdrm/libdrm-tests_2.4.134-3~ubuntu0.26.04.1_arm64.deb",
+        "sha256": "31929f4df301a9ac211290b7a13d0ef3bf29545ce349a2380fdaa9d2814e884c",
+        "sha512": "e739dcc7c9595b1afe5f8910975d755483cff6940d0a3bc4e5ec95e43acff7f93daff44340d1d26d1dd0380f693a0524d27eef9af0c8234761aba14e09489b57",
+        "bytes": 76668
+      }
+    ],
+    "authentication": {
+      "chain": "Ubuntu Archive InRelease -> indexed Sources/Packages -> archive hashes",
+      "inrelease_url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/dists/resolute-proposed/InRelease",
+      "inrelease_sha256": "219ea7a5fd494c4700e0f8be710743d62c387f7fa2bfdf0d2ee7369dd18c5960",
+      "archive_key_fingerprint": "F6ECB3762474EDA9D21B7022871920D1991BC93C",
+      "keyring_sha256": "80a36b0a6de2f69f49d2df75ef473ccde121e9e190b9ea01d20a4f63778d5c31",
+      "indexes": {
+        "main/source/Sources.xz": {
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/dists/resolute-proposed/main/source/Sources.xz",
+          "sha256": "a6622f392a6976a1dc2eba90eb008457f211f905177cbab212e3dabe564b0d5c",
+          "sha512": "cfb63718f2d890a2692e212e0750cfb9ba2e7d86f45c52b795883e58c061137976f51dffc9dd7e53fdb92bf5561cb0cee5b65c89d45d2fee1e15f517fc3a1b65"
+        },
+        "main/binary-arm64/Packages.xz": {
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/dists/resolute-proposed/main/binary-arm64/Packages.xz",
+          "sha256": "80b38e56ace1b2debc1de70c48e3e5b35fa88a5f6646765e639d4b1887423463",
+          "sha512": "6462d1c27a89b172e8bc510b265cfdf12147f713aa93d055bf4673d6aca4e4dcec45421c634f58c12d923feb6d54d2dab478aeead24bc8a989721920ebac6c7d"
+        },
+        "universe/binary-arm64/Packages.xz": {
+          "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/dists/resolute-proposed/universe/binary-arm64/Packages.xz",
+          "sha256": "679ffcfc097d5451f4192481b5e726469002f933f9f4bf76d2c4c86a690cd2d5",
+          "sha512": "dff45ab3e08120aadeb309987d87f66b3ffe6cd6efce17033caf24c1134a177345cf0ceb4f9bf4597c81d3e475dbe6845b09ee9130f1a200d051452ea33bf27d"
+        }
+      }
+    }
+  },
+  "build_root": {
+    "file": "ubuntu-base-26.04-base-arm64.tar.gz",
+    "url": "https://cdimage.ubuntu.com/ubuntu-base/releases/26.04/release/ubuntu-base-26.04-base-arm64.tar.gz",
+    "sha256": "b2b46a37324ea1954e93f293fe6d7c2241daf2fc298c4022e6e4caceeed74cab",
+    "bytes": 35094845,
+    "checksums_url": "https://cdimage.ubuntu.com/ubuntu-base/releases/26.04/release/SHA256SUMS",
+    "checksums_sha256": "c70149f57ea126a96a21d4093b9c3fcff94ed2b9382508b8d888a32295b263f2",
+    "signature_url": "https://cdimage.ubuntu.com/ubuntu-base/releases/26.04/release/SHA256SUMS.gpg",
+    "signature_sha256": "5d6daf115ee862e06674278d3207d39b82c23f1e8fa5a141349d80507dce87e0",
+    "keyring_sha256": "80a36b0a6de2f69f49d2df75ef473ccde121e9e190b9ea01d20a4f63778d5c31"
+  },
+  "apt": {
+    "snapshot": "20261111T000000Z",
+    "uri": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/",
+    "suites": [
+      "resolute",
+      "resolute-updates",
+      "resolute-security"
+    ],
+    "components": [
+      "main",
+      "universe"
+    ],
+    "authentication": "Ubuntu archive keyring; signed InRelease and indexed package hashes"
+  },
+  "mesa_source": "../source.json",
+  "patch_policy": "Apply the six patches from mesa/source.json unchanged; Ubuntu patches already present in upstream are recorded and omitted.",
+  "build_patches": [
+    {
+      "file": "nir-test-algorithm.patch",
+      "sha256": "a795f792ba2a5a11e665fc829214ad4c0c1519eacbacd2897d0b216d8745804e",
+      "scope": "test compilation only; original six driver patches unchanged"
+    }
+  ]
+}

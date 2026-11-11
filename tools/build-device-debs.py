@@ -72,7 +72,8 @@ def main():
     ap.add_argument('--snap-graphics-build', type=Path, help='Verified build-mesa-root.py output')
     ap.add_argument('--version', required=True)
     ap.add_argument('--release-version', help='Project release advertised by the desktop notifier; defaults to --version')
-    ap.add_argument('--mesa-dependency-root', type=Path, help='ARM64 SDK for Mesa dependency scanning')
+    ap.add_argument('--mesa-ubuntu-inputs', type=Path, help='Original Ubuntu libdrm downloads')
+    ap.add_argument('--release-id', help='Versioned local APT batch ID; required when packaging host Mesa')
     select = ap.add_mutually_exclusive_group()
     select.add_argument('--ram-debug-only', action='store_true', help='Build only the opt-in RAM diagnostics package; never part of the product set')
     select.add_argument('--support-only', action='store_true', help='Rebuild only the small device integration package')
@@ -93,6 +94,8 @@ def main():
         return
     if a.snap_graphics_only and not a.snap_graphics_build:
         ap.error('--snap-graphics-only requires --snap-graphics-build')
+    if a.mesa_build and (not a.release_id or not a.mesa_ubuntu_inputs):
+        ap.error('--mesa-build requires --release-id and --mesa-ubuntu-inputs')
     if a.mesa_only and not a.mesa_build:
         ap.error('--mesa-only requires --mesa-build')
     if not (a.desktop_only or a.snap_graphics_only or a.mesa_only or a.ram_debug_only):
@@ -325,9 +328,8 @@ def main():
     if not a.desktop_only:
         subprocess.run(['python3', str(repo / 'tools/package-mesa.py'),
                         '--mesa-build', str(a.mesa_build), '--output', str(a.output),
-                        '--version', a.version,
-                        *(['--dependency-root', str(a.mesa_dependency_root)]
-                          if a.mesa_dependency_root else [])], check=True)
+                        '--version', a.version, '--release-id', a.release_id,
+                        '--ubuntu-inputs', str(a.mesa_ubuntu_inputs)], check=True)
         receipts['piano-mesa'] = json.loads((a.output / 'mesa-package.json').read_text())
         if a.mesa_only:
             (a.output / 'manifest.json').write_text(json.dumps(receipts, indent=2) + '\n')

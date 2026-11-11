@@ -100,6 +100,19 @@ printf 'update_initramfs=no\n' >"$T/etc/initramfs-tools/update-initramfs.conf"
 step install userspace packages
 install -d "$T/var/cache/piano-install"
 cp "$IN"/debs/*.deb "$T/var/cache/piano-install/"
+if [ -d "$IN/release-repository" ]; then
+    batch=$(cat "$IN/release-repository-id")
+    install -d "$T/var/lib/piano/releases/$batch"
+    cp -a "$IN/release-repository/." "$T/var/lib/piano/releases/$batch/"
+    printf 'deb [trusted=yes] file:/var/lib/piano/releases/%s ./\n' "$batch" > "$T/etc/apt/sources.list.d/piano-release.list"
+    in_target apt-get -o Dir::Etc::sourcelist=piano-release.list -o Dir::Etc::sourceparts=- \
+        -o APT::Get::List-Cleanup=0 update
+    install -d "$T/var/cache/apt/archives"
+    for deb in "$T/var/lib/piano/releases/$batch/pool/"*.deb; do
+        name=$(dpkg-deb --show --showformat='${Package}_${Version}_${Architecture}.deb' "$deb" | sed 's/:/%3a/g')
+        ln -f "$deb" "$T/var/cache/apt/archives/$name"
+    done
+fi
 # APT handles the tuned-ppd Conflicts/Provides transition in one transaction.
 # The plan may remove only replaced providers; no package downloads are allowed.
 if ls "$T"/var/cache/piano-install/tuned-ppd_*.deb >/dev/null 2>&1; then

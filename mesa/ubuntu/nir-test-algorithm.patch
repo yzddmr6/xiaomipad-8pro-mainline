@@ -1,0 +1,17 @@
+Description: Include the standard algorithm header for the added NIR tests
+ The unchanged device patch uses std::unique in a test. Include its declaring
+ header explicitly so Ubuntu's full test build does not depend on transitive
+ standard-library includes. No driver or runtime code is changed.
+Author: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
+Forwarded: not-needed
+Last-Update: 2026-11-11
+--- a/src/compiler/nir/tests/loop_unroll_tests.cpp
++++ b/src/compiler/nir/tests/loop_unroll_tests.cpp
+@@ -21,6 +21,7 @@
+  * DEALINGS IN THE SOFTWARE.
+  */
+ 
++#include <algorithm>
+ #include "gtest/gtest.h"
+ #include "nir.h"
+ #include "nir_builder.h"

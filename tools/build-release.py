@@ -157,6 +157,7 @@ def main():
     ap.add_argument('--max-fill-mib', type=int, default=sparse_image.DEFAULT_MAX_FILL_MIB,
                     help='FILL limit per sparse image (on free blocks for the ext4 root)')
     ap.add_argument('--allow-fill', action='store_true', help='Report FILL beyond the limit without stopping')
+    ap.add_argument('--release-repository', type=Path, help='Complete local APT batch retained in package attachments')
     ap.add_argument('--output', type=Path, required=True, help='New release directory')
     ap.add_argument('--changes', type=Path, required=True,
                     help='Bilingual summary, updates and known limitations (UTF-8)')
@@ -272,6 +273,18 @@ def main():
     shutil.copy2(REPO / 'tools/piano-switch.py', out / 'tools/piano-switch.py')
     subprocess.run(['sh', str(REPO / 'device/android/piano-switch-ksu/build.sh'), str(out / 'tools')],
                    check=True, stdout=subprocess.DEVNULL)
+
+    if a.release_repository:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('release_repository', REPO / 'tools/release-repository.py')
+        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+        batch = module.verify(a.release_repository)
+        expected = rootfs.get('release_repository')
+        if not expected or batch['id'] != expected['id'] or sha(a.release_repository / 'manifest.json') != expected['manifest_sha256']:
+            raise ValueError('release repository differs from the root image input')
+        shutil.copytree(a.release_repository, out / 'repositories' / batch['id'])
+    elif rootfs.get('release_repository'):
+        raise ValueError('root image requires its complete --release-repository')
 
     optional_packages = stage_virtualization(a.virtualization_packages, a.virtualization_source, out, rootfs['packages'])
     files = sorted(p for p in out.rglob('*') if p.is_file())

@@ -414,6 +414,7 @@ def main():
     ap.add_argument('--kernel-deb', type=Path, required=True)
     ap.add_argument('--deb', type=Path, action='append', required=True,
                     help='piano-device-support, piano-local-firmware, piano-mesa, piano-ubuntu-desktop, piano-iris-vaapi')
+    ap.add_argument('--release-repository', type=Path, help='Complete versioned local APT release batch')
     ap.add_argument('--apt-manifest', type=Path, required=True,
                     help='prepare-ubuntu-apt.py --download manifest of the Ubuntu packages to add')
     ap.add_argument('--boot-profile', type=Path, required=True, help='Boot profile read from a stock unit')
@@ -431,6 +432,16 @@ def main():
                          'otherwise build it and store it there')
     ap.add_argument('--output', type=Path, required=True, help='New output directory')
     a = ap.parse_args()
+    batch = None
+    batch_rows = {}
+    if a.release_repository:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('release_repository', REPO / 'tools/release-repository.py')
+        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+        batch = module.verify(a.release_repository)
+        if batch['product'] != 'piano':
+            ap.error('release repository belongs to another product')
+        batch_rows = {row['package']: row for row in batch['packages']}
     native_root = os.uname().machine == 'aarch64' and os.geteuid() == 0
     binfmt = binfmt_aarch64() if os.geteuid() == 0 and not native_root else None
     a.backend = a.backend or ('chroot' if native_root or binfmt else 'guest')
@@ -501,6 +512,14 @@ def main():
         if kernel_zram != any(d['package'] == ZRAM_GENERATOR for _, d in debs):
             raise ValueError(f'{ZRAM_GENERATOR} belongs in the APT download exactly when the kernel has CONFIG_ZRAM '
                              f'({release}: {"set" if kernel_zram else "not set"})')
+        for index, (path, entry) in enumerate(debs):
+            row = batch_rows.get(entry['package'])
+            if row and row['source'] in ('mesa', 'libdrm'):
+                replacement = a.release_repository / row['file']
+                debs[index] = (replacement, dict(package=row['package'], version=row['version'],
+                    architecture=row['architecture'], file=replacement.name, sha256=row['sha256'], source='piano'))
+        explicit_names = {deb_fields(p)['Package'] for p in [a.kernel_deb, *a.deb]}
+        debs = [(p, d) for p, d in debs if d['package'] not in explicit_names]
         for path in [a.kernel_deb, *a.deb]:
             fields = deb_fields(path)
             debs.append((path, {'package': fields['Package'], 'version': fields['Version'],
@@ -558,10 +577,22 @@ def main():
         # generic distribution kernels are removed.
         kernel_bound = {kernel['Package'], 'piano-camerad', f'piano-camera-loopback-{release}'}
 
+        repository_files = []
+        if a.release_repository:
+            for path, entry in debs:
+                if entry['source'] == 'piano':
+                    row = batch_rows.get(entry['package'])
+                    if row is None or row['sha256'] != entry['sha256']:
+                        raise ValueError('explicit release package absent or different in batch: ' + entry['package'])
+            repository_files = [(str(p.relative_to(a.release_repository)), p)
+                                for p in a.release_repository.rglob('*') if p.is_file()]
+            files['release-repository-id'] = (batch['id'] + '\n').encode()
+            result['release_repository'] = dict(id=batch['id'], manifest_sha256=sha(a.release_repository / 'manifest.json'))
         # Everything before the piano kernel is installed depends only on these inputs, so a
         # base built from them is reused when only the kernel changes.  The filesystem UUID
         # and directory hash seed follow the same key: equal inputs, equal base.
         base_inputs = {
+            'release_repository': result.get('release_repository'),
             'schema': BASE_SCHEMA, 'backend': a.backend, 'size_mib': a.size_mib,
             'squashfs_sha256': a.squashfs_sha256, 'apt_manifest_sha256': result['apt_manifest_sha256'],
             'tools': {n: result['tools'][n] for n in ('sqfs2tar', 'mke2fs', 'mke2fs_config')},
@@ -643,6 +674,9 @@ def main():
                             tar.addfile(info, io.BytesIO(data))
                     for name, data in run_files.items():
                         add(name, data)
+                    if 'base' in phases:
+                        for name, path in repository_files:
+                            add('release-repository/' + name, path=path)
                     for path, entry in debs:
                         bound = entry['package'] in kernel_bound
                         if 'kernel' in phases if bound else 'base' in phases:

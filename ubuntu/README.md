@@ -54,3 +54,17 @@ rollback, first select `suspend` for each user, replace the vendor `lock` defaul
 with `suspend`, remove this pin and any explicit holds, and install the matched
 official runtime/schema/data packages; log out and back in. The desktop package's
 exact dependencies must also be removed or replaced for that rollback.
+
+## 宿主 Mesa 与发布批次
+
+⟦DRAFT:离线候选与真机迁移门槛⟧
+
+宿主 Mesa 的发行版打包基线、快照和认证链见
+[mesa/ubuntu/source.json](../mesa/ubuntu/source.json)。使用 Canonical 的 resolute
+回移包，保留 GLVND 与完整 arm64 驱动集；六个设备补丁由共用源码锁校验。
+Ubuntu 原样 libdrm 二进制随批次保全，不加入 Mesa 的精确版本策略。
+
+`tools/release-repository.py create` 把整版发布包组成一个本地 APT 仓库。
+升级前保留上一批完整包以及已安装同源依赖的精确版本；回退先恢复用户态，
+再恢复启动镜像组。完整 Mesa 同源包供以后安装开发包或 OpenCL 使用，根镜像
+仅安装依赖需要的子集。仓库和回退说明见 [UPGRADE](../docs/UPGRADE.md)。
