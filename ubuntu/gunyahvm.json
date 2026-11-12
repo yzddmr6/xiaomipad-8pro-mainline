@@ -40,19 +40,19 @@
   "dependencies": [
     {
       "package": "gir1.2-casilda-1.0",
-      "version": "1.4.0-1+gunyahvm1",
+      "version": "1.4.0-1+gunyahvm2",
       "architecture": "arm64",
-      "file": "gir1.2-casilda-1.0_1.4.0-1+gunyahvm1_arm64.deb",
-      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.2.0/gir1.2-casilda-1.0_1.4.0-1+gunyahvm1_arm64.deb",
-      "sha256": "b59ad0ebf0cd197e8fb8a7c77d9d5c308fb1a6e1d8ea21b3091a548f1319aa59"
+      "file": "gir1.2-casilda-1.0_1.4.0-1+gunyahvm2_arm64.deb",
+      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.2.0/gir1.2-casilda-1.0_1.4.0-1+gunyahvm2_arm64.deb",
+      "sha256": "c8a379a38fe747f38d2478bfa5943efd4cb80c9eeaf9b33925df4fbfecf4223a"
     },
     {
       "package": "libcasilda-1.0",
-      "version": "1.4.0-1+gunyahvm1",
+      "version": "1.4.0-1+gunyahvm2",
       "architecture": "arm64",
-      "file": "libcasilda-1.0_1.4.0-1+gunyahvm1_arm64.deb",
-      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.2.0/libcasilda-1.0_1.4.0-1+gunyahvm1_arm64.deb",
-      "sha256": "8fe81f2803a24cc6bf26bf02396f23dcf3494394e9cd5336e3a76a2710805c50"
+      "file": "libcasilda-1.0_1.4.0-1+gunyahvm2_arm64.deb",
+      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.2.0/libcasilda-1.0_1.4.0-1+gunyahvm2_arm64.deb",
+      "sha256": "e44ec0306acb6b9185571c64f8d93e53849b8ee5bd8be53627de7ca944942091"
     },
     {
       "package": "libliftoff0",
