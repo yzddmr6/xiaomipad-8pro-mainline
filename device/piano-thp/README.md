@@ -22,7 +22,8 @@ hardware in a default image.
 ## Build
 
 Requires a C++20 compiler, Make and the nlohmann JSON development headers
-(`nlohmann-json3-dev` on Ubuntu). The tested header version is 3.11.3.
+(`nlohmann-json3-dev` on Ubuntu), pkg-config and libsystemd development files
+(`libsystemd-dev`; target ARM64 libraries when cross-compiling). The tested header version is 3.11.3.
 
 ```sh
 make

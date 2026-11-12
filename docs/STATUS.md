@@ -209,3 +209,11 @@ Preinstalled GunyahVM graphical virtual-machine management.
 
 Installation and maintenance instructions are in [INSTALL.en.md](INSTALL.en.md),
 [UPGRADE.en.md](UPGRADE.en.md) and [FLASHING.en.md](FLASHING.en.md).
+
+### v1.3.0
+
+⟦DRAFT⟧
+
+Linux 7.4、NPU 离线演示、Mesa 上游驱动修复与系统切换保护。
+
+Linux 7.4, an offline NPU demo, upstream Mesa driver fixes and system-switch safeguards.

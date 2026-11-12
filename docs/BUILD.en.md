@@ -32,7 +32,7 @@ sh tools/fetch-busybox-arm64.sh        # expect ".../usr/bin/busybox: OK"
 
 | Input | Pin |
 |---|---|
-| Kernel | [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano), branch `piano/dev`; commit and configuration fragments in [kernel/source.json](../kernel/source.json), releases in [kernel/abi.json](../kernel/abi.json) |
+| Kernel | [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano), branch `sm8750/v7.4-dev`; commit and configuration fragments in [kernel/source.json](../kernel/source.json), releases in [kernel/abi.json](../kernel/abi.json) |
 | Firmware | [firmware/](../firmware/README.md), locked by `firmware/piano-*.json` |
 | Mesa | 26.2.6 and `mesa/piano-fixes.patch`, [mesa/source.json](../mesa/source.json) |
 | Ubuntu | 26.04 Desktop ARM64 ISO, SHA-256 `c2afd538d66fdd77377d03f1ed2ac76a34f1c116baecc9a8170d68f833121f57`; [ubuntu/26.04.sources](../ubuntu/26.04.sources); packages from a dated [snapshot](https://snapshot.ubuntu.com/) |
@@ -41,10 +41,23 @@ sh tools/fetch-busybox-arm64.sh        # expect ".../usr/bin/busybox: OK"
 Private build inputs come from your own tablet: the stock base DTB and DTBO entry,
 the boot profile and the signing key ([INSTALL.en.md](INSTALL.en.md#3-collect-your-units-files)).
 
+## Kernel Rust build inputs
+
+Use the archives and versions pinned in `kernel/rust-toolchain.json`. Install the
+Rust compiler and host standard library into one tool prefix, unpack rust-src and
+bindgen, and extract the pinned libclang/LLVM packages. Set `RUSTC`, `BINDGEN`,
+`RUST_LIB_SRC` (the source `library/` directory), and `LIBCLANG_PATH` for every
+kernel and external-module invocation. Put the compiler prefix's `bin/` in
+`PATH`, its shared libraries in the build process's `LD_LIBRARY_PATH`, and point
+`BINDGEN_EXTRA_CLANG_ARGS` at the matching Clang 18 include directory.
+The release entry point rejects mismatched tools before configuration and records
+their identity in `build-result.json`. Keep that environment for module packaging.
+Linux 7.4 builds `gen_init_cpio` under `scripts/`, rather than `usr/`.
+
 ## 1. Kernel
 
 ```bash
-git clone --branch piano/dev https://github.com/yzddmr6/linux-sm8750-piano ../linux
+git clone --branch sm8750/v7.4-dev https://github.com/yzddmr6/linux-sm8750-piano ../linux
 git -C ../linux checkout "$(python3 -c 'import json; print(json.load(open("kernel/source.json"))["commit"])')"
 BUILD_MODULES=1 KERNEL_SOURCE=../linux OUT_DIR="$PWD/out/kernel-release" bash tools/build-kernel.sh
 # expect "Piano kernel build complete: .../out/kernel-release/build-result.json (boot packaging is separate)"
@@ -133,7 +146,10 @@ for the deb filename and package version.
 # touch processing (piano-thp-live): ARM64, dynamic glibc, static C++ runtime, PIE, BIND_NOW
 mkdir -p out/json-include && cp -r /usr/include/nlohmann out/json-include/
 make -C device/piano-thp OUT="$PWD/out/piano-thp-arm64" CXX=aarch64-linux-gnu-g++-13 \
-  JSON_INCLUDE="$PWD/out/json-include" LDFLAGS='-static-libstdc++ -static-libgcc -Wl,-z,relro,-z,now' \
+  JSON_INCLUDE="$PWD/out/json-include" \
+  SYSTEMD_CFLAGS="-I<arm64-sysroot>/usr/include" \
+  SYSTEMD_LIBS="-L<arm64-sysroot>/usr/lib/aarch64-linux-gnu -Wl,-rpath-link,<arm64-sysroot>/usr/lib/aarch64-linux-gnu -lsystemd" \
+  LDFLAGS='-static-libstdc++ -static-libgcc -Wl,-z,relro,-z,now' \
   all test RUNNER='qemu-aarch64-static -L /usr/aarch64-linux-gnu'
 # expect three "PASS:" lines from the unit tests run under qemu-user
 # Prepare the complete Ubuntu host Mesa cohort as described below.
@@ -178,11 +194,13 @@ For 1.2.1, retain the released device-support package `1.2.0.1` and unchanged ke
 
 For 1.2.0, use `--version 1.2.0.1` for device support and `--version 1.2.0.2` for desktop integration; use `--release-version 1.2.0` for both.
 
+Isolate supplementary groups for the sd-bus message-only test under ARM64 emulation. QEMU 8.2.2 and 10.2.3 fail to write back the length when `SO_PEERGROUPS` returns `ERANGE`. Prefix `RUNNER` with `timeout 30 sudo setpriv --reuid=$(id -u) --regid=$(id -g) --clear-groups`; this changes only the test process credentials, not account membership or product permissions.
+
 ## Host Mesa packages and local release repositories
 
 [mesa/ubuntu/source.json](../mesa/ubuntu/source.json) fixes the Canonical resolute
 backport packaging, archive snapshots and authenticated hashes. Build upstream
-26.2.6 with the six unchanged patches, Ubuntu's complete ARM64 driver selection,
+26.2.6 with the pinned patch set, Ubuntu's complete ARM64 driver selection,
 GLVND and distribution build flags. libdrm uses original Ubuntu binaries and is
 not rebuilt or pinned. The Snap provider retains its separate build recipe.
 
@@ -499,7 +517,7 @@ Ubuntu ext4 image and a kernel with built-in VirtIO block/ext4 support:
 python3 tools/test-debug-timeout-qemu.py \
   --kernel /path/to/Image --rootfs /path/to/ubuntu.ext4 \
   --qemu /path/to/qemu-system-aarch64 --busybox /path/to/arm64/busybox \
-  --gen-init-cpio /path/to/linux-out/usr/gen_init_cpio \
+  --gen-init-cpio /path/to/linux-out/scripts/gen_init_cpio \
   --debugfs /path/to/debugfs --e2fsck /path/to/e2fsck \
   --output /path/to/new-test-output
 ```

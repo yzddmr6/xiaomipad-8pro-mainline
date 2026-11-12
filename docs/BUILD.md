@@ -32,7 +32,7 @@ sh tools/fetch-busybox-arm64.sh        # 预期 ".../usr/bin/busybox: OK"
 
 | 输入 | 版本与身份锁 |
 |---|---|
-| 内核 | [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano)，分支 `piano/dev`；提交和配置片段见 [kernel/source.json](../kernel/source.json)，release 见 [kernel/abi.json](../kernel/abi.json) |
+| 内核 | [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano)，分支 `sm8750/v7.4-dev`；提交和配置片段见 [kernel/source.json](../kernel/source.json)，release 见 [kernel/abi.json](../kernel/abi.json) |
 | 固件 | [firmware/](../firmware/README.md)，由 `firmware/piano-*.json` 锁定 |
 | Mesa | 26.2.6 与 `mesa/piano-fixes.patch`，见 [mesa/source.json](../mesa/source.json) |
 | Ubuntu | 26.04 Desktop ARM64 ISO，SHA-256 `c2afd538d66fdd77377d03f1ed2ac76a34f1c116baecc9a8170d68f833121f57`；[ubuntu/26.04.sources](../ubuntu/26.04.sources)；软件包取自指定日期的[快照](https://snapshot.ubuntu.com/) |
@@ -41,10 +41,21 @@ sh tools/fetch-busybox-arm64.sh        # 预期 ".../usr/bin/busybox: OK"
 原厂基础 DTB、DTBO 条目、boot profile 和签名密钥由你提供，隐私边界见 [AGENTS.md](../AGENTS.md)。
 原厂输入须来自自己的平板，采集方法见[安装指南](INSTALL.md)。
 
+## 内核 Rust 构建输入
+
+使用 `kernel/rust-toolchain.json` 锁定的归档和版本。将 Rust 编译器与宿主标准库
+安装到同一工具前缀，解包 rust-src、bindgen 和已锁定的 libclang/LLVM 包。每次
+内核与树外模块调用均设置 `RUSTC`、`BINDGEN`、`RUST_LIB_SRC`（源码中的
+`library/` 目录）和 `LIBCLANG_PATH`；把编译器前缀的 `bin/` 加入 `PATH`，
+共享库目录加入该构建进程的 `LD_LIBRARY_PATH`，并用 `BINDGEN_EXTRA_CLANG_ARGS`
+指定匹配的 Clang 18 头文件目录。发布入口在配置前拒绝不匹配的工具，并把身份
+写入 `build-result.json`；打包树外模块时保留同一环境。Linux 7.4 的
+`gen_init_cpio` 位于 `scripts/`，不再位于 `usr/`。
+
 ## 1. 内核
 
 ```bash
-git clone --branch piano/dev https://github.com/yzddmr6/linux-sm8750-piano ../linux
+git clone --branch sm8750/v7.4-dev https://github.com/yzddmr6/linux-sm8750-piano ../linux
 git -C ../linux checkout "$(python3 -c 'import json; print(json.load(open("kernel/source.json"))["commit"])')"
 BUILD_MODULES=1 KERNEL_SOURCE=../linux OUT_DIR="$PWD/out/kernel-release" bash tools/build-kernel.sh
 # 预期 "Piano kernel build complete: .../out/kernel-release/build-result.json (boot packaging is separate)"
@@ -125,8 +136,11 @@ piano 启动钩子。同一组输入生成逐字节相同的 deb。
 # 触控处理（piano-thp-live）：ARM64，动态链接 glibc、静态链接 C++ 运行库、PIE、BIND_NOW
 mkdir -p out/json-include && cp -r /usr/include/nlohmann out/json-include/
 make -C device/piano-thp OUT="$PWD/out/piano-thp-arm64" CXX=aarch64-linux-gnu-g++-13 \
-  JSON_INCLUDE="$PWD/out/json-include" LDFLAGS='-static-libstdc++ -static-libgcc -Wl,-z,relro,-z,now' \
-  all test RUNNER='qemu-aarch64-static -L /usr/aarch64-linux-gnu'
+  JSON_INCLUDE="$PWD/out/json-include" \
+  SYSTEMD_CFLAGS="-I<arm64-sysroot>/usr/include" \
+  SYSTEMD_LIBS="-L<arm64-sysroot>/usr/lib/aarch64-linux-gnu -Wl,-rpath-link,<arm64-sysroot>/usr/lib/aarch64-linux-gnu -lsystemd" \
+  LDFLAGS='-static-libstdc++ -static-libgcc -Wl,-z,relro,-z,now' \
+  all test RUNNER='qemu-aarch64-static -cpu max,pauth-impdef=on -L /usr/aarch64-linux-gnu -E LD_LIBRARY_PATH=<arm64-sysroot>/usr/lib/aarch64-linux-gnu'
 # 预期单元测试在 qemu-user 下输出三行 "PASS:"
 # 宿主 Mesa 先按下节生成 out/host-mesa-build 的完整同源包
 # piano-device-support、piano-mesa、piano-ubuntu-desktop
@@ -153,7 +167,7 @@ python3 tools/build-firmware-deb.py --topology out/audio/Piano-Capture-Diag-tplg
 
   ```bash
   B=out/piano-thp-arm64/piano-thp-live
-  readelf -d "$B" | grep -E 'NEEDED|FLAGS'  # 只有 libm.so.6、libc.so.6、ld-linux-aarch64.so.1；BIND_NOW；NOW PIE
+  readelf -d "$B" | grep -E 'NEEDED|FLAGS'  # libsystemd.so.0、libm.so.6、libc.so.6、ld-linux-aarch64.so.1；BIND_NOW；NOW PIE
   objdump -T "$B" | grep -oE 'GLIBC_[0-9.]+' | sort -uV | tail -1  # 最高 GLIBC_2.38；目标系统 glibc 不得低于它
   strings "$B" | grep -c "$PWD"             # 0：二进制中没有构建机路径
   ```
@@ -168,10 +182,12 @@ python3 tools/build-firmware-deb.py --topology out/audio/Piano-Capture-Diag-tplg
 
 1.2.0 的设备支持包使用 `--version 1.2.0.1`，桌面集成包使用 `--version 1.2.0.2`；两者均使用 `--release-version 1.2.0`。
 
+ARM64 仿真中的 sd-bus 纯消息测试需要隔离测试进程的补充组；QEMU 8.2.2 和 10.2.3 在 `SO_PEERGROUPS` 返回 `ERANGE` 时未正确回写长度。可将 `RUNNER` 前加 `timeout 30 sudo setpriv --reuid=$(id -u) --regid=$(id -g) --clear-groups`，仅改变该测试进程的凭据；不会改变账户组或产品权限。
+
 ## 宿主 Mesa 同名包与本地 APT 批次
 
 源码和认证信息固定在 [mesa/ubuntu/source.json](../mesa/ubuntu/source.json)。
-以 Canonical 的 resolute-proposed 回移打包为基线；只更新上游版本、加入六个
+以 Canonical 的 resolute-proposed 回移打包为基线；只更新上游版本、加入固定的
 已锁定补丁，不裁剪 Ubuntu arm64 驱动，不改变 GLVND。libdrm 直接使用锁定的
 Ubuntu 二进制。宿主构建与 snap provider 构建互不替代。
 

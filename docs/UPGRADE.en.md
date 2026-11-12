@@ -12,6 +12,19 @@ directory holds every project package installed in that release's image. Always 
 whole set together, never a single package.
 
 
+## v1.2.1 → v1.3.0
+
+⟦DRAFT⟧
+
+Install the complete `piano-1.3.0` package batch together with its matching
+boot images. Keep the supplied `piano-1.2.1` batch for complete rollback.
+The kernel, standard Mesa packages and Snap graphics provider change together;
+close virtual machines before upgrading and reboot afterwards.
+The default NPU demo includes its runtime, model and board firmware.
+Follow the existing whole-release upgrade and rollback commands below, replacing
+the repository paths with this release's two batches.
+
+
 ## v1.2.0 → v1.2.1
 
 Host Mesa now uses Ubuntu package names and standard multiarch directories, so
