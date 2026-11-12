@@ -44,6 +44,9 @@ def main():
     source = REPO / 'device/camera'
     lock = json.loads((source / 'source.json').read_text())
     build = json.loads((kout / 'build-result.json').read_text())
+    rust_identity = json.loads(subprocess.check_output(['python3', str(REPO / 'tools/kernel-rust-identity.py')], text=True))
+    if build.get('rust_toolchain') != rust_identity:
+        raise ValueError('Kernel Rust toolchain differs from the completed build')
     kernel_source = (kout / 'source').resolve()
     if subprocess.check_output(['git', '-C', str(kernel_source), 'rev-parse', 'HEAD'], text=True).strip() != build['kernel_commit']:
         raise ValueError('Kernel source changed since the recorded build')
@@ -96,6 +99,8 @@ def main():
             'KCPPFLAGS=' + prefix_map,
             'LOCALVERSION=', 'KBUILD_BUILD_USER=yzddmr6', 'KBUILD_BUILD_HOST=xiaomipad-8pro-mainline',
             'KBUILD_BUILD_TIMESTAMP=@' + epoch, 'modules')
+    if sha(kout / '.config') != build['files']['.config']:
+        raise ValueError('Kernel configuration changed while building the loopback module')
     ko = module / 'v4l2loopback.ko'
     run(a.cross_compile + 'strip', '--strip-debug', ko)
     leaked = [s for s in subprocess.check_output(['strings', '-a', str(ko)], text=True).splitlines()

@@ -239,10 +239,11 @@ def main():
             tag = upstream_tag(source, commit)
         except ValueError as error:
             parser.error(str(error))
+        kernel_version = subprocess.check_output(['make', '--no-print-directory', '-s', '-C', str(source), 'kernelversion'], text=True).strip()
         release = (kout / 'include/config/kernel.release').read_text().strip()
-        if not re.fullmatch(r'[0-9][A-Za-z0-9.+-]*', release) or not release.startswith(tag[1:]):
+        if not re.fullmatch(r'[0-9][A-Za-z0-9.+-]*', release) or not release.startswith(kernel_version):
             parser.error(f'Unexpected kernel release {release!r} for {tag}')
-        abi = re.fullmatch(re.escape(tag[1:]) + r'-piano([1-9][0-9]*)', release)
+        abi = re.fullmatch(re.escape(kernel_version) + r'-piano([1-9][0-9]*)', release)
         if not abi or build.get('kernel_release', release) != release:
             parser.error(f'{release!r} is not an installable piano release: merge '
                          'arch/arm64/configs/piano-release.config last and build with tools/build-kernel.sh')
@@ -258,7 +259,7 @@ def main():
         dtbs = sorted(n for n in build['files'] if n.endswith('.dtb'))
         if not dtbs:
             parser.error('build-result.json records no DTB')
-        version = f'{tag[1:]}-{abi[1]}.{upload}'
+        version = f'{kernel_version.replace("-rc", "~rc")}-{abi[1]}.{upload}'
         epoch = git(source, 'show', '-s', '--format=%ct', commit)
         name = f'linux-image-{release}'
         archive = out / f'{name}_{version}_arm64.deb'

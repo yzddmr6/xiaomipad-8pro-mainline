@@ -1,23 +1,24 @@
 {
   "schema": 1,
-  "purpose": "1.2.0 feature candidate on Linux 7.2.15",
-  "upstream_url": "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git",
-  "upstream_tag": "v7.2.15",
-  "upstream_commit": "497791a0a96b866d90add64041c47acdff49cae6",
+  "purpose": "1.3.0 candidate on Linux 7.4-rc2",
+  "upstream_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+  "upstream_tag": "v7.4-rc2",
+  "upstream_commit": "7475ea8b58616b33c04afb976cf0fbaad9dd63fb",
   "url": "https://github.com/yzddmr6/linux-sm8750-piano",
-  "commit": "ff6cf0aafb8fd28c464c90e6fe9419960911f3a6",
-  "branch": "piano/v1.2-features",
+  "commit": "354650b9da9e34233b25492cb082d047c9c999a2",
+  "branch": "sm8750/v7.4-dev",
   "config": "arch/arm64/configs/piano-diagnostic.config",
   "release_config_fragments": [
-    "arch/arm64/configs/piano-diagnostic.config",
+    "arch/arm64/configs/sm8750-netfilter.config",
     "arch/arm64/configs/sm8750-peripherals.config",
+    "arch/arm64/configs/sm8750-waydroid.config",
+    "arch/arm64/configs/sm8750-snap.config",
+    "arch/arm64/configs/sm8750-virt.config",
+    "arch/arm64/configs/piano-diagnostic.config",
     "arch/arm64/configs/piano-desktop-diag.config",
     "arch/arm64/configs/piano-persistent.config",
-    "arch/arm64/configs/sm8750-netfilter.config",
-    "arch/arm64/configs/sm8750-waydroid.config",
-    "arch/arm64/configs/piano-virt.config",
     "arch/arm64/configs/piano-release.config"
   ],
   "note": "The kernel release fragments remain in the kernel source and are merged in order. tools/build-kernel.sh then applies kernel_release to CONFIG_LOCALVERSION for package ABI allocation without a kernel-only release commit; all other configuration remains unchanged. kernel/abi.json binds the final commit and .config.",
-  "kernel_release": "7.2.15-piano73"
+  "kernel_release": "7.4.0-rc2-piano79"
 }

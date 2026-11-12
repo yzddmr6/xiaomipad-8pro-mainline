@@ -79,7 +79,8 @@ base=$(python3 "$repo/tools/kernel_tag.py" "$src" HEAD)
 # Only the release name is overridden; board configuration stays in the kernel.
 release=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("kernel_release", ""))' "$repo/kernel/source.json")
 if [[ -n $release ]]; then
-	[[ $release =~ ^${base#v}-piano[1-9][0-9]*$ && $release == "${base#v}-piano"* ]] || {
+	upstream_release=$(make -s -C "$src" kernelversion)
+	[[ $release == "$upstream_release-piano"* && ${release#"$upstream_release-piano"} =~ ^[1-9][0-9]*$ ]] || {
 		echo 'kernel/source.json kernel_release must match the pinned upstream version and piano ABI.' >&2; exit 1;
 	}
 fi
@@ -101,8 +102,10 @@ fi
 # release is exactly the version plus CONFIG_LOCALVERSION (piano-release.config).
 args=(-C "$src" O="$out" "CC=$cc" LOCALVERSION=)
 recipe=$({ cat "$src/arch/arm64/configs/defconfig" "${fragments[@]}"; printf '\n%s\n' "$release"; } | sha256sum | cut -d' ' -f1)
+rust_identity=$(python3 "$repo/tools/kernel-rust-identity.py")
+printf '%s\n' "$rust_identity" >"$out/rust-toolchain.json"
 toolchain=$("${cross}gcc" --version | head -1)
-identity=$(printf '%s\n' "$src" "$base" "$toolchain" "$cross" "$KCFLAGS" "$KAFLAGS" | sha256sum | cut -d' ' -f1)
+identity=$(printf '%s\n' "$src" "$base" "$toolchain" "$cross" "$KCFLAGS" "$KAFLAGS" "$rust_identity" | sha256sum | cut -d' ' -f1)
 if [[ -f $out/.build-input && $(cat "$out/.build-input") != "$identity" ]]; then
 	echo 'Upstream version, toolchain or source/output location changed; select a new OUT_DIR.' >&2
 	exit 1
@@ -116,7 +119,7 @@ if [[ ! -f $out/.config || ! -f $out/.recipe || $(cat "$out/.recipe") != "$recip
 fi
 # Apply only after the kernel fragments, before olddefconfig and all targets.
 if [[ -n $release ]]; then
-	"$src/scripts/config" --file "$out/.config" --set-str LOCALVERSION "-${release#*-}" --disable LOCALVERSION_AUTO
+	"$src/scripts/config" --file "$out/.config" --set-str LOCALVERSION "-${release#"$upstream_release-"}" --disable LOCALVERSION_AUTO
 fi
 # Source updates can add Kconfig symbols without changing the board fragment.
 make "${args[@]}" olddefconfig >>"$out/configure.log" 2>&1
@@ -162,6 +165,7 @@ files = ['arch/arm64/boot/Image', 'arch/arm64/boot/dts/qcom/sm8750-xiaomi-piano.
          'arch/arm64/boot/dts/qcom/sm8750-xiaomi-piano-desktop.dtb', '.config']
 result = {'status': 'OFFLINE_BUILD_ONLY', 'kernel_commit': head, 'compiler': compiler,
           'kernel_release': (out / 'include/config/kernel.release').read_text().strip(),
+          'rust_toolchain': json.loads((out / 'rust-toolchain.json').read_text()),
           'config_fragments': [str(pathlib.Path(f).relative_to(src)) for f in sys.argv[6:]],
           'note': 'Building does not establish hardware support.',
           'files': {f: hashlib.sha256((out / f).read_bytes()).hexdigest() for f in files}}
