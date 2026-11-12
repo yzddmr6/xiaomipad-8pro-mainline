@@ -476,3 +476,5 @@ Qwen3-0.6B weights are Apache-2.0 (Qwen team), converted to GGUF by Unsloth.
 Stock DSP shells and libraries are included under firmware/npu with source identities.
 They are Qualcomm/vendor property; no redistribution permission has been obtained,
 and they will be removed upon request from the rights holder.
+
+Mesa ir3 helper ordering prerequisite: Job Noorman, upstream 87afb02bc7e54e6b47da4339a7b805e77751c9b7, MIT; original patch and attribution retained in mesa/ir3-float-helper-order.patch.

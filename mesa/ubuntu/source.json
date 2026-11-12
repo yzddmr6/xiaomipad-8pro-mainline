@@ -3,7 +3,7 @@
   "components": {
     "mesa": {
       "base_version": "26.2.4-1ubuntu1~26.04.1",
-      "local_version": "26.2.6-0ubuntu0~sm8750.2",
+      "local_version": "26.2.6-0ubuntu0~sm8750.3",
       "files": [
         {
           "file": "mesa_26.2.4-1ubuntu1~26.04.1.debian.tar.xz",

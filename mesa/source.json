@@ -68,6 +68,13 @@
       "license": "MIT"
     },
     {
+      "path": "mesa/ir3-float-helper-order.patch",
+      "sha256": "f5b5faa8b571e88d7faf634259cd131c79c2b360eba291ec0872b4a311f83e56",
+      "upstream_commit": "87afb02bc7e54e6b47da4339a7b805e77751c9b7",
+      "origin": "https://gitlab.freedesktop.org/mesa/mesa/-/commit/87afb02bc7e54e6b47da4339a7b805e77751c9b7",
+      "license": "MIT"
+    },
+    {
       "path": "mesa/ir3-float-saturation.patch",
       "sha256": "b6cb5c49d6c7598544ece0bae5eaeb2b16ed45a089c99c1c1aeb495963cc1b4b",
       "upstream_commit": "5a9db0be64e090164930593c6cd13d08ad45123f",
