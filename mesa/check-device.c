@@ -10,7 +10,7 @@ int main(void)
 	for (unsigned i = 0; i < sizeof(bins) / sizeof(bins[0]); i++) {
 		struct fd_dev_id id = { .chip_id = ((uint64_t)bins[i] << 32) | 0x44050001 };
 		const struct fd_dev_info *info = fd_dev_info_raw(&id);
-		if (!info || info->chip != 8 || strcmp(fd_dev_name(&id), "Adreno (TM) 830")) {
+		if (!info || info->chip != 8 || strcmp(fd_dev_name(&id), "Adreno (TM) 830v1")) {
 			fprintf(stderr, "A830 revision 1 not matched for speed bin %u\n", bins[i]);
 			return 1;
 		}

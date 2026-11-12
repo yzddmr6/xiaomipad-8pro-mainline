@@ -460,3 +460,11 @@ Snapshot: 1de3301a698fcd2eadcb2610bf478a8cffcad1f9.
 License: GPL-2.0-only; LICENSES/GPL-2.0-only.txt.
 File: tools/waydroid-omx-overlay.py, imported without changes.
 Workaround: https://github.com/waydroid/waydroid/issues/2453.
+
+Mesa upstream fixes included with 26.2.6:
+- A830v1 chip-ID matching: Lakshman Chandu Kondreddy, 2061a5ee6184.
+- Imported syncobj fd ownership: Birk Skyum, 05a338549d2f.
+- Relative constant aliasing and floating-point saturation: Job Noorman,
+  8511f446715c and 5a9db0be64e0.
+Original authors and commit trailers are retained in mesa/*.patch; source URLs
+and patch checksums are recorded in mesa/source.json. Mesa licensing is unchanged.

@@ -8,7 +8,7 @@
   "version": "26.2.6",
   "archive": "mesa-26.2.6.tar.xz",
   "archive_sha256": "b9436b3e1a8be76fbd4823dc884f90596ab7c6ac5e1867a305e66ffccfb31a92",
-  "patch_sha256": "98c0e3ada8fb8fbc4dff21e858b31ae273ffeb07884db726b7d893744573d591",
+  "patch_sha256": "c225cb41301bab3fe9dfd7650b367bec5face6091976f79c1c25702b904d7422",
   "archive_note": "Official Mesa release archive; checksum published in the release notes.",
   "additional_patches": [
     {
@@ -45,6 +45,34 @@
       "origin": "https://gitlab.freedesktop.org/mesa/mesa/-/commit/1f9c4d529f4cfb332f5abfabbd0918f5d5f6cb4e",
       "license": "MIT",
       "sha256": "72c3f2696ba5d18b5d56139bbfa0f7c9ddeb9567e6d4f56a4461caa84c929c6d"
+    },
+    {
+      "path": "mesa/freedreno-a830v1.patch",
+      "sha256": "543a1fd4534c77e42ef1d2955d2853495ffa24ed22c4e36faaad8029a9296e49",
+      "upstream_commit": "2061a5ee6184e465eafb87cf465aed92c04f1a41",
+      "origin": "https://gitlab.freedesktop.org/mesa/mesa/-/commit/2061a5ee6184e465eafb87cf465aed92c04f1a41",
+      "license": "MIT"
+    },
+    {
+      "path": "mesa/freedreno-syncobj-fd.patch",
+      "sha256": "838325a0963b3a24c8f0de57c96d05a2a4a89bb222fca5b58176604eb10847fd",
+      "upstream_commit": "05a338549d2f24d2f00e3d781cdfe590257629e9",
+      "origin": "https://gitlab.freedesktop.org/mesa/mesa/-/commit/05a338549d2f24d2f00e3d781cdfe590257629e9",
+      "license": "MIT"
+    },
+    {
+      "path": "mesa/ir3-relative-const-alias.patch",
+      "sha256": "9e49a4d98a4d61a324bea58633329f959f9e463720e50572af19e9b89da31e4f",
+      "upstream_commit": "8511f446715cc79ccd72bbd1c26471135d774dea",
+      "origin": "https://gitlab.freedesktop.org/mesa/mesa/-/commit/8511f446715cc79ccd72bbd1c26471135d774dea",
+      "license": "MIT"
+    },
+    {
+      "path": "mesa/ir3-float-saturation.patch",
+      "sha256": "b6cb5c49d6c7598544ece0bae5eaeb2b16ed45a089c99c1c1aeb495963cc1b4b",
+      "upstream_commit": "5a9db0be64e090164930593c6cd13d08ad45123f",
+      "origin": "https://gitlab.freedesktop.org/mesa/mesa/-/commit/5a9db0be64e090164930593c6cd13d08ad45123f",
+      "license": "MIT"
     }
   ],
   "archive_url": "https://archive.mesa3d.org/mesa-26.2.6.tar.xz",

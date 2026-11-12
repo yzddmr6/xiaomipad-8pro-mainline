@@ -3,7 +3,7 @@
   "components": {
     "mesa": {
       "base_version": "26.2.4-1ubuntu1~26.04.1",
-      "local_version": "26.2.6-0ubuntu0~sm8750.1",
+      "local_version": "26.2.6-0ubuntu0~sm8750.2",
       "files": [
         {
           "file": "mesa_26.2.4-1ubuntu1~26.04.1.debian.tar.xz",
@@ -213,12 +213,12 @@
     "authentication": "Ubuntu archive keyring; signed InRelease and indexed package hashes"
   },
   "mesa_source": "../source.json",
-  "patch_policy": "Apply the six patches from mesa/source.json unchanged; Ubuntu patches already present in upstream are recorded and omitted.",
+  "patch_policy": "Apply the patches from mesa/source.json unchanged; omit Ubuntu patches already present upstream.",
   "build_patches": [
     {
       "file": "nir-test-algorithm.patch",
       "sha256": "a795f792ba2a5a11e665fc829214ad4c0c1519eacbacd2897d0b216d8745804e",
-      "scope": "test compilation only; original six driver patches unchanged"
+      "scope": "test compilation only"
     }
   ]
 }

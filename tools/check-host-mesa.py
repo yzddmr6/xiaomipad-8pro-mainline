@@ -139,6 +139,11 @@ def standard_maps(pid):
     return dict(pid=pid,paths=paths,pass_=bool(paths) and all(p.startswith(('/usr/lib/aarch64-linux-gnu/','/lib/aarch64-linux-gnu/')) for p in paths))
 
 
+def is_target_renderer(text):
+    """Match the upstream A830v1 name, including a virgl guest wrapper."""
+    return bool(re.search(r'Adreno \(TM\) 830v1\b', text, re.I))
+
+
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--probe',action='store_true',help=argparse.SUPPRESS)
@@ -159,7 +164,7 @@ def main():
         try:
             r=subprocess.run(argv,capture_output=True,text=True,timeout=90)
             text=r.stdout+r.stderr
-            passed=r.returncode==0 and (not renderer or bool(re.search(r'Adreno.*830',r.stdout,re.I)))
+            passed=r.returncode==0 and (not renderer or is_target_renderer(r.stdout))
             checks[name]=dict(pass_=passed,returncode=r.returncode,stdout=r.stdout,stderr=r.stderr)
             return r
         except (OSError,subprocess.TimeoutExpired) as e:checks[name]=dict(pass_=False,error=str(e))
@@ -173,23 +178,23 @@ def main():
         if result and result.returncode == 0:
             try:
                 data = json.loads(result.stdout)
-                checks[name]['pass_'] &= bool(re.search(r'Adreno.*830',data['renderer'],re.I)) and data['pixel']==[255,0,0,255] and bool(data['maps']) and all(p.startswith(('/usr/lib/aarch64-linux-gnu/','/lib/aarch64-linux-gnu/')) for p in data['maps'])
+                checks[name]['pass_'] &= is_target_renderer(data['renderer']) and data['pixel']==[255,0,0,255] and bool(data['maps']) and all(p.startswith(('/usr/lib/aarch64-linux-gnu/','/lib/aarch64-linux-gnu/')) for p in data['maps'])
             except (ValueError,KeyError):checks[name]['pass_']=False
     web=execute('webkit',as_user(session,['python3',script,'--webkit-probe']))
     if web and web.returncode==0:
         try:
             result=json.loads(web.stdout.strip().splitlines()[-1]);children=result['web_processes']+result['webgl_processes']
-            checks['webkit']['pass_'] &= bool(re.search(r'Adreno.*830',result['renderer'],re.I)) and result['pixel']==[255,0,0,255] and bool(result['web_processes']) and bool(result['webgl_processes']) and all(c['maps'] and c['sandboxed'] for c in children) and all(p.startswith('/usr/lib/aarch64-linux-gnu/') for c in children for p in c['maps'])
+            checks['webkit']['pass_'] &= is_target_renderer(result['renderer']) and result['pixel']==[255,0,0,255] and bool(result['web_processes']) and bool(result['webgl_processes']) and all(c['maps'] and c['sandboxed'] for c in children) and all(p.startswith('/usr/lib/aarch64-linux-gnu/') for c in children for p in c['maps'])
         except (ValueError,KeyError,IndexError):checks['webkit']['pass_']=False
     vulkan=execute('vulkan',as_user(session,['vulkaninfo','--summary']))
     if vulkan:
         devices=re.findall(r'deviceName\s*=\s*([^\n]+)',vulkan.stdout)
-        checks['vulkan']['a830_devices']=[d for d in devices if re.search(r'Adreno.*830',d,re.I)]
+        checks['vulkan']['a830_devices']=[d for d in devices if is_target_renderer(d)]
         checks['vulkan']['pass_'] &= len(checks['vulkan']['a830_devices'])==1
     if a.virgl_pid and a.virgl_command:
         checks['virgl-host']=standard_maps(a.virgl_pid)
         r=execute('virgl-guest',json.loads(a.virgl_command))
-        if r:checks['virgl-guest']['pass_'] &= bool(re.search(r'OpenGL renderer string:.*virgl.*Adreno.*830',r.stdout,re.I))
+        if r:checks['virgl-guest']['pass_'] &= bool(re.search(r'OpenGL renderer string:.*virgl',r.stdout,re.I)) and is_target_renderer(r.stdout)
     else:checks['virgl']=dict(pass_=False,error='real running guest command and host GPU PID required')
     result=dict(pass_=all(c['pass_'] for c in checks.values()),checks=checks)
     text=json.dumps(result,indent=2)+'\n'

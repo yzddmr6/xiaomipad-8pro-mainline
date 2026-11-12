@@ -1,0 +1,28 @@
+From 8511f446715cc79ccd72bbd1c26471135d774dea Mon Sep 17 00:00:00 2001
+From: Job Noorman <jnoorman@igalia.com>
+Date: Sun, 8 Nov 2026 09:08:38 +0100
+Subject: [PATCH] ir3: don't emit alias.rt for relative const movs
+
+alias.rt doesn't support relative const sources so a relative const mov
+would be encoded as an alias.rt of c0.x (since its num is 0).
+
+Signed-off-by: Job Noorman <jnoorman@igalia.com>
+Fixes: 0aa9678d4d0 ("ir3: add support for alias.rt")
+Part-of: <https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/46064>
+
+diff --git a/src/freedreno/ir3/ir3_alias.c b/src/freedreno/ir3/ir3_alias.c
+index 98037927cfe..6eeccfbea34 100644
+--- a/src/freedreno/ir3/ir3_alias.c
++++ b/src/freedreno/ir3/ir3_alias.c
+@@ -695,8 +695,9 @@ create_output_aliases(struct ir3_shader_variant *v, struct ir3_instruction *end)
+       unsigned rt = output->slot - FRAG_RESULT_DATA0;
+ 
+       foreach_src_n (comp_src, comp, src_instr) {
+-         if (!(comp_src->flags & (IR3_REG_IMMED | IR3_REG_CONST))) {
+-            /* Only const and immediate values can be aliased. */
++         if (!(comp_src->flags & (IR3_REG_IMMED | IR3_REG_CONST)) ||
++             (comp_src->flags & IR3_REG_RELATIV)) {
++            /* Only (non-relative) const and immediate values can be aliased. */
+             continue;
+          }
+ 

@@ -1,0 +1,48 @@
+From 05a338549d2f24d2f00e3d781cdfe590257629e9 Mon Sep 17 00:00:00 2001
+From: Birk Skyum <birk.skyum@pm.me>
+Date: Wed, 28 Oct 2026 19:17:49 +0100
+Subject: [PATCH] freedreno: Don't double-close imported syncobj fd
+
+The GL front end owns the fd passed to create_fence_fd() with
+PIPE_FD_TYPE_SYNCOBJ and closes it after the import, as noted in
+import_semaphoreobj_fd().  Freedreno also closed it here, so every
+successful import closed the same fd number twice.
+
+The second close usually fails with EBADF, but in a multithreaded
+process another thread can be handed that fd number between the two
+closes, and the second close then shuts that thread's descriptor.  This
+shows up as a Chromium GPU process crash ("FD ownership violation") on
+Adreno, where a GL semaphore is imported on each WebGPU/compositor
+handoff while decoder threads open fds.
+
+radeonsi and iris do not close the imported fd, and zink and the
+NATIVE_SYNC path here duplicate it first.
+
+Tested on an Adreno X1-85 (Yoga Slim 7x) with a 6 minute, four-window
+WebGPU videoUploading run in Chromium 153, using a main build
+(27.0.0-devel) with this commit.  The GPU process survived the whole
+run.  An unpatched 26.2.5 build crashed within 10 to 60 seconds in the
+same setup.
+
+Fixes: e0e9712a4d8 ("freedreno: support GL_EXT_semaphore")
+Part-of: <https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/45717>
+
+diff --git a/src/gallium/drivers/freedreno/freedreno_fence.c b/src/gallium/drivers/freedreno/freedreno_fence.c
+index c40940e2631..effc9dde9cd 100644
+--- a/src/gallium/drivers/freedreno/freedreno_fence.c
++++ b/src/gallium/drivers/freedreno/freedreno_fence.c
+@@ -192,13 +192,10 @@ fd_create_pipe_fence_fd(struct pipe_context *pctx, struct pipe_fence_handle **pf
+          fence_create(fd_context(pctx), NULL, os_dupfd_cloexec(fd), 0);
+       break;
+    case PIPE_FD_TYPE_SYNCOBJ: {
+-      int ret;
+       uint32_t syncobj;
+ 
+       assert(ctx->screen->has_syncobj);
+-      ret = drmSyncobjFDToHandle(fd_device_fd(ctx->screen->dev), fd, &syncobj);
+-      if (!ret)
+-         close(fd);
++      drmSyncobjFDToHandle(fd_device_fd(ctx->screen->dev), fd, &syncobj);
+ 
+       *pfence = fence_create(fd_context(pctx), NULL, -1, syncobj);
+       break;
