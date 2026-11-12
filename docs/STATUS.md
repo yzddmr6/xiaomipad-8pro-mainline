@@ -214,6 +214,6 @@ Installation and maintenance instructions are in [INSTALL.en.md](INSTALL.en.md),
 
 ⟦DRAFT⟧
 
-Linux 7.4、NPU 离线演示、Mesa 上游驱动修复与系统切换保护。
+Linux 7.4-rc2、NPU 离线演示、GNOME 硬件录屏、Mesa 驱动修复与系统切换保护；GunyahVM 1.2.0 支持 Linux 和 Windows 来宾。
 
-Linux 7.4, an offline NPU demo, upstream Mesa driver fixes and system-switch safeguards.
+Linux 7.4-rc2, an offline NPU demo, hardware screen recording in GNOME, Mesa driver fixes and system-switch safeguards. GunyahVM 1.2.0 supports Linux and Windows guests.

@@ -85,6 +85,13 @@ class Release(unittest.TestCase):
         notes = render_notes(rootfs, 'OS3.0.303.0.WPYCNXM', '1234567' + '0' * 33,
                              {'url': 'https://example.org/kernel', 'commit': 'abcdef0' + '1' * 33}, changes_document(changes))
         self.assertEqual(notes.count(changes), 2)
+        rc = '7.4.0-rc2-piano81'
+        rc_notes = render_notes(dict(rootfs, kernel_release=rc,
+                                     packages=[{'package': 'linux-image-' + rc}]),
+                                'stock', 'integration', {'url': 'https://example.org/kernel'},
+                                changes_document(changes))
+        self.assertIn('Linux 7.4.0-rc2', rc_notes)
+        self.assertNotIn('-piano81', rc_notes)
         self.assertLess(notes.index('## 更新'), notes.index('## 获取、安装与升级'))
         self.assertLess(notes.index('## 已知限制'), notes.index('## Changes'))
         self.assertIn('内核：Linux 7.2.6；', notes)
