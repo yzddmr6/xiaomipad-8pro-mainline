@@ -564,6 +564,6 @@ existing version.
 A kernel baseline change rebuilds matching kernel, modules and boot images;
 Piano also rebuilds its camera loopback module for that ABI. Always assemble
 and verify root images, complete APT batches and attachments from the final
-components. GunyahVM remains pinned to 1.1.0. Updating its source lock and four
-packages requires whole-release upgrade/rollback and application checks, but
+components. The GunyahVM 1.2.0 lock covers four application packages, two Casilda packages
+and nine system dependencies. Include all of them in the release repository. Updating the lock requires whole-release upgrade/rollback and application checks, but
 no Mesa compilation. Keep host Mesa and Snap build outputs separate.

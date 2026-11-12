@@ -1,40 +1,130 @@
 {
   "schema": 1,
-  "version": "1.1.0-1",
+  "version": "1.2.0-1",
   "desktop_id": "io.github.yzddmr6.GunyahVM.desktop",
   "packages": [
     {
       "package": "gunyahvm",
-      "version": "1.1.0-1",
+      "version": "1.2.0-1",
       "architecture": "arm64",
-      "file": "gunyahvm_1.1.0-1_arm64.deb",
-      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.1.0/gunyahvm_1.1.0-1_arm64.deb",
-      "sha256": "aab1e84535dbf9fde2633f8ae4061c6bf7597e3c2bad989fe7e3ad1043e09492"
+      "file": "gunyahvm_1.2.0-1_arm64.deb",
+      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.2.0/gunyahvm_1.2.0-1_arm64.deb",
+      "sha256": "86492e28110b1e05c659e4b1e2b5c55d122eaf51601c0e3e26dbd0d32b52bbb6"
     },
     {
       "package": "gunyahvm-runtime",
-      "version": "1.1.0-1",
+      "version": "1.2.0-1",
       "architecture": "arm64",
-      "file": "gunyahvm-runtime_1.1.0-1_arm64.deb",
-      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.1.0/gunyahvm-runtime_1.1.0-1_arm64.deb",
-      "sha256": "86fbe3a5a6c81ccccf844cfeab2f4e54f4a7516b7404f4fd58b5b3142234a870"
+      "file": "gunyahvm-runtime_1.2.0-1_arm64.deb",
+      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.2.0/gunyahvm-runtime_1.2.0-1_arm64.deb",
+      "sha256": "ee53a42cf77ce0ef7f8a6e831543514432711f2cd5fd79a27fad2f4d32c5b7e2"
     },
     {
       "package": "gunyahvm-guest-kernel",
-      "version": "1.1.0-1",
+      "version": "1.2.0-1",
       "architecture": "arm64",
-      "file": "gunyahvm-guest-kernel_1.1.0-1_arm64.deb",
-      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.1.0/gunyahvm-guest-kernel_1.1.0-1_arm64.deb",
-      "sha256": "71daab1beefc22fb343bf7aedbc765b48542035488019ba3b1653129ddc072a3"
+      "file": "gunyahvm-guest-kernel_1.2.0-1_arm64.deb",
+      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.2.0/gunyahvm-guest-kernel_1.2.0-1_arm64.deb",
+      "sha256": "23f5f7938a720a90ff95eac525eb231b304a96ee4087c5ab7315ffdfd7c5397e"
     },
     {
       "package": "gunyahvm-guest-mesa",
-      "version": "1.1.0-1",
+      "version": "1.2.0-1",
       "architecture": "arm64",
-      "file": "gunyahvm-guest-mesa_1.1.0-1_arm64.deb",
-      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.1.0/gunyahvm-guest-mesa_1.1.0-1_arm64.deb",
-      "sha256": "5af1c4baac5e13570dc0046a788ef3e82a0fb7eaf191670811739cb96f89d578"
+      "file": "gunyahvm-guest-mesa_1.2.0-1_arm64.deb",
+      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.2.0/gunyahvm-guest-mesa_1.2.0-1_arm64.deb",
+      "sha256": "c9379b3bb9d9d39c717aab09d51c8030f8de4fb9253641c0903408dd38ce38a3"
     }
   ],
-  "release_url": "https://github.com/yzddmr6/GunyahVM/releases/tag/v1.1.0"
+  "release_url": "https://github.com/yzddmr6/GunyahVM/releases/tag/v1.2.0",
+  "dependencies": [
+    {
+      "package": "gir1.2-casilda-1.0",
+      "version": "1.4.0-1+gunyahvm1",
+      "architecture": "arm64",
+      "file": "gir1.2-casilda-1.0_1.4.0-1+gunyahvm1_arm64.deb",
+      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.2.0/gir1.2-casilda-1.0_1.4.0-1+gunyahvm1_arm64.deb",
+      "sha256": "b59ad0ebf0cd197e8fb8a7c77d9d5c308fb1a6e1d8ea21b3091a548f1319aa59"
+    },
+    {
+      "package": "libcasilda-1.0",
+      "version": "1.4.0-1+gunyahvm1",
+      "architecture": "arm64",
+      "file": "libcasilda-1.0_1.4.0-1+gunyahvm1_arm64.deb",
+      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.2.0/libcasilda-1.0_1.4.0-1+gunyahvm1_arm64.deb",
+      "sha256": "8fe81f2803a24cc6bf26bf02396f23dcf3494394e9cd5336e3a76a2710805c50"
+    },
+    {
+      "package": "libliftoff0",
+      "version": "0.5.0-1.1build1",
+      "architecture": "arm64",
+      "file": "libliftoff0_0.5.0-1.1build1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/universe/libl/libliftoff/libliftoff0_0.5.0-1.1build1_arm64.deb",
+      "sha256": "7d68b1917cd606ed890f7e2eb39c6243d51339c3862f785388813539c1827868"
+    },
+    {
+      "package": "libseat1",
+      "version": "0.9.2-2",
+      "architecture": "arm64",
+      "file": "libseat1_0.9.2-2_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/universe/s/seatd/libseat1_0.9.2-2_arm64.deb",
+      "sha256": "6a6dfb2214b23370a0cc5660170b965845e9c9901c077960b2acbec22b81d551"
+    },
+    {
+      "package": "libwlroots-0.20",
+      "version": "0.20.2-1",
+      "architecture": "arm64",
+      "file": "libwlroots-0.20_0.20.2-1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/universe/w/wlroots/libwlroots-0.20_0.20.2-1_arm64.deb",
+      "sha256": "fe03e204ac38a67e31178b222d2dd17660497af76eb5a4b0b5c891286e349319"
+    },
+    {
+      "package": "libxcb-composite0",
+      "version": "1.17.0-2ubuntu1",
+      "architecture": "arm64",
+      "file": "libxcb-composite0_1.17.0-2ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/main/libx/libxcb/libxcb-composite0_1.17.0-2ubuntu1_arm64.deb",
+      "sha256": "cd2358231ac34877dd27fd8976e6f742e2bb5d0a189d0c5e187a02692f2c19fe"
+    },
+    {
+      "package": "libxcb-errors0",
+      "version": "1.0.1-4build1",
+      "architecture": "arm64",
+      "file": "libxcb-errors0_1.0.1-4build1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/universe/x/xcb-util-errors/libxcb-errors0_1.0.1-4build1_arm64.deb",
+      "sha256": "88c7b3fe5d401d0dc1d148133fddd3700f7a3044c80a0061c135f64ebc1c8961"
+    },
+    {
+      "package": "libxcb-ewmh2",
+      "version": "0.4.2-1build1",
+      "architecture": "arm64",
+      "file": "libxcb-ewmh2_0.4.2-1build1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/universe/x/xcb-util-wm/libxcb-ewmh2_0.4.2-1build1_arm64.deb",
+      "sha256": "6526bfb4c5ab06949bbf0aade3950e1691d6ed88e85f766baf7b729f9c815812"
+    },
+    {
+      "package": "libxcb-icccm4",
+      "version": "0.4.2-1build1",
+      "architecture": "arm64",
+      "file": "libxcb-icccm4_0.4.2-1build1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/universe/x/xcb-util-wm/libxcb-icccm4_0.4.2-1build1_arm64.deb",
+      "sha256": "87751190cc0c61c151937d4f17ea74da6a8b40d3571e92d9a463d0f9dfabed9a"
+    },
+    {
+      "package": "libxcb-render-util0",
+      "version": "0.3.10-1build1",
+      "architecture": "arm64",
+      "file": "libxcb-render-util0_0.3.10-1build1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/universe/x/xcb-util-renderutil/libxcb-render-util0_0.3.10-1build1_arm64.deb",
+      "sha256": "dcf55b5eeb0c44bbc2b09c466e145f9eb208059af6e1ef340c4090e018865fed"
+    },
+    {
+      "package": "libxcb-xinput0",
+      "version": "1.17.0-2ubuntu1",
+      "architecture": "arm64",
+      "file": "libxcb-xinput0_1.17.0-2ubuntu1_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/main/libx/libxcb/libxcb-xinput0_1.17.0-2ubuntu1_arm64.deb",
+      "sha256": "5b75a138be89419f953db6ebf6dab6aeba85cdd41ee8f56b3eb8a892b04ccca1"
+    }
+  ]
 }
