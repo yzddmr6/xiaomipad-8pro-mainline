@@ -73,6 +73,10 @@ def main():
         raise ValueError("EGL, GLES and GBM development dependencies are required")
     run("meson", "compile", "-C", build, "-j", args.jobs)
     run("meson", "test", "-C", build, "--print-errorlogs")
+    package_driver(out, source, build, lock, fingerprint)
+
+
+def package_driver(out, source, build, lock, fingerprint):
     driver = build / "src/v4l2_drv_video.so"
     elf = subprocess.check_output(["readelf", "-h", driver], text=True)
     if "AArch64" not in elf:
@@ -87,6 +91,15 @@ def main():
     # libva uses the MSM DRM driver name for native discovery. No session-wide
     # LIBVA_DRIVER_NAME override and no dependency on a fixed render node.
     (libdir / "msm_drv_video.so").symlink_to(driver.name)
+    # GStreamer otherwise skips VA factories for this driver vendor string.
+    environment = stage / "usr/lib/environment.d"
+    environment.mkdir(parents=True)
+    (environment / "60-piano-iris-vaapi.conf").write_text(
+        "# Allow the Iris VA vendor and prefer its shared hardware decoders.\n"
+        "GST_VA_ALL_DRIVERS=1\n"
+        "# Preserve an explicit user/session decoder-rank override.\n"
+        "GST_PLUGIN_FEATURE_RANK=${GST_PLUGIN_FEATURE_RANK:-vah264dec:512,vah265dec:512,vavp9dec:512}\n"
+    )
     doc = stage / "usr/share/doc" / package
     doc.mkdir(parents=True)
     for name in ("COPYING", "COPYING.MIT", "COPYING.LGPL", "AUTHORS", "CREDITS",
@@ -110,8 +123,8 @@ def main():
         "Depends: libc6 (>= 2.38), libstdc++6 (>= 13.1), libgcc-s1, "
         "libva2 (>= 2.23), libdrm2 (>= 2.4.52), libegl1, libgles2, libgbm1\n"
         "Conflicts: libva-v4l2, libva-v4l2-iris\n"
-        "Description: VA-API decoder for Qualcomm Iris\n"
-        " Stateful V4L2 H.264, HEVC and VP9 decoder backend. AV1 is not enabled.\n")
+        "Description: VA-API video driver for Qualcomm Iris\n"
+        " Stateful V4L2 decoding and encoding with limited RGB-to-NV12 video processing.\n")
     deb = out / f"{package}_{lock['version']}_arm64.deb"
     run("dpkg-deb", "--root-owner-group", "-Zxz", "--build", stage, deb)
     manifest = {

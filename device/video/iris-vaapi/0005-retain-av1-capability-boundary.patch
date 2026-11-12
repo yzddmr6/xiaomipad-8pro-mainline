@@ -1,0 +1,21 @@
+From: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
+Subject: [PATCH] va: retain the deployed AV1 capability boundary
+
+The upstream SM8550 qualification does not establish support on every Iris
+firmware. Keep AV1 unadvertised until the target decoder has been qualified.
+
+Co-Authored-By: gpt-6-astra <noreply@openai.com>
+
+--- a/src/va/driver.cc
++++ b/src/va/driver.cc
+@@ -147,6 +147,10 @@
+     if (caps.output_formats.count(V4L2_PIX_FMT_AV1) && caps.nv12)
+         caps.import_formats.insert(V4L2_PIX_FMT_AV1);
+     // import-qualified-end
++    // Preserve the deployed decode capability boundary during the encoder
++    // upgrade. AV1 needs its own target-device qualification.
++    caps.profiles.erase(VAProfileAV1Profile0);
++    caps.import_formats.erase(V4L2_PIX_FMT_AV1);
+     // VP9 is absent from default qualification: the session-side blocker is
+     // gone — lending one picture one buffer per completion ran clean on the
+     // target (FFmpeg 515/515, misplaced=0, framemd5 equal to the software
