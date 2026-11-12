@@ -87,6 +87,10 @@ def main():
     # libva uses the MSM DRM driver name for native discovery. No session-wide
     # LIBVA_DRIVER_NAME override and no dependency on a fixed render node.
     (libdir / "msm_drv_video.so").symlink_to(driver.name)
+    # GStreamer otherwise skips VA factories for this driver vendor string.
+    environment = stage / "usr/lib/environment.d"
+    environment.mkdir(parents=True)
+    (environment / "60-piano-iris-vaapi.conf").write_text("GST_VA_ALL_DRIVERS=1\n")
     doc = stage / "usr/share/doc" / package
     doc.mkdir(parents=True)
     for name in ("COPYING", "COPYING.MIT", "COPYING.LGPL", "AUTHORS", "CREDITS",
