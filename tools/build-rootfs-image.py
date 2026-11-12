@@ -315,6 +315,10 @@ def final_package_plan(expected, requested, local, kernel_bound, before_text, af
 def verify(fs, scratch, expected_packages, release, caps, set_hashes, boot_hashes, kernel_zram):
     """The offline release checks of docs/RELEASE.md on the finished image."""
     checks = {}
+    root_stat, _ = fs.run('stat /')
+    checks['root_directory_metadata'] = (
+        re.search(rb'Type: directory\s+Mode:\s+0755\b', root_stat) is not None
+        and re.search(rb'User:\s+0\s+Group:\s+0\b', root_stat) is not None)
     status = dpkg_status(fs.cat('/var/lib/dpkg/status').decode())
     checks['packages_installed'] = {p: status.get(p) == ('install ok installed', v)
                                     for p, v in sorted(expected_packages.items())}
