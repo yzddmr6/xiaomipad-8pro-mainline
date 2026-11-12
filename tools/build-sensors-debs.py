@@ -211,6 +211,8 @@ def main():
                 run('meson', 'install', '-C', dest, '--destdir', sysroot,
                     env=env, stdout=log, stderr=subprocess.STDOUT)
             if name == 'sensorproxy':
+                run('meson', 'test', '-C', dest, 'test-shutdown', '--print-errorlogs',
+                    env=env, stdout=log, stderr=subprocess.STDOUT)
                 run('meson', 'install', '-C', dest, '--destdir', build / 'sensorproxy-install',
                     env=env, stdout=log, stderr=subprocess.STDOUT)
     sensor = output / 'stages/piano-sensors'

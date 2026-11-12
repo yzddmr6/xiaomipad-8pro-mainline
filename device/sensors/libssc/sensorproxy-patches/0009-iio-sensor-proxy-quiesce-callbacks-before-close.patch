@@ -1,0 +1,294 @@
+From: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
+Subject: [PATCH] Stop callback producers before closing sensor drivers
+
+SSC synchronous close dispatches the main context. A client's disappearance
+can therefore re-enter cleanup after an earlier sensor's client table has
+already been freed. Detach D-Bus objects, client watches and udev signals
+first; close every driver before releasing any shared tables. Reject queued
+requests during shutdown and finish pending claims with a disconnected error.
+
+The regression uses a real private D-Bus and a driver whose close dispatches
+NameOwnerChanged after the first driver was closed.
+
+Co-Authored-By: gpt-6-astra <noreply@openai.com>
+---
+diff --git a/src/iio-sensor-proxy.c b/src/iio-sensor-proxy.c
+--- a/src/iio-sensor-proxy.c
++++ b/src/iio-sensor-proxy.c
+@@ -40,6 +40,8 @@
+ 	GDBusNodeInfo *introspection_data;
+ 	GDBusConnection *connection;
+ 	guint name_id;
++	guint dbus_registration_ids[NUM_SENSOR_TYPES];
++	gboolean shutting_down;
+ 	int ret;
+ 
+ 	PolkitAuthority *auth;
+@@ -494,7 +496,7 @@
+ 	guint i;
+ 	char *sender;
+ 
+-	if (name == NULL)
++	if (data->shutting_down || name == NULL)
+ 		return;
+ 
+ 	sender = g_strdup (name);
+@@ -554,6 +556,12 @@
+ {
+ 	GHashTable *ht;
+ 	guint watch_id;
++
++	if (data->shutting_down) {
++		g_dbus_method_invocation_return_error (invocation, G_DBUS_ERROR,
++			G_DBUS_ERROR_DISCONNECTED, "Sensor service is shutting down");
++		return;
++	}
+ 
+ 	g_debug ("Handling driver refcounting method '%s' for %s device",
+ 		 method_name, driver_type_to_str (driver_type));
+@@ -779,7 +787,7 @@
+     };
+ 	guint i;
+ 
+-	g_dbus_connection_register_object (connection,
++	data->dbus_registration_ids[0] = g_dbus_connection_register_object (connection,
+ 					   SENSOR_PROXY_DBUS_PATH,
+ 					   data->introspection_data->interfaces[0],
+ 					   &interface_vtable,
+@@ -787,7 +795,7 @@
+ 					   NULL,
+ 					   NULL);
+ 
+-	g_dbus_connection_register_object (connection,
++	data->dbus_registration_ids[1] = g_dbus_connection_register_object (connection,
+ 					   SENSOR_PROXY_COMPASS_DBUS_PATH,
+ 					   data->introspection_data->interfaces[1],
+ 					   &compass_interface_vtable,
+@@ -1081,14 +1089,44 @@
+ 	if (data == NULL)
+ 		return;
+ 
++	/* SSC close operations iterate the main context. Detach all producers
++	 * before closing any driver, and keep shared state alive until every
++	 * driver has finished. A later driver's close must not re-enter a
++	 * client callback with an earlier driver's table already destroyed. */
++	data->shutting_down = TRUE;
+ 	if (data->name_id != 0) {
+ 		g_bus_unown_name (data->name_id);
+ 		data->name_id = 0;
+ 	}
+-
++	if (data->client != NULL)
++		g_signal_handlers_disconnect_by_data (data->client, data);
++	for (i = 0; i < G_N_ELEMENTS (data->dbus_registration_ids); i++) {
++		if (data->dbus_registration_ids[i] != 0)
++			g_dbus_connection_unregister_object (data->connection,
++				data->dbus_registration_ids[i]);
++	}
+ 	for (i = 0; i < NUM_SENSOR_TYPES; i++) {
+-		if (driver_type_exists (data, i))
++		GPtrArray *pending = data->sensor_startup_dbus_invocations_delayed[i];
++
++		if (data->clients[i] != NULL)
++			g_hash_table_remove_all (data->clients[i]);
++		if (pending != NULL) {
++			for (guint j = 0; j < pending->len; j++)
++				g_dbus_method_invocation_return_error (g_ptr_array_index (pending, j),
++					G_DBUS_ERROR, G_DBUS_ERROR_DISCONNECTED,
++					"Sensor service is shutting down");
++			g_ptr_array_set_size (pending, 0);
++		}
++		data->sensor_startup_dbus_event_delayed[i] = FALSE;
++	}
++
++	for (i = 0; i < NUM_SENSOR_TYPES; i++) {
++		if (DEVICE_FOR_TYPE(i) != NULL)
+ 			driver_close (DEVICE_FOR_TYPE(i));
++		DEVICE_FOR_TYPE(i) = NULL;
++		DRIVER_FOR_TYPE(i) = NULL;
++	}
++	for (i = 0; i < NUM_SENSOR_TYPES; i++) {
+ 		g_clear_object (&UDEV_DEVICE_FOR_TYPE(i));
+ 		g_clear_pointer (&data->clients[i], g_hash_table_unref);
+ 		g_clear_pointer (&data->sensor_startup_dbus_invocations_delayed[i], g_ptr_array_unref);
+@@ -1109,6 +1147,9 @@
+ 		SensorData  *data)
+ {
+ 	guint i;
++
++	if (data->shutting_down)
++		return;
+ 
+ 	g_debug ("Sensor changes: action = %s, device = %s",
+ 		 action, g_udev_device_get_sysfs_path (device));
+diff --git a/src/meson.build b/src/meson.build
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -22,7 +22,6 @@
+ )
+ 
+ sources = [
+-  'iio-sensor-proxy.c',
+   'drivers.c',
+   'orientation.c',
+   'drv-iio-buffer-accel.c',
+@@ -55,7 +54,7 @@
+ endif
+ 
+ executable('iio-sensor-proxy',
+-  sources,
++  ['iio-sensor-proxy.c', sources],
+   dependencies: deps,
+   install: true,
+   install_dir: libexecdir
+@@ -97,3 +96,10 @@
+   install: true,
+   install_dir: bindir
+ )
++
++test_shutdown = executable('test-shutdown',
++  ['test-shutdown.c', sources],
++  dependencies: deps,
++  install: false
++)
++test('test-shutdown', test_shutdown)
+diff --git a/src/test-shutdown.c b/src/test-shutdown.c
+new file mode 100644
+--- /dev/null
++++ b/src/test-shutdown.c
+@@ -0,0 +1,135 @@
++/* SPDX-License-Identifier: GPL-3.0-or-later */
++/* Exercise the actual daemon cleanup with a driver that dispatches the
++ * default main context, as libssc's synchronous close does. */
++#define main sensor_proxy_main
++#include "iio-sensor-proxy.c"
++#undef main
++
++static GDBusConnection *client_connection;
++static gboolean appeared, vanished, deadline_reached;
++static guint client_callbacks, closed_drivers;
++
++static void
++observer_appeared (GDBusConnection *connection, const char *name,
++                  const char *owner, gpointer user_data)
++{
++        appeared = TRUE;
++}
++
++static void
++observer_vanished (GDBusConnection *connection, const char *name,
++                  gpointer user_data)
++{
++        if (appeared)
++                vanished = TRUE;
++}
++
++static void
++watched_client_vanished (GDBusConnection *connection, const char *name,
++                        gpointer user_data)
++{
++        client_callbacks++;
++        client_vanished_cb (connection, name, user_data);
++}
++
++static gboolean
++deadline_cb (gpointer user_data)
++{
++        deadline_reached = TRUE;
++        return G_SOURCE_REMOVE;
++}
++
++static void
++wait_for (gboolean *condition)
++{
++        guint deadline;
++
++        deadline_reached = FALSE;
++        deadline = g_timeout_add_seconds (5, deadline_cb, NULL);
++        while (!*condition && !deadline_reached)
++                g_main_context_iteration (NULL, TRUE);
++        g_assert_true (*condition);
++        g_source_remove (deadline);
++        while (g_main_context_pending (NULL))
++                g_main_context_iteration (NULL, FALSE);
++}
++
++static void
++close_driver (SensorDevice *device)
++{
++        closed_drivers++;
++        g_free (device);
++}
++
++static void
++close_light_stream (SensorDevice *device, gboolean enabled)
++{
++        g_autoptr(GError) error = NULL;
++
++        g_assert_false (enabled);
++        /* The accelerometer is already closed. Deliver a real D-Bus
++         * NameOwnerChanged while the light driver waits for its close. */
++        g_assert_cmpuint (closed_drivers, ==, 1);
++        g_dbus_connection_close_sync (client_connection, NULL, &error);
++        g_assert_no_error (error);
++        wait_for (&vanished);
++}
++
++static void
++shutdown_with_client_disconnect (void)
++{
++        g_autoptr(GTestDBus) bus = g_test_dbus_new (G_TEST_DBUS_NONE);
++        g_autoptr(GError) error = NULL;
++        GDBusConnection *connection;
++        SensorData *data = g_new0 (SensorData, 1);
++        SensorDriver accel = { .type = DRIVER_TYPE_ACCEL, .close = close_driver };
++        SensorDriver light = { .type = DRIVER_TYPE_LIGHT, .close = close_driver,
++                               .set_polling = close_light_stream };
++        guint observer, watch;
++        const char *name;
++
++        g_test_dbus_up (bus);
++        connection = g_dbus_connection_new_for_address_sync (g_test_dbus_get_bus_address (bus),
++                G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_CLIENT |
++                G_DBUS_CONNECTION_FLAGS_MESSAGE_BUS_CONNECTION, NULL, NULL, &error);
++        g_assert_no_error (error);
++        client_connection = g_dbus_connection_new_for_address_sync (g_test_dbus_get_bus_address (bus),
++                G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_CLIENT |
++                G_DBUS_CONNECTION_FLAGS_MESSAGE_BUS_CONNECTION, NULL, NULL, &error);
++        g_assert_no_error (error);
++        name = g_dbus_connection_get_unique_name (client_connection);
++        data->connection = g_object_ref (connection);
++        for (guint i = 0; i < NUM_SENSOR_TYPES; i++) {
++                data->clients[i] = create_clients_hash_table ();
++                data->sensor_startup_dbus_invocations_delayed[i] = g_ptr_array_new ();
++        }
++        data->drivers[DRIVER_TYPE_ACCEL] = &accel;
++        data->devices[DRIVER_TYPE_ACCEL] = g_new0 (SensorDevice, 1);
++        data->devices[DRIVER_TYPE_ACCEL]->drv = &accel;
++        data->drivers[DRIVER_TYPE_LIGHT] = &light;
++        data->devices[DRIVER_TYPE_LIGHT] = g_new0 (SensorDevice, 1);
++        data->devices[DRIVER_TYPE_LIGHT]->drv = &light;
++        watch = g_bus_watch_name_on_connection (connection, name, G_BUS_NAME_WATCHER_FLAGS_NONE,
++                NULL, watched_client_vanished, data, NULL);
++        g_hash_table_insert (data->clients[DRIVER_TYPE_LIGHT], g_strdup (name), GUINT_TO_POINTER (watch));
++        observer = g_bus_watch_name_on_connection (connection, name, G_BUS_NAME_WATCHER_FLAGS_NONE,
++                observer_appeared, observer_vanished, NULL, NULL);
++        wait_for (&appeared);
++        free_sensor_data (data);
++        g_assert_true (vanished);
++        g_assert_cmpuint (client_callbacks, ==, 0);
++        g_assert_cmpuint (closed_drivers, ==, 2);
++        g_bus_unwatch_name (observer);
++        g_clear_object (&client_connection);
++        g_dbus_connection_close_sync (connection, NULL, &error);
++        g_assert_no_error (error);
++        g_object_unref (connection);
++        g_test_dbus_down (bus);
++}
++
++int main (int argc, char **argv)
++{
++        g_test_init (&argc, &argv, NULL);
++        g_test_add_func ("/sensor-proxy/shutdown/client-disconnect", shutdown_with_client_disconnect);
++        return g_test_run ();
++}
