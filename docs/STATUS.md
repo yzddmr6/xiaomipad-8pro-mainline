@@ -1,6 +1,6 @@
 # Release history and current support
 
-Current release: **v1.2.1**. See the [README](../README.en.md#hardware-support) or
+Current release: **v1.3.0**. See the [README](../README.en.md#hardware-support) or
 [中文 README](../README.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
@@ -38,6 +38,11 @@ verified on this unit; later versions were tested on the installed system. These
 results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
+
+### v1.3.0
+Linux 7.4-rc2、NPU 离线演示、GNOME 硬件录屏、Mesa 驱动修复与系统切换保护；支持自动亮度。GunyahVM 1.2.0 支持 Linux 和 Windows 来宾。
+
+Linux 7.4-rc2, an offline NPU demo, hardware screen recording in GNOME, Mesa driver fixes and system-switch safeguards. Automatic brightness is supported. GunyahVM 1.2.0 supports Linux and Windows guests.
 
 ### v1.2.1
 
@@ -209,11 +214,3 @@ Preinstalled GunyahVM graphical virtual-machine management.
 
 Installation and maintenance instructions are in [INSTALL.en.md](INSTALL.en.md),
 [UPGRADE.en.md](UPGRADE.en.md) and [FLASHING.en.md](FLASHING.en.md).
-
-### v1.3.0
-
-⟦DRAFT⟧
-
-Linux 7.4-rc2、NPU 离线演示、GNOME 硬件录屏、Mesa 驱动修复与系统切换保护；GunyahVM 1.2.0 支持 Linux 和 Windows 来宾。
-
-Linux 7.4-rc2, an offline NPU demo, hardware screen recording in GNOME, Mesa driver fixes and system-switch safeguards. GunyahVM 1.2.0 supports Linux and Windows guests.

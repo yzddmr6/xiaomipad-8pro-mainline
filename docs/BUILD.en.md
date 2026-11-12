@@ -555,7 +555,7 @@ and piano-npu-firmware together in the root image.
 
 ## Independently built component groups
 
-⟦DRAFT⟧ The 1.3.0 candidate retains original archives and build receipts for each
+The 1.3.0 release retains original archives and build receipts for each
 fixed input group. A Mesa change rebuilds the complete host source cohort and
 the separate gpu-2404 provider with new versions. Reuse verified archives for
 unchanged groups; do not recompress them or generate different bytes under an

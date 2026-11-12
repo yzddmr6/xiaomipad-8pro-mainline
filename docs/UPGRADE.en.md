@@ -14,8 +14,6 @@ whole set together, never a single package.
 
 ## v1.2.1 → v1.3.0
 
-⟦DRAFT⟧
-
 Extract both `*-packages.zip` and `*-rollback.zip` into the same directory to obtain the new and previous repositories.
 
 Install the complete `piano-1.3.0` package batch together with its matching
