@@ -14,13 +14,16 @@ def asset_prefix(version):
     return f'piano-ubuntu-{version}'
 
 
-def restore_commands(version, parts=None):
+def restore_commands(version, parts=None, *, separate_rollback=False):
     """Machine-readable recovery recipe for assets-manifest.json, not the body."""
     prefix = asset_prefix(version)
     inputs = ' '.join(parts) if parts and len(parts) > 10 else f'{prefix}-rootfs.img.zst.part*'
+    archives = ['boot', 'tools', 'packages']
+    if separate_rollback:
+        archives.append('rollback')
     return '\n'.join([
         'sha256sum -c SHA256SUMS.assets',
-        *(f'unzip {prefix}-{kind}.zip' for kind in ('boot', 'tools', 'packages')),
+        *(f'unzip {prefix}-{kind}.zip' for kind in archives),
         'mkdir -p rootfs',
         f'cat {inputs} | zstd -d > rootfs/root.sparse.img',
         'sha256sum -c SHA256SUMS',

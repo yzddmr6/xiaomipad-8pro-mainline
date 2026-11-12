@@ -168,7 +168,7 @@ def compress_root(source, output, prefix, part_bytes):
     return parts
 
 
-def package(release, output, *, part_bytes=PART_BYTES):
+def package(release, output, *, part_bytes=PART_BYTES, separate_rollback=False):
     started = time.monotonic()
     release, output = output_path(release, output)
     files = file_tree(release)
@@ -193,7 +193,20 @@ def package(release, output, *, part_bytes=PART_BYTES):
         groups = {'tools': [n for n in files if n.startswith('tools/')],
                   'packages': [n for n in files if n.startswith(('debs/', 'optional/virtualization/', 'repositories/'))]}
         groups['boot'] = sorted(set(files) - set(groups['tools']) - set(groups['packages']) - {ROOT_IMAGE})
-        for kind in ('boot', 'tools', 'packages'):
+        kinds = ['boot', 'tools', 'packages']
+        rollback_id = None
+        if separate_rollback:
+            root = json.loads(files['rootfs/manifest.json'].read_text())
+            current = root['release_repository']['id']
+            repos = {Path(n).parts[1] for n in groups['packages'] if n.startswith('repositories/')}
+            if current not in repos or len(repos) != 2:
+                raise ValueError('Separate rollback requires the current and previous repositories')
+            rollback_id, = repos - {current}
+            previous = f'repositories/{rollback_id}/'
+            groups['rollback'] = [n for n in groups['packages'] if n.startswith(previous)]
+            groups['packages'] = [n for n in groups['packages'] if not n.startswith(previous)]
+            kinds.append('rollback')
+        for kind in kinds:
             assets.append(make_zip(release, stage / f'{prefix}-{kind}.zip', groups[kind]))
         compression_started = time.monotonic()
         parts = compress_root(release, stage, prefix, part_bytes)
@@ -204,7 +217,8 @@ def package(release, output, *, part_bytes=PART_BYTES):
             'compression': ['zstd', '-T0', '-10', '--long=27'],
             'assets': assets, 'release_files': sorted(files),
             'rootfs_parts': [p['name'] for p in parts],
-            'restore_commands': restore_commands(version, [p['name'] for p in parts]).splitlines(),
+            'restore_commands': restore_commands(version, [p['name'] for p in parts],
+                                                 separate_rollback=separate_rollback).splitlines(),
             'integrity': 'SHA256SUMS.assets covers every payload attachment and this manifest; '
                          'checksum metadata has no self-checksum.',
             'release_body': 'RELEASE-NOTES.md is for the Release body, not an upload attachment. '
@@ -212,6 +226,8 @@ def package(release, output, *, part_bytes=PART_BYTES):
             'timings_seconds': {'input_verification': validation_seconds,
                                 'rootfs_compression': compression_seconds},
         }
+        if rollback_id is not None:
+            manifest['rollback_repository'] = rollback_id
         (stage / 'assets-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
         sums = {a['name']: a['sha256'] for a in assets}
         sums['assets-manifest.json'] = sha(stage / 'assets-manifest.json')
@@ -251,6 +267,11 @@ def verify(assets, output):
     validate_notes(notes, manifest['release_name'])
     names = [entry['name'] for entry in manifest['assets']]
     zips = [f'{prefix}-{kind}.zip' for kind in ('boot', 'tools', 'packages')]
+    rollback_id = manifest.get('rollback_repository')
+    if rollback_id is not None:
+        if not isinstance(rollback_id, str) or not re.fullmatch(r'[a-z0-9][A-Za-z0-9.+_~-]*', rollback_id):
+            raise ValueError('Invalid rollback repository identifier')
+        zips.append(f'{prefix}-rollback.zip')
     parts = manifest['rootfs_parts']
     expected_parts = [f'{prefix}-rootfs.img.zst.part{i}' for i in range(len(parts))]
     if not parts or parts != expected_parts or names != zips + parts:
@@ -270,8 +291,12 @@ def verify(assets, output):
                                        entry['name'] != parts[-1] and size != part_bytes):
             raise ValueError('Incorrect rootfs part size')
     inventory = {ROOT_IMAGE}
-    for entry in manifest['assets'][:3]:
+    for entry in manifest['assets'][:len(zips)]:
         contents = zip_inventory(assets / entry['name'])
+        if rollback_id and entry['name'] == zips[-1]:
+            previous = f'repositories/{rollback_id}/'
+            if previous + 'manifest.json' not in contents or any(not n.startswith(previous) for n in contents):
+                raise ValueError('Incorrect rollback archive contents')
         if sorted(contents) != entry['contents'] or inventory.intersection(contents):
             raise ValueError('Overlapping or incorrect archive inventory')
         inventory.update(contents)
@@ -319,6 +344,8 @@ def main():
     pack = sub.add_parser('pack', help='Package a local release')
     pack.add_argument('--release', type=Path, required=True)
     pack.add_argument('--output', type=Path, required=True)
+    pack.add_argument('--separate-rollback', action='store_true',
+                      help='Put the previous complete repository in a separate rollback ZIP')
     check = sub.add_parser('verify', help='Restore attachments and check all original files')
     check.add_argument('--assets', type=Path, required=True)
     check.add_argument('--output', type=Path, required=True)
@@ -327,7 +354,8 @@ def main():
         args = ['pack', *args]
     a = parser.parse_args(args)
     try:
-        result = verify(a.assets, a.output) if a.command == 'verify' else package(a.release, a.output)
+        result = verify(a.assets, a.output) if a.command == 'verify' else package(
+            a.release, a.output, separate_rollback=a.separate_rollback)
     except (OSError, ValueError, KeyError, subprocess.SubprocessError, zipfile.BadZipFile) as error:
         parser.exit(1, f'error: {error}\n')
     print(json.dumps(result, indent=2))

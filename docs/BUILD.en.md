@@ -564,6 +564,10 @@ existing version.
 A kernel baseline change rebuilds matching kernel, modules and boot images;
 Piano also rebuilds its camera loopback module for that ABI. Always assemble
 and verify root images, complete APT batches and attachments from the final
-components. The GunyahVM 1.2.0 lock covers four application packages, two Casilda packages
+components.
+
+Package this release with `package-release-assets.py pack --separate-rollback` to keep the previous complete repository in its own ZIP within the per-attachment size limit.
+
+The GunyahVM 1.2.0 lock covers four application packages, two Casilda packages
 and nine system dependencies. Include all of them in the release repository. Updating the lock requires whole-release upgrade/rollback and application checks, but
 no Mesa compilation. Keep host Mesa and Snap build outputs separate.

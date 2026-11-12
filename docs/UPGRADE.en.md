@@ -16,6 +16,8 @@ whole set together, never a single package.
 
 ⟦DRAFT⟧
 
+Extract both `*-packages.zip` and `*-rollback.zip` into the same directory to obtain the new and previous repositories.
+
 Install the complete `piano-1.3.0` package batch together with its matching
 boot images. Keep the supplied `piano-1.2.1` batch for complete rollback.
 The kernel, standard Mesa packages and Snap graphics provider change together;
