@@ -172,7 +172,8 @@ def main():
         owned = {str(p.relative_to(root)): sha(p) for p in root.rglob('*')
                  if p.is_file() and not p.is_symlink() and not p.is_relative_to(control)}
         deb = a.output / f'{name}_{a.version}_arm64.deb'
-        subprocess.run(['dpkg-deb', '--root-owner-group', '-Zxz', '-z1', '--build', str(root), str(deb)], check=True)
+        subprocess.run(['dpkg-deb', '--root-owner-group', '-Zxz', '-z1', '--build', str(root), str(deb)],
+                       check=True, env=dict(os.environ, SOURCE_DATE_EPOCH=os.environ.get('SOURCE_DATE_EPOCH', '0')))
         receipts[name] = {'file': deb.name, 'sha256': sha(deb), 'files': owned}
 
     if a.ram_debug_only:
