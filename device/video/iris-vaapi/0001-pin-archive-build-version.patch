@@ -1,11 +1,13 @@
 From: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
-Subject: [PATCH] build: identify archive builds by the pinned upstream commit
+Subject: [PATCH] build: identify the pinned source archive
 
-An extracted archive can live inside an unrelated Git repository. Do not
-report that parent's HEAD as the driver version.
+An extracted archive may be below an unrelated Git checkout. Report the
+locked upstream commit rather than that checkout's HEAD.
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
----
+Source: qualcomm-iris-vaapi 4125b1190c66ff7cf46e54c2b6d4076a01d7d1cd
+License: MIT
+Co-Authored-By: gpt-6-astra <noreply@openai.com>
+
 --- a/meson.build
 +++ b/meson.build
 @@ -22,11 +22,7 @@
@@ -17,7 +19,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
 -	# its .git directory, and a hard failure here blocks the build entirely.
 -	version: run_command(['sh', '-c', 'git rev-parse --short HEAD 2>/dev/null || echo unknown'],
 -		check: true).stdout().strip(),
-+	version: 'f587b14',
- 	meson_version: '>= 0.56.0')
- 
- cc = meson.get_compiler('cpp')
++	version: '4125b11',
+ 	# Meson's own default is -O0, and the translator is a per-frame
+ 	# bit-level parser, so that default costs an order of magnitude in CPU
+ 	# per frame: 1080p HEVC measured 6.6 s per 300 frames at -O0 against

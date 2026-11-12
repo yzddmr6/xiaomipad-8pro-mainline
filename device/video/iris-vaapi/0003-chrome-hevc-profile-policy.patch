@@ -9,6 +9,9 @@ including Firefox RDD children, keep the probed HEVC Main/Main10 profiles.
 Upstream issue: https://issues.chromium.org/issues/563075803
 Remove when an accepted Chrome version and Iris path pass HEVC seek/DRC.
 License: MIT
+Rebased on 4125b1190c66; also withhold newly available HEVC encoding
+from Chrome so the existing HEVC restriction remains effective.
+Co-Authored-By: gpt-6-astra <noreply@openai.com>
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
 
 --- /dev/null
@@ -44,27 +47,9 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
 +}
 +
 +} // namespace va
---- a/src/va/driver.cc
-+++ b/src/va/driver.cc
-@@ -4,6 +4,7 @@
- // src/va file shares.
- 
- #include "driver.h"
-+#include "client_policy.h"
- 
- #include "../util/error.h"
- 
-@@ -128,6 +129,7 @@
-     }
-     if (options.experimental_profiles && caps.output_formats.count(V4L2_PIX_FMT_AV1) && caps.nv12)
-         caps.profiles.insert(VAProfileAV1Profile0);
-+    apply_client_profile_policy(caps.profiles);
-     return caps;
- }
- 
 --- /dev/null
 +++ b/test/client-profile-policy.cc
-@@ -0,0 +1,59 @@
+@@ -0,0 +1,50 @@
 +// SPDX-License-Identifier: MIT
 +#include "../src/va/driver.h"
 +#include "../src/va/client_policy.h"
@@ -73,15 +58,6 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
 +#include <cstdio>
 +#include <cstring>
 +#include <sys/prctl.h>
-+
-+// config.cc's error translation, without linking a hardware capability probe.
-+namespace va {
-+VAStatus report(VADriverContextP, const char*, const std::exception& error)
-+{
-+    const auto* e = dynamic_cast<const iris::Error*>(&error);
-+    return e ? e->status : VA_STATUS_ERROR_OPERATION_FAILED;
-+}
-+}
 +
 +int main(int argc, char** argv)
 +{
@@ -124,17 +100,36 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
 +    std::printf("HEVC=%s H264=yes VP9=yes executable-policy OK\n", blocked ? "no" : "yes");
 +    return 0;
 +}
+--- a/src/va/driver.cc
++++ b/src/va/driver.cc
+@@ -4,6 +4,7 @@
+ // src/va file shares.
+ 
+ #include "driver.h"
++#include "client_policy.h"
+ 
+ #include "../util/error.h"
+ 
+@@ -185,6 +186,8 @@
+         if (!options.encoder_path.empty())
+             throw;
+     }
++    apply_client_profile_policy(caps.profiles);
++    apply_client_profile_policy(caps.encode_profiles);
+     return caps;
+ }
+ 
 --- a/test/meson.build
 +++ b/test/meson.build
-@@ -55,3 +55,15 @@
+@@ -223,3 +223,15 @@
       args: [meson.project_source_root()])
- test('iris-browser-launcher-check', find_program('iris-browser-launcher-check.sh'),
+ test('iris-node-check', find_program('iris-node-check.sh'),
       args: [meson.project_source_root()])
 +
-+# Real executable-name controls exercise the VA query and create-config API.
++# Exercise the executable-name policy through the real VA query API.
 +foreach client : ['chrome', 'firefox']
 +  profile_test = executable(client,
-+    ['client-profile-policy.cc', '../src/va/config.cc'],
++    ['client-profile-policy.cc'] + va_sources,
 +    dependencies: [iris_core_dep],
 +    cpp_args: ['-Wall', '-Wextra', '-std=c++20'])
 +  expected = client == 'chrome' ? 'blocked' : 'allowed'

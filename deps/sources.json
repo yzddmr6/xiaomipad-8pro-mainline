@@ -627,13 +627,13 @@
     },
     {
       "name": "iris-vaapi",
-      "filename": "7b4c073b575f4ba6692d03f15990807c1dd8b4775474b74d4558ca7877e184fc-qualcomm-iris-vaapi-f587b14.tar.gz",
-      "sha256": "7b4c073b575f4ba6692d03f15990807c1dd8b4775474b74d4558ca7877e184fc",
-      "bytes": 267878,
+      "filename": "71b127e72f17a3056749de13fa68158a9f1d506f986d571f214312b5ee41b104-qualcomm-iris-vaapi-4125b11.tar.gz",
+      "sha256": "71b127e72f17a3056749de13fa68158a9f1d506f986d571f214312b5ee41b104",
+      "bytes": 530253,
       "upstream": [
-        "https://codeload.github.com/phxinyang/qualcomm-iris-vaapi/tar.gz/f587b14e6b22955c7250a45ff5f43588bbce2114"
+        "https://codeload.github.com/phxinyang/qualcomm-iris-vaapi/tar.gz/4125b1190c66ff7cf46e54c2b6d4076a01d7d1cd"
       ],
-      "own_url": "https://github.com/yzddmr6/deps-archive/releases/download/inputs-20261108/7b4c073b575f4ba6692d03f15990807c1dd8b4775474b74d4558ca7877e184fc-qualcomm-iris-vaapi-f587b14.tar.gz",
+      "own_url": "https://raw.githubusercontent.com/yzddmr6/qualcomm-iris-vaapi/e2c4d8545280dfc812fc14cd34a33c73c7631a06/source.tar.gz",
       "license": "MIT and LGPL-2.1; bundled kernel patches GPL-2.0-only",
       "preservation": "C"
     },
@@ -4539,13 +4539,6 @@
       "upstream": "https://github.com/google/crosvm.git",
       "commit": "96e84c3f680e34e82e932ef911ae97d734121758",
       "own_ref": "refs/heads/preserved/96e84c3f680e34e82e932ef911ae97d734121758"
-    },
-    {
-      "name": "iris-vaapi-git",
-      "repository": "qualcomm-iris-vaapi",
-      "upstream": "https://github.com/phxinyang/qualcomm-iris-vaapi.git",
-      "commit": "f587b14e6b22955c7250a45ff5f43588bbce2114",
-      "own_ref": "refs/heads/preserved/f587b14e6b22955c7250a45ff5f43588bbce2114"
     },
     {
       "name": "edk2-gunyah",

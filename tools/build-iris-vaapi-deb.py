@@ -110,8 +110,8 @@ def main():
         "Depends: libc6 (>= 2.38), libstdc++6 (>= 13.1), libgcc-s1, "
         "libva2 (>= 2.23), libdrm2 (>= 2.4.52), libegl1, libgles2, libgbm1\n"
         "Conflicts: libva-v4l2, libva-v4l2-iris\n"
-        "Description: VA-API decoder for Qualcomm Iris\n"
-        " Stateful V4L2 H.264, HEVC and VP9 decoder backend. AV1 is not enabled.\n")
+        "Description: VA-API video driver for Qualcomm Iris\n"
+        " Stateful V4L2 decoding and encoding with limited RGB-to-NV12 video processing.\n")
     deb = out / f"{package}_{lock['version']}_arm64.deb"
     run("dpkg-deb", "--root-owner-group", "-Zxz", "--build", stage, deb)
     manifest = {

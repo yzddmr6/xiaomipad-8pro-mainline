@@ -1,0 +1,1513 @@
+From: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
+Subject: [PATCH] va: add equal-size linear RGB to NV12 video processing
+
+Implement only the VideoProc path needed for a DMA-BUF screen capture
+feeding the existing H.264 encoder. Convert with GLES on a private worker;
+reject scaling, cropping, filters, nonlinear imports and unsupported color
+standards rather than silently changing the requested operation.
+
+Source: qualcomm-iris-vaapi 4125b1190c66ff7cf46e54c2b6d4076a01d7d1cd
+License: MIT
+Co-Authored-By: gpt-6-astra <noreply@openai.com>
+
+--- a/meson.build
++++ b/meson.build
+@@ -43,9 +43,9 @@
+ # GPU copy engine for persistent exports (docs/architecture.md §3.3). Optional
+ # at build time so a host without Mesa dev packages still builds and tests
+ # the core; the driver falls back to the CPU engine when absent.
+-egl_dep = dependency('egl', required: false)
+-glesv2_dep = dependency('glesv2', required: false)
+-gbm_dep = dependency('gbm', required: false)
++egl_dep = dependency('egl', required: true)
++glesv2_dep = dependency('glesv2', required: true)
++gbm_dep = dependency('gbm', required: true)
+ have_gpu_copy = egl_dep.found() and glesv2_dep.found() and gbm_dep.found()
+ kernel_dep = declare_dependency(include_directories : get_option('kernel_headers'))
+ 
+--- a/src/iris/alloc.cc
++++ b/src/iris/alloc.cc
+@@ -60,6 +60,18 @@
+     // buffer with this layout can be queued into CAPTURE as the client's
+     // own memory (Import publish); it also satisfies freedreno's linear
+     // import rules for the GPU copy.
++    if (fourcc == VA_FOURCC_RGBA || fourcc == VA_FOURCC_RGBX || fourcc == VA_FOURCC_BGRA || fourcc == VA_FOURCC_BGRX) {
++        require(width && height && width <= 8192 && height <= 8192, "RGB surface dimensions",
++            VA_STATUS_ERROR_INVALID_PARAMETER);
++        Layout layout;
++        layout.fourcc = fourcc;
++        layout.width = width;
++        layout.height = height;
++        layout.stride = (width * 4 + 127) & ~127u;
++        layout.storage_height = height;
++        layout.size = (layout.stride * height + 4095) & ~4095u;
++        return layout;
++    }
+     const PlaneLayout planes = plane_layout(fourcc, width, height);
+     Layout layout;
+     layout.fourcc = fourcc;
+@@ -76,15 +88,15 @@
+ 
+ namespace {
+ 
+-int allocate_msm(int render_fd, unsigned size, MemoryOrigin* origin)
+-{
+-    int coherent = 0;
+-    const int fd = iris_msm_allocate(render_fd, size, &coherent);
+-    if (fd < 0)
+-        return -1;
+-    *origin = coherent ? MemoryOrigin::MsmCoherent : MemoryOrigin::MsmWriteCombined;
+-    return fd;
+-}
++    int allocate_msm(int render_fd, unsigned size, MemoryOrigin* origin)
++    {
++        int coherent = 0;
++        const int fd = iris_msm_allocate(render_fd, size, &coherent);
++        if (fd < 0)
++            return -1;
++        *origin = coherent ? MemoryOrigin::MsmCoherent : MemoryOrigin::MsmWriteCombined;
++        return fd;
++    }
+ 
+ } // namespace
+ 
+--- /dev/null
++++ b/src/iris/vpp.cc
+@@ -0,0 +1,306 @@
++// SPDX-License-Identifier: MIT
++// Narrow RGB-to-NV12 converter. EGL state belongs to one worker, never to
++// the caller (which may be inside a browser's own GL context).
++#include "vpp.h"
++#include "../util/error.h"
++#include <condition_variable>
++#include <cstring>
++#include <future>
++#include <mutex>
++#include <thread>
++extern "C" {
++#include <EGL/egl.h>
++#include <EGL/eglext.h>
++// clang-format off
++#include <GLES3/gl32.h>
++#include <GLES2/gl2ext.h>
++// clang-format on
++#include <fcntl.h>
++#include <gbm.h>
++#include <libdrm/drm_fourcc.h>
++#include <unistd.h>
++}
++namespace iris {
++namespace {
++    const char* vertex = R"(#version 320 es
++void main() {
++ vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);
++ gl_Position=vec4(p*2.0-1.0,0.0,1.0);
++})";
++    const char* fragment = R"(#version 320 es
++precision highp float;
++precision highp int;
++uniform sampler2D source;
++uniform ivec2 extent;
++uniform int plane;
++uniform int centered_chroma;
++uniform vec3 weights;
++uniform vec2 yscale;
++uniform vec2 cscale;
++layout(location=0) out vec4 pixel;
++vec3 rgb(ivec2 p) { return texelFetch(source,clamp(p,ivec2(0),extent-1),0).rgb; }
++float luma(vec3 v) { return dot(v,weights); }
++vec2 chroma(ivec2 p) {
++ vec3 v;
++ if(centered_chroma!=0)
++  v=(rgb(p)+rgb(p+ivec2(1,0))+rgb(p+ivec2(0,1))+rgb(p+ivec2(1,1)))*0.25;
++ else
++  v=(rgb(p+ivec2(-1,0))+rgb(p+ivec2(-1,1))+2.0*rgb(p)+2.0*rgb(p+ivec2(0,1))+rgb(p+ivec2(1,0))+rgb(p+ivec2(1,1)))*0.125;
++ float y=luma(v);
++ return vec2((v.b-y)/(2.0*(1.0-weights.b)),(v.r-y)/(2.0*(1.0-weights.r)))*cscale.x+cscale.y;
++}
++void main() {
++ ivec2 p=ivec2(gl_FragCoord.xy);
++ if (plane==0) {
++  p.x*=4;
++  pixel=vec4(luma(rgb(p)),luma(rgb(p+ivec2(1,0))),luma(rgb(p+ivec2(2,0))),luma(rgb(p+ivec2(3,0))))*yscale.x+yscale.y;
++ } else {
++  p*=ivec2(4,2);
++  pixel=vec4(chroma(p),chroma(p+ivec2(2,0)));
++ }
++})";
++    GLuint shader(GLenum kind, const char* source)
++    {
++        GLuint s = glCreateShader(kind);
++        glShaderSource(s, 1, &source, nullptr);
++        glCompileShader(s);
++        GLint ok = 0;
++        glGetShaderiv(s, GL_COMPILE_STATUS, &ok);
++        if (!ok) {
++            glDeleteShader(s);
++            throw Error(VA_STATUS_ERROR_OPERATION_FAILED, "VPP shader compilation");
++        }
++        return s;
++    }
++    class Converter {
++        int fd = -1;
++        gbm_device* gbm = nullptr;
++        EGLDisplay display = EGL_NO_DISPLAY;
++        EGLContext context = EGL_NO_CONTEXT;
++        GLuint program = 0;
++        PFNEGLCREATEIMAGEKHRPROC create_image = nullptr;
++        PFNEGLDESTROYIMAGEKHRPROC destroy_image = nullptr;
++        PFNGLEGLIMAGETARGETTEXTURE2DOESPROC bind_image = nullptr;
++        void cleanup() noexcept
++        {
++            if (context != EGL_NO_CONTEXT) {
++                glDeleteProgram(program);
++                eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
++                eglDestroyContext(display, context);
++            }
++            if (display != EGL_NO_DISPLAY)
++                eglTerminate(display);
++            if (gbm)
++                gbm_device_destroy(gbm);
++            if (fd >= 0)
++                close(fd);
++            eglReleaseThread();
++        }
++        struct Image {
++            Converter& owner;
++            EGLImageKHR image = EGL_NO_IMAGE_KHR;
++            GLuint texture = 0;
++            Image(
++                Converter& o, int fd, uint32_t format, unsigned width, unsigned height, unsigned pitch, unsigned offset)
++                : owner(o)
++            {
++                const EGLint a[] = { EGL_WIDTH, (EGLint)width, EGL_HEIGHT, (EGLint)height, EGL_LINUX_DRM_FOURCC_EXT,
++                    (EGLint)format, EGL_DMA_BUF_PLANE0_FD_EXT, fd, EGL_DMA_BUF_PLANE0_OFFSET_EXT, (EGLint)offset,
++                    EGL_DMA_BUF_PLANE0_PITCH_EXT, (EGLint)pitch, EGL_DMA_BUF_PLANE0_MODIFIER_LO_EXT, 0,
++                    EGL_DMA_BUF_PLANE0_MODIFIER_HI_EXT, 0, EGL_NONE };
++                image = owner.create_image(owner.display, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, nullptr, a);
++                require(image != EGL_NO_IMAGE_KHR, "VPP linear DMA-BUF import");
++                glGenTextures(1, &texture);
++                glBindTexture(GL_TEXTURE_2D, texture);
++                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++                owner.bind_image(GL_TEXTURE_2D, image);
++                if (glGetError() != GL_NO_ERROR) {
++                    glDeleteTextures(1, &texture);
++                    owner.destroy_image(owner.display, image);
++                    throw Error(VA_STATUS_ERROR_OPERATION_FAILED, "VPP texture import");
++                }
++            }
++            ~Image()
++            {
++                glDeleteTextures(1, &texture);
++                owner.destroy_image(owner.display, image);
++            }
++        };
++
++    public:
++        explicit Converter(int render_fd)
++        {
++            try {
++                fd = fcntl(render_fd, F_DUPFD_CLOEXEC, 0);
++                require(fd >= 0, "VPP render node");
++                gbm = gbm_create_device(fd);
++                require(gbm, "VPP GBM device");
++                auto get_display = (PFNEGLGETPLATFORMDISPLAYEXTPROC)eglGetProcAddress("eglGetPlatformDisplayEXT");
++                create_image = (PFNEGLCREATEIMAGEKHRPROC)eglGetProcAddress("eglCreateImageKHR");
++                destroy_image = (PFNEGLDESTROYIMAGEKHRPROC)eglGetProcAddress("eglDestroyImageKHR");
++                bind_image = (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC)eglGetProcAddress("glEGLImageTargetTexture2DOES");
++                require(get_display && create_image && destroy_image && bind_image, "VPP EGL entry points");
++                display = get_display(EGL_PLATFORM_GBM_KHR, gbm, nullptr);
++                require(display != EGL_NO_DISPLAY && eglInitialize(display, nullptr, nullptr), "VPP EGL display");
++                require(eglBindAPI(EGL_OPENGL_ES_API), "VPP GLES API");
++                const EGLint a[] = { EGL_CONTEXT_MAJOR_VERSION_KHR, 3, EGL_CONTEXT_MINOR_VERSION_KHR, 2, EGL_NONE };
++                context = eglCreateContext(display, EGL_NO_CONFIG_KHR, EGL_NO_CONTEXT, a);
++                require(context != EGL_NO_CONTEXT && eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, context),
++                    "VPP GLES context");
++                const char* renderer = (const char*)glGetString(GL_RENDERER);
++                require(renderer && !strstr(renderer, "llvmpipe") && !strstr(renderer, "softpipe"),
++                    "VPP hardware renderer required");
++                GLuint vs = shader(GL_VERTEX_SHADER, vertex), fs = 0;
++                try {
++                    fs = shader(GL_FRAGMENT_SHADER, fragment);
++                } catch (...) {
++                    glDeleteShader(vs);
++                    throw;
++                }
++                program = glCreateProgram();
++                glAttachShader(program, vs);
++                glAttachShader(program, fs);
++                glLinkProgram(program);
++                glDeleteShader(vs);
++                glDeleteShader(fs);
++                GLint ok = 0;
++                glGetProgramiv(program, GL_LINK_STATUS, &ok);
++                require(ok, "VPP shader linking");
++            } catch (...) {
++                cleanup();
++                throw;
++            }
++        }
++        ~Converter() { cleanup(); }
++        void convert(StableBuffer& to, StableBuffer& from, bool bt709, bool full, bool centered)
++        {
++            const auto& s = from.layout();
++            const auto& d = to.layout();
++            require(d.fourcc == VA_FOURCC_NV12 && s.width == d.width && s.height == d.height,
++                "VPP requires equal-size RGB to NV12");
++            uint32_t format;
++            switch (s.fourcc) {
++            case VA_FOURCC_RGBA:
++                format = DRM_FORMAT_ABGR8888;
++                break;
++            case VA_FOURCC_RGBX:
++                format = DRM_FORMAT_XBGR8888;
++                break;
++            case VA_FOURCC_BGRA:
++                format = DRM_FORMAT_ARGB8888;
++                break;
++            case VA_FOURCC_BGRX:
++                format = DRM_FORMAT_XRGB8888;
++                break;
++            default:
++                throw Error(VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT, "VPP RGB format");
++            }
++            wait_dma_buf(from.fd(), false, 5000);
++            wait_dma_buf(to.fd(), true, 5000);
++            glActiveTexture(GL_TEXTURE0);
++            Image source(*this, from.fd(), format, s.width, s.height, s.stride, s.data_offset);
++            glUseProgram(program);
++            glUniform1i(glGetUniformLocation(program, "source"), 0);
++            glUniform2i(glGetUniformLocation(program, "extent"), s.width, s.height);
++            glUniform1i(glGetUniformLocation(program, "centered_chroma"), centered);
++            glUniform3f(glGetUniformLocation(program, "weights"), bt709 ? 0.2126f : 0.299f, bt709 ? 0.7152f : 0.587f,
++                bt709 ? 0.0722f : 0.114f);
++            glUniform2f(glGetUniformLocation(program, "yscale"), full ? 1.f : 219.f / 255.f, full ? 0.f : 16.f / 255.f);
++            glUniform2f(glGetUniformLocation(program, "cscale"), full ? 1.f : 224.f / 255.f, 128.f / 255.f);
++            GLuint fbo = 0;
++            glGenFramebuffers(1, &fbo);
++            glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++            try {
++                for (unsigned plane = 0; plane < 2; plane++) {
++                    unsigned width = (d.width + 3) / 4, height = plane ? (d.height + 1) / 2 : d.height;
++                    glActiveTexture(GL_TEXTURE1);
++                    Image target(*this, to.fd(), DRM_FORMAT_ABGR8888, width, height, d.stride,
++                        plane ? d.chroma_offset() : d.data_offset);
++                    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, target.texture, 0);
++                    require(
++                        glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE, "VPP output framebuffer");
++                    glActiveTexture(GL_TEXTURE0);
++                    glBindTexture(GL_TEXTURE_2D, source.texture);
++                    glViewport(0, 0, width, height);
++                    glUniform1i(glGetUniformLocation(program, "plane"), plane);
++                    glDrawArrays(GL_TRIANGLES, 0, 3);
++                    glFinish();
++                    require(glGetError() == GL_NO_ERROR, "VPP conversion");
++                    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
++                }
++            } catch (...) {
++                glDeleteFramebuffers(1, &fbo);
++                throw;
++            }
++            glDeleteFramebuffers(1, &fbo);
++        }
++    };
++    class Worker final : public VppEngine {
++        std::thread thread;
++        std::mutex mutex;
++        std::condition_variable wake;
++        bool stop = false;
++        std::packaged_task<void(Converter&)> task;
++
++    public:
++        explicit Worker(int fd)
++        {
++            std::promise<void> ready;
++            auto f = ready.get_future();
++            thread = std::thread([this, fd, ready = std::move(ready)]() mutable {
++                std::unique_ptr<Converter> c;
++                try {
++                    c = std::make_unique<Converter>(fd);
++                    ready.set_value();
++                } catch (...) {
++                    ready.set_exception(std::current_exception());
++                    return;
++                }
++                for (;;) {
++                    std::unique_lock lock(mutex);
++                    wake.wait(lock, [&] { return stop || task.valid(); });
++                    if (stop)
++                        break;
++                    auto t = std::move(task);
++                    lock.unlock();
++                    t(*c);
++                }
++            });
++            try {
++                f.get();
++            } catch (...) {
++                thread.join();
++                throw;
++            }
++        }
++        ~Worker()
++        {
++            {
++                std::lock_guard lock(mutex);
++                stop = true;
++            }
++            wake.notify_one();
++            thread.join();
++        }
++        void convert(StableBuffer& d, StableBuffer& s, bool bt709, bool full, bool centered) override
++        {
++            // The VA context serializes pictures; hold this lock until completion so
++            // a second context cannot overwrite a task waiting for the worker.
++            std::unique_lock lock(mutex);
++            wake.wait(lock, [&] { return !task.valid(); });
++            std::packaged_task<void(Converter&)> t([&](Converter& c) { c.convert(d, s, bt709, full, centered); });
++            auto result = t.get_future();
++            task = std::move(t);
++            wake.notify_all();
++            lock.unlock();
++            result.get();
++            wake.notify_all();
++        }
++    };
++}
++std::unique_ptr<VppEngine> make_vpp(int fd)
++{
++    return std::make_unique<Worker>(fd);
++}
++}
+--- /dev/null
++++ b/src/iris/vpp.h
+@@ -0,0 +1,13 @@
++// SPDX-License-Identifier: MIT
++#pragma once
++#include "alloc.h"
++#include <memory>
++namespace iris {
++class VppEngine {
++public:
++    virtual ~VppEngine() = default;
++    virtual void convert(StableBuffer& destination, StableBuffer& source, bool bt709, bool full_range, bool centered)
++        = 0;
++};
++std::unique_ptr<VppEngine> make_vpp(int render_fd);
++}
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -36,7 +36,7 @@
+ 	'codec/encode_hevc.cc',
+ ]
+ if have_gpu_copy
+-	core_sources += 'iris/gpu_copy.cc'
++	core_sources += ['iris/gpu_copy.cc', 'iris/vpp.cc']
+ 	core_deps += [egl_dep, glesv2_dep, gbm_dep]
+ 	core_cpp_args += '-DIRIS_HAVE_GPU_COPY'
+ endif
+@@ -52,17 +52,20 @@
+ 	include_directories: include_directories('.'),
+ 	dependencies: core_deps)
+ 
+-v4l2_drv_video = shared_module('v4l2_drv_video',
+-	name_prefix: '',
+-	install: true,
+-	install_dir: join_paths(get_option('libdir'), 'dri'),
+-	cpp_args: core_cpp_args + ['-DVA_DRIVER_INIT_FUNC=' + va_driver_init_func],
+-	sources: [
++va_sources = files(
+ 		'va/driver.cc',
+ 		'va/config.cc',
+ 		'va/surface.cc',
+ 		'va/picture.cc',
+ 		'va/buffer.cc',
+ 		'va/image.cc',
+-	],
++		'va/vpp.cc',
++)
++
++v4l2_drv_video = shared_module('v4l2_drv_video',
++	name_prefix: '',
++	install: true,
++	install_dir: join_paths(get_option('libdir'), 'dri'),
++	cpp_args: core_cpp_args + ['-DVA_DRIVER_INIT_FUNC=' + va_driver_init_func],
++	sources: va_sources,
+ 	dependencies: [iris_core_dep])
+--- a/src/va/buffer.cc
++++ b/src/va/buffer.cc
+@@ -16,10 +16,11 @@
+ 
+ namespace va {
+ 
+-VAStatus createBuffer(VADriverContextP ctx, VAContextID, VABufferType type, unsigned size, unsigned count,
+-    void* initial, VABufferID* id)
++VAStatus createBuffer(
++    VADriverContextP ctx, VAContextID, VABufferType type, unsigned size, unsigned count, void* initial, VABufferID* id)
+ {
+     switch (type) {
++    case VAProcPipelineParameterBufferType:
+     case VAPictureParameterBufferType:
+     case VAIQMatrixBufferType:
+     case VASliceParameterBufferType:
+@@ -144,8 +145,7 @@
+     // A derived image is a view over the surface's DMA-BUF, not a copy.
+     if (mapped_buffer.alias) {
+         if (mapped_buffer.alias_fd >= 0)
+-            iris::dma_buf_cpu_sync(
+-                mapped_buffer.alias_fd, DMA_BUF_SYNC_START | DMA_BUF_SYNC_READ | DMA_BUF_SYNC_WRITE);
++            iris::dma_buf_cpu_sync(mapped_buffer.alias_fd, DMA_BUF_SYNC_START | DMA_BUF_SYNC_READ | DMA_BUF_SYNC_WRITE);
+         *mapped = mapped_buffer.alias;
+         return VA_STATUS_SUCCESS;
+     }
+--- a/src/va/config.cc
++++ b/src/va/config.cc
+@@ -11,14 +11,14 @@
+ 
+ namespace {
+ 
+-VAStatus guarded(VADriverContextP ctx, const char* where, auto&& body)
+-{
+-    try {
+-        return body();
+-    } catch (const std::exception& error) {
+-        return report(ctx, where, error);
++    VAStatus guarded(VADriverContextP ctx, const char* where, auto&& body)
++    {
++        try {
++            return body();
++        } catch (const std::exception& error) {
++            return report(ctx, where, error);
++        }
+     }
+-}
+ 
+ } // namespace
+ 
+@@ -28,6 +28,7 @@
+     std::lock_guard<std::recursive_mutex> lock(d.mutex);
+     std::set<VAProfile> all = d.capabilities.profiles;
+     all.insert(d.capabilities.encode_profiles.begin(), d.capabilities.encode_profiles.end());
++    all.insert(VAProfileNone);
+     int n = 0;
+     for (VAProfile profile : all)
+         if (n < static_cast<int>(kMaxProfiles))
+@@ -47,20 +48,25 @@
+         entrypoints[n++] = VAEntrypointVLD;
+     if (d.capabilities.encode_profiles.count(profile) && n < static_cast<int>(kMaxEntrypoints))
+         entrypoints[n++] = VAEntrypointEncSlice;
++    if (profile == VAProfileNone)
++        entrypoints[n++] = VAEntrypointVideoProc;
+     *count = n;
+     return VA_STATUS_SUCCESS;
+ }
+ 
+-VAStatus getConfigAttributes(VADriverContextP ctx, VAProfile profile, VAEntrypoint entrypoint,
+-    VAConfigAttrib* attributes, int count)
+-{
+-    auto& d = data(ctx);
++VAStatus getConfigAttributes(
++    VADriverContextP ctx, VAProfile profile, VAEntrypoint entrypoint, VAConfigAttrib* attributes, int count)
++{
++    auto& d = data(ctx);
++    const bool vpp = profile == VAProfileNone && entrypoint == VAEntrypointVideoProc;
+     const bool decode = d.capabilities.profiles.count(profile) && entrypoint == VAEntrypointVLD;
+     const bool encode = d.capabilities.encode_profiles.count(profile) && entrypoint == VAEntrypointEncSlice;
+     for (int i = 0; i < count; ++i) {
+         switch (attributes[i].type) {
+         case VAConfigAttribRTFormat:
+-            if (decode) {
++            if (vpp) {
++                attributes[i].value = VA_RT_FORMAT_YUV420 | VA_RT_FORMAT_RGB32;
++            } else if (decode) {
+                 attributes[i].value = VA_RT_FORMAT_YUV420;
+                 if (p010_decode_profile(profile) && d.capabilities.p010)
+                     attributes[i].value |= VA_RT_FORMAT_YUV420_10;
+@@ -75,10 +81,10 @@
+             attributes[i].value = decode ? VA_DEC_SLICE_MODE_NORMAL : VA_ATTRIB_NOT_SUPPORTED;
+             break;
+         case VAConfigAttribMaxPictureWidth:
+-            attributes[i].value = (decode || encode) ? d.capabilities.max_width : VA_ATTRIB_NOT_SUPPORTED;
++            attributes[i].value = (decode || encode || vpp) ? d.capabilities.max_width : VA_ATTRIB_NOT_SUPPORTED;
+             break;
+         case VAConfigAttribMaxPictureHeight:
+-            attributes[i].value = (decode || encode) ? d.capabilities.max_height : VA_ATTRIB_NOT_SUPPORTED;
++            attributes[i].value = (decode || encode || vpp) ? d.capabilities.max_height : VA_ATTRIB_NOT_SUPPORTED;
+             break;
+         case VAConfigAttribRateControl:
+             // CQP is what FFmpeg picks when the client gives no bitrate;
+@@ -125,6 +131,20 @@
+     return guarded(ctx, "createConfig", [&] {
+         auto& d = data(ctx);
+         std::lock_guard<std::recursive_mutex> lock(d.mutex);
++        if (entrypoint == VAEntrypointVideoProc) {
++            iris::require(profile == VAProfileNone, "VPP profile", VA_STATUS_ERROR_UNSUPPORTED_PROFILE);
++            uint32_t rt = VA_RT_FORMAT_YUV420 | VA_RT_FORMAT_RGB32;
++            for (int i = 0; i < count; i++) {
++                iris::require(attributes[i].type == VAConfigAttribRTFormat, "VPP configuration attribute",
++                    VA_STATUS_ERROR_ATTR_NOT_SUPPORTED);
++                rt = attributes[i].value;
++                iris::require(rt && !(rt & ~(VA_RT_FORMAT_YUV420 | VA_RT_FORMAT_RGB32)), "VPP RT format",
++                    VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT);
++            }
++            *id = d.next_id++;
++            d.configs[*id] = Config { profile, entrypoint, rt };
++            return VA_STATUS_SUCCESS;
++        }
+         iris::require(entrypoint == VAEntrypointVLD || entrypoint == VAEntrypointEncSlice, "unsupported entrypoint",
+             VA_STATUS_ERROR_UNSUPPORTED_ENTRYPOINT);
+         if (entrypoint == VAEntrypointVLD) {
+@@ -147,10 +167,10 @@
+         if (entrypoint == VAEntrypointEncSlice) {
+             // One bit, chosen by the client from what getConfigAttributes
+             // advertised.
+-            iris::require((rate_control & (VA_RC_CBR | VA_RC_VBR | VA_RC_CQP)) != 0,
+-                "unsupported rate control mode", VA_STATUS_ERROR_INVALID_PARAMETER);
+-            iris::require(rt_format & VA_RT_FORMAT_YUV420, "encode needs YUV420",
+-                VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT);
++            iris::require((rate_control & (VA_RC_CBR | VA_RC_VBR | VA_RC_CQP)) != 0, "unsupported rate control mode",
++                VA_STATUS_ERROR_INVALID_PARAMETER);
++            iris::require(
++                rt_format & VA_RT_FORMAT_YUV420, "encode needs YUV420", VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT);
+         } else {
+             iris::require(rt_format & (VA_RT_FORMAT_YUV420 | VA_RT_FORMAT_YUV420_10), "unsupported RT format",
+                 VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT);
+@@ -194,7 +214,13 @@
+     *count = 0;
+     return VA_STATUS_SUCCESS;
+ }
+-VAStatus getDisplayAttributes(VADriverContextP, VADisplayAttribute*, int) { return VA_STATUS_ERROR_UNIMPLEMENTED; }
+-VAStatus setDisplayAttributes(VADriverContextP, VADisplayAttribute*, int) { return VA_STATUS_ERROR_UNIMPLEMENTED; }
++VAStatus getDisplayAttributes(VADriverContextP, VADisplayAttribute*, int)
++{
++    return VA_STATUS_ERROR_UNIMPLEMENTED;
++}
++VAStatus setDisplayAttributes(VADriverContextP, VADisplayAttribute*, int)
++{
++    return VA_STATUS_ERROR_UNIMPLEMENTED;
++}
+ 
+ } // namespace va
+--- a/src/va/driver.cc
++++ b/src/va/driver.cc
+@@ -91,7 +91,8 @@
+ iris::StableBuffer& ensure_stable(DriverData& d, Surface& surface)
+ {
+     if (!surface.stable)
+-        surface.stable = iris::allocate_stable(d.render_fd, iris::stable_layout(surface.fourcc, surface.width, surface.height));
++        surface.stable
++            = iris::allocate_stable(d.render_fd, iris::stable_layout(surface.fourcc, surface.width, surface.height));
+     return *surface.stable;
+ }
+ 
+@@ -190,13 +191,13 @@
+ 
+ namespace {
+ 
+-int render_fd_of(VADriverContextP ctx)
+-{
+-    if (!ctx->drm_state)
+-        return -1;
+-    const auto* state = static_cast<const drm_state*>(ctx->drm_state);
+-    return (ctx->display_type & VA_DISPLAY_DRM) ? state->fd : -1;
+-}
++    int render_fd_of(VADriverContextP ctx)
++    {
++        if (!ctx->drm_state)
++            return -1;
++        const auto* state = static_cast<const drm_state*>(ctx->drm_state);
++        return (ctx->display_type & VA_DISPLAY_DRM) ? state->fd : -1;
++    }
+ 
+ } // namespace
+ 
+@@ -213,6 +214,7 @@
+     d->images.clear();
+     d->buffers.clear();
+     d->surfaces.clear();
++    d->vpp.reset();
+     d->copier.reset();
+     delete d;
+     ctx->pDriverData = nullptr;
+@@ -240,9 +242,8 @@
+     // Defer copy-engine creation until context creation so capability probing
+     // stays thread-free for Chromium GPU sandbox initialization.
+     d->trace("va init node=%s encoder=%s render_fd=%d copy=deferred profiles=%zu encode_profiles=%zu",
+-        d->capabilities.node.c_str(),
+-        d->capabilities.encoder_node.empty() ? "-" : d->capabilities.encoder_node.c_str(), d->render_fd,
+-        d->capabilities.profiles.size(), d->capabilities.encode_profiles.size());
++        d->capabilities.node.c_str(), d->capabilities.encoder_node.empty() ? "-" : d->capabilities.encoder_node.c_str(),
++        d->render_fd, d->capabilities.profiles.size(), d->capabilities.encode_profiles.size());
+ 
+     ctx->version_major = VA_MAJOR_VERSION;
+     ctx->version_minor = VA_MINOR_VERSION;
+@@ -305,6 +306,12 @@
+     vtable->vaAssociateSubpicture = associateSubpicture;
+     vtable->vaDeassociateSubpicture = deassociateSubpicture;
+ 
++    if (ctx->vtable_vpp) {
++        ctx->vtable_vpp->version = VA_DRIVER_VTABLE_VPP_VERSION;
++        ctx->vtable_vpp->vaQueryVideoProcFilters = queryVideoProcFilters;
++        ctx->vtable_vpp->vaQueryVideoProcFilterCaps = queryVideoProcFilterCaps;
++        ctx->vtable_vpp->vaQueryVideoProcPipelineCaps = queryVideoProcPipelineCaps;
++    }
+     ctx->pDriverData = d;
+     return VA_STATUS_SUCCESS;
+ }
+--- a/src/va/driver.h
++++ b/src/va/driver.h
+@@ -12,6 +12,7 @@
+ #include "../iris/encode.h"
+ #include "../iris/publish.h"
+ #include "../iris/session.h"
++#include "../iris/vpp.h"
+ #include "../util/encode-params.h"
+ #include "../util/options.h"
+ #include "../util/trace.h"
+@@ -27,6 +28,8 @@
+ extern "C" {
+ #include <va/va.h>
+ #include <va/va_backend.h>
++#include <va/va_backend_vpp.h>
++#include <va/va_vpp.h>
+ }
+ 
+ namespace va {
+@@ -142,6 +145,10 @@
+     };
+     std::map<VASurfaceID, EncSubmitted> enc_submitted;
+ 
++    std::shared_ptr<Buffer> vpp_parameters;
++    VAProcPipelineParameterBuffer vpp_snapshot = {};
++    VARectangle vpp_input_region = {}, vpp_output_region = {};
++    bool processing() const { return entrypoint == VAEntrypointVideoProc; }
+     bool encoding() const { return entrypoint == VAEntrypointEncSlice; }
+ };
+ 
+@@ -167,6 +174,7 @@
+     Capabilities capabilities;
+     int render_fd = -1; // borrowed from the VA display
+     std::unique_ptr<iris::CopyEngine> copier;
++    std::unique_ptr<iris::VppEngine> vpp;
+ 
+     // The mutex guards the tables and the objects' scalar fields only. It is
+     // never held across a session wait, drain or copy (architecture §7).
+@@ -179,7 +187,10 @@
+     std::map<VAImageID, VAImage> images;
+ };
+ 
+-inline DriverData& data(VADriverContextP ctx) { return *static_cast<DriverData*>(ctx->pDriverData); }
++inline DriverData& data(VADriverContextP ctx)
++{
++    return *static_cast<DriverData*>(ctx->pDriverData);
++}
+ 
+ // Translate an iris::Error / std::exception into a VA status, logging once.
+ VAStatus report(VADriverContextP ctx, const char* where, const std::exception& error);
+@@ -206,14 +217,20 @@
+ // Probe the node once at init.
+ Capabilities probe_capabilities(const iris::Options& options);
+ 
++bool rgb_format(uint32_t format);
++uint32_t rgb_drm_format(uint32_t format);
++VAStatus queryVideoProcFilters(VADriverContextP, VAContextID, VAProcFilterType*, unsigned*);
++VAStatus queryVideoProcFilterCaps(VADriverContextP, VAContextID, VAProcFilterType, void*, unsigned*);
++VAStatus queryVideoProcPipelineCaps(VADriverContextP, VAContextID, VABufferID*, unsigned, VAProcPipelineCaps*);
++void process_picture(DriverData&, Context&, Surface&);
+ // Entry points (one per VA vtable slot we implement).
+ VAStatus terminate(VADriverContextP ctx);
+ VAStatus queryConfigProfiles(VADriverContextP ctx, VAProfile* profiles, int* count);
+ VAStatus queryConfigEntrypoints(VADriverContextP ctx, VAProfile profile, VAEntrypoint* entrypoints, int* count);
+ VAStatus queryConfigAttributes(VADriverContextP ctx, VAConfigID id, VAProfile* profile, VAEntrypoint* entrypoint,
+     VAConfigAttrib* attributes, int* count);
+-VAStatus getConfigAttributes(VADriverContextP ctx, VAProfile profile, VAEntrypoint entrypoint,
+-    VAConfigAttrib* attributes, int count);
++VAStatus getConfigAttributes(
++    VADriverContextP ctx, VAProfile profile, VAEntrypoint entrypoint, VAConfigAttrib* attributes, int count);
+ VAStatus createConfig(VADriverContextP ctx, VAProfile profile, VAEntrypoint entrypoint, VAConfigAttrib* attributes,
+     int count, VAConfigID* id);
+ VAStatus destroyConfig(VADriverContextP ctx, VAConfigID id);
+--- a/src/va/picture.cc
++++ b/src/va/picture.cc
+@@ -16,74 +16,74 @@
+ 
+ namespace {
+ 
+-VAStatus guarded(VADriverContextP ctx, const char* where, auto&& body)
+-{
+-    try {
+-        return body();
+-    } catch (const std::exception& error) {
+-        return report(ctx, where, error);
++    VAStatus guarded(VADriverContextP ctx, const char* where, auto&& body)
++    {
++        try {
++            return body();
++        } catch (const std::exception& error) {
++            return report(ctx, where, error);
++        }
+     }
+-}
+-
+-std::unique_ptr<iris::codec::Translator> make_translator(VAProfile profile)
+-{
+-    switch (profile) {
++
++    std::unique_ptr<iris::codec::Translator> make_translator(VAProfile profile)
++    {
++        switch (profile) {
+ #pragma GCC diagnostic push
+ #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+-    case VAProfileH264Baseline:
++        case VAProfileH264Baseline:
+ #pragma GCC diagnostic pop
+-    case VAProfileH264ConstrainedBaseline:
+-    case VAProfileH264Main:
+-    case VAProfileH264High:
+-        return iris::codec::make_h264(profile);
+-    case VAProfileHEVCMain:
+-    case VAProfileHEVCMain10:
+-        return iris::codec::make_hevc(profile);
+-    case VAProfileVP9Profile0:
+-    case VAProfileVP9Profile2:
+-        return iris::codec::make_vp9(profile);
+-    case VAProfileAV1Profile0:
+-        return iris::codec::make_av1_dpb(profile);
+-    default:
+-        throw iris::Error(VA_STATUS_ERROR_UNSUPPORTED_PROFILE, "no translator for profile");
++        case VAProfileH264ConstrainedBaseline:
++        case VAProfileH264Main:
++        case VAProfileH264High:
++            return iris::codec::make_h264(profile);
++        case VAProfileHEVCMain:
++        case VAProfileHEVCMain10:
++            return iris::codec::make_hevc(profile);
++        case VAProfileVP9Profile0:
++        case VAProfileVP9Profile2:
++            return iris::codec::make_vp9(profile);
++        case VAProfileAV1Profile0:
++            return iris::codec::make_av1_dpb(profile);
++        default:
++            throw iris::Error(VA_STATUS_ERROR_UNSUPPORTED_PROFILE, "no translator for profile");
++        }
+     }
+-}
+-
+-std::unique_ptr<iris::codec::Encoder> make_encoder(VAProfile profile, iris::RateMode rate_mode)
+-{
+-    switch (profile) {
++
++    std::unique_ptr<iris::codec::Encoder> make_encoder(VAProfile profile, iris::RateMode rate_mode)
++    {
++        switch (profile) {
+ #pragma GCC diagnostic push
+ #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+-    case VAProfileH264Baseline:
++        case VAProfileH264Baseline:
+ #pragma GCC diagnostic pop
+-    case VAProfileH264ConstrainedBaseline:
+-    case VAProfileH264Main:
+-    case VAProfileH264High:
+-        return iris::codec::make_h264_encoder(profile, rate_mode);
+-    case VAProfileHEVCMain:
+-        return iris::codec::make_hevc_encoder(profile, rate_mode);
+-    default:
+-        throw iris::Error(VA_STATUS_ERROR_UNSUPPORTED_PROFILE, "no encoder for profile");
++        case VAProfileH264ConstrainedBaseline:
++        case VAProfileH264Main:
++        case VAProfileH264High:
++            return iris::codec::make_h264_encoder(profile, rate_mode);
++        case VAProfileHEVCMain:
++            return iris::codec::make_hevc_encoder(profile, rate_mode);
++        default:
++            throw iris::Error(VA_STATUS_ERROR_UNSUPPORTED_PROFILE, "no encoder for profile");
++        }
+     }
+-}
+-
+-// Submit one AU for `surface` through `context`'s session. Sets the target's
+-// publish policy from the surface's export history.
+-void submit(DriverData& d, Context& c, Surface& s, const iris::codec::AccessUnit& au)
+-{
+-    s.target.publish = publish_policy(d, s, *c.session);
+-    if (s.target.publish != iris::Publish::Direct)
+-        s.target.destination = &ensure_stable(d, s);
+-    else
+-        s.target.destination = nullptr;
+-    s.target.width = s.width;
+-    s.target.height = s.height;
+-    s.target.fourcc = s.fourcc;
+-    s.target.hidden = au.hidden;
+-    s.target.completions = au.completions;
+-    s.failed = false;
+-    c.session->submit(au.bytes.data(), au.bytes.size(), s.target);
+-}
++
++    // Submit one AU for `surface` through `context`'s session. Sets the target's
++    // publish policy from the surface's export history.
++    void submit(DriverData& d, Context& c, Surface& s, const iris::codec::AccessUnit& au)
++    {
++        s.target.publish = publish_policy(d, s, *c.session);
++        if (s.target.publish != iris::Publish::Direct)
++            s.target.destination = &ensure_stable(d, s);
++        else
++            s.target.destination = nullptr;
++        s.target.width = s.width;
++        s.target.height = s.height;
++        s.target.fourcc = s.fourcc;
++        s.target.hidden = au.hidden;
++        s.target.completions = au.completions;
++        s.failed = false;
++        c.session->submit(au.bytes.data(), au.bytes.size(), s.target);
++    }
+ 
+ } // namespace
+ 
+@@ -93,16 +93,18 @@
+     return guarded(ctx, "createContext", [&] {
+         auto& d = data(ctx);
+         (void)flags;
+-        iris::require(width > 0 && height > 0, "invalid context geometry", VA_STATUS_ERROR_INVALID_PARAMETER);
++
+         Config cfg;
+         {
+             std::lock_guard<std::recursive_mutex> lock(d.mutex);
+             auto it = d.configs.find(config);
+             iris::require(it != d.configs.end(), "invalid config", VA_STATUS_ERROR_INVALID_CONFIG);
+             cfg = it->second;
++            iris::require(cfg.entrypoint == VAEntrypointVideoProc || (width > 0 && height > 0),
++                "invalid context geometry", VA_STATUS_ERROR_INVALID_PARAMETER);
+             // Defer copy-engine creation until an actual context is requested,
+             // keeping capability queries thread-free.
+-            if (!d.copier) {
++            if (!d.copier && cfg.entrypoint != VAEntrypointVideoProc) {
+                 if (d.options.copy_mode == iris::CopyMode::Gpu)
+                     d.copier = iris::make_gpu_copy(d.render_fd);
+                 if (!d.copier)
+@@ -115,10 +117,18 @@
+         c->width = static_cast<unsigned>(width);
+         c->height = static_cast<unsigned>(height);
+ 
++        if (c->processing()) {
++            std::lock_guard<std::recursive_mutex> lock(d.mutex);
++            if (!d.vpp)
++                d.vpp = iris::make_vpp(d.render_fd);
++            *id = d.next_id++;
++            d.contexts[*id] = c;
++            return VA_STATUS_SUCCESS;
++        }
+         if (cfg.entrypoint == VAEntrypointEncSlice) {
+-            const iris::RateMode rate_mode = (cfg.rate_control & VA_RC_CQP)  ? iris::RateMode::Cqp
+-                : (cfg.rate_control & VA_RC_CBR)                             ? iris::RateMode::Cbr
+-                                                                             : iris::RateMode::Vbr;
++            const iris::RateMode rate_mode = (cfg.rate_control & VA_RC_CQP) ? iris::RateMode::Cqp
++                : (cfg.rate_control & VA_RC_CBR)                            ? iris::RateMode::Cbr
++                                                                            : iris::RateMode::Vbr;
+             c->encoder = make_encoder(cfg.profile, rate_mode);
+             iris::EncodeConfig ec;
+             ec.codec = c->encoder->v4l2_pixelformat();
+@@ -147,8 +157,8 @@
+         sc.import_allowed = d.capabilities.import_formats.count(sc.codec_pixelformat) != 0;
+         // Opening the node and OUTPUT STREAMON happen here, outside the
+         // table lock. SOURCE_CHANGE and CAPTURE follow the first AU.
+-        c->session = std::make_shared<iris::Session>(iris::open_device(d.options.video_path), sc, d.options,
+-            d.copier.get(), d.trace);
++        c->session = std::make_shared<iris::Session>(
++            iris::open_device(d.options.video_path), sc, d.options, d.copier.get(), d.trace);
+ 
+         std::lock_guard<std::recursive_mutex> lock(d.mutex);
+         for (int i = 0; i < count; ++i) {
+@@ -161,8 +171,8 @@
+         }
+         *id = d.next_id++;
+         d.contexts[*id] = c;
+-        d.trace("va create_context id=%u profile=%d %ux%u targets=%d mode=%s", *id, cfg.profile, c->width,
+-            c->height, count, c->session->mode() == iris::SessionMode::DecodeOrder ? "decode-order" : "display-order");
++        d.trace("va create_context id=%u profile=%d %ux%u targets=%d mode=%s", *id, cfg.profile, c->width, c->height,
++            count, c->session->mode() == iris::SessionMode::DecodeOrder ? "decode-order" : "display-order");
+         return VA_STATUS_SUCCESS;
+     });
+ }
+@@ -183,6 +193,14 @@
+             for (auto& [sid, s] : d.surfaces)
+                 if (s->owner == id)
+                     owned.push_back(s);
++        }
++        if (c->processing()) {
++            std::lock_guard<std::recursive_mutex> lock(d.mutex);
++            for (auto& s : owned)
++                if (s->owner == id)
++                    s->owner = VA_INVALID_ID;
++            d.contexts.erase(id);
++            return VA_STATUS_SUCCESS;
+         }
+         if (c->encoding()) {
+             d.trace("va destroy_context id=%u entrypoint=encslice frames=%llu", id,
+@@ -253,13 +271,13 @@
+             // it set after a rejected call, and every later vaBeginPicture on
+             // this context would fail with "picture already in progress".
+             if (c->encoding()) {
+-                iris::require(s->fourcc == VA_FOURCC_NV12, "encode input must be NV12",
+-                    VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT);
++                iris::require(
++                    s->fourcc == VA_FOURCC_NV12, "encode input must be NV12", VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT);
+                 // Equal is the common case, but FFmpeg declares an aligned
+                 // context (1920x1088) and feeds 1920x1080 frames. A larger
+                 // surface is a different picture size, which has no path.
+-                iris::require(s->width <= c->width && s->height <= c->height,
+-                    "encode surface exceeds the context", VA_STATUS_ERROR_INVALID_SURFACE);
++                iris::require(s->width <= c->width && s->height <= c->height, "encode surface exceeds the context",
++                    VA_STATUS_ERROR_INVALID_SURFACE);
+             }
+             // A surface may move between contexts (FFmpeg's pool); it just
+             // becomes the new context's target. A pending picture on another
+@@ -285,6 +303,19 @@
+                 c->picture.surface_id = surface_id;
+             }
+         }
++        if (c->processing()) {
++            iris::require(
++                s->fourcc == VA_FOURCC_NV12, "VPP target must be NV12", VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT);
++            c->vpp_parameters.reset();
++            if (s->target.frame && d.copier)
++                d.copier->forget(s->target.frame->id());
++            s->target.frame.reset();
++            s->target.completed = false;
++            s->target.error = false;
++            s->failed = false;
++            return VA_STATUS_SUCCESS;
++        }
++        iris::require(!rgb_format(s->fourcc), "codec input is not RGB", VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT);
+         if (c->encoding()) {
+             d.trace("va begin_picture ctx=%u surface=%u entrypoint=encslice", id, surface_id);
+             return VA_STATUS_SUCCESS;
+@@ -308,6 +339,25 @@
+         std::lock_guard<std::recursive_mutex> lock(d.mutex);
+         auto c = context(d, id);
+         iris::require(c->current != VA_INVALID_ID, "renderPicture outside a picture", VA_STATUS_ERROR_OPERATION_FAILED);
++        if (c->processing()) {
++            iris::require(
++                count == 1 && !c->vpp_parameters, "one VPP buffer per picture", VA_STATUS_ERROR_INVALID_PARAMETER);
++            auto b = buffer(d, buffers[0]);
++            iris::require(b->type == VAProcPipelineParameterBufferType && b->count == 1
++                    && b->size == sizeof(VAProcPipelineParameterBuffer),
++                "VPP parameter size", VA_STATUS_ERROR_INVALID_PARAMETER);
++            c->vpp_snapshot = *reinterpret_cast<const VAProcPipelineParameterBuffer*>(b->data.data());
++            if (c->vpp_snapshot.surface_region) {
++                c->vpp_input_region = *c->vpp_snapshot.surface_region;
++                c->vpp_snapshot.surface_region = &c->vpp_input_region;
++            }
++            if (c->vpp_snapshot.output_region) {
++                c->vpp_output_region = *c->vpp_snapshot.output_region;
++                c->vpp_snapshot.output_region = &c->vpp_output_region;
++            }
++            c->vpp_parameters = b;
++            return VA_STATUS_SUCCESS;
++        }
+         if (c->encoding()) {
+             for (int i = 0; i < count; ++i) {
+                 auto b = buffer(d, buffers[i]);
+@@ -336,8 +386,8 @@
+                     // sends them anyway must not lose the picture.
+                     break;
+                 default:
+-                    throw iris::Error(VA_STATUS_ERROR_UNSUPPORTED_BUFFERTYPE,
+-                        "buffer type not accepted by an encode renderPicture");
++                    throw iris::Error(
++                        VA_STATUS_ERROR_UNSUPPORTED_BUFFERTYPE, "buffer type not accepted by an encode renderPicture");
+                 }
+             }
+             return VA_STATUS_SUCCESS;
+@@ -375,11 +425,21 @@
+         {
+             std::lock_guard<std::recursive_mutex> lock(d.mutex);
+             c = context(d, id);
+-            iris::require(c->current != VA_INVALID_ID, "endPicture outside a picture", VA_STATUS_ERROR_OPERATION_FAILED);
++            iris::require(
++                c->current != VA_INVALID_ID, "endPicture outside a picture", VA_STATUS_ERROR_OPERATION_FAILED);
+             s = surface(d, c->current);
+         }
+         const VASurfaceID current = c->current;
+         c->current = VA_INVALID_ID;
++        if (c->processing()) {
++            try {
++                process_picture(d, *c, *s);
++            } catch (...) {
++                s->failed = true;
++                throw;
++            }
++            return VA_STATUS_SUCCESS;
++        }
+         if (c->encoding()) {
+             // The client named the target buffer in its picture parameters;
+             // nothing about the context decides it.
+@@ -413,16 +473,15 @@
+                     });
+             } else {
+                 // The encoder has no SOURCE_CHANGE: one geometry per context.
+-                iris::require(c->encode_session->config().width == s->width
+-                        && c->encode_session->config().height == s->height,
++                iris::require(
++                    c->encode_session->config().width == s->width && c->encode_session->config().height == s->height,
+                     "encode surface changed size", VA_STATUS_ERROR_INVALID_SURFACE);
+             }
+             c->enc_frames++;
+             // The surface's DMA-BUF has to outlive the submit: the firmware
+             // reads it until it completes the picture. `stable` is the
+             // surface's own buffer, which lives until the surface does.
+-            const iris::EncodeTicket ticket
+-                = c->encode_session->submit(stable->fd(), stable->size(), params);
++            const iris::EncodeTicket ticket = c->encode_session->submit(stable->fd(), stable->size(), params);
+             {
+                 std::lock_guard<std::recursive_mutex> lock(d.mutex);
+                 coded->payload.clear();
+--- a/src/va/surface.cc
++++ b/src/va/surface.cc
+@@ -23,83 +23,83 @@
+ 
+ namespace {
+ 
+-VAStatus guarded(VADriverContextP ctx, const char* where, auto&& body)
+-{
+-    try {
+-        return body();
+-    } catch (const std::exception& error) {
+-        return report(ctx, where, error);
++    VAStatus guarded(VADriverContextP ctx, const char* where, auto&& body)
++    {
++        try {
++            return body();
++        } catch (const std::exception& error) {
++            return report(ctx, where, error);
++        }
+     }
+-}
+-
+-uint32_t fourcc_for(uint32_t rt_format)
+-{
+-    return (rt_format & VA_RT_FORMAT_YUV420_10) ? VA_FOURCC_P010 : VA_FOURCC_NV12;
+-}
+-
+-// Wait for the surface's picture outside the driver mutex, then report.
+-// `session` is the owner's session captured under the lock (may be null when
+-// the owner is gone); holding it by value keeps it alive for the wait.
+-VAStatus wait_for(DriverData& d, std::shared_ptr<iris::Session> session, const std::shared_ptr<Surface>& s)
+-{
+-    iris::require(!s->failed, "surface decode failed", VA_STATUS_ERROR_DECODING_ERROR);
+-    if (!session) {
+-        // The owner was destroyed between our two reads. destroyContext
+-        // drains before it drops the context, so the target is settled now.
+-        iris::require(!s->rendering(), "rendering surface has no live session", VA_STATUS_ERROR_INVALID_SURFACE);
+-        iris::require(!s->target.error, "surface decode failed", VA_STATUS_ERROR_DECODING_ERROR);
++
++    uint32_t fourcc_for(uint32_t rt_format)
++    {
++        return (rt_format & VA_RT_FORMAT_YUV420_10) ? VA_FOURCC_P010 : VA_FOURCC_NV12;
++    }
++
++    // Wait for the surface's picture outside the driver mutex, then report.
++    // `session` is the owner's session captured under the lock (may be null when
++    // the owner is gone); holding it by value keeps it alive for the wait.
++    VAStatus wait_for(DriverData& d, std::shared_ptr<iris::Session> session, const std::shared_ptr<Surface>& s)
++    {
++        iris::require(!s->failed, "surface decode failed", VA_STATUS_ERROR_DECODING_ERROR);
++        if (!session) {
++            // The owner was destroyed between our two reads. destroyContext
++            // drains before it drops the context, so the target is settled now.
++            iris::require(!s->rendering(), "rendering surface has no live session", VA_STATUS_ERROR_INVALID_SURFACE);
++            iris::require(!s->target.error, "surface decode failed", VA_STATUS_ERROR_DECODING_ERROR);
++            return VA_STATUS_SUCCESS;
++        }
++        try {
++            // Ask the session even when the target has stopped rendering. A
++            // completion another call pumped may have marked it failed, and that
++            // failure lives in the target, not in Surface::failed; returning here
++            // on `rendering()` alone reported SUCCESS for a surface the firmware
++            // rejected.
++            session->wait(s->target);
++        } catch (const iris::Error& error) {
++            s->failed = true;
++            d.trace("va sync failed surface status=%d: %s", error.status, error.what());
++            throw;
++        }
+         return VA_STATUS_SUCCESS;
+     }
+-    try {
+-        // Ask the session even when the target has stopped rendering. A
+-        // completion another call pumped may have marked it failed, and that
+-        // failure lives in the target, not in Surface::failed; returning here
+-        // on `rendering()` alone reported SUCCESS for a surface the firmware
+-        // rejected.
+-        session->wait(s->target);
+-    } catch (const iris::Error& error) {
+-        s->failed = true;
+-        d.trace("va sync failed surface status=%d: %s", error.status, error.what());
+-        throw;
++
++    std::shared_ptr<iris::Session> session_of(DriverData& d, const Surface& s)
++    {
++        auto owner = owner_of(d, s);
++        return owner ? owner->session : nullptr;
+     }
+-    return VA_STATUS_SUCCESS;
+-}
+-
+-std::shared_ptr<iris::Session> session_of(DriverData& d, const Surface& s)
+-{
+-    auto owner = owner_of(d, s);
+-    return owner ? owner->session : nullptr;
+-}
+-
+-// The buffer's real length. DMA-BUF llseek reports it on the Iris kernel, so
+-// a descriptor cannot claim more memory than the object holds; 0 means the
+-// kernel did not say and the import cannot cross-check.
+-uint64_t allocation_size(int fd)
+-{
+-    const off_t length = lseek(fd, 0, SEEK_END);
+-    return length > 0 ? static_cast<uint64_t>(length) : 0;
+-}
+-
+-// The surface becomes a view over the client's memory: a StableBuffer whose
+-// fd never changes, marked persistent so the existing Import/Copy policy
+-// applies unchanged (architecture §3.3). The fd is duplicated here, so the
+-// client may close its own at any time.
+-std::unique_ptr<iris::StableBuffer> import_stable(int fd, uint64_t allocation, const iris::PlaneLayout& planes,
+-    uint32_t fourcc, unsigned width, unsigned height)
+-{
+-    const int copy = fcntl(fd, F_DUPFD_CLOEXEC, 0);
+-    iris::require(copy >= 0, "duplicate the imported DMA-BUF", VA_STATUS_ERROR_ALLOCATION_FAILED);
+-    iris::Layout layout;
+-    layout.fourcc = fourcc;
+-    layout.width = width;
+-    layout.height = height;
+-    layout.stride = planes.stride;
+-    layout.storage_height = planes.storage_height;
+-    layout.data_offset = 0;
+-    layout.size = planes.size;
+-    const unsigned size = allocation >= planes.size ? static_cast<unsigned>(allocation) : planes.size;
+-    return std::make_unique<iris::StableBuffer>(copy, size, iris::MemoryOrigin::Imported, layout);
+-}
++
++    // The buffer's real length. DMA-BUF llseek reports it on the Iris kernel, so
++    // a descriptor cannot claim more memory than the object holds; 0 means the
++    // kernel did not say and the import cannot cross-check.
++    uint64_t allocation_size(int fd)
++    {
++        const off_t length = lseek(fd, 0, SEEK_END);
++        return length > 0 ? static_cast<uint64_t>(length) : 0;
++    }
++
++    // The surface becomes a view over the client's memory: a StableBuffer whose
++    // fd never changes, marked persistent so the existing Import/Copy policy
++    // applies unchanged (architecture §3.3). The fd is duplicated here, so the
++    // client may close its own at any time.
++    std::unique_ptr<iris::StableBuffer> import_stable(
++        int fd, uint64_t allocation, const iris::PlaneLayout& planes, uint32_t fourcc, unsigned width, unsigned height)
++    {
++        const int copy = fcntl(fd, F_DUPFD_CLOEXEC, 0);
++        iris::require(copy >= 0, "duplicate the imported DMA-BUF", VA_STATUS_ERROR_ALLOCATION_FAILED);
++        iris::Layout layout;
++        layout.fourcc = fourcc;
++        layout.width = width;
++        layout.height = height;
++        layout.stride = planes.stride;
++        layout.storage_height = planes.storage_height;
++        layout.data_offset = 0;
++        layout.size = planes.size;
++        const unsigned size = allocation >= planes.size ? static_cast<unsigned>(allocation) : planes.size;
++        return std::make_unique<iris::StableBuffer>(copy, size, iris::MemoryOrigin::Imported, layout);
++    }
+ 
+ } // namespace
+ 
+@@ -109,9 +109,9 @@
+     return guarded(ctx, "createSurfaces", [&] {
+         auto& d = data(ctx);
+         iris::require(width && height && count, "invalid surface geometry", VA_STATUS_ERROR_INVALID_PARAMETER);
+-        iris::require(format & (VA_RT_FORMAT_YUV420 | VA_RT_FORMAT_YUV420_10), "unsupported RT format",
+-            VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT);
+-        const uint32_t fourcc = fourcc_for(format);
++        iris::require(format & (VA_RT_FORMAT_YUV420 | VA_RT_FORMAT_YUV420_10 | VA_RT_FORMAT_RGB32),
++            "unsupported RT format", VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT);
++        uint32_t fourcc = (format == VA_RT_FORMAT_RGB32) ? VA_FOURCC_BGRA : fourcc_for(format);
+         unsigned memory_type = VA_SURFACE_ATTRIB_MEM_TYPE_VA;
+         const void* external = nullptr;
+         for (unsigned i = 0; i < attribute_count; ++i) {
+@@ -120,6 +120,13 @@
+                 continue;
+             switch (attribute.type) {
+             case VASurfaceAttribPixelFormat:
++                if (format == VA_RT_FORMAT_RGB32) {
++                    iris::require(
++                        attribute.value.type == VAGenericValueTypeInteger && rgb_format(attribute.value.value.i),
++                        "RGB pixel format", VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT);
++                    fourcc = attribute.value.value.i;
++                    break;
++                }
+                 iris::require(attribute.value.type == VAGenericValueTypeInteger
+                         && static_cast<uint32_t>(attribute.value.value.i) == fourcc,
+                     "surface pixel format does not match the RT format", VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT);
+@@ -144,11 +151,39 @@
+         // are the other case.
+         std::unique_ptr<iris::StableBuffer> imported;
+         int import_fd = -1;
+-        if (memory_type == VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2) {
++        if (rgb_format(fourcc) && memory_type != VA_SURFACE_ATTRIB_MEM_TYPE_VA) {
++            iris::require(memory_type == VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2 && external && count == 1,
++                "RGB import requires one PRIME2 surface", VA_STATUS_ERROR_UNSUPPORTED_MEMORY_TYPE);
++            const auto& desc = *static_cast<const VADRMPRIMESurfaceDescriptor*>(external);
++            iris::require(desc.width == width && desc.height == height && desc.fourcc == fourcc && desc.num_objects == 1
++                    && desc.num_layers == 1,
++                "RGB descriptor shape", VA_STATUS_ERROR_INVALID_PARAMETER);
++            const auto& layer = desc.layers[0];
++            const auto& object = desc.objects[0];
++            iris::require(object.fd >= 0 && object.drm_format_modifier == DRM_FORMAT_MOD_LINEAR
++                    && layer.drm_format == rgb_drm_format(fourcc) && layer.num_planes == 1 && layer.object_index[0] == 0
++                    && layer.pitch[0] >= uint64_t(width) * 4,
++                "RGB import requires one linear plane", VA_STATUS_ERROR_INVALID_PARAMETER);
++            uint64_t end = uint64_t(layer.offset[0]) + uint64_t(layer.pitch[0]) * (height - 1) + uint64_t(width) * 4;
++            uint64_t actual = allocation_size(object.fd);
++            iris::require(end <= object.size && (!actual || actual >= object.size), "RGB descriptor exceeds allocation",
++                VA_STATUS_ERROR_INVALID_PARAMETER);
++            int fd = fcntl(object.fd, F_DUPFD_CLOEXEC, 0);
++            iris::require(fd >= 0, "RGB duplicate DMA-BUF");
++            iris::Layout layout;
++            layout.fourcc = fourcc;
++            layout.width = width;
++            layout.height = height;
++            layout.storage_height = height;
++            layout.stride = layer.pitch[0];
++            layout.data_offset = layer.offset[0];
++            layout.size = object.size;
++            imported = std::make_unique<iris::StableBuffer>(fd, object.size, iris::MemoryOrigin::Imported, layout);
++        } else if (memory_type == VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2) {
+             iris::require(external != nullptr, "DRM_PRIME_2 import needs a surface descriptor",
+                 VA_STATUS_ERROR_INVALID_PARAMETER);
+-            iris::require(count == 1, "DRM_PRIME_2 import creates one surface per descriptor",
+-                VA_STATUS_ERROR_INVALID_PARAMETER);
++            iris::require(
++                count == 1, "DRM_PRIME_2 import creates one surface per descriptor", VA_STATUS_ERROR_INVALID_PARAMETER);
+             const auto& descriptor = *static_cast<const VADRMPRIMESurfaceDescriptor*>(external);
+             // Do not probe a descriptor whose object count is wrong:
+             // objects[0] would be whatever the client left there, possibly an
+@@ -159,15 +194,15 @@
+             imported = import_stable(fd, allocation,
+                 iris::validate_prime2(descriptor, width, height, fourcc, allocation), fourcc, width, height);
+         } else if (memory_type == VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME) {
+-            iris::require(external != nullptr, "DRM_PRIME import needs a buffer table",
+-                VA_STATUS_ERROR_INVALID_PARAMETER);
+-            iris::require(count == 1, "DRM_PRIME import creates one surface per buffer",
+-                VA_STATUS_ERROR_INVALID_PARAMETER);
++            iris::require(
++                external != nullptr, "DRM_PRIME import needs a buffer table", VA_STATUS_ERROR_INVALID_PARAMETER);
++            iris::require(
++                count == 1, "DRM_PRIME import creates one surface per buffer", VA_STATUS_ERROR_INVALID_PARAMETER);
+             const auto& buffers = *static_cast<const VASurfaceAttribExternalBuffers*>(external);
+             const int fd = buffers.num_buffers == 1 && buffers.buffers ? static_cast<int>(buffers.buffers[0]) : -1;
+             const uint64_t allocation = fd >= 0 ? allocation_size(fd) : 0;
+-            imported = import_stable(fd, allocation,
+-                iris::validate_prime1(buffers, width, height, fourcc, allocation), fourcc, width, height);
++            imported = import_stable(fd, allocation, iris::validate_prime1(buffers, width, height, fourcc, allocation),
++                fourcc, width, height);
+         } else {
+             iris::require(memory_type == VA_SURFACE_ATTRIB_MEM_TYPE_VA && external == nullptr,
+                 "unsupported surface memory type", VA_STATUS_ERROR_UNSUPPORTED_MEMORY_TYPE);
+@@ -212,8 +247,8 @@
+                 auto it = d.surfaces.find(ids[i]);
+                 if (it == d.surfaces.end())
+                     continue;
+-                iris::require(it->second->acquired_handles == 0, "surface has an acquired handle",
+-                    VA_STATUS_ERROR_SURFACE_BUSY);
++                iris::require(
++                    it->second->acquired_handles == 0, "surface has an acquired handle", VA_STATUS_ERROR_SURFACE_BUSY);
+                 doomed.push_back(it->second);
+                 sessions.push_back(session_of(d, *it->second));
+                 d.surfaces.erase(it);
+@@ -335,7 +370,7 @@
+     auto it = d.configs.find(config);
+     if (it == d.configs.end())
+         return VA_STATUS_ERROR_INVALID_CONFIG;
+-    VASurfaceAttrib list[8] = {};
++    VASurfaceAttrib list[16] = {};
+     unsigned n = 0;
+     auto add = [&](VASurfaceAttribType type, int value, unsigned flags) {
+         list[n].type = type;
+@@ -351,6 +386,9 @@
+     const VAProfile profile = it->second.profile;
+     // The encoder's raw port is NV12 only; P010 is a decode-only format here.
+     const bool encoding = it->second.entrypoint == VAEntrypointEncSlice;
++    if (it->second.entrypoint == VAEntrypointVideoProc)
++        for (auto f : { VA_FOURCC_RGBA, VA_FOURCC_RGBX, VA_FOURCC_BGRA, VA_FOURCC_BGRX })
++            add(VASurfaceAttribPixelFormat, f, VA_SURFACE_ATTRIB_GETTABLE | VA_SURFACE_ATTRIB_SETTABLE);
+     if (!encoding && d.capabilities.p010 && p010_decode_profile(profile))
+         add(VASurfaceAttribPixelFormat, VA_FOURCC_P010, VA_SURFACE_ATTRIB_GETTABLE | VA_SURFACE_ATTRIB_SETTABLE);
+     add(VASurfaceAttribMinWidth, static_cast<int>(d.capabilities.min_width), VA_SURFACE_ATTRIB_GETTABLE);
+@@ -421,6 +459,14 @@
+         iris::require(desc.objects[0].fd >= 0, "duplicate DMA-BUF fd");
+         desc.objects[0].size = layout.size;
+         desc.objects[0].drm_format_modifier = DRM_FORMAT_MOD_LINEAR;
++        if (rgb_format(layout.fourcc)) {
++            desc.num_layers = 1;
++            desc.layers[0].drm_format = rgb_drm_format(layout.fourcc);
++            desc.layers[0].num_planes = 1;
++            desc.layers[0].pitch[0] = layout.stride;
++            desc.layers[0].offset[0] = layout.data_offset;
++            return VA_STATUS_SUCCESS;
++        }
+         const bool p010 = layout.fourcc == VA_FOURCC_P010;
+         if (flags & VA_EXPORT_SURFACE_COMPOSED_LAYERS) {
+             desc.num_layers = 1;
+@@ -460,6 +506,9 @@
+     return VA_STATUS_ERROR_UNIMPLEMENTED;
+ }
+ 
+-VAStatus unlockSurface(VADriverContextP, VASurfaceID) { return VA_STATUS_ERROR_UNIMPLEMENTED; }
++VAStatus unlockSurface(VADriverContextP, VASurfaceID)
++{
++    return VA_STATUS_ERROR_UNIMPLEMENTED;
++}
+ 
+ } // namespace va
+--- /dev/null
++++ b/src/va/vpp.cc
+@@ -0,0 +1,139 @@
++// SPDX-License-Identifier: MIT
++#include "../util/error.h"
++#include "driver.h"
++#include <algorithm>
++extern "C" {
++#include <libdrm/drm_fourcc.h>
++}
++namespace va {
++bool rgb_format(uint32_t f)
++{
++    return f == VA_FOURCC_RGBA || f == VA_FOURCC_RGBX || f == VA_FOURCC_BGRA || f == VA_FOURCC_BGRX;
++}
++uint32_t rgb_drm_format(uint32_t f)
++{
++    switch (f) {
++    case VA_FOURCC_RGBA:
++        return DRM_FORMAT_ABGR8888;
++    case VA_FOURCC_RGBX:
++        return DRM_FORMAT_XBGR8888;
++    case VA_FOURCC_BGRA:
++        return DRM_FORMAT_ARGB8888;
++    case VA_FOURCC_BGRX:
++        return DRM_FORMAT_XRGB8888;
++    default:
++        throw iris::Error(VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT, "RGB DRM format");
++    }
++}
++VAStatus queryVideoProcFilters(VADriverContextP ctx, VAContextID id, VAProcFilterType*, unsigned* count)
++{
++    auto& d = data(ctx);
++    std::lock_guard lock(d.mutex);
++    auto i = d.contexts.find(id);
++    if (i == d.contexts.end() || !i->second->processing())
++        return VA_STATUS_ERROR_INVALID_CONTEXT;
++    if (!count)
++        return VA_STATUS_ERROR_INVALID_PARAMETER;
++    *count = 0;
++    return VA_STATUS_SUCCESS;
++}
++VAStatus queryVideoProcFilterCaps(VADriverContextP, VAContextID, VAProcFilterType, void*, unsigned*)
++{
++    return VA_STATUS_ERROR_UNSUPPORTED_FILTER;
++}
++VAStatus queryVideoProcPipelineCaps(
++    VADriverContextP ctx, VAContextID id, VABufferID*, unsigned n, VAProcPipelineCaps* caps)
++{
++    auto& d = data(ctx);
++    std::lock_guard lock(d.mutex);
++    auto i = d.contexts.find(id);
++    if (i == d.contexts.end() || !i->second->processing())
++        return VA_STATUS_ERROR_INVALID_CONTEXT;
++    if (!caps)
++        return VA_STATUS_ERROR_INVALID_PARAMETER;
++    if (n)
++        return VA_STATUS_ERROR_UNSUPPORTED_FILTER;
++    static VAProcColorStandardType in[] = { VAProcColorStandardSRGB };
++    static VAProcColorStandardType out[] = { VAProcColorStandardBT601, VAProcColorStandardBT709 };
++    static uint32_t inputs[] = { VA_FOURCC_RGBA, VA_FOURCC_RGBX, VA_FOURCC_BGRA, VA_FOURCC_BGRX };
++    static uint32_t outputs[] = { VA_FOURCC_NV12 };
++    *caps = {};
++    caps->input_color_standards = in;
++    caps->output_color_standards = out;
++    caps->input_pixel_format = inputs;
++    caps->output_pixel_format = outputs;
++    caps->num_input_color_standards = 1;
++    caps->num_output_color_standards = 2;
++    caps->num_input_pixel_formats = 4;
++    caps->num_output_pixel_formats = 1;
++    caps->pipeline_flags = 0;
++    caps->filter_flags = 0;
++    caps->num_forward_references = 0;
++    caps->num_backward_references = 0;
++    caps->rotation_flags = 0;
++    caps->blend_flags = 0;
++    caps->mirror_flags = 0;
++    caps->num_additional_outputs = 0;
++    caps->min_input_width = caps->min_input_height = caps->min_output_width = caps->min_output_height = 1;
++    caps->max_input_width = caps->max_output_width = d.capabilities.max_width;
++    caps->max_input_height = caps->max_output_height = d.capabilities.max_height;
++    return VA_STATUS_SUCCESS;
++}
++void process_picture(DriverData& d, Context& c, Surface& to)
++{
++    std::shared_ptr<Surface> from;
++    std::shared_ptr<Buffer> parameters;
++    iris::StableBuffer *src, *dst;
++    VAProcPipelineParameterBuffer p;
++    {
++        std::lock_guard lock(d.mutex);
++        parameters = c.vpp_parameters;
++        iris::require(bool(parameters), "missing VPP parameters", VA_STATUS_ERROR_INVALID_PARAMETER);
++        p = c.vpp_snapshot;
++        from = surface(d, p.surface);
++        iris::require(rgb_format(from->fourcc) && to.fourcc == VA_FOURCC_NV12, "VPP supports RGB to NV12 only",
++            VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT);
++        iris::require(from->width == to.width && from->height == to.height, "VPP does not scale",
++            VA_STATUS_ERROR_INVALID_PARAMETER);
++        auto whole = [&](const VARectangle* r) {
++            return !r || (!r->x && !r->y && r->width == to.width && r->height == to.height);
++        };
++        iris::require(
++            whole(p.surface_region) && whole(p.output_region), "VPP does not crop", VA_STATUS_ERROR_INVALID_PARAMETER);
++        iris::require(!p.num_filters && !p.num_forward_references && !p.num_backward_references && !p.rotation_state
++                && !p.mirror_state && !p.blend_state && !p.num_additional_outputs && !p.input_surface_flag
++                && !p.output_surface_flag && !p.output_hdr_metadata,
++            "VPP filters and transforms are unsupported", VA_STATUS_ERROR_UNSUPPORTED_FILTER);
++        // Scaling quality has no effect for an identity rectangle. Interlaced
++        // input and color-matrix flags would change the conversion and are rejected.
++        iris::require(!(p.filter_flags & ~(VA_FILTER_SCALING_MASK | VA_FILTER_INTERPOLATION_MASK))
++                && !(p.pipeline_flags & ~VA_PROC_PIPELINE_FAST),
++            "VPP flags", VA_STATUS_ERROR_INVALID_PARAMETER);
++        iris::require(
++            p.surface_color_standard == VAProcColorStandardNone || p.surface_color_standard == VAProcColorStandardSRGB,
++            "VPP input color standard", VA_STATUS_ERROR_INVALID_PARAMETER);
++        iris::require(p.input_color_properties.color_range != VA_SOURCE_RANGE_REDUCED,
++            "VPP input must be full-range RGB", VA_STATUS_ERROR_INVALID_PARAMETER);
++        iris::require(p.output_color_standard == VAProcColorStandardNone
++                || p.output_color_standard == VAProcColorStandardBT601
++                || p.output_color_standard == VAProcColorStandardBT709,
++            "VPP output color standard", VA_STATUS_ERROR_INVALID_PARAMETER);
++        iris::require(!p.output_color_properties.chroma_sample_location
++                || p.output_color_properties.chroma_sample_location
++                    == (VA_CHROMA_SITING_VERTICAL_CENTER | VA_CHROMA_SITING_HORIZONTAL_CENTER)
++                || p.output_color_properties.chroma_sample_location
++                    == (VA_CHROMA_SITING_VERTICAL_CENTER | VA_CHROMA_SITING_HORIZONTAL_LEFT),
++            "VPP supports vertically centered chroma", VA_STATUS_ERROR_INVALID_PARAMETER);
++        src = &ensure_stable(d, *from);
++        dst = &ensure_stable(d, to);
++    }
++    d.vpp->convert(*dst, *src, p.output_color_standard == VAProcColorStandardBT709,
++        p.output_color_properties.color_range == VA_SOURCE_RANGE_FULL,
++        p.output_color_properties.chroma_sample_location
++            == (VA_CHROMA_SITING_VERTICAL_CENTER | VA_CHROMA_SITING_HORIZONTAL_CENTER));
++    std::lock_guard lock(d.mutex);
++    to.target.completed = true;
++    to.failed = false;
++    d.trace("va vpp RGB-to-NV12 %ux%u", to.width, to.height);
++}
++}
