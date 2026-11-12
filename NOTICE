@@ -1,5 +1,4 @@
 Third-party attribution
-================
 
 This file records component sources, imported files, licences and local changes.
 Per-file notices and the texts in LICENSES/ remain authoritative for licensing.
@@ -468,3 +467,12 @@ Mesa upstream fixes included with 26.2.6:
   8511f446715c and 5a9db0be64e0.
 Original authors and commit trailers are retained in mesa/*.patch; source URLs
 and patch checksums are recorded in mesa/source.json. Mesa licensing is unchanged.
+NPU runtime (packaging/npu, tools/build-npu.py): Qualcomm FastRPC from
+https://github.com/qualcomm/fastrpc (BSD-3-Clause, see upstream LICENSE.txt);
+llama.cpp from https://github.com/ggml-org/llama.cpp (MIT); one build-only CMake patch removes compiler/linker command notes before SWIV generation. Fixed revisions and archive identities are in packaging/npu/sources.json.
+The local hybrid demo and packaging are MIT. Hexagon SDK is a build-time input
+from snapdragon-toolchain/hexagon-sdk; it is not included in runtime packages.
+Qwen3-0.6B weights are Apache-2.0 (Qwen team), converted to GGUF by Unsloth.
+Stock DSP shells and libraries are included under firmware/npu with source identities.
+They are Qualcomm/vendor property; no redistribution permission has been obtained,
+and they will be removed upon request from the rights holder.

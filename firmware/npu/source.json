@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "device": "piano",
+  "package": "piano-npu-firmware",
+  "stock_build": "OS3.0.303.0.WPYCNXM",
+  "origin": "Unmodified files from this device model stock DSP partition; ELF32 Hexagon, not Android ARM libraries.",
+  "install_directory": "usr/share/qcom/npu-dsp",
+  "files": [
+    {
+      "name": "fastrpc_shell_3",
+      "source": "dsp_a:/cdsp/fastrpc_shell_3",
+      "bytes": 1338588,
+      "sha256": "2c050fe8d65d60877c763cf45afee1c1d60a5a4a99f1273fe0cbeeeaa80f92d4"
+    },
+    {
+      "name": "fastrpc_shell_unsigned_3",
+      "source": "dsp_a:/cdsp/fastrpc_shell_unsigned_3",
+      "bytes": 1334884,
+      "sha256": "21a58491879dcf1c77d0b6b421652513d3989ae91a2f754da1ca4a78d5d16908"
+    },
+    {
+      "name": "libc++.so.1",
+      "source": "dsp_a:/cdsp/libc++.so.1",
+      "bytes": 4032184,
+      "sha256": "43c7b5220b20e31c462b088c04401fab675982c6120312076d730e70c57c40bc"
+    },
+    {
+      "name": "libc++abi.so.1",
+      "source": "dsp_a:/cdsp/libc++abi.so.1",
+      "bytes": 901744,
+      "sha256": "c29fe8ca1e6d57c11183fd33368dc789850784d1afacd60f2af74de956838909"
+    }
+  ],
+  "redistribution": "No redistribution permission has been obtained; remove upon request from the rights holder."
+}

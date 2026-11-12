@@ -1,0 +1,53 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: MIT
+"""Local Qwen demonstration: NPU prompt processing, CPU text generation."""
+import argparse
+import os
+from pathlib import Path
+import subprocess
+import tempfile
+
+LIB = Path('/usr/lib/aarch64-linux-gnu/qcom-npu')
+DATA = Path('/usr/share/qcom-npu')
+
+def main():
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--backend', choices=('auto','hybrid','cpu','npu'), default='auto',
+                   help='auto uses hybrid for prompts >=512 prefill tokens when NPU is accessible; cpu never loads FastRPC')
+    p.add_argument('--model',type=Path,default=DATA/'Qwen3-0.6B-Q4_0.gguf')
+    p.add_argument('--prompt',help='Question for Qwen3; the built-in example is used otherwise')
+    p.add_argument('--prompt-file',type=Path,help='Raw model-formatted prompt, for reproducible comparisons')
+    p.add_argument('--tokens',type=int,default=64)
+    p.add_argument('--diagnostics',action='store_true',help='Print phase timing and backend evidence as JSON')
+    p.add_argument('--check',action='store_true',help='Report prerequisites only; this does not prove NPU execution')
+    a=p.parse_args()
+    if a.prompt is not None and a.prompt_file: p.error('choose --prompt or --prompt-file')
+    if not 1<=a.tokens<=512:p.error('--tokens must be 1..512')
+    missing=[]
+    for node in ('/dev/fastrpc-cdsp','/dev/dma_heap/system'):
+        if not os.access(node,os.R_OK|os.W_OK):missing.append('read/write access to '+node)
+    for path in (Path('/usr/share/qcom/npu-dsp/fastrpc_shell_unsigned_3'),LIB/'libggml-htp-v79.so'):
+        if not os.access(path,os.R_OK):missing.append(str(path))
+    mode=a.backend
+    if a.check:
+        print('NPU prerequisites: '+('; missing '.join(['missing']+missing) if missing else 'present (inference not tested)'))
+        print('Model: '+('present' if a.model.is_file() else 'install qcom-npu-demo-model or use --model'))
+        return int(bool(missing) or not a.model.is_file())
+    if not a.model.is_file():p.error('model missing: install qcom-npu-demo-model or pass --model')
+    if mode=='auto':
+        mode='cpu' if missing else 'auto'
+        if missing:print('NPU unavailable; using CPU. '+ '; '.join(missing),file=__import__('sys').stderr)
+    elif mode!='cpu' and missing:p.error('; '.join(missing)+'; CPU mode is available with --backend cpu')
+    if a.prompt_file:prompt=a.prompt_file.read_text()
+    elif a.prompt is not None:prompt='<|im_start|>user\n'+a.prompt+'<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n'
+    else:prompt=(DATA/'prompt.txt').read_text()
+    env=dict(os.environ)
+    env.setdefault('GGML_HEXAGON_POWER_MODE','balanced')
+    if a.diagnostics:env['NPU_DEMO_DIAGNOSTICS']='1'
+    with tempfile.NamedTemporaryFile(mode='w',prefix='npu-prompt-',encoding='utf-8') as f:
+        f.write(prompt);f.flush()
+        result=subprocess.run([str(LIB/'npu-hybrid'),str(a.model),f.name,mode,str(a.tokens),str(LIB)],env=env)
+    if result.returncode:
+        print('Inference failed; no result is claimed. Use --backend cpu for the CPU path.',file=__import__('sys').stderr)
+    return result.returncode if result.returncode>=0 else 128-result.returncode
+if __name__=='__main__':raise SystemExit(main())

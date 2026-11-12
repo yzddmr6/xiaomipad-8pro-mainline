@@ -413,3 +413,14 @@ RAM 硬件检查使用 600 秒。到期后停止显示管理器与用户 slice�
 不依赖根系统预装该修正。调试镜像的构建、硬件检查及恢复操作分开执行。
 
 用 `build-release.py --release-repository <新批次> --previous-release-repository <旧批次>` 将两批完整仓库一同放入升级附件。
+
+## NPU 运行库和离线演示
+
+`python3 tools/build-npu.py --cache out/npu-cache --output out/npu-build --download`
+从固定源码构建 glibc FastRPC、llama.cpp 和 v79 DSP 计算库，并打包固定模型。
+复建时去掉 `--download` 可禁止联网。把生成的运行库、演示模型和本机型NPU固件包同时交给根镜像构建入口；用法见
+[运行库说明](../packaging/npu/README.md)。Hexagon SDK 仅用于构建，不随运行库分发。
+
+CDSP 固件和原厂 DSP 运行文件已随仓库提供，正常构建不需要原厂分区或安装时提取。
+来源和哈希见固件清单与 `firmware/npu/source.json`；未取得再分发许可，权利方要求时移除。
+根镜像同时收录 `qcom-npu-runtime`、`qcom-npu-demo-model` 和 `piano-npu-firmware`。

@@ -28,7 +28,8 @@ install() {
     for f in /usr/lib/firmware/qca/gngbtfw20.mbn /usr/lib/firmware/qca/gngbtnv20.*; do
         inst_simple "$f"
     done
-    for f in /usr/lib/firmware/qcom/sm8750/piano/adsp.* /usr/lib/firmware/qcom/sm8750/piano/adsp_dtb.*; do
+    for f in /usr/lib/firmware/qcom/sm8750/piano/adsp.* /usr/lib/firmware/qcom/sm8750/piano/adsp_dtb.* \
+        /usr/lib/firmware/qcom/sm8750/piano/cdsp.* /usr/lib/firmware/qcom/sm8750/piano/cdsp_dtb.*; do
         inst_simple "$f"
     done
 }
