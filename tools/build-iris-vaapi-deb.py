@@ -90,7 +90,12 @@ def main():
     # GStreamer otherwise skips VA factories for this driver vendor string.
     environment = stage / "usr/lib/environment.d"
     environment.mkdir(parents=True)
-    (environment / "60-piano-iris-vaapi.conf").write_text("GST_VA_ALL_DRIVERS=1\n")
+    (environment / "60-piano-iris-vaapi.conf").write_text(
+        "# Allow the Iris VA vendor and prefer its shared hardware decoders.\n"
+        "GST_VA_ALL_DRIVERS=1\n"
+        "# Preserve an explicit user/session decoder-rank override.\n"
+        "GST_PLUGIN_FEATURE_RANK=${GST_PLUGIN_FEATURE_RANK:-vah264dec:512,vah265dec:512,vavp9dec:512}\n"
+    )
     doc = stage / "usr/share/doc" / package
     doc.mkdir(parents=True)
     for name in ("COPYING", "COPYING.MIT", "COPYING.LGPL", "AUTHORS", "CREDITS",
