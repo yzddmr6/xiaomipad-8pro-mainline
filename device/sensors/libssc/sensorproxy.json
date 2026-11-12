@@ -60,6 +60,11 @@
       "path": "sensorproxy-patches/0008-iio-sensor-proxy-report-ssc-light-discovery-errors.patch",
       "sha256": "fa0f0a919279c346d00274f25b0abd9acf70bed3df446d6ea37b0639ef3bfe48",
       "scope": "Preserve the failure reason of SSC light discovery and cleanup; no retry or admission change"
+    },
+    {
+      "path": "sensorproxy-patches/0009-iio-sensor-proxy-quiesce-callbacks-before-close.patch",
+      "sha256": "2884c72f6285ce00af5bb3f9301e6648c7e3416081987e2529f09b2259eb0692",
+      "scope": "Detach callback producers before SSC close dispatches the main context; regression uses a real private D-Bus disconnect during shutdown."
     }
   ],
   "scope": "ARM64 build, three targeted SSC startup/availability/claim checks and two pending-release/multi-client scenarios passed in QEMU with synthetic sensors. No physical sensor, installed service or full desktop startup claim.",
