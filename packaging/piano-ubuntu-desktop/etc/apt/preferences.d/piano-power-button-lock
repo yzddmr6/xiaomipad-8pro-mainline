@@ -12,3 +12,11 @@ Pin-Priority: 1001
 Package: gnome-settings-daemon gnome-settings-daemon-common gnome-control-center gnome-control-center-data
 Pin: version *
 Pin-Priority: -1
+
+Package: gir1.2-mutter-18 libmutter-18-0 mutter-common mutter-common-bin
+Pin: version 50.1-0ubuntu2.5+sm8750.1
+Pin-Priority: 1001
+
+Package: gir1.2-mutter-18 libmutter-18-0 mutter-common mutter-common-bin
+Pin: version *
+Pin-Priority: -1

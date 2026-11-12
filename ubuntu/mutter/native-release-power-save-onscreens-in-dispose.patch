@@ -1,0 +1,38 @@
+Description: Release queued power-save framebuffers while Cogl is alive
+Forwarded: no
+--- a/src/backends/native/meta-renderer-native.c
++++ b/src/backends/native/meta-renderer-native.c
+@@ -2543,20 +2543,21 @@
+ {
+   MetaRendererNative *renderer_native = META_RENDERER_NATIVE (object);
+ 
+-  clear_detached_onscreens (renderer_native);
+-
+-  G_OBJECT_CLASS (meta_renderer_native_parent_class)->dispose (object);
+-}
+-
+-static void
+-meta_renderer_native_finalize (GObject *object)
+-{
+-  MetaRendererNative *renderer_native = META_RENDERER_NATIVE (object);
+-
++  /* The backend disposes the renderer before destroying the Cogl context. */
++  g_clear_handle_id (&renderer_native->power_save_page_flip_source_id,
++                     g_source_remove);
+   g_clear_list (&renderer_native->power_save_page_flip_onscreens,
+                 g_object_unref);
+-  g_clear_handle_id (&renderer_native->power_save_page_flip_source_id,
+-                     g_source_remove);
++
++  clear_detached_onscreens (renderer_native);
++
++  G_OBJECT_CLASS (meta_renderer_native_parent_class)->dispose (object);
++}
++
++static void
++meta_renderer_native_finalize (GObject *object)
++{
++  MetaRendererNative *renderer_native = META_RENDERER_NATIVE (object);
+ 
+   g_list_free (renderer_native->pending_mode_set_views);
+   g_hash_table_unref (renderer_native->mode_set_updates);
