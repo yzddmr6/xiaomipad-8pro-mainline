@@ -552,3 +552,18 @@ need no stock partition or installation-time extraction. Origins and hashes are 
 locks and firmware/npu/source.json. No redistribution permission has been obtained; files
 will be removed upon rights-holder request. Include qcom-npu-runtime, qcom-npu-demo-model
 and piano-npu-firmware together in the root image.
+
+## Independently built component groups
+
+⟦DRAFT⟧ The 1.3.0 candidate retains original archives and build receipts for each
+fixed input group. A Mesa change rebuilds the complete host source cohort and
+the separate gpu-2404 provider with new versions. Reuse verified archives for
+unchanged groups; do not recompress them or generate different bytes under an
+existing version.
+
+A kernel baseline change rebuilds matching kernel, modules and boot images;
+Piano also rebuilds its camera loopback module for that ABI. Always assemble
+and verify root images, complete APT batches and attachments from the final
+components. GunyahVM remains pinned to 1.1.0. Updating its source lock and four
+packages requires whole-release upgrade/rollback and application checks, but
+no Mesa compilation. Keep host Mesa and Snap build outputs separate.
