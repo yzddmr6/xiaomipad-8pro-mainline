@@ -2,6 +2,8 @@
 
 Stock firmware for the Xiaomi Pad 8 Pro (`piano`), stored under the paths the mainline kernel
 requests below `/usr/lib/firmware`. The packaging tools use this tree by default.
+CDSP images and split segments are included under the same board directory and lock.
+CDSP 主镜像、DTB 与分段同样随仓库提供，构建不需要额外提取步骤。
 
 ## Origin
 

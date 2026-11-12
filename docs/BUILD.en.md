@@ -520,3 +520,17 @@ still have a clean journal. `--seconds 60` can shorten these failure fixtures
 without changing the production 600-second budget.
 
 Use `build-release.py --release-repository <current-batch> --previous-release-repository <previous-batch>` to include both complete repositories in the upgrade attachment.
+
+## NPU runtime and offline demonstration
+
+`python3 tools/build-npu.py --cache out/npu-cache --output out/npu-build --download`
+builds glibc FastRPC, llama.cpp and the v79 DSP computation library from pinned sources,
+and packages a pinned model. Omit `--download` to prohibit network access on a rebuild.
+Supply the runtime, demo model and device-specific NPU firmware package to the root-image builder.
+See the [runtime guide](../packaging/npu/README.md). Hexagon SDK is build-only.
+
+CDSP firmware and stock DSP runtime files are included in the repository. Normal builds
+need no stock partition or installation-time extraction. Origins and hashes are in the firmware
+locks and firmware/npu/source.json. No redistribution permission has been obtained; files
+will be removed upon rights-holder request. Include qcom-npu-runtime, qcom-npu-demo-model
+and piano-npu-firmware together in the root image.

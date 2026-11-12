@@ -1,0 +1,7 @@
+machines:
+  Xiaomi Pad 8 Pro:
+    DSP_LIBRARY_PATH: npu-dsp
+    CDSP_ARCH: v79
+  OnePlus Pad 2 Pro:
+    DSP_LIBRARY_PATH: npu-dsp
+    CDSP_ARCH: v79

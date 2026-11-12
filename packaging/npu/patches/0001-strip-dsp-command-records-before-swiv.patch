@@ -1,0 +1,13 @@
+--- a/ggml/src/ggml-hexagon/htp/CMakeLists.txt
++++ b/ggml/src/ggml-hexagon/htp/CMakeLists.txt
+@@ -67,6 +67,10 @@
+ endif()
+ 
+ add_custom_command(TARGET ${HTP_LIB} POST_BUILD
++    # Strip build-only command records before the SWIV checksum is computed.
++    COMMAND ${HEXAGON_TOOLS_ROOT}/Tools/bin/hexagon-llvm-objcopy
++        --remove-section=.comment --remove-section=.note.llvm.cgmdinfo
++        $<TARGET_FILE:${HTP_LIB}>
+     COMMAND ${CMAKE_COMMAND} -E echo "Adding SWIV section $<TARGET_FILE_NAME:${HTP_LIB}>"
+     COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/htp-swiv.py -i $<TARGET_FILE:${HTP_LIB}> -o $<TARGET_FILE:${HTP_LIB}>
+     VERBATIM)

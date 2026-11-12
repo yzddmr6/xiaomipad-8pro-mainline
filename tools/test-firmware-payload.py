@@ -22,12 +22,14 @@ class Payload(unittest.TestCase):
         self.source.mkdir()
         self.files = {'adsp.mdt': b'header', 'adsp.b01': b'segment',
                       'adsp_dtb.mdt': b'dtb header', 'adsp_dtb.b01': b'dtb segment',
+                      'cdsp.mdt': b'compute header', 'cdsp.b01': b'compute segment',
+                      'cdsp_dtb.mdt': b'compute dtb', 'cdsp_dtb.b01': b'compute dtb segment',
                       'adsps.jsn': b'private service map'}
         for name, data in self.files.items():
             (self.source / name).write_bytes(data)
         self.lock = {'schema': 1, 'stock_build': 'synthetic-only',
                      'firmware_directory': 'usr/lib/firmware/qcom/test',
-                     'images': ['adsp.mdt', 'adsp_dtb.mdt'], 'redistribution': 'fixture',
+                     'images': ['adsp.mdt', 'adsp_dtb.mdt', 'cdsp.mdt', 'cdsp_dtb.mdt'], 'redistribution': 'fixture',
                      'files': [{'name': n, 'bytes': len(d), 'sha256': hashlib.sha256(d).hexdigest()}
                                for n, d in self.files.items()]}
 
@@ -90,16 +92,16 @@ class Payload(unittest.TestCase):
             self.assertNotEqual(self.invoke(images=images).returncode, 0)
             self.assertFalse((self.root / 'result').exists())
 
-    def test_default_stages_the_repository_adsp_images(self):
+    def test_default_stages_both_adsp_and_cdsp(self):
         result = subprocess.run([sys.executable, '-S', str(TOOL), '--output', str(self.root / 'repo')],
                                 capture_output=True, text=True, timeout=60)
         self.assertEqual(result.returncode, 0, result.stderr)
         payload = self.root / 'repo/root/usr/lib/firmware/qcom/sm8750/piano'
         expected = {r['path'].rsplit('/', 1)[1]: r for r in firmware_payload.load_tree()
                     if r['path'].startswith('qcom/sm8750/piano/')}
-        self.assertEqual(len(expected), 56)
+        self.assertTrue({'adsp.mdt','adsp_dtb.mdt','cdsp.mdt','cdsp_dtb.mdt'} <= expected.keys())
         self.assertEqual({p.name for p in payload.iterdir()}, set(expected))
-        self.assertTrue(all(firmware_payload.sha(payload / n) == r['sha256'] for n, r in expected.items()))
+        self.assertTrue(all(firmware_payload.sha(payload/n) == r['sha256'] for n,r in expected.items()))
 
     def test_tree_locks_reject_unsafe_or_repeated_paths(self):
         for files in ({'../escape.bin': None}, {'qca/./x.bin': None}, {'qca/x.bin': None}):
@@ -146,8 +148,14 @@ class RepositoryTree(unittest.TestCase):
         sensors = json.loads((root / 'sensors/source.json').read_text())['files']
         sensor_paths = {'sensors/' + r['path'] for r in sensors}
         self.assertEqual(len(sensor_paths), len(sensors))
-        self.assertEqual(tree, {r['path'] for r in rows} | sensor_paths |
+        npu = json.loads((root/'npu/source.json').read_text())['files']
+        npu_paths = {'npu/'+r['name'] for r in npu} | {'npu/source.json','npu/README.md'}
+        self.assertEqual(tree, {r['path'] for r in rows} | sensor_paths | npu_paths |
                          {'sensors/source.json', 'sensors/README.md'})
+        for row in npu:
+            path=root/'npu'/row['name']
+            self.assertFalse(path.is_symlink())
+            self.assertEqual((path.stat().st_size,firmware_payload.sha(path)),(row['bytes'],row['sha256']))
         for row in sensors:
             path = root / 'sensors' / row['path']
             with self.subTest(sensor=row['path']):

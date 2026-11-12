@@ -30,7 +30,8 @@ PACKAGE = 'piano-local-firmware'
 # topology stays for kernels whose card is still Piano-Capture-Diag.
 # 0.5: includes the signed VPU35 Iris firmware from firmware/piano-iris.json.
 # 0.6: adds the BOE panel touch firmware next to the CSOT one (firmware/piano-input.json).
-VERSION = '0.6+os3.0.303.0'
+# 0.7: includes the CDSP compute images and their split segments.
+VERSION = '0.7+os3.0.303.0'
 SOURCE_DATE_EPOCH = 0
 
 
@@ -103,7 +104,7 @@ def main():
                          'Installed-Size': str(installed_kib),
                          'Maintainer': args.maintainer, 'Section': 'non-free/kernel', 'Priority': 'optional',
                          'Description': 'Xiaomi Pad 8 Pro stock firmware\n'
-                                        ' Unmodified ADSP, GPU, Iris, Bluetooth, Wi-Fi, touch and keyboard-bridge\n'
+                                        ' Unmodified ADSP, CDSP, GPU, Iris, Bluetooth, Wi-Fi, touch and keyboard-bridge\n'
                                         ' firmware and the FS19xx amplifier preset from stock build\n'
                                         ' OS3.0.303.0.WPYCNXM, and the audio topologies built from device/audio.\n'
                                         ' No firmware license is granted.'})

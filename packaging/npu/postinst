@@ -1,0 +1,12 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+set -e
+if [ "$1" = configure ]; then
+    ldconfig
+    systemd-sysusers /usr/lib/sysusers.d/qcom-npu.conf
+    if [ "${SYSTEMD_OFFLINE:-0}" != 1 ] && [ -d /run/udev ]; then
+        udevadm control --reload
+        udevadm trigger --action=change --subsystem-match=misc --sysname-match=fastrpc-cdsp
+        udevadm trigger --action=change --subsystem-match=dma_heap --sysname-match=system
+    fi
+fi

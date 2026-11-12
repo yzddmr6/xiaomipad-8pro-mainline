@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: MIT
+# Unprivileged compute uses only the non-secure CDSP channel.
+SUBSYSTEM=="misc", KERNEL=="fastrpc-cdsp", GROUP="render", MODE="0660", TAG+="uaccess"
+SUBSYSTEM=="dma_heap", KERNEL=="system", GROUP="render", MODE="0660", TAG+="uaccess"

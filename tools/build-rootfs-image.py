@@ -67,7 +67,7 @@ PROFILE_FIELDS = {
     'vendor_boot': ('header_version', 'capacity', 'rollback_index', 'avb_properties',
                     'page_size', 'kernel_addr', 'ramdisk_addr', 'tags_addr', 'dtb_addr'),
 }
-PIANO_PACKAGES = ('piano-device-support', 'piano-local-firmware', 'piano-mesa', 'piano-ubuntu-desktop', 'piano-iris-vaapi')
+PIANO_PACKAGES = ('piano-device-support', 'piano-local-firmware', 'piano-mesa', 'piano-ubuntu-desktop', 'piano-iris-vaapi', 'qcom-npu-runtime', 'qcom-npu-demo-model', 'piano-npu-firmware')
 UNITS_ENABLED = {'piano-slot-success.service': 'enabled', 'piano-devmode.service': 'disabled',
                  'piano-firefox-snap-remove.service': 'enabled',
                  'ssh.socket': 'disabled', 'ssh.service': 'disabled',

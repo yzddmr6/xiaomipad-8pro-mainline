@@ -14,9 +14,8 @@ import stat
 
 REPO_FIRMWARE = Path(__file__).resolve().parents[1] / 'firmware'
 FIRMWARE_ROOT = PurePosixPath('usr/lib/firmware')
-# The DSP images the kernel loads (remoteproc_adsp firmware-name); the repository
-# tree carries these and not the rest of the DSP lock (CDSP, service maps).
-KERNEL_DSP_IMAGES = ('adsp.mdt', 'adsp_dtb.mdt')
+# Remoteproc images required by the board DT; service maps are userspace data.
+KERNEL_DSP_IMAGES = ('adsp.mdt', 'adsp_dtb.mdt', 'cdsp.mdt', 'cdsp_dtb.mdt')
 
 
 def sha(path):

@@ -3,7 +3,7 @@
 """Stage verified DSP firmware for a native package recipe or RAM initramfs.
 
 By default the files come from the repository's firmware/ tree, which carries the
-ADSP images the kernel loads; --firmware-dir selects an owner's own flat stock
+ADSP and CDSP images the kernel loads; --firmware-dir selects an owner's own flat stock
 modem image directory instead. The output contains a plain payload root and a
 manifest; it is not an installed package and grants no rights in the firmware.
 Requires only Python.

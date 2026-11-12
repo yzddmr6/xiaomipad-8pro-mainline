@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "source_date_epoch": 1794441600,
+  "inputs": {
+    "llama": {
+      "url": "https://codeload.github.com/ggml-org/llama.cpp/tar.gz/e1f7593c32e8dd782fc7addb908d0911260511ae",
+      "revision": "e1f7593c32e8dd782fc7addb908d0911260511ae",
+      "sha256": "79976accd64e76c8ecc257df8380a2c4571803665c63f9197d722e4aa0cb351a",
+      "bytes": 38889055,
+      "filename": "llama.tar.gz"
+    },
+    "fastrpc": {
+      "url": "https://codeload.github.com/qualcomm/fastrpc/tar.gz/8f5927397d1b7c87e6724cb1ddbde956a7f34cab",
+      "revision": "8f5927397d1b7c87e6724cb1ddbde956a7f34cab",
+      "sha256": "245ce299d6032880489ae9b07350e08204fc398a77630a9986d6cdba8818793d",
+      "bytes": 638075,
+      "filename": "fastrpc.tar.gz"
+    },
+    "hexagon-sdk": {
+      "url": "https://github.com/snapdragon-toolchain/hexagon-sdk/releases/download/v6.7.0.0/hexagon-sdk-v6.7.0.0-amd64-lnx.tar.xz",
+      "revision": "v6.7.0.0 (SDK metadata 6.7.0.1, compiler 21.0.04)",
+      "sha256": "00725fc449916d7b9af2c2a3c6b54d61f3c872d5dbc1d3ca3fd2f839b1d5dc70",
+      "bytes": 741882016,
+      "filename": "hexagon-sdk-v6.7.0.0-amd64-lnx.tar.xz"
+    },
+    "model": {
+      "url": "https://huggingface.co/unsloth/Qwen3-0.6B-GGUF/resolve/50968a4468ef4233ed78cd7c3de230dd1d61a56b/Qwen3-0.6B-Q4_0.gguf",
+      "revision": "50968a4468ef4233ed78cd7c3de230dd1d61a56b",
+      "sha256": "33bcc57074ec7b6eada5a90651ee546ec0c2b271002c22baf9f1b2dd1e8f75cb",
+      "bytes": 382156480,
+      "filename": "Qwen3-0.6B-Q4_0.gguf"
+    },
+    "build-dependencies": [
+      {
+        "name": "libbsd-dev",
+        "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libb/libbsd/libbsd-dev_0.12.1-1build1.1_arm64.deb",
+        "filename": "libbsd-dev_0.12.1-1build1.1_arm64.deb",
+        "bytes": 169698,
+        "sha256": "435612977823ad9e03810bb840b22e5d55031833d163a29230de071963054966"
+      },
+      {
+        "name": "libbsd0",
+        "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libb/libbsd/libbsd0_0.12.1-1build1.1_arm64.deb",
+        "filename": "libbsd0_0.12.1-1build1.1_arm64.deb",
+        "bytes": 40970,
+        "sha256": "cdf9ff601244e64482584d9d9b98aa54a573c081ab5956227c737307196c1ce3"
+      },
+      {
+        "name": "libmd-dev",
+        "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libm/libmd/libmd-dev_1.1.0-2build1.1_arm64.deb",
+        "filename": "libmd-dev_1.1.0-2build1.1_arm64.deb",
+        "bytes": 43260,
+        "sha256": "861d78f0c200ee956afbdac0bde44c3230cd838cc8b353afa40a05014805d261"
+      },
+      {
+        "name": "libmd0",
+        "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/libm/libmd/libmd0_1.1.0-2build1.1_arm64.deb",
+        "filename": "libmd0_1.1.0-2build1.1_arm64.deb",
+        "bytes": 24616,
+        "sha256": "c28583825f7191cdc8b6b71c6150e2cbfc29616d6570680e5284fabc19765ea5"
+      },
+      {
+        "name": "libyaml-dev",
+        "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/liby/libyaml/libyaml-dev_0.2.5-1build1_arm64.deb",
+        "filename": "libyaml-dev_0.2.5-1build1_arm64.deb",
+        "bytes": 63416,
+        "sha256": "b6b355bcc1f9bf6028f5ad119e311ecfb620d06db9e3ba50eb878262587a9538"
+      },
+      {
+        "name": "libyaml-0-2",
+        "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/liby/libyaml/libyaml-0-2_0.2.5-1build1_arm64.deb",
+        "filename": "libyaml-0-2_0.2.5-1build1_arm64.deb",
+        "bytes": 51548,
+        "sha256": "eb0f14172a5cedb68ccea3be266672c9059893341a82fad185f2548dd99b8371"
+      }
+    ]
+  },
+  "patches": [
+    {
+      "file": "patches/0001-strip-dsp-command-records-before-swiv.patch",
+      "sha256": "511c61b2ad35383456c2b49d109082c1a0317f03140a404e62c7c48900697044",
+      "reason": "Remove build-only compiler/linker command notes before upstream SWIV validation is generated; computation sources unchanged."
+    }
+  ]
+}
