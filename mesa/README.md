@@ -1,8 +1,9 @@
 # Shared Adreno 830 Mesa inputs
 
 `source.json` pins upstream Mesa and the ordered patches used by
-both the desktop deb and the gpu-2404 builder. `piano-fixes.patch` contains the A830
-revision-1 speedbin match and a shared-context publication fix. Contexts must
+both the desktop deb and the gpu-2404 builder. `freedreno-a830v1.patch` imports upstream A830 revision-1 speedbin matching
+and exposes the renderer name `Adreno (TM) 830v1`. `piano-fixes.patch` contains
+the shared-context publication fix. Contexts must
 not enter the shared resource list until their state tracker is initialized;
 failed creation leaves an empty list link for normal cleanup.
 
@@ -24,7 +25,7 @@ coverage. A new process must load the updated libraries; an existing desktop
 session retains its old mapped libraries until logout or reboot.
 
 宿主采用 [Ubuntu 回移打包锁](ubuntu/source.json)：Canonical 的 resolute
-`26.2.4-1ubuntu1~26.04.1` 打包加上游 26.2.6，锁定补丁内容不变。
+`26.2.4-1ubuntu1~26.04.1` 打包加上游 26.2.6，按 `source.json` 应用固定补丁集。
 `build-host-mesa.py` 保留 Ubuntu arm64 驱动集、GLVND、编译加固与测试。
 产物为发行版同名包，安装到 `/usr/lib/aarch64-linux-gnu`；EGL 和 Vulkan
 沿用发行版注册目录。`piano-mesa` 仅保留过渡依赖与自动生成的精确版本策略。
@@ -58,7 +59,8 @@ fence alone must not suppress implicit synchronization.
 
 `freedreno-thread-safe-tex-seqno.patch` retains the OnePlus project's texture
 sequence allocator fix, including its original attribution. A830 revision-1
-speedbin matching and the shared-context publication fix remain necessary.
+speedbin matching comes from upstream; the local shared-context publication
+fix remains necessary.
 
 宿主包使用 Ubuntu 的 `debian/rules`。`build-mesa.py`、`build-mesa.sh` 与
 `prepare-mesa-initramfs.py` 的隔离前缀只用于既有诊断配方和 snap 构建，
