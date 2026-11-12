@@ -1,0 +1,14 @@
+Respect the source identity supplied by the parent llama.cpp build.
+SPDX-License-Identifier: MIT
+
+--- a/ggml/CMakeLists.txt
++++ b/ggml/CMakeLists.txt
+@@ -11,7 +11,7 @@
+ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
+ 
+ find_program(GIT_EXE NAMES git git.exe NO_CMAKE_FIND_ROOT_PATH)
+-if(GIT_EXE)
++if(GIT_EXE AND NOT DEFINED GGML_BUILD_COMMIT)
+     # Get current git commit hash
+     execute_process(COMMAND ${GIT_EXE} rev-parse --short HEAD
+         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}

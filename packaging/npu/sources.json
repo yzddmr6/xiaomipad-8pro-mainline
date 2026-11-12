@@ -80,6 +80,11 @@
       "file": "patches/0001-strip-dsp-command-records-before-swiv.patch",
       "sha256": "511c61b2ad35383456c2b49d109082c1a0317f03140a404e62c7c48900697044",
       "reason": "Remove build-only compiler/linker command notes before upstream SWIV validation is generated; computation sources unchanged."
+    },
+    {
+      "file": "patches/0002-use-explicit-ggml-build-identity.patch",
+      "sha256": "7b5efda5988d1ee164245077823325c5fea2e41005ffdd928eab54db4a04696e",
+      "reason": "Respect the pinned llama.cpp revision; do not embed a containing checkout commit."
     }
   ]
 }

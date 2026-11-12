@@ -19,7 +19,7 @@ import urllib.request
 
 REPO=Path(__file__).resolve().parents[1]
 ASSETS=REPO/'packaging/npu'
-VERSION='0.1+git20261112.e1f7593-4'
+VERSION='0.1+git20261112.e1f7593-5'
 LIB='usr/lib/aarch64-linux-gnu/qcom-npu'
 
 def sha(p):
@@ -64,7 +64,7 @@ def main():
         run(['patch','-p1','--forward','-i',path],cwd=llama)
     dep=b/'sysroot';dep.mkdir()
     for f in dependencies:run(['dpkg-deb','-x',f,dep])
-    env=dict(os.environ,SOURCE_DATE_EPOCH=str(lock['source_date_epoch']),LC_ALL='C.UTF-8',
+    env=dict(os.environ,GIT_CEILING_DIRECTORIES=str(b),SOURCE_DATE_EPOCH=str(lock['source_date_epoch']),LC_ALL='C.UTF-8',
              CFLAGS=f'-ffile-prefix-map={b}=. -fno-record-command-line',
              CXXFLAGS=f'-ffile-prefix-map={b}=. -fno-record-command-line')
     rpc_env=dict(env,CC='aarch64-linux-gnu-gcc',CXX='aarch64-linux-gnu-g++',
@@ -82,7 +82,7 @@ def main():
          '-DGGML_NATIVE=OFF','-DGGML_CPU_ARM_ARCH=armv8.7-a+fp16+dotprod+i8mm','-DGGML_OPENMP=OFF','-DGGML_LLAMAFILE=OFF',
          '-DGGML_HEXAGON=ON','-DGGML_BACKEND_DL=ON','-DHEXAGON_SDK_ROOT='+str(sdk),'-DPREBUILT_LIB_DIR=linux_aarch64',
          '-DLLAMA_OPENSSL=OFF','-DLLAMA_BUILD_TESTS=OFF','-DLLAMA_BUILD_EXAMPLES=OFF','-DLLAMA_BUILD_SERVER=OFF','-DLLAMA_BUILD_APP=OFF',
-         '-DLLAMA_BUILD_COMMIT='+inputs['llama']['revision'][:12],'-DCMAKE_BUILD_RPATH_USE_ORIGIN=ON','-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON','-DCMAKE_INSTALL_RPATH=$ORIGIN',
+         '-DLLAMA_BUILD_NUMBER=0','-DLLAMA_BUILD_COMMIT='+inputs['llama']['revision'][:12],'-DCMAKE_BUILD_RPATH_USE_ORIGIN=ON','-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON','-DCMAKE_INSTALL_RPATH=$ORIGIN',
          '-DCMAKE_C_FLAGS=-ffile-prefix-map='+str(b)+'=.','-DCMAKE_CXX_FLAGS=-ffile-prefix-map='+str(b)+'=.'],env=env)
     # Select just v79; the other upstream ExternalProject targets are not needed on SM8750.
     run(['cmake','--build',build,'--target','llama-completion','llama-bench','htp-v79','-j'+str(a.jobs)],env=env)
