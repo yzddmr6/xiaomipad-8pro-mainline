@@ -27,6 +27,8 @@ the repository paths with this release's two batches.
 
 Sensor shutdown detaches client callbacks before closing the drivers, fixing crashes when stopping or restarting the service.
 
+After rebooting into a new session, GNOME uses the Iris hardware encoder for its built-in full-screen recorder. This reduces recorder CPU use; the default settings can produce larger files than software encoding.
+
 ## v1.2.0 → v1.2.1
 
 Host Mesa now uses Ubuntu package names and standard multiarch directories, so
