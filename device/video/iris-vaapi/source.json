@@ -4,7 +4,7 @@
   "commit": "4125b1190c66ff7cf46e54c2b6d4076a01d7d1cd",
   "archive_url": "https://raw.githubusercontent.com/yzddmr6/qualcomm-iris-vaapi/e2c4d8545280dfc812fc14cd34a33c73c7631a06/source.tar.gz",
   "archive_sha256": "71b127e72f17a3056749de13fa68158a9f1d506f986d571f214312b5ee41b104",
-  "version": "0.1.0+git.4125b11-0piano3",
+  "version": "0.2.0-0piano1",
   "license": "MIT and LGPL-2.1; bundled kernel patches are GPL-2.0-only",
   "patches": [
     "0001-pin-archive-build-version.patch",

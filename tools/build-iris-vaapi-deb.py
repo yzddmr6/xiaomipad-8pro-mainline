@@ -73,6 +73,10 @@ def main():
         raise ValueError("EGL, GLES and GBM development dependencies are required")
     run("meson", "compile", "-C", build, "-j", args.jobs)
     run("meson", "test", "-C", build, "--print-errorlogs")
+    package_driver(out, source, build, lock, fingerprint)
+
+
+def package_driver(out, source, build, lock, fingerprint):
     driver = build / "src/v4l2_drv_video.so"
     elf = subprocess.check_output(["readelf", "-h", driver], text=True)
     if "AArch64" not in elf:
