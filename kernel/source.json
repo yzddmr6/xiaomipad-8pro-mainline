@@ -5,7 +5,7 @@
   "upstream_tag": "v7.4-rc2",
   "upstream_commit": "7475ea8b58616b33c04afb976cf0fbaad9dd63fb",
   "url": "https://github.com/yzddmr6/linux-sm8750-piano",
-  "commit": "03e1390c9e97b9863a76bf160a4c20be611a6b6e",
+  "commit": "d5fc307a96ebf9d8e2197fac57ba1c8926bf5c32",
   "branch": "sm8750/v7.4-dev",
   "config": "arch/arm64/configs/piano-diagnostic.config",
   "release_config_fragments": [
