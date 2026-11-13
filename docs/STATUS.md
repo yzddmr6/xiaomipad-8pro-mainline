@@ -1,6 +1,6 @@
 # Release history and current support
 
-Current release: **v1.3.0**. See the [README](../README.en.md#hardware-support) or
+Current release: **v1.3.1**. See the [README](../README.en.md#hardware-support) or
 [中文 README](../README.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
@@ -38,6 +38,12 @@ verified on this unit; later versions were tested on the installed system. These
 results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
+
+### v1.3.1
+
+电荷泵按电芯温区调节充电，修复电池达到 40°C 即提前降流的问题。 修复大提交入队前的内存分配失败，修正 UDMABUF 写回内存的 GPU 映射属性。更新接电挂起策略，修复桌面注销和音频会话退出崩溃。
+
+The charge pump follows the battery cell temperature profile, fixing premature current reduction at 40°C. Fix allocation failures before large GPU submissions reach the queue and correct GPU mappings for write-back UDMABUF memory. Update suspend policy on external power and fix desktop and audio session shutdown crashes.
 
 ### v1.3.0
 Linux 7.4-rc2、NPU 离线演示、GNOME 硬件录屏、Mesa 驱动修复与系统切换保护；支持自动亮度。GunyahVM 1.2.0 支持 Linux 和 Windows 来宾。
