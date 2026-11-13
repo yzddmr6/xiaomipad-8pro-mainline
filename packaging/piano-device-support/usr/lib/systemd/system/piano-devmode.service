@@ -19,7 +19,7 @@ RuntimeDirectory=sshd
 RuntimeDirectoryMode=0755
 RuntimeDirectoryPreserve=yes
 ExecStartPre=/usr/sbin/piano-devmode check
-ExecStart=/usr/bin/systemd-inhibit --what=sleep --mode=block --who=piano-devmode "--why=USB developer connection is enabled" /usr/libexec/piano/devmode-gadget serve
+ExecStart=/usr/bin/systemd-inhibit --what=sleep --mode=block --who=piano-devmode "--why=USB developer connection is enabled" /usr/libexec/piano/devmode-gadget serve ${NOTIFY_SOCKET}
 ExecStop=/usr/libexec/piano/devmode-gadget stop
 
 [Install]

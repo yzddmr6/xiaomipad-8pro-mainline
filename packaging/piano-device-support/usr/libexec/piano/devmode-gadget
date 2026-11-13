@@ -87,7 +87,7 @@ start() {
 case "${1-}" in
 serve)
     "$0" start
-    systemd-notify --ready
+    NOTIFY_SOCKET="${2:?missing service notification socket}" systemd-notify --ready
     exec /usr/bin/sleep infinity
     ;;
 start) start ;;
