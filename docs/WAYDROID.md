@@ -4,7 +4,7 @@
 
 从 1.1.0 起，内核带有 Waydroid 需要的 Binder、策略路由和 legacy iptables。Waydroid 不随系统预装，需要时按下面步骤安装。
 
-**限制：** 只能软件渲染。Waydroid 官方镜像里的 Mesa 还不认识这台平板的 GPU，默认的硬件渲染会让 Android 界面反复崩溃，安装后要先改成软件渲染。Android 的“省流量”不可用。
+安装 SM8750 图形包后，Android 应用可用 Adreno 渲染，并在 GNOME 中独立开窗。Android 的“省流量”不可用。
 
 ## 安装
 
@@ -20,26 +20,19 @@ sudo waydroid init
 
 `waydroid init` 会按处理器自动下载 `arm64_only` 镜像。这台平板的 CPU 不支持 32 位 ARM，手动下载镜像时也要选 `arm64_only`，带 32 位组件的镜像开机后会自动关机。
 
-## 改用软件渲染
+## 启用 Adreno 硬件渲染
 
-运行 `sudoedit /var/lib/waydroid/waydroid.cfg`，在 `[properties]` 一节里（没有就在文件末尾新建这一节）设置：
-
-```ini
-[properties]
-ro.hardware.gralloc = default
-ro.hardware.egl = swiftshader
-```
-
-保存后执行：
+`waydroid init` 完成后，把配套的 `waydroid-sm8750-arm64-only.tar.zst` 图形包解压到空目录，在该目录运行：
 
 ```bash
-sudo waydroid upgrade --offline
-sudo systemctl restart waydroid-container
+sudo python3 enable-gpu.py
 ```
+
+安装器会核对 Android 镜像，启用多窗口并重启容器。适用镜像为 20260927 VANILLA arm64_only system 与 20261022 MAINLINE vendor。包内同时修正了首次启动时的 SystemUI 异常，以及下文的 OMX 声明。
 
 ## 使用
 
-从应用列表打开“Waydroid”，或在终端运行 `waydroid show-full-ui`。首次启动约需半分钟，期间 Android 系统界面会反复重启几次，之后恢复正常。Android 通过平板当前的网络上网。
+在 GNOME 应用列表中打开 Waydroid 启动 Android，再从列表打开浏览器、计算器或已安装的 Android 应用。每个应用都有自己的桌面窗口。Android 使用平板当前的网络连接。
 
 ## 浏览器和应用登录页黑屏
 
