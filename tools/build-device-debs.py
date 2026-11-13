@@ -293,7 +293,7 @@ def main():
              'Apache-2.0; SunUEFI pen framing is BSD-2-Clause-Patent (see NOTICE); it includes the MIT nlohmann JSON headers.'),
         ]
         package('piano-device-support', support,
-                'python3, python3-gi, python3-pyudev, libsystemd0, openssl, device-tree-compiler, dracut, kmod, init-system-helpers, udev, systemd, libpam-modules, pkexec, polkitd, '
+                'python3, python3-gi, python3-pyudev, libsystemd0, ir-keytable, openssl, device-tree-compiler, dracut, kmod, init-system-helpers, udev, systemd, libpam-modules, pkexec, polkitd, '
                 'piano-local-firmware (>= 0.7+os3.0.303.0)',
                 'Piano platform, touchscreen and persistent boot integration',
                 '#!/bin/sh\nset -e\nif [ "$1" = configure ]; then\n'
