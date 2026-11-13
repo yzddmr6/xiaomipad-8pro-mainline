@@ -135,6 +135,7 @@ struct cam {
 	double ae_mean, ae_bright;
 	unsigned int ae_updates, ae_stable, ae_far;
 	bool ae_acquiring, ae_ready;
+	bool ae_manual, wb_manual, af_manual;
 	/* autofocus: lens position range, scan state */
 	int af_min, af_max, af_pos;
 	enum { AF_OFF, AF_WAIT, AF_SCAN, AF_FINE, AF_VERIFY, AF_LOCKED } af_state;
@@ -856,6 +857,7 @@ static int cam_start(struct cam *c)
 		goto out;
 	}
 
+	c->ae_manual = c->wb_manual = c->af_manual = false;
 	c->streaming = true;
 	c->frames = 0;
 	c->ae_updates = c->ae_stable = c->ae_far = 0;
@@ -960,7 +962,7 @@ static void control_update(struct cam *c, const struct stats *s)
 	 */
 	target = fmax(AE_TARGET * 0.65, AE_TARGET / (1.0 + 2.0 * c->ae_bright));
 	error = log(target / fmax(c->ae_mean, 1.0));
-	if (fabs(error) > 0.05) {
+	if (!c->ae_manual && fabs(error) > 0.05) {
 		/* Only startup may take a larger step. The existing highlight target
 		 * remains, and the startup upper bound falls with clipped pixels.
 		 */
@@ -1019,7 +1021,7 @@ static void control_update(struct cam *c, const struct stats *s)
 	}
 
 	/* gray world white balance on mid tones */
-	if (s->n_rgb > 200 && s->r > 0 && s->b > 0) {
+	if (!c->wb_manual && s->n_rgb > 200 && s->r > 0 && s->b > 0) {
 		double rr = s->g / s->r, bb = s->g / s->b;
 
 		if (fabs(log(rr)) > 0.02 || fabs(log(bb)) > 0.02) {
@@ -1251,7 +1253,7 @@ static void af_feed(struct cam *c, double sh)
 
 static void af_update(struct cam *c, const uint8_t *y, unsigned int stride)
 {
-	if (c->af_state == AF_OFF)
+	if (c->af_manual || c->af_state == AF_OFF)
 		return;
 	if (c->af_state == AF_WAIT) {
 		if (c->frames >= AF_START && c->ae_ready)
@@ -1381,6 +1383,8 @@ static void notify_ready(void)
 	close(fd);
 }
 
+#include "manual-controls.h"
+
 static void on_signal(int sig)
 {
 	(void)sig;
@@ -1444,10 +1448,12 @@ int main(void)
 	photo.listener = photo_listen();
 	if (photo.listener < 0)
 		logmsg(NULL, "photo socket unavailable: %s", strerror(errno));
+	control_fd = control_open();
+	if (control_fd < 0) logmsg(NULL, "manual controls unavailable: %s", strerror(errno));
 	notify_ready();
 
 	while (!quit) {
-		struct pollfd pfd[2 * NUM_CAMS + 2];
+		struct pollfd pfd[2 * NUM_CAMS + 3 + CONTROL_CLIENTS];
 		struct cam *owner[2 * NUM_CAMS];
 		bool is_vid[2 * NUM_CAMS];
 		unsigned int n = 0;
@@ -1471,13 +1477,19 @@ int main(void)
 
 		pfd[n] = (struct pollfd){ .fd = photo.listener, .events = POLLIN };
 		pfd[n + 1] = (struct pollfd){ .fd = photo.client, .events = POLLIN };
-		if (poll(pfd, n + 2, 1000) < 0) {
+		pfd[n + 2] = (struct pollfd){ .fd = control_fd, .events = POLLIN };
+		for (unsigned int i = 0; i < CONTROL_CLIENTS; i++)
+			pfd[n + 3 + i] = (struct pollfd){ .fd = control_clients[i], .events = POLLIN };
+		if (poll(pfd, n + 3 + CONTROL_CLIENTS, 1000) < 0) {
 			if (errno == EINTR)
 				continue;
 			logmsg(NULL, "poll: %s", strerror(errno));
 			break;
 		}
 
+		for (unsigned int i = 0; i < CONTROL_CLIENTS; i++)
+			if (pfd[n + 3 + i].revents) control_receive(i);
+		if (pfd[n + 2].revents & POLLIN) control_accept();
 		/* Disconnect/cancel before consuming a ready capture buffer. */
 		photo_events(pfd[n + 1].revents);
 		if (pfd[n].revents & POLLIN) photo_accept();
@@ -1495,6 +1507,7 @@ int main(void)
 
 	for (unsigned int i = 0; i < NUM_CAMS; i++)
 		cam_stop(&cams[i]);
+	control_close();
 	photo_end(NULL);
 	if (photo.listener >= 0) close(photo.listener);
 	logmsg(NULL, "exit");

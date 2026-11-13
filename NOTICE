@@ -478,3 +478,8 @@ They are Qualcomm/vendor property; no redistribution permission has been obtaine
 and they will be removed upon request from the rights holder.
 
 Mesa ir3 helper ordering prerequisite: Job Noorman, upstream 87afb02bc7e54e6b47da4339a7b805e77751c9b7, MIT; original patch and attribution retained in mesa/ir3-float-helper-order.patch.
+
+piano-camera-ctl and the camerad manual control interface derive from
+Project-SunUEFI efcf9eb3cd4dc8417bacdb2aa57dea15f3e6de20 (slwyts
+<slwyts@foxmail.com>, Cryolitia PukNgae <cryolitia@gmail.com>), under
+the MIT license in device/camera/LICENSE.
