@@ -12,14 +12,14 @@ ConditionKernelCommandLine=!piano.debug=1
 Wants=systemd-networkd.service piano-devmode-ssh.socket
 
 [Service]
-Type=oneshot
-RemainAfterExit=yes
+Type=notify
+NotifyAccess=all
 # sshd -t needs the privilege separation directory, as in ssh.service.
 RuntimeDirectory=sshd
 RuntimeDirectoryMode=0755
 RuntimeDirectoryPreserve=yes
 ExecStartPre=/usr/sbin/piano-devmode check
-ExecStart=/usr/libexec/piano/devmode-gadget start
+ExecStart=/usr/bin/systemd-inhibit --what=sleep --mode=block --who=piano-devmode "--why=USB developer connection is enabled" /usr/libexec/piano/devmode-gadget serve
 ExecStop=/usr/libexec/piano/devmode-gadget stop
 
 [Install]

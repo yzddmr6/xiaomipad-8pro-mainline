@@ -85,6 +85,11 @@ start() {
 }
 
 case "${1-}" in
+serve)
+    "$0" start
+    systemd-notify --ready
+    exec /usr/bin/sleep infinity
+    ;;
 start) start ;;
 stop) stop ;;
 *) echo 'usage: devmode-gadget start|stop' >&2; exit 2 ;;
