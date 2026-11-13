@@ -22,6 +22,8 @@ sudo waydroid init
 
 ## 启用 Adreno 硬件渲染
 
+小米版的图形包位于软件包 ZIP 的 `optional/waydroid/` 目录。
+
 `waydroid init` 完成后，把配套的 `waydroid-sm8750-arm64-only.tar.zst` 图形包解压到空目录，在该目录运行：
 
 ```bash

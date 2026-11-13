@@ -126,9 +126,11 @@ Current support and improvements by release are in [docs/STATUS.md](docs/STATUS.
 | GPU | Adreno 830 / Mesa 26.2 | ✅ works | GPU rendering for the desktop and for snap applications including Firefox |
 | System monitor | GNOME Resources | ✅ works | The task manager shows per-core CPU frequency and temperature, the GPU model, frequency, temperature and utilisation, per-application GPU usage, and the temperature of each battery; a Temperature page lists every temperature sensor by device with history graphs |
 | Touchscreen | Novatek NT36532E (THP over SPI) | ✅ works | Single- and multi-finger touch and gestures at 60/90/120/144 Hz and after screen off/on and suspend; the panel type (CSOT or BOE) is detected automatically and loads its own touch firmware and orientation |
-| Magnetic keyboard | Nanosic WN8030 | ✅ works | Typing, key wake with the screen off and wake from suspend |
+| Magnetic keyboard | Nanosic WN8030 | ✅ works | Typing, key wake with the screen off and wake from suspend, restoring keyboard backlight on reconnection |
+| Stylus | M80p | ✅ works | Pressure, hover and both barrel buttons |
+| Infrared transmitter | SE15 | ✅ works | Transmit pulses with ir-ctl |
 
-Not yet supported: stylus, fingerprint.
+Not yet supported: fingerprint.
 
 ### Wireless and USB
 
@@ -148,8 +150,8 @@ Not yet supported: stylus, fingerprint.
 | Internal microphones | DMIC / ADSP / PipeWire | ✅ works | Recording verified |
 | Video decoding | Qualcomm Iris / V4L2 | ✅ works | Automatic hardware decoding in the system player (GStreamer), Firefox (H.264/HEVC/VP9) and Chrome (H.264/VP9); AV1 uses software decoding |
 | Video encoding | Qualcomm Iris / V4L2 | ✅ works | H.264/H.265 at 1080p and 4K verified |
-| Cameras | Rear S5KJN1SQ03, front OV32D40 | ✅ works | Front and rear cameras available in camera apps; fixed rear focus, suited to subjects beyond close range |
-| Rear torch | Qualcomm PMIC LED | 🟡 partial | Torch control through the system LED interface; camera applications need to integrate their own flash controls |
+| Cameras | Rear S5KJN1SQ03, front OV32D40 | ✅ works | Front and rear cameras available in camera apps; rear autofocus and manual focus, manual exposure and white balance, and a shared camera activity light |
+| Rear torch | Qualcomm PMIC LED | 🟡 partial | Torch and exposure-synchronised rear flash; camera applications need to integrate their own flash controls |
 | Accelerometer, gyro, light, proximity | SSC / hexagonrpcd / libssc | ✅ works | SensorProxy reports orientation and ambient light. Enable Automatic Brightness in Settings → Power |
 | Auto-rotation | SensorProxy / Mutter | ✅ works | Rotates with the keyboard detached; locked by GNOME's rule while the keyboard is attached |
 
@@ -163,8 +165,8 @@ Some HEVC videos may drop a small number of frames in Firefox. Chromium snap is 
 | Power modes | GNOME / TuneD | ✅ works | Power Saver, Balanced and Performance in quick settings or Settings → Power; Balanced by default |
 | Battery gauge / temperature | 2 × TI BQ27Z561 / thermal zones | ✅ works | Charge level, voltage, current and temperatures |
 | Board temperatures | PMIC ADC thermistors | ✅ works | 11 on-board temperature readings, shown on the task manager Temperature page |
-| Charging | `xiaomi_mca` / SC8541 | 🟡 partial | The original adapter supports PPS fast charging, while other USB PD chargers retain 9 V fast charging; Qualcomm QC and other proprietary protocols charge at the normal 5 V rate. Actual power varies with charge level, temperature, adapter and cable. Settings → Power offers “Preserve Battery Health”: stop at 80% and resume at 75%; while it is on, the tablet stays awake when plugged in below the limit, as on Android |
-| Suspend | suspend-to-idle | ✅ works | Timer, keyboard, power-button and cover-open wake; default system idle policy; closing the keyboard cover on external power only locks the screen |
+| Charging | `xiaomi_mca` / SC8541 | 🟡 partial | The original adapter supports PPS fast charging, while other USB PD chargers retain 9 V fast charging; compatible Qualcomm QC adapters support 9 V requests. Actual power varies with charge level, temperature, adapter and cable. Settings → Power offers “Preserve Battery Health”: stop at 80% and resume at 75% |
+| Suspend | suspend-to-idle | ✅ works | Timer, keyboard, power-button and cover-open wake; default system idle policy; 15-minute idle suspend on weak sources, with inhibition while charging strongly or in developer mode |
 
 Not yet supported: disk hibernation, hardware clock writes (time is set from the network after boot).
 
@@ -174,7 +176,7 @@ Not yet supported: disk hibernation, hardware clock writes (time is set from the
 |---|---|---|---|
 | Command-line VMs | Gunyah / crosvm | ✅ optional | Ubuntu and Windows ARM guests, SSH/VNC, NAT and persistent disks; [user guide](docs/VIRTUALIZATION.md) |
 | Graphical VM manager | GunyahVM | ✅ Preinstalled | Open from the Dock or application menu to create and manage virtual machines |
-| Android apps | Waydroid | 🟡 partial | Optional install; runs Android apps with networking; includes an OMX declaration correction for incomplete web pages; software rendering only, no GPU acceleration; [installation and setup](docs/WAYDROID.en.md) |
+| Android apps | Waydroid | 🟡 partial | Optional install; runs Android apps with networking; includes an OMX declaration correction for incomplete web pages; optional Adreno 830 hardware rendering; [installation and setup](docs/WAYDROID.en.md) |
 
 ## Usage and Maintenance
 

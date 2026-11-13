@@ -191,7 +191,7 @@ def package(release, output, *, part_bytes=PART_BYTES, separate_rollback=False):
         stage.mkdir()
         assets = []
         groups = {'tools': [n for n in files if n.startswith('tools/')],
-                  'packages': [n for n in files if n.startswith(('debs/', 'optional/virtualization/', 'repositories/'))]}
+                  'packages': [n for n in files if n.startswith(('debs/', 'optional/virtualization/', 'optional/waydroid/', 'repositories/'))]}
         groups['boot'] = sorted(set(files) - set(groups['tools']) - set(groups['packages']) - {ROOT_IMAGE})
         kinds = ['boot', 'tools', 'packages']
         rollback_id = None

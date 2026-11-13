@@ -1,6 +1,6 @@
 # Release history and current support
 
-Current release: **v1.3.1**. See the [README](../README.en.md#hardware-support) or
+Current release: **v1.4.0**. See the [README](../README.en.md#hardware-support) or
 [中文 README](../README.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
@@ -38,6 +38,12 @@ verified on this unit; later versions were tested on the installed system. These
 results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
+
+### v1.4.0
+
+Waydroid 图形包支持 Adreno 830 硬件渲染，可从 GNOME 启动 Android 应用。 弱 USB 电源下空闲 15 分钟可自动挂起。充电功率充足或开发者通道启用时保持唤醒。系统在本地记录输入和电池充电遥测。
+
+Waydroid runs Android apps from GNOME with Adreno 830 hardware rendering. The tablet can suspend after 15 idle minutes on a weak USB supply. Sufficient charging power or an active developer connection keeps it awake. Charging samples are recorded locally.
 
 ### v1.3.1
 

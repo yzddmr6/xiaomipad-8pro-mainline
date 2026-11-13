@@ -163,6 +163,7 @@ def main():
     ap.add_argument('--changes', type=Path, required=True,
                     help='Bilingual summary, updates and known limitations (UTF-8)')
     ap.add_argument('--virtualization-packages', type=Path, help='Optional VM deb directory, including piano-vm-windows when built')
+    ap.add_argument('--waydroid-bundle', type=Path, help='Pinned SM8750 Waydroid graphics archive')
     ap.add_argument('--virtualization-source', type=Path, help='Matching corresponding-source archive')
     a = ap.parse_args()
     changes = a.changes.read_text(encoding='utf-8')
@@ -296,6 +297,12 @@ def main():
         shutil.copytree(a.previous_release_repository, out / 'repositories' / previous['id'])
 
     optional_packages = stage_virtualization(a.virtualization_packages, a.virtualization_source, out, rootfs['packages'])
+    if a.waydroid_bundle:
+        if sha(a.waydroid_bundle) != 'dd3e51c9e49dad42f888f3dbad3767d81da1d7380ca01116dd87164e4d4a44b7':
+            raise ValueError('Unexpected Waydroid graphics archive')
+        destination = out / 'optional/waydroid'
+        destination.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(a.waydroid_bundle, destination / 'waydroid-sm8750-arm64-only.tar.zst')
     files = sorted(p for p in out.rglob('*') if p.is_file())
     identity = {'files_scanned': len(files), 'identifiers': len(a.forbid_file), 'matches': 0,
                 'scope': 'Raw byte scan; content inside compressed files (debs, initrd) is not covered'}
