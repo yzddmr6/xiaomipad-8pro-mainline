@@ -8,7 +8,7 @@
       "25babfe3ff5d8ddee98b1e0ea88152d69a0c01b1",
       "197c907c4faacfb825450bbed27eb2890bc34caa"
     ],
-    "sha256": "761ff232fac14313d12e6c35cce09b9b38b393adb97e171d8af55ea5f079e2c8",
+    "sha256": "8469fde210d029a08797eb6d38d8cd3060b8c9a8f00fe17f59f86fa738855ce2",
     "license": "MIT",
     "author": "bluseliu50",
     "modifications": [
@@ -24,12 +24,12 @@
       "Expose bounded photo capture using standard V4L2 torch control, drain pre-light buffers and wait for existing AE readiness; return that capture frame via sealed memfd. Client disconnect, stream stop and capture timeout turn the light off. A readable loopback fd is required for each photo.",
       "After daemon termination, clear flash-class torch brightness through LED sysfs; V4L2 last-close alone restores access but leaves torch state unchanged.",
       "Manual controls and piano-camera-ctl adapted from Project-SunUEFI efcf9eb3cd4dc8417bacdb2aa57dea15f3e6de20 (slwyts, Cryolitia PukNgae), MIT. Use native CAMSS controls and active sensor timing; synchronized photo capture retains its existing access checks.",
-      "Use the Project-SunUEFI efcf9eb3cd4d MIT physical frame sequence and exposure bounds for rear torch photos when the capture node provides hardware FRAME_SYNC; keep the torch on through frame completion and preserve cancellation and the client access check."
+      "Use the Project-SunUEFI efcf9eb3cd4d physical frame timing, 3A freeze and software flash strobe. Keep the application capability check, BGRx sealed photo response, per-channel hardware limits, timeout and fault cleanup."
     ],
     "upstream_sha256": "c2ab6391fa41d21d1c3e4359dc0adf671261417dbda180724faf8b2758932d47",
     "local_files": {
       "nv12-bgrx.h": "54f95cb2dd5704bff292531a713d12ffb9f121e2802fc448f81582512d3238f4",
-      "photo.h": "8c14135fab91cf3aa42df3fa17f0443d4980edece16f0053ed0c003c2cd8d115",
+      "photo.h": "3cd16b5a6e2156d5a968df083f301ba6ca1c41c542ff1e55202ca1ceb992d610",
       "piano-camera.py": "843e683e03bb575e550a8a534c1872f2bc3ff3f12f7ac9b5a128b01b611abbc0",
       "io.github.yzddmr6.PianoCamera.desktop": "517f485b8ad636e9b29474034db58a773fc1cea3ad2feaa03c3301a0dd3196c9",
       "piano-camera-light-off": "278c85b166b35252f83905acd709b037eb5501cbf5f29e4d110acc9c3121d987",

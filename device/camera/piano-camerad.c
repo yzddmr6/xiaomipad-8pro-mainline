@@ -116,6 +116,13 @@ struct buf {
 
 #define AF_HIST		64	/* sharpness samples kept per scan */
 
+#define PHOTO_FLASH_CHANNELS 2
+struct camera_flash {
+	int fd, mode, source, timeout, intensity;
+	struct v4l2_query_ext_ctrl timeout_range;
+	bool saved, configured;
+};
+
 struct cam {
 	const struct cam_cfg *cfg;
 	int loop_fd;
@@ -139,6 +146,8 @@ struct cam {
 	bool ae_manual, wb_manual, af_manual;
 	bool frame_sync;
 	struct piano_photo_timing timing;
+	struct camera_flash flash[PHOTO_FLASH_CHANNELS];
+	unsigned int flash_count;
 	/* autofocus: lens position range, scan state */
 	int af_min, af_max, af_pos;
 	enum { AF_OFF, AF_WAIT, AF_SCAN, AF_FINE, AF_VERIFY, AF_LOCKED } af_state;
@@ -579,7 +588,10 @@ static void apply_wb(struct cam *c)
 		 (int)lround(c->bgain * WB_UNITY));
 }
 
-static int current_exposure_ns(struct cam *c, uint64_t *lead);
+static int prepare_strobe(struct cam *c, uint64_t *lead, uint64_t *pulse);
+static int camera_flash_open(struct cam *c);
+static int camera_flash_start(void *context, uint64_t pulse_ns, uint64_t *call_ns, uint64_t *return_ns);
+static int camera_flash_stop(void *context, uint64_t *call_ns, uint32_t *fault);
 #include "photo.h"
 
 static void cam_stop(struct cam *c)
@@ -1392,19 +1404,164 @@ static void notify_ready(void)
 
 #include "manual-controls.h"
 
-static int current_exposure_ns(struct cam *c, uint64_t *lead)
+static int flash_get(int fd, uint32_t id, int *value)
+{
+	struct v4l2_control control = { .id = id };
+
+	if (xioctl(fd, VIDIOC_G_CTRL, &control) < 0) return -errno;
+	*value = control.value;
+	return 0;
+}
+
+static int camera_flash_stop(void *context, uint64_t *call_ns, uint32_t *fault)
+{
+	struct cam *c = context;
+	int first_error = 0;
+
+	*call_ns = photo_monotonic_ns();
+	*fault = 0;
+	for (unsigned int i = 0; i < c->flash_count; i++) {
+		struct camera_flash *flash = &c->flash[i];
+		int value = 0, ret;
+
+		if (flash->fd < 0) continue;
+		if (flash->configured) {
+			if (ctrl_set(flash->fd, V4L2_CID_FLASH_STROBE_STOP, 0) < 0 && !first_error)
+				first_error = errno;
+			ret = flash_get(flash->fd, V4L2_CID_FLASH_FAULT, &value);
+			if (ret < 0 && !first_error) first_error = -ret;
+			else if (ret == 0) *fault |= (uint32_t)value;
+			if (ctrl_set(flash->fd, V4L2_CID_FLASH_LED_MODE, V4L2_FLASH_LED_MODE_NONE) < 0 && !first_error)
+				first_error = errno;
+			if (flash->saved) {
+				if (ctrl_set(flash->fd, V4L2_CID_FLASH_TIMEOUT, flash->timeout) < 0 && !first_error)
+					first_error = errno;
+				if (ctrl_set(flash->fd, V4L2_CID_FLASH_INTENSITY, flash->intensity) < 0 && !first_error)
+					first_error = errno;
+				if (ctrl_set(flash->fd, V4L2_CID_FLASH_STROBE_SOURCE, flash->source) < 0 && !first_error)
+					first_error = errno;
+			}
+		}
+		close(flash->fd);
+		*flash = (struct camera_flash){ .fd = -1 };
+	}
+	c->flash_count = 0;
+	return -first_error;
+}
+
+static int camera_flash_open(struct cam *c)
+{
+	struct topo topology;
+	const struct media_v2_entity *sensor;
+	int media_fd = find_media(), error = ENODEV;
+
+	if (media_fd < 0) return -errno;
+	if (topo_load(&topology, media_fd) < 0) { close(media_fd); return -errno; }
+	sensor = topo_entity(&topology, c->cfg->sensor);
+	if (!sensor) goto out;
+	for (unsigned int i = 0; i < topology.t.num_links; i++) {
+		const struct media_v2_link *link = &topology.links[i];
+
+		if ((link->flags & MEDIA_LNK_FL_LINK_TYPE) != MEDIA_LNK_FL_ANCILLARY_LINK ||
+		    link->source_id != sensor->id) continue;
+		for (unsigned int j = 0; j < topology.t.num_entities; j++) {
+			const struct media_v2_entity *entity = &topology.ents[j];
+			struct camera_flash *flash;
+			int value = 0, ret;
+
+			if (entity->id != link->sink_id || entity->function != MEDIA_ENT_F_FLASH) continue;
+			if (c->flash_count == PHOTO_FLASH_CHANNELS) { error = E2BIG; goto out; }
+			flash = &c->flash[c->flash_count++];
+			*flash = (struct camera_flash){ .fd = topo_open_devnode(&topology, entity->id) };
+			if (flash->fd < 0) { error = errno; goto out; }
+#define READ_FLASH(id, field) do { \
+	ret = flash_get(flash->fd, id, &flash->field); \
+	if (ret < 0) { error = -ret; goto out; } \
+} while (0)
+			READ_FLASH(V4L2_CID_FLASH_LED_MODE, mode);
+			if (flash->mode != V4L2_FLASH_LED_MODE_NONE) { error = EBUSY; goto out; }
+			READ_FLASH(V4L2_CID_FLASH_STROBE_SOURCE, source);
+			READ_FLASH(V4L2_CID_FLASH_TIMEOUT, timeout);
+			READ_FLASH(V4L2_CID_FLASH_INTENSITY, intensity);
+#undef READ_FLASH
+			ret = flash_get(flash->fd, V4L2_CID_FLASH_FAULT, &value);
+			if (ret < 0) { error = -ret; goto out; }
+			if (value) { error = EIO; goto out; }
+			flash->timeout_range = (struct v4l2_query_ext_ctrl){ .id = V4L2_CID_FLASH_TIMEOUT };
+			if (xioctl(flash->fd, VIDIOC_QUERY_EXT_CTRL, &flash->timeout_range) < 0) {
+				error = errno; goto out;
+			}
+			flash->saved = true;
+		}
+	}
+	if (c->flash_count) error = 0;
+out:
+	topo_free(&topology);
+	close(media_fd);
+	if (error) {
+		uint64_t stop_ns; uint32_t fault;
+
+		(void)camera_flash_stop(c, &stop_ns, &fault);
+	}
+	return -error;
+}
+
+static int camera_flash_start(void *context, uint64_t pulse_ns, uint64_t *call_ns, uint64_t *return_ns)
+{
+	struct cam *c = context;
+
+	for (unsigned int i = 0; i < c->flash_count; i++) {
+		struct camera_flash *flash = &c->flash[i];
+
+		/* A failed control call may still have changed hardware. */
+		flash->configured = true;
+		if (ctrl_set(flash->fd, V4L2_CID_FLASH_TIMEOUT, (int)(pulse_ns / 1000)) < 0 ||
+		    ctrl_set(flash->fd, V4L2_CID_FLASH_STROBE_SOURCE, V4L2_FLASH_STROBE_SOURCE_SOFTWARE) < 0)
+			return -errno;
+		/* Mark before the call: a failed transport may still have changed
+		 * hardware, so cleanup must try STOP and NONE on this channel.
+		 */
+		if (ctrl_set(flash->fd, V4L2_CID_FLASH_LED_MODE, V4L2_FLASH_LED_MODE_FLASH) < 0)
+			return -errno;
+	}
+	*call_ns = photo_monotonic_ns();
+	for (unsigned int i = 0; i < c->flash_count; i++)
+		if (ctrl_set(c->flash[i].fd, V4L2_CID_FLASH_STROBE, 0) < 0) return -errno;
+	*return_ns = photo_monotonic_ns();
+	return 0;
+}
+
+/* Round the whole rolling exposure plus one frame of phase uncertainty
+ * upwards to a timeout supported by every linked flash channel. */
+static int prepare_strobe(struct cam *c, uint64_t *lead, uint64_t *pulse)
 {
 	struct v4l2_query_ext_ctrl q = { .id = V4L2_CID_EXPOSURE };
 	struct exposure_timing timing;
+	struct v4l2_subdev_format f = { .which = V4L2_SUBDEV_FORMAT_ACTIVE };
+	struct v4l2_control vb = { .id = V4L2_CID_VBLANK };
 	int lines;
 
-	if (control_query(c, 0, &q) < 0 || exposure_timing(c, &q, &timing) < 0 ||
-	    control_get(c, 0, &lines) < 0 || lines < q.minimum || lines > q.maximum)
+	if (!c->flash_count || !c->timing.readout_ns ||
+	    control_query(c, 0, &q) < 0 || exposure_timing(c, &q, &timing) < 0 ||
+	    control_get(c, 0, &lines) < 0 || lines < q.minimum || lines > q.maximum ||
+	    xioctl(c->sensor_fd, VIDIOC_SUBDEV_G_FMT, &f) < 0 ||
+	    xioctl(c->sensor_fd, VIDIOC_G_CTRL, &vb) < 0 || vb.value < 0)
 		return -1;
-	/* JN1 integration begins before physical SOF by the exposure time,
-	 * the sensor's 1 ms ADC offset, and one line. Round lead upwards. */
-	*lead = exposure_ns(&timing, lines) + UINT64_C(1000000) +
-		(timing.line_ns_num + timing.line_ns_den - 1) / timing.line_ns_den;
+	uint64_t line = (timing.line_ns_num + timing.line_ns_den - 1) / timing.line_ns_den;
+	*lead = ((uint64_t)lines * timing.line_ns_num + timing.line_ns_den - 1) /
+		timing.line_ns_den + UINT64_C(1000000) + line;
+	uint64_t required = *lead + c->timing.readout_ns +
+		exposure_ns(&timing, (uint64_t)f.format.height + vb.value) +
+		2 * PHOTO_MARGIN_NS + PHOTO_CONTROL_BUDGET_NS;
+	/* Piano describes both LED sources as one flash subdevice. */
+	const struct v4l2_query_ext_ctrl *r = &c->flash[0].timeout_range;
+	if (c->flash_count != 1 || r->minimum <= 0 || !r->step || r->maximum > INT_MAX)
+		return -1;
+	uint64_t us = (required + 999) / 1000;
+	uint64_t steps = us <= (uint64_t)r->minimum ? 0 : (us - r->minimum + r->step - 1) / r->step;
+	us = r->minimum + steps * r->step;
+	if (us > (uint64_t)r->maximum) return -1;
+	*pulse = us * 1000;
 	return 0;
 }
 
