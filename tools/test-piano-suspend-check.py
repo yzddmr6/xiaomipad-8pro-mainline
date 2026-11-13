@@ -174,7 +174,7 @@ class ParsingAndCleanup(unittest.TestCase):
                     except check.StopTest:
                         pass
                     self.assertFalse(obj.policy.path.exists())
-                    self.assertEqual(calls, [['rtcwake', '-d', '/dev/rtc0', '-m', 'disable']])
+                    self.assertEqual(calls, [] if in_flight else [['rtcwake', '-d', '/dev/rtc0', '-m', 'disable']])
                     self.assertTrue(all(r['status'] == 'PASS' for r in obj.result['cleanup']))
 
     def test_signal_during_exclusive_create_is_not_a_cleanup_gap(self):

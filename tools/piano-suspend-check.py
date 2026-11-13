@@ -544,7 +544,7 @@ class Check:
         for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
             signal.signal(sig, lambda *_: None)
         actions = [('sleep_override', self.policy.remove)] if self.policy.inode is not None else []
-        if self.rtc_owned:
+        if self.rtc_owned and not self.sleep_in_flight:
             actions.append(('rtc_alarm', lambda: self.run(['rtcwake', '-d', '/dev/' + self.a.rtc, '-m', 'disable'],
                                                           'rtc-disable', timeout=3, monitor=False)))
         if self.trace:
@@ -646,15 +646,25 @@ def run_round(check, number):
     row['stage'] = 'arming'
     check.persist()
     check.guard('before-rtc')
-    check.rtc_owned = True  # Also clear if rtcwake is interrupted after setting it.
-    arm_code, arm_text = check.run(['rtcwake', '-d', '/dev/' + a.rtc, '-m', 'no', '-s', str(seconds)], 'rtc-arm')
-    row['rtc_arm'] = {'returncode': arm_code, 'raw': arm_text}
+    rtc = Path('/sys/class/rtc') / a.rtc
+    alarm = rtc / 'wakealarm'
+    if alarm.read_text().strip() not in ('', '0'):
+        raise RuntimeError('RTC alarm already owned')
+    start = int((rtc / 'since_epoch').read_text())
+    alarm.write_text(f'+{seconds}')
+    check.rtc_owned = True
+    armed = int(alarm.read_text())
+    if not start + seconds <= armed <= int((rtc / 'since_epoch').read_text()) + seconds:
+        raise RuntimeError('RTC alarm readback outside requested interval')
+    row['rtc_arm'] = {'seconds': seconds, 'readback': armed}
     row['clock_before'] = clock_sample()
     row['stage'] = 'suspend_requested'
     check.persist()
     if a.physical:
         print('请按电源键/按键盘键/开盖（进入睡眠后操作；RTC 仅作安全兜底）', flush=True)
     irq_before_sleep = Path('/proc/interrupts').read_text()
+    if alarm.read_text().strip() != str(armed) or int((rtc / 'since_epoch').read_text()) >= armed:
+        raise RuntimeError('RTC backstop lost before suspend request')
     check.sleep_in_flight = True
     try:
         # No D-state sampling during the transition: the freezer itself uses
@@ -666,7 +676,10 @@ def run_round(check, number):
                                               row['clock_before']['boottime_ns'] / 1e9 + seconds + a.resume_timeout)
         row['clock_after'] = row['resume_wait']['clocks']
     finally:
-        check.sleep_in_flight = False
+        # A timeout or exception is not proof that logind finished its request.
+        check.sleep_in_flight = not row.get('resume_wait', {}).get('success_increased', False)
+    if check.sleep_in_flight:
+        raise RuntimeError('suspend completion unconfirmed; retain alarm, 需要人按电源键')
     row['stage'] = 'resumed' if row['resume_wait']['success_increased'] else 'resume_deadline_expired'
     check.persist()
     check.guard('after-suspend')
