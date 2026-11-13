@@ -1,0 +1,9 @@
+[Unit]
+Description=Adjust idle suspend to measured charging power
+PartOf=org.gnome.SettingsDaemon.Power.target
+After=gnome-session-initialized.target
+
+[Service]
+ExecStart=/usr/libexec/tablet-charge-idle
+Restart=on-failure
+Slice=session.slice
