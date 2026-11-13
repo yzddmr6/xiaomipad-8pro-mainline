@@ -66,10 +66,10 @@ std::array<int, N> integerArray(const nlohmann::json &value) {
 }
 } // namespace
 
-StylusCalibration readStylusCalibration(const nlohmann::json &document) {
-    if (!document.contains("pen"))
+StylusCalibration readStylusCalibration(const nlohmann::json &document, const char *profile) {
+    if (!document.contains(profile))
         throw std::runtime_error("the calibration file carries no pen facts");
-    const auto &pen = document.at("pen");
+    const auto &pen = document.at(profile);
     StylusCalibration calibration;
     calibration.coordinate_resolution = integer(pen.at("coordinate_resolution"));
     calibration.mapping_40 = integerArray<40>(pen.at("mapping_40"));

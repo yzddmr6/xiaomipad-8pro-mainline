@@ -119,7 +119,7 @@ int UInputTouch::allocateTrackingId() {
 }
 
 UInputPen::UInputPen(int x_max, int y_max, int pressure_max, int tilt_min, int tilt_max,
-                       int x_resolution, int y_resolution)
+                       int x_resolution, int y_resolution, int product)
     : maximum_x_(x_max), maximum_y_(y_max), pressure_max_(pressure_max), tilt_min_(tilt_min),
       tilt_max_(tilt_max) {
     if (x_max <= 0 || y_max <= 0 || pressure_max <= 0 || tilt_max <= tilt_min)
@@ -134,13 +134,14 @@ UInputPen::UInputPen(int x_max, int y_max, int pressure_max, int tilt_min, int t
         checkedIoctl(UI_SET_KEYBIT, BTN_TOOL_PEN);
         checkedIoctl(UI_SET_KEYBIT, BTN_TOUCH);
         checkedIoctl(UI_SET_KEYBIT, BTN_STYLUS);
+        if (product == 0x4d80) checkedIoctl(UI_SET_KEYBIT, BTN_STYLUS2);
         checkedIoctl(UI_SET_PROPBIT, INPUT_PROP_DIRECT);
         uinput_setup setup{};
         setup.id.bustype = BUS_VIRTUAL;
         setup.id.vendor = 0x22;
-        setup.id.product = 0x5081;
+        setup.id.product = product;
         setup.id.version = 1;
-        std::strncpy(setup.name, "Piano Focus Pen Pro", sizeof(setup.name) - 1);
+        std::strncpy(setup.name, product == 0x4d80 ? "Piano Focus Pen" : "Piano Focus Pen Pro", sizeof(setup.name) - 1);
         if (ioctl(fd_, UI_DEV_SETUP, &setup) < 0)
             throw std::system_error(errno, std::generic_category(), "UI_DEV_SETUP");
         setupAxis(fd_, ABS_X, maximum_x_, 0, x_resolution);
@@ -169,7 +170,7 @@ void UInputPen::checkedIoctl(unsigned long request, unsigned long value) {
         throw std::system_error(errno, std::generic_category(), "uinput capability setup");
 }
 
-void UInputPen::report(bool proximity, bool contact, bool squeeze, const StylusOutput &output) {
+void UInputPen::report(bool proximity, bool contact, bool squeeze, const StylusOutput &output, bool second_button) {
     if (contact && !proximity)
         throw std::invalid_argument("a contact needs a pen in proximity");
     if (contact && !(output.valid & kStylusPressureValid))
@@ -185,6 +186,7 @@ void UInputPen::report(bool proximity, bool contact, bool squeeze, const StylusO
     event(EV_KEY, BTN_TOUCH, contact);
     event(EV_KEY, BTN_TOOL_PEN, proximity);
     event(EV_KEY, BTN_STYLUS, proximity && squeeze);
+    if (pressure_max_ == 8191) event(EV_KEY, BTN_STYLUS2, proximity && second_button);
     if (proximity) {
         if (!(output.valid & kStylusCoordinatesValid))
             throw std::invalid_argument("a pen in proximity needs coordinates");

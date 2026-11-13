@@ -1,0 +1,32 @@
+{
+  "base_version": "50.1-0ubuntu2.5",
+  "local_version": "50.1-0ubuntu2.5+sm8750.1",
+  "snapshot": "20261113T000000Z",
+  "files": [
+    {
+      "file": "mutter_50.1-0ubuntu2.5.debian.tar.xz",
+      "bytes": 123940,
+      "sha256": "50d2d9f011972576ddc4467528c49601918e5a477aa6b3e8268b9d2bf86e7d06",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261113T000000Z/pool/main/m/mutter/mutter_50.1-0ubuntu2.5.debian.tar.xz"
+    },
+    {
+      "file": "mutter_50.1-0ubuntu2.5.dsc",
+      "bytes": 4315,
+      "sha256": "34db0d1aa96e0ee6c3c5bd906b14fb9ed243e0ed3ff3c01f16c0952f5907dad7",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261113T000000Z/pool/main/m/mutter/mutter_50.1-0ubuntu2.5.dsc"
+    },
+    {
+      "file": "mutter_50.1.orig.tar.xz",
+      "bytes": 8430744,
+      "sha256": "9344502ce473f788795f26b45f8b8ff53c0a36b867470d705a11a3ee0911021e",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261113T000000Z/pool/main/m/mutter/mutter_50.1.orig.tar.xz"
+    }
+  ],
+  "patches": [
+    {
+      "file": "native-release-power-save-onscreens-in-dispose.patch",
+      "sha256": "21a9b016a38b634c974fd46974c35c01ed82f37581719f75915484efd4550a3d"
+    }
+  ],
+  "exit_condition": "Remove when Ubuntu ships equivalent native renderer cleanup and logout passes on both tablets."
+}

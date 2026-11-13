@@ -12,6 +12,11 @@ directory holds every project package installed in that release's image. Always 
 whole set together, never a single package.
 
 
+## v1.3.0 → v1.3.1
+
+Extract the packages and rollback ZIPs into the same directory. Use the whole-release upgrade command below with `piano-1.3.1` as the new repository and `piano-1.3.0-rollback-1.3.1` for `--previous`. Shut down virtual machines before upgrading and reboot after installing the complete batch.
+
+
 ## v1.2.1 → v1.3.0
 
 Extract both `*-packages.zip` and `*-rollback.zip` into the same directory to obtain the new and previous repositories.

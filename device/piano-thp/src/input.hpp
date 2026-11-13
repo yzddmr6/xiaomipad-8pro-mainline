@@ -30,14 +30,14 @@ private:
 class UInputPen {
 public:
     UInputPen(int x_max, int y_max, int pressure_max, int tilt_min, int tilt_max,
-              int x_resolution, int y_resolution);
+              int x_resolution, int y_resolution, int product = 0x5081);
     ~UInputPen();
     UInputPen(const UInputPen &) = delete;
     UInputPen &operator=(const UInputPen &) = delete;
     // Reports the state of the pen. A field without its validity bit is
     // unknown and is not written, so a missing pressure never becomes a
     // pressure of zero.
-    void report(bool proximity, bool contact, bool squeeze, const StylusOutput &output);
+    void report(bool proximity, bool contact, bool squeeze, const StylusOutput &output, bool second_button = false);
     std::string sysname() const;
 
 private:

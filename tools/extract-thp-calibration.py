@@ -123,7 +123,7 @@ PEN_COMMON = (
 PEN_PROFILE = ('tilt_calibration_thd', 'tilt_calibration_rate', 'tip_slope_rx', 'tip_slope_tx')
 
 
-def extract_pen(data):
+def extract_pen(data, vendor=3):
     """Extract the numeric pen facts of the P81c profile.
 
     Only the geometry, the calibration and the mapping numbers of the open
@@ -136,9 +136,9 @@ def extract_pen(data):
             raise ValueError(f'Unsupported pen geometry: {key}')
     prefixes = [prefix for prefix in ('stylus', 'stylus_2', 'stylus_3')
                 if 'stylus.' + prefix + '_vendor_id' in fields and
-                ini_integer(fields, 'stylus.' + prefix + '_vendor_id') == 3]
+                ini_integer(fields, 'stylus.' + prefix + '_vendor_id') == vendor]
     if len(prefixes) != 1:
-        raise ValueError('Expected exactly one P81c vendor 3 profile')
+        raise ValueError(f'Expected exactly one pen profile for vendor {vendor}')
     prefix = prefixes[0]
     values = {}
     for suffix in PEN_COMMON:
@@ -236,6 +236,9 @@ def extract(source):
         fields = parse_ini(data)
         if any(key.startswith('stylus.') for key in fields):
             result['pen'] = extract_pen(data)
+            if any(key.startswith('stylus.') and key.endswith('_vendor_id') and
+                   ini_integer(fields, key) == 1 for key in fields):
+                result['m80p'] = extract_pen(data, 1)
     except (KeyError, ValueError) as error:
         warnings.warn(f'Pen calibration omitted: {error}', stacklevel=2)
     return result
@@ -259,6 +262,9 @@ def main():
         if existing.get('project_vendor_id', result['project_vendor_id']) != result['project_vendor_id']:
             raise ValueError('Vendor profile belongs to another touch panel')
         existing['pen'] = result['pen']
+        existing.pop('m80p', None)
+        if 'm80p' in result:
+            existing['m80p'] = result['m80p']
         existing['pen_source_sha256'] = result['source_sha256']
         existing['project_vendor_id'] = result['project_vendor_id']
         result = existing

@@ -21,5 +21,5 @@ Calibration loadCalibration(const std::filesystem::path &path);
 
 // The numeric pen facts of the same file. The extraction tool rejects an
 // unsupported panel, so the values describe the panel of this unit.
-StylusCalibration readStylusCalibration(const nlohmann::json &document);
+StylusCalibration readStylusCalibration(const nlohmann::json &document, const char *profile = "pen");
 } // namespace nvt

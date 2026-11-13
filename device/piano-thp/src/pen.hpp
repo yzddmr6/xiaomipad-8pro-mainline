@@ -32,6 +32,7 @@ struct PenState {
     bool proximity = false;
     bool contact = false;
     bool squeeze = false;
+    bool second_button = false;
     StylusOutput output;
 };
 
@@ -43,7 +44,7 @@ struct PenState {
 // zero, which would look like a click of the tip.
 class PenPipeline {
 public:
-    PenPipeline(const StylusCalibration &calibration, uint64_t pressure_max_age_ns);
+    PenPipeline(const StylusCalibration &calibration, uint64_t pressure_max_age_ns, int vendor = 3);
 
     // Feeds a pen frame of the touch stream and returns the new state.
     const PenState &feed(const PenFrame &frame, uint64_t timestamp_ns);
@@ -62,6 +63,7 @@ public:
 private:
     std::unique_ptr<StylusCore> core_;
     PenPressureSource pressure_;
+    uint8_t barrel_usage_ = 0;
     PenState state_;
     StylusCoreInfo info_{};
     uint64_t max_age_ = 0;

@@ -125,7 +125,8 @@ python3 tools/prepare-ubuntu-apt.py --rootfs out/ubuntu-desktop-pristine/ubuntu-
   gstreamer1.0-plugins-bad gstreamer1.0-libav
 # 2. The project packages (AGENT-GUIDE.en.md §3.4, §3.5)
 #    Verify the four patched Ubuntu debs with ubuntu/power-button-lock.SHA256SUMS
-#    (ubuntu/README.md); include all four below as explicit --deb inputs.
+#    (ubuntu/README.md) and the Mutter archives in ubuntu/mutter/SHA256SUMS.
+#    Include both sets and the Ubuntu wireplumber/libwireplumber-0.5-0 update as --deb inputs.
 # 3. The root image and the boot set
 python3 tools/build-rootfs-image.py \
   --squashfs out/ubuntu-desktop-pristine/ubuntu-desktop.squashfs --squashfs-sha256 <sha256> \

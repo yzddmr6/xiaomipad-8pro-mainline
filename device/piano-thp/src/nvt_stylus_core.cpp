@@ -122,8 +122,8 @@ std::unique_ptr<StylusCore> StylusCore::create(const StylusCalibration &calibrat
                                                 std::string *error)
 {
     try {
-        if (orientation != 1 || vendor_id != 3)
-            throw std::runtime_error("the pen core requires the portrait P81c vendor3 profile");
+        if (orientation != 1 || (vendor_id != 1 && vendor_id != 3))
+            throw std::runtime_error("the pen core requires the portrait M80p or P81c profile");
 
         validate(calibration);
 
@@ -138,7 +138,7 @@ std::unique_ptr<StylusCore> StylusCore::create(const StylusCalibration &calibrat
         core->max_age_ = pressure_max_age_ns;
 
         const auto &p = profile;
-        core->info_ = { orientation, vendor_id, p.coordinate_resolution, 213599, 319999, 16383,
+        core->info_ = { orientation, vendor_id, p.coordinate_resolution, 213599, 319999, vendor_id == 1 ? 8191 : 16383,
                         -60, 60, p.tip_pitch_40, p.tip_pitch_60, p.calibration_threshold,
                         p.calibration_rate, p.mapping_40.front(), p.mapping_40.back(),
                         p.mapping_60.front(), p.mapping_60.back() };

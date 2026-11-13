@@ -478,3 +478,8 @@ They are Qualcomm/vendor property; no redistribution permission has been obtaine
 and they will be removed upon request from the rights holder.
 
 Mesa ir3 helper ordering prerequisite: Job Noorman, upstream 87afb02bc7e54e6b47da4339a7b805e77751c9b7, MIT; original patch and attribution retained in mesa/ir3-float-helper-order.patch.
+
+Focus Pen M80p HID identity, barrel usages, per-model pressure limits and
+vendor-slot selection follow directorhorse's Piano implementation integrated
+by Project-SunUEFI at 61c399d9633c28c2f91ca136601fd1c2c903656d
+(commit author Codex <codex@openai.com>). The THP core retains Apache-2.0.

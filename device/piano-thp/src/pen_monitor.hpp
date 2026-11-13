@@ -24,7 +24,7 @@ private:
     std::optional<bool> docked_;
 };
 
-constexpr unsigned penScanModel(bool connected, std::optional<bool> docked, bool active) {
-    return connected && docked.has_value() && !*docked && active ? 3 : 0;
+constexpr unsigned penScanModel(bool connected, std::optional<bool> docked, bool active, unsigned model = 3) {
+    return connected && docked.has_value() && !*docked && active ? model : 0;
 }
 }

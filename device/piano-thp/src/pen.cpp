@@ -42,11 +42,11 @@ bool PenPressureSource::feed(const uint8_t *data, size_t bytes, uint64_t timesta
     return false;
 }
 
-PenPipeline::PenPipeline(const StylusCalibration &calibration, uint64_t pressure_max_age_ns)
+PenPipeline::PenPipeline(const StylusCalibration &calibration, uint64_t pressure_max_age_ns, int vendor)
     : max_age_(pressure_max_age_ns)
 {
     std::string error;
-    core_ = StylusCore::create(calibration, 3, 1, pressure_max_age_ns, &error);
+    core_ = StylusCore::create(calibration, vendor, 1, pressure_max_age_ns, &error);
     if (!core_)
         throw std::runtime_error("cannot create the pen core: " + error);
     info_ = core_->info();
@@ -79,14 +79,17 @@ const PenState &PenPipeline::feed(const PenFrame &frame, uint64_t timestamp_ns)
         if (pressure_time <= timestamp_ns && timestamp_ns - pressure_time <= max_age_)
             state_.contact = state_.proximity && output.pressure > 0;
     }
-    state_.squeeze = state_.proximity && pressure_.squeeze();
+    state_.squeeze = state_.proximity && (info_.vendor_id == 1 ? barrel_usage_ == 0x4e : pressure_.squeeze());
+    state_.second_button = state_.proximity && barrel_usage_ == 0x4b;
     return state_;
 }
 
 bool PenPipeline::feedReport(const uint8_t *data, size_t bytes, uint64_t timestamp_ns)
 {
     std::string error;
-    if (!pressure_.feed(data, bytes, timestamp_ns, &error))
+    if (info_.vendor_id == 1 && bytes == 2 && data && data[0] == 2) {
+        barrel_usage_ = data[1];
+    } else if (!pressure_.feed(data, bytes, timestamp_ns, &error))
         return false;
     if (data[0] == 5) {
         // The report is the actual 15-byte report including its id.
@@ -97,18 +100,14 @@ bool PenPipeline::feedReport(const uint8_t *data, size_t bytes, uint64_t timesta
     // BLE button events must not wait for the next matrix frame.
     // expire() releases stale proximity before publishing the button.
     expire(timestamp_ns);
-    state_.squeeze = state_.proximity && pressure_.squeeze();
+    state_.squeeze = state_.proximity && (info_.vendor_id == 1 ? barrel_usage_ == 0x4e : pressure_.squeeze());
+    state_.second_button = state_.proximity && barrel_usage_ == 0x4b;
     return true;
 }
 
 bool PenPipeline::expire(uint64_t now_ns)
 {
     bool changed = false;
-    // The squeeze follows the reports, so it ends with the device.
-    if (state_.squeeze && !pressure_.squeeze()) {
-        state_.squeeze = false;
-        changed = true;
-    }
     if (state_.contact && pressure_.havePressure() &&
         now_ns >= pressure_.pressureTime() && now_ns - pressure_.pressureTime() > max_age_) {
         // The pressure expired: the contact ends without a pressure of zero.
@@ -120,6 +119,7 @@ bool PenPipeline::expire(uint64_t now_ns)
         state_.proximity = false;
         state_.contact = false;
         state_.squeeze = false;
+        state_.second_button = false;
         changed = true;
     }
     return changed;
@@ -128,6 +128,7 @@ bool PenPipeline::expire(uint64_t now_ns)
 void PenPipeline::reset() {
     core_->reset();
     pressure_.reset();
+    barrel_usage_ = 0;
     state_ = {};
     last_frame_ns_ = 0;
     have_frame_ = false;
