@@ -35,7 +35,7 @@ std::optional<std::string> PenMonitor::hidraw() {
         std::ifstream stream(entry.path() / "device/uevent");
         std::string line;
         while (std::getline(stream, line))
-            if (line == "HID_ID=0005:00000022:00005081")
+            if (line == "HID_ID=0005:00000022:00005081" || line == "HID_ID=0005:00000022:00004D80")
                 return "/dev/" + entry.path().filename().string();
     }
     return std::nullopt;

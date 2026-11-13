@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
         const auto panel = nvt::panelAxes(calibration);
         nvt::UInputTouch touch(panel.width, panel.height);
         std::vector<nvt::Slot> panel_slots;
-        std::optional<nvt::StylusCalibration> facts;
+        std::optional<nvt::StylusCalibration> facts, m80p_facts;
         std::unique_ptr<nvt::PenPipeline> pen;
         std::unique_ptr<nvt::UInputPen> pen_input;
         std::unique_ptr<nvt::PenMonitor> monitor;
@@ -121,12 +121,13 @@ int main(int argc, char **argv) {
                     throw std::runtime_error("pen calibration must match the detected touch panel");
                 facts = nvt::readStylusCalibration(document);
                 monitor = std::make_unique<nvt::PenMonitor>();
+                if (document.contains("m80p")) m80p_facts = nvt::readStylusCalibration(document, "m80p");
             }
         });
         const auto report_pen = [&] {
             if (pen && pen_input) {
                 const auto &state = pen->state();
-                pen_input->report(state.proximity, state.contact, state.squeeze, state.output);
+                pen_input->report(state.proximity, state.contact, state.squeeze, state.output, state.second_button);
             }
         };
         const auto update_scan = [&] {
@@ -135,7 +136,7 @@ int main(int argc, char **argv) {
                 throw std::system_error(errno, std::generic_category(), "pen panel state");
             const uint32_t model = nvt::penScanModel(pen_fd >= 0 && bool(pen_input) &&
                 connection && connection->connected(pen_address),
-                monitor ? monitor->docked() : std::nullopt, active & kStateActive);
+                monitor ? monitor->docked() : std::nullopt, active & kStateActive, pen ? pen->info().vendor_id : 0);
             if (model != scan_model) {
                 // Preserve a failed enable request so the error path disables it.
                 scan_model = model;
@@ -158,7 +159,7 @@ int main(int argc, char **argv) {
                 throw std::system_error(errno, std::generic_category(), "open pen reports");
             hidraw_devinfo identity{};
             if (ioctl(pen_fd, HIDIOCGRAWINFO, &identity) < 0 ||
-                identity.bustype != BUS_BLUETOOTH || identity.vendor != 0x22 || identity.product != 0x5081)
+                identity.bustype != BUS_BLUETOOTH || identity.vendor != 0x22 || (identity.product != 0x5081 && identity.product != 0x4d80))
                 throw std::runtime_error("pen report device identity changed");
             std::array<char, 128> address{};
             if (ioctl(pen_fd, HIDIOCGRAWUNIQ(address.size()), address.data()) < 0)
@@ -169,11 +170,15 @@ int main(int argc, char **argv) {
                 pen_fd = -1;
                 return;
             }
-            pen = std::make_unique<nvt::PenPipeline>(*facts, kPressureMaxAgeNs);
+            const bool m80p = identity.product == 0x4d80;
+            if (m80p && !m80p_facts)
+                throw std::runtime_error("extract the M80p profile from the panel calibration");
+            pen = std::make_unique<nvt::PenPipeline>(m80p ? *m80p_facts : *facts,
+                                                     kPressureMaxAgeNs, m80p ? 1 : 3);
             const auto &info = pen->info();
             pen_input = std::make_unique<nvt::UInputPen>(info.y_max, info.x_max, info.pressure_max,
                 info.tilt_min, info.tilt_max, int(std::lround(info.y_max / kPanelWidthMm)),
-                int(std::lround(info.x_max / kPanelHeightMm)));
+                int(std::lround(info.x_max / kPanelHeightMm)), identity.product);
             update_scan();
             std::cerr << "Pen input connected\n";
         };

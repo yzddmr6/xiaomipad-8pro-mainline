@@ -174,3 +174,10 @@ controller commands or modify a service. Use it only when a recording already
 exists or a separately authorized diagnostic producer has recording enabled.
 It does not enable recording in the product service. Keep recordings and
 results private; CLOCK_BOOTTIME includes sleep, unlike dmesg's monotonic clock.
+
+M80p uses the vendor 1 profile and P81c uses vendor 3. For an existing
+installation, run tools/extract-thp-calibration.py with the matching panel's
+factory INI, --merge-existing /etc/piano/thp-calibration.json and --output
+pointing to a new private file. Install that file at the original path and
+restart piano-thp. The extractor preserves finger orientation and validates
+the panel mapping before adding the M80p profile.
