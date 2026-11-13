@@ -45,6 +45,10 @@ Waydroid 图形包支持 Adreno 830 硬件渲染，可从 GNOME 启动 Android �
 
 Waydroid runs Android apps from GNOME with Adreno 830 hardware rendering. The tablet can suspend after 15 idle minutes on a weak USB supply. Sufficient charging power or an active developer connection keeps it awake. Charging samples are recorded locally.
 
+支持小米 MiPPS、第三方 PPS、QC3 class B 和 QC3.5 电荷泵快充，以及固定 PD 9 V 充电。系统根据电源能力、电芯温度和电压调节电流，接近充满时逐步降流，由 buck 完成恒压收尾。可恢复的供电或温度异常解除后会重新尝试快充。
+
+Supports Xiaomi MiPPS, third-party PPS, QC3 class B and QC3.5 charge-pump fast charging, and fixed 9 V USB PD. Charging current follows the supply capability, cell temperature and voltage. Current tapers near full charge and the buck converter finishes the constant-voltage phase. Fast charging resumes after recoverable supply or temperature conditions clear.
+
 ### v1.3.1
 
 电荷泵按电芯温区调节充电，修复电池达到 40°C 即提前降流的问题。 修复大提交入队前的内存分配失败，修正 UDMABUF 写回内存的 GPU 映射属性。更新接电挂起策略，修复桌面注销和音频会话退出崩溃。
