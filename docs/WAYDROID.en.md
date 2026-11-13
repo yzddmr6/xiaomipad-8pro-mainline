@@ -4,7 +4,7 @@
 
 Since 1.1.0 the kernel provides the Binder, policy routing and legacy iptables support that Waydroid needs. Waydroid is not preinstalled; install it when you need it.
 
-**Limitations:** software rendering only. The Mesa build in the official Waydroid images does not recognize this tablet's GPU yet, and the default hardware rendering makes the Android UI crash repeatedly, so switch to software rendering after installing. Android's Data Saver is unavailable.
+The SM8750 graphics bundle adds Adreno rendering and Android app windows on GNOME. Android Data Saver remains unavailable.
 
 ## Install
 
@@ -20,26 +20,19 @@ sudo waydroid init
 
 `waydroid init` downloads the `arm64_only` images that match the processor. This tablet's CPU cannot run 32-bit ARM code; if you download images manually, also pick `arm64_only`, because images with 32-bit components power off during boot.
 
-## Switch to software rendering
+## Enable Adreno rendering
 
-Run `sudoedit /var/lib/waydroid/waydroid.cfg` and set these in the `[properties]` section (add the section at the end of the file if it is missing):
-
-```ini
-[properties]
-ro.hardware.gralloc = default
-ro.hardware.egl = swiftshader
-```
-
-Save, then run:
+After `waydroid init`, extract the matching `waydroid-sm8750-arm64-only.tar.zst` graphics bundle into an empty directory. From that directory, run the following command.
 
 ```bash
-sudo waydroid upgrade --offline
-sudo systemctl restart waydroid-container
+sudo python3 enable-gpu.py
 ```
+
+The installer checks the Android images, enables multi-window mode and restarts the container. It supports the 20260927 VANILLA arm64_only system and 20261022 MAINLINE vendor pair. The bundle also corrects the first-start SystemUI error and the media service declaration described below.
 
 ## Use
 
-Open “Waydroid” from the app grid, or run `waydroid show-full-ui` in a terminal. The first start takes about half a minute, during which the Android system UI restarts a few times before it settles. Android uses the tablet's current network connection.
+Open Waydroid from the GNOME app grid to start Android. Launch Browser, Calculator or an installed Android app from the grid. Each opens in its own desktop window. Android uses the tablet's current network connection.
 
 ## Black browser pages and embedded sign-in pages
 
