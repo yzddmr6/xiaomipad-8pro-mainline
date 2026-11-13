@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MIT
 [Unit]
 Description=Piano charging policy
-BindsTo=pianocharger.device
-After=pianocharger.device
+BindsTo=sys-module-xiaomi_mca.device
+After=sys-module-xiaomi_mca.device
 ConditionPathExists=/sys/module/xiaomi_mca/parameters/charge_policy
 
 [Service]
