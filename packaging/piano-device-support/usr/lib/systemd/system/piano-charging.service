@@ -12,5 +12,4 @@ RemainAfterExit=yes
 ExecStart=/bin/sh -ec 'for p in hv_charge charge_current full_charge mipps_auth cp_charge charge_policy; do echo 1 > /sys/module/xiaomi_mca/parameters/$$p; done'
 ExecStart=/bin/sh -ec 'test -e /sys/module/pmic_glink_altmode/parameters/pan_ack || exec /sbin/modprobe pmic_glink_altmode'
 ExecStart=/bin/sh -ec 'echo 1 > /sys/module/pmic_glink_altmode/parameters/pan_ack'
-ExecStop=/bin/sh -ec 'p=/sys/module/xiaomi_mca/parameters/charge_policy; if test -e "$$p"; then echo 0 > "$$p"; fi'
 TimeoutStartSec=10
