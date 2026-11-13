@@ -19,11 +19,11 @@ PACKAGES = ('piano-device-support', 'piano-ubuntu-desktop', 'piano-local-firmwar
             'piano-mesa', 'piano-snap-graphics', 'piano-sensors', 'piano-iio-sensor-proxy',
             'piano-camerad', 'piano-iris-vaapi', 'piano-crosvm',
             'piano-vm', 'piano-vm-windows')
-SERVICES = ('piano-thp.service', 'piano-hexagonrpcd-sns.service', 'iio-sensor-proxy.service',
+SERVICES = ('piano-charging.service', 'piano-thp.service', 'piano-hexagonrpcd-sns.service', 'iio-sensor-proxy.service',
             'piano-camerad.service', 'piano-emergency-android.service')
 SAFE_UNITS = set(SERVICES) | {
     'gdm.service', 'gdm3.service', 'NetworkManager.service', 'bluetooth.service',
-    'piano-charging.service', 'piano-devmode.service', 'piano-devmode-ssh.socket',
+    'piano-devmode.service', 'piano-devmode-ssh.socket',
     'piano-slot-success.service', 'piano-debug.service', 'piano-debug-timeout.service',
     'systemd-udevd.service', 'systemd-logind.service'}
 
@@ -159,6 +159,14 @@ def collect(local):
     usb = local.read('/sys/class/power_supply/xiaomi-mca-usb/online')
     add('PASS' if usb in ('0', '1') else 'SKIP', 'Charger',
         {'0': 'unplugged', '1': 'external power present'}.get(usb, 'state unavailable'))
+    switches = ('charge_policy', 'charge_current', 'hv_charge', 'full_charge', 'mipps_auth', 'cp_charge')
+    missing = [key for key in switches if local.read('/sys/module/xiaomi_mca/parameters/' + key)
+               not in ('Y', '1')]
+    if local.read('/sys/module/pmic_glink_altmode/parameters/pan_ack') not in ('Y', '1'):
+        missing.append('pan_ack')
+    observed('Charging policy', not missing, 'enabled', 'disabled or unavailable: ' + ', '.join(missing))
+    observed('Charge pump', local.exists('/sys/class/power_supply/sc8541'), 'SC8541 registered',
+             'SC8541 unavailable')
     charge = [local.read(p / 'status') for p in batteries]
     allowed = {'Charging', 'Discharging', 'Not charging', 'Full', 'Unknown'}
     add('PASS' if charge and all(s in allowed - {'Unknown'} for s in charge) else 'SKIP',
