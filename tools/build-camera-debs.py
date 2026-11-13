@@ -75,7 +75,9 @@ def main():
         # Permit vector-loop setup/tails for the two-pixel NV12 conversion.
         run(a.cross_compile + 'gcc', '-O2', '-fvect-cost-model=cheap', '-Wall', '-Wextra',
             '-ffile-prefix-map=' + str(REPO) + '=/piano',
-            source / 'piano-camerad.c', '-lm', '-o', out / 'piano-camerad')
+            source / 'piano-camerad.c', source / 'photo-timing.c', '-lm', '-o', out / 'piano-camerad')
+        run(a.cross_compile + 'gcc', '-O2', '-Wall', '-Wextra', '-Werror',
+            source / 'piano-camera-ctl.c', '-o', out / 'piano-camera-ctl')
     archive = out / 'loopback-source.tar'
     if a.loopback_source is not None:
         run('git', '-C', a.loopback_source, 'archive', '--format=tar', '-o', archive, actual)
@@ -115,6 +117,7 @@ def main():
     for name, depends, files in [
         ('piano-camerad', 'libc6 (>= 2.38), python3, python3-numpy, python3-gi, python3-gst-1.0, gir1.2-gtk-4.0, gir1.2-gdkpixbuf-2.0, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, v4l-utils, procps, kmod, init-system-helpers, piano-camera-loopback', {
             'usr/lib/piano/piano-camerad': (out / 'piano-camerad', 0o755),
+            'usr/bin/piano-camera-ctl': (out / 'piano-camera-ctl', 0o755),
             'usr/bin/piano-camera': (source / 'piano-camera.py', 0o755),
             'usr/lib/piano/piano-camera-light-off': (source / 'piano-camera-light-off', 0o755),
             'usr/share/applications/io.github.yzddmr6.PianoCamera.desktop': (source / 'io.github.yzddmr6.PianoCamera.desktop', 0o644),
@@ -133,7 +136,7 @@ def main():
     ]:
         if a.loopback_only and name == 'piano-camerad':
             continue
-        version = '0.1+20261109.1' if name == 'piano-camerad' else '0.1+20261014.3'
+        version = '0.1+20261113.1' if name == 'piano-camerad' else '0.1+20261014.3'
         stage = out / (name + '.stage')
         stage.mkdir()
         for target, (path, mode) in files.items():

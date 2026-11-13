@@ -4,30 +4,34 @@
  * have camera access under the normal udev/logind policy. No paths are accepted.
  */
 #include <time.h>
+#define PHOTO_MARGIN_NS UINT64_C(5000000)
+#define PHOTO_CONTROL_BUDGET_NS UINT64_C(5000000)
 
 static struct {
-	int listener, client, flash;
+	int listener, client;
 	struct cam *cam;
 	unsigned int drain;
-	bool requested, illuminated;
+	bool requested, illuminated, frozen, previous_manual, previous_wb, previous_af;
+	unsigned int settle;
+	uint64_t pulse_ns, light_start_ns, light_end_ns;
+	uint64_t frozen_ns, exposure_lead_ns;
 	struct timespec deadline;
-} photo = { .listener = -1, .client = -1, .flash = -1 };
-
-static int photo_control(int fd, unsigned int id, int value)
-{
-	struct v4l2_control ctl = { .id = id, .value = value };
-	return xioctl(fd, VIDIOC_S_CTRL, &ctl);
-}
+} photo = { .listener = -1, .client = -1 };
 
 static void photo_end(const char *error)
 {
-	if (photo.flash >= 0) {
-		if (photo_control(photo.flash, V4L2_CID_FLASH_LED_MODE,
-				  V4L2_FLASH_LED_MODE_NONE) < 0)
-			logmsg(NULL, "cannot turn off photo light: %s", strerror(errno));
-		close(photo.flash);
-		photo.flash = -1;
+	if (photo.frozen) {
+		photo.cam->ae_manual = photo.previous_manual;
+		photo.cam->wb_manual = photo.previous_wb;
+		photo.cam->af_manual = photo.previous_af;
+		photo.frozen = false;
 	}
+	if (photo.cam && photo.cam->flash_count) {
+		uint64_t stopped; uint32_t fault;
+		if (camera_flash_stop(photo.cam, &stopped, &fault) < 0 || fault)
+			error = "ERR flash stop or hardware fault";
+	}
+	photo.light_start_ns = photo.light_end_ns = 0;
 	if (photo.client >= 0) {
 		if (error)
 			send(photo.client, error, strlen(error), MSG_NOSIGNAL | MSG_DONTWAIT);
@@ -36,33 +40,6 @@ static void photo_end(const char *error)
 	photo.client = -1;
 	photo.cam = NULL;
 	photo.requested = photo.illuminated = false;
-}
-
-static int photo_flash_open(void)
-{
-	struct topo tp;
-	int mfd = find_media(), fd = -1;
-	if (mfd < 0)
-		return -1;
-	if (!topo_load(&tp, mfd)) {
-		/* Only the flash entity attached to the rear sensor is eligible. */
-		const struct media_v2_entity *sensor = topo_entity(&tp, "s5kjn1");
-		for (unsigned int i = 0; sensor && i < tp.t.num_links; i++) {
-			const struct media_v2_link *l = &tp.links[i];
-			if ((l->flags & MEDIA_LNK_FL_LINK_TYPE) != MEDIA_LNK_FL_ANCILLARY_LINK ||
-			    l->source_id != sensor->id)
-				continue;
-			for (unsigned int j = 0; j < tp.t.num_entities; j++)
-				if (tp.ents[j].id == l->sink_id &&
-				    tp.ents[j].function == MEDIA_ENT_F_FLASH)
-					fd = topo_open_devnode(&tp, tp.ents[j].id);
-			if (fd >= 0)
-				break;
-		}
-		topo_free(&tp);
-	}
-	close(mfd);
-	return fd;
 }
 
 static int photo_listen(void)
@@ -140,19 +117,14 @@ static void photo_request(void)
 	photo.requested = true;
 	if (request[5]) {
 		/* The front camera has no associated light. */
-		if (strcmp(c->cfg->sensor, "s5kjn1") || (photo.flash = photo_flash_open()) < 0 ||
-		    photo_control(photo.flash, V4L2_CID_FLASH_LED_MODE, V4L2_FLASH_LED_MODE_NONE) ||
-		    photo_control(photo.flash, V4L2_CID_FLASH_LED_MODE, V4L2_FLASH_LED_MODE_TORCH)) {
+		if (strcmp(c->cfg->sensor, "s5kjn1") || !c->frame_sync || camera_flash_open(c) < 0) {
 			photo_end("ERR rear light unavailable");
 			return;
 		}
 		photo.illuminated = true;
 	}
-	/* At most nbufs completed/in-flight buffers predate the light. Discard
-	 * those plus the rolling-shutter frame crossing the enable boundary.
-	 * AE is reset only after this drain, so it cannot converge on old data.
-	 */
-	photo.drain = c->nbufs + 1;
+	/* Ambient captures drain buffers predating the caller's control writes. */
+	photo.drain = photo.illuminated ? 0 : c->nbufs + 1;
 }
 
 static void photo_events(short events)
@@ -171,9 +143,28 @@ static void photo_events(short events)
 		photo_request();
 }
 
-static void photo_frame(struct cam *c, const uint8_t *y, const uint8_t *uv,
-			unsigned int sequence)
+static uint64_t photo_monotonic_ns(void)
 {
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	return (uint64_t)now.tv_sec * 1000000000 + now.tv_nsec;
+}
+
+static void photo_sync_events(struct cam *c)
+{
+	struct v4l2_event event;
+	while (!xioctl(c->vid_fd, VIDIOC_DQEVENT, &event)) {
+		if (event.type == V4L2_EVENT_FRAME_SYNC &&
+		    piano_photo_timing_event(&c->timing, &event) < 0 &&
+		    photo.cam == c && photo.illuminated)
+			photo_end("ERR discontinuous physical frames");
+	}
+}
+
+static void photo_frame(struct cam *c, const uint8_t *y, const uint8_t *uv,
+			const struct v4l2_buffer *buffer)
+{
+	unsigned int sequence = buffer->sequence;
 	if (photo.cam != c || !photo.requested)
 		return;
 	if (photo.drain) {
@@ -184,8 +175,54 @@ static void photo_frame(struct cam *c, const uint8_t *y, const uint8_t *uv,
 		}
 		return;
 	}
-	if (!c->ae_ready)
+	if (!c->ae_ready && !c->ae_manual)
 		return;
+	if (photo.illuminated) {
+		struct piano_photo_frame frame = { .now_ns = photo_monotonic_ns() };
+		uint64_t lead = photo.frozen ? photo.exposure_lead_ns : 0;
+		if (piano_photo_timing_frame(&c->timing, buffer, lead, &frame) < 0) {
+			photo_end("ERR missing physical frame timestamps");
+			return;
+		}
+		if (!photo.frozen) {
+			if (prepare_strobe(c, &photo.exposure_lead_ns, &photo.pulse_ns) < 0) {
+				photo_end("ERR exposure exceeds flash window");
+				return;
+			}
+			photo.previous_manual = c->ae_manual;
+			photo.previous_wb = c->wb_manual;
+			photo.previous_af = c->af_manual;
+			c->ae_manual = c->wb_manual = c->af_manual = true;
+			photo.frozen = true;
+			photo.frozen_ns = photo_monotonic_ns();
+			photo.settle = 2;
+			return;
+		}
+		if (!photo.light_start_ns) {
+			if (frame.sof_ns <= photo.frozen_ns || --photo.settle) return;
+			uint64_t call = 0, done = 0;
+			if (camera_flash_start(c, photo.pulse_ns, &call, &done) < 0 ||
+			    !call || done < call || done + 2 * PHOTO_MARGIN_NS >= call + photo.pulse_ns) {
+				photo_end("ERR flash strobe");
+				return;
+			}
+			photo.light_start_ns = done + PHOTO_MARGIN_NS;
+			photo.light_end_ns = call + photo.pulse_ns - PHOTO_MARGIN_NS;
+			return;
+		}
+		if (frame.exposure_end_ns > photo.light_end_ns) {
+			photo_end("ERR no complete exposure inside flash window");
+			return;
+		}
+		if (frame.exposure_start_ns < photo.light_start_ns)
+			return;
+		uint64_t stopped; uint32_t fault;
+		if (camera_flash_stop(c, &stopped, &fault) < 0 || fault ||
+		    stopped < frame.exposure_end_ns) {
+			photo_end("ERR flash hardware fault");
+			return;
+		}
+	}
 	unsigned int w = c->cfg->out_w, h = c->cfg->out_h;
 	size_t size = (size_t)w * h * 4;
 	int fd = memfd_create("camera-photo", MFD_CLOEXEC | MFD_ALLOW_SEALING);

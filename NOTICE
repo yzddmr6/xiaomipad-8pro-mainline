@@ -483,3 +483,8 @@ Focus Pen M80p HID identity, barrel usages, per-model pressure limits and
 vendor-slot selection follow directorhorse's Piano implementation integrated
 by Project-SunUEFI at 61c399d9633c28c2f91ca136601fd1c2c903656d
 (commit author Codex <codex@openai.com>). The THP core retains Apache-2.0.
+
+piano-camera-ctl and the camerad manual control interface derive from
+Project-SunUEFI efcf9eb3cd4dc8417bacdb2aa57dea15f3e6de20 (slwyts
+<slwyts@foxmail.com>, Cryolitia PukNgae <cryolitia@gmail.com>), under
+the MIT license in device/camera/LICENSE.
