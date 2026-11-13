@@ -48,6 +48,8 @@ def change_sections(changes):
             title_suffix = ' — ' + theme.removeprefix(theme_prefix).strip()
         advice_heading = '升级须知' if language == 'zh' else 'Upgrade notes'
         body, has_advice, advice = body.partition(f'\n\n## {advice_heading}\n\n')
+        # Keep consecutive top-level updates in one compact Markdown list.
+        body = re.sub(r'(^- [^\n]+)\n(?:[ \t]*\n)+(?=- )', r'\1\n', body, flags=re.M)
         result.update({f'title_suffix_{language}': title_suffix,
                        f'upgrade_section_{language}': f'## {advice_heading}\n\n{advice.strip()}\n\n' if has_advice else '',
                        f'summary_{language}': summary.strip(),
