@@ -1,0 +1,116 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: MIT
+"""Record local power-supply measurements. Sysfs current is positive into the pack."""
+import argparse
+import fcntl
+import json
+import os
+from pathlib import Path
+import re
+import time
+
+SYS = Path('/sys')
+STATE = Path('/var/lib/tablet-charge')
+CELLS = {'piano': ('bq27z561-0', 'bq27z561-1'),
+         'erhai': ('qcom-battmgr-bat',), 'liuqin': ('qcom-battmgr-bat',)}
+SOURCE = {'piano': 'xiaomi-mca-usb', 'erhai': 'qcom-battmgr-usb', 'liuqin': 'qcom-battmgr-usb'}
+
+
+def read(path, convert=str):
+    try:
+        return convert(path.read_text().strip())
+    except (OSError, ValueError):
+        return None
+
+
+def sample(sys, device, phase):
+    supplies = sys / 'class/power_supply'
+    source = supplies / SOURCE[device]
+    before = read(source / 'online', int)
+    row = dict(schema=1, device=device, phase=phase, time_ns=time.time_ns(),
+               boottime_ns=time.clock_gettime_ns(time.CLOCK_BOOTTIME),
+               monotonic_ns=time.monotonic_ns(), kernel=os.uname().release,
+               boot_id=read(Path('/proc/sys/kernel/random/boot_id')), online=before)
+    if before == 0 and phase == 'periodic':
+        return row
+    row['input'] = {key: read(source / key, int) for key in
+                    ('voltage_now', 'current_now', 'input_current_limit', 'current_max')}
+    row['cells'] = {name: {key: read(supplies / name / key, int) for key in
+                          ('current_now', 'voltage_now', 'charge_counter', 'charge_now',
+                           'capacity', 'temp')} for name in CELLS[device]}
+    for name, cell in row['cells'].items():
+        cell['status'] = read(supplies / name / 'status')
+    row['usb_type'] = read(source / 'usb_type')
+    row['contract'] = read(source / ('xiaomi/charge_profile' if device == 'piano'
+                                     else 'charge_contract'))
+    row['temperatures_mC'] = {}
+    for zone in sorted((sys / 'class/thermal').glob('thermal_zone*')):
+        kind = read(zone / 'type')
+        if kind and re.search(r'batt|skin|quiet|charger|usb|board|wifi|cpu.*therm', kind, re.I):
+            row['temperatures_mC'][zone.name + '/' + kind] = read(zone / 'temp', int)
+    for sensor in sorted((sys / 'bus/iio/devices').glob('iio:device*/in_temp*_input')):
+        if re.search(r'quiet|charger|wifi|cpu_therm|batt|skin|usb', sensor.name, re.I):
+            row['temperatures_mC'][sensor.parent.name + '/' + sensor.name] = read(sensor, int)
+    row['pump'] = {}
+    if device == 'piano':
+        row['pump'] = {key: read(supplies / 'sc8541' / key, int)
+                       for key in ('online', 'current_now', 'voltage_now', 'temp')}
+    elif device == 'liuqin':
+        for xm in (sys / 'devices/platform/pmic-glink').glob('*/xiaomi'):
+            row['pump'] = {key: read(xm / key) for key in
+                           ('fastchg_mode', 'pd_verifed', 'current_state', 'real_type',
+                            'bq2597x_bus_voltage', 'bq2597x_bus_current', 'bq2597x_slave_bus_current',
+                            'thermal_level_requested')}
+    partner_paths = list((sys / 'class/typec').glob('port[0-9]*-partner'))
+    if len(partner_paths) == 1:
+        try:
+            row['partner_inode'] = partner_paths[0].stat().st_ino
+        except OSError:
+            pass
+    row['display'] = {node.parent.name: read(node)
+                      for node in (sys / 'class/drm').glob('card*-DSI-*/dpms')}
+    # A cable moved during the sequential reads. Keep the measurements but
+    # exclude the row from calculations about the powered interval.
+    if read(source / 'online', int) != before:
+        row['online'] = None
+    return row
+
+
+def record(state, row):
+    state.mkdir(mode=0o700, parents=True, exist_ok=True)
+    path = state / 'samples.jsonl'
+    with (state / '.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if row['online'] == 0 and row['phase'] == 'periodic':
+            # Retain the detach boundary, without filling the log on battery.
+            marker = state / '.offline'
+            if marker.exists():
+                return
+            marker.touch()
+        else:
+            (state / '.offline').unlink(missing_ok=True)
+        if path.exists() and path.stat().st_size >= 4 * 1024 * 1024:
+            path.replace(state / 'samples.1.jsonl')
+        with path.open('a') as stream:
+            print(json.dumps(row, separators=(',', ':'), allow_nan=False), file=stream)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('phase', nargs='?', choices=('periodic', 'pre', 'post'), default='periodic')
+    parser.add_argument('--device', choices=CELLS)
+    parser.add_argument('--stdout', action='store_true')
+    args = parser.parse_args()
+    device = args.device or read(Path('/usr/share/tablet-charge/device'))
+    if device not in CELLS:
+        parser.error('missing or invalid /usr/share/tablet-charge/device')
+    row = sample(SYS, device, args.phase)
+    if args.stdout:
+        print(json.dumps(row))
+    else:
+        os.umask(0o077)
+        record(STATE, row)
+
+
+if __name__ == '__main__':
+    main()

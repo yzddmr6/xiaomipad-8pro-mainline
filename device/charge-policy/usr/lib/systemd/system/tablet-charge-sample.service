@@ -1,0 +1,12 @@
+[Unit]
+Description=Record tablet charging measurements
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/tablet-charge-sample
+StateDirectory=tablet-charge
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes

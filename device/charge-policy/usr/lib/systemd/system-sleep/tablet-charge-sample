@@ -1,0 +1,5 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+case "$1" in
+    pre|post) exec /usr/libexec/tablet-charge-sample "$1" ;;
+esac

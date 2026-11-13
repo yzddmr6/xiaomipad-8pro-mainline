@@ -1,0 +1,11 @@
+[Unit]
+Description=Sample tablet charging while the system is awake
+
+[Timer]
+OnBootSec=30s
+OnUnitInactiveSec=60s
+AccuracySec=5s
+WakeSystem=no
+
+[Install]
+WantedBy=timers.target
