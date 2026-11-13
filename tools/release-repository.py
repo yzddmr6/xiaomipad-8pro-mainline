@@ -217,6 +217,16 @@ def apt_preferences(product):
 
 def solve_and_install(targets, product):
     with apt_preferences(product) as options:
+        # APT will not solve a targeted transaction on an already-broken
+        # dependency graph, even if all requested versions are available.
+        # Complete the unpacked package's dependencies before switching the
+        # remaining batch. A repair must not discard installed applications.
+        if subprocess.check_output(['dpkg', '--audit'], text=True).strip():
+            repair = ['apt-get', *options, '--fix-broken', '--no-remove',
+                      '--no-install-recommends', 'install']
+            run([*repair[:1], '-s', *repair[1:]])
+            run([*repair[:1], '-y', *repair[1:]],
+                env=dict(os.environ, DEBIAN_FRONTEND='noninteractive'))
         command = ['apt-get', *options, '--allow-downgrades', '--no-install-recommends', 'install', *targets]
         run([*command[:1], '-s', *command[1:]])
         run([*command[:1], '-y', *command[1:]], env=dict(os.environ, DEBIAN_FRONTEND='noninteractive'))
