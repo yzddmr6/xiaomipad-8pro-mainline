@@ -194,6 +194,18 @@ int main()
         check(core->report5(report, sizeof(report), 500, &message) != 0,
               "a report before the previous one was accepted");
 
+        auto m80p = nvt::StylusCore::create(calibration(), 1, 1, 100000000, &message);
+        check(m80p && m80p->info().pressure_max == 8191, "incorrect M80p pressure axis");
+        uint8_t m80p_pressure[15] = { 5, 0xff, 0x1f };
+        check(m80p->report5(m80p_pressure, sizeof(m80p_pressure), 1000, &message) == 0,
+              "M80p maximum pressure was rejected");
+        m80p_pressure[2] = 0x20;
+        check(m80p->report5(m80p_pressure, sizeof(m80p_pressure), 2000, &message) != 0,
+              "M80p accepted a pressure above its maximum");
+        check(nvt::penScanModel(true, false, true, 1) == 1 &&
+              nvt::penScanModel(false, false, true, 1) == 0,
+              "M80p scan selection did not follow connection state");
+
         // The payload must have the geometry of this panel.
         nvt::StylusOutput output;
         auto wrong_geometry = penPacket(1);
