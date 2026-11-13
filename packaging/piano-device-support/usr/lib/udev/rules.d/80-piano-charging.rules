@@ -1,3 +1,3 @@
 # SPDX-License-Identifier: MIT
-# power_supply emits a change immediately after registration. Keep the device's systemd tag and alias on both events.
-ACTION=="add|change", SUBSYSTEM=="power_supply", KERNEL=="xiaomi-mca-usb", TAG+="systemd", ENV{SYSTEMD_ALIAS}+="/pianocharger", ENV{SYSTEMD_WANTS}+="piano-charging.service"
+# The switches belong to the module and exist before any charger can probe.
+ACTION=="add", SUBSYSTEM=="module", KERNEL=="xiaomi_mca", TAG+="systemd", ENV{SYSTEMD_ALIAS}+="/pianocharger", ENV{SYSTEMD_WANTS}+="piano-charging.service"
