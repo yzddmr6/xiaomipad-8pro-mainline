@@ -9,7 +9,8 @@ static struct {
 	int listener, client, flash;
 	struct cam *cam;
 	unsigned int drain;
-	bool requested, illuminated;
+	bool requested, illuminated, frozen, previous_manual;
+	uint64_t frozen_ns, exposure_lead_ns;
 	struct timespec deadline;
 } photo = { .listener = -1, .client = -1, .flash = -1 };
 
@@ -21,6 +22,10 @@ static int photo_control(int fd, unsigned int id, int value)
 
 static void photo_end(const char *error)
 {
+	if (photo.frozen) {
+		photo.cam->ae_manual = photo.previous_manual;
+		photo.frozen = false;
+	}
 	if (photo.flash >= 0) {
 		if (photo_control(photo.flash, V4L2_CID_FLASH_LED_MODE,
 				  V4L2_FLASH_LED_MODE_NONE) < 0)
@@ -171,9 +176,28 @@ static void photo_events(short events)
 		photo_request();
 }
 
-static void photo_frame(struct cam *c, const uint8_t *y, const uint8_t *uv,
-			unsigned int sequence)
+static uint64_t photo_monotonic_ns(void)
 {
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	return (uint64_t)now.tv_sec * 1000000000 + now.tv_nsec;
+}
+
+static void photo_sync_events(struct cam *c)
+{
+	struct v4l2_event event;
+	while (!xioctl(c->vid_fd, VIDIOC_DQEVENT, &event)) {
+		if (event.type == V4L2_EVENT_FRAME_SYNC &&
+		    piano_photo_timing_event(&c->timing, &event) < 0 &&
+		    photo.cam == c && photo.illuminated)
+			photo_end("ERR discontinuous physical frames");
+	}
+}
+
+static void photo_frame(struct cam *c, const uint8_t *y, const uint8_t *uv,
+			const struct v4l2_buffer *buffer)
+{
+	unsigned int sequence = buffer->sequence;
 	if (photo.cam != c || !photo.requested)
 		return;
 	if (photo.drain) {
@@ -184,8 +208,28 @@ static void photo_frame(struct cam *c, const uint8_t *y, const uint8_t *uv,
 		}
 		return;
 	}
-	if (!c->ae_ready)
+	if (!c->ae_ready && !c->ae_manual)
 		return;
+	if (photo.illuminated && c->frame_sync) {
+		/* Hold the measured exposure until the paired physical frame has
+		 * finished. The torch is already on when this bound is sampled. */
+		if (!photo.frozen) {
+			if (current_exposure_ns(c, &photo.exposure_lead_ns) < 0) {
+				photo_end("ERR exposure timing unavailable");
+				return;
+			}
+			photo.previous_manual = c->ae_manual;
+			c->ae_manual = true;
+			photo.frozen = true;
+			photo.frozen_ns = photo_monotonic_ns();
+			return;
+		}
+		struct piano_photo_frame frame = { .now_ns = photo_monotonic_ns() };
+		if (piano_photo_timing_frame(&c->timing, buffer, photo.exposure_lead_ns, &frame) < 0)
+			return;
+		if (frame.exposure_start_ns < photo.frozen_ns)
+			return;
+	}
 	unsigned int w = c->cfg->out_w, h = c->cfg->out_h;
 	size_t size = (size_t)w * h * 4;
 	int fd = memfd_create("camera-photo", MFD_CLOEXEC | MFD_ALLOW_SEALING);

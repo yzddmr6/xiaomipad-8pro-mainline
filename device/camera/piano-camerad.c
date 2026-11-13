@@ -39,6 +39,7 @@
 #include <linux/videodev2.h>
 
 #include "nv12-bgrx.h"
+#include "photo-timing.h"
 
 /* v4l2loopback private event: capture side streaming started/stopped */
 #define V4L2_EVENT_PRI_CLIENT_USAGE (V4L2_EVENT_PRIVATE_START + 0x08E00000 + 1)
@@ -136,6 +137,8 @@ struct cam {
 	unsigned int ae_updates, ae_stable, ae_far;
 	bool ae_acquiring, ae_ready;
 	bool ae_manual, wb_manual, af_manual;
+	bool frame_sync;
+	struct piano_photo_timing timing;
 	/* autofocus: lens position range, scan state */
 	int af_min, af_max, af_pos;
 	enum { AF_OFF, AF_WAIT, AF_SCAN, AF_FINE, AF_VERIFY, AF_LOCKED } af_state;
@@ -576,6 +579,7 @@ static void apply_wb(struct cam *c)
 		 (int)lround(c->bgain * WB_UNITY));
 }
 
+static int current_exposure_ns(struct cam *c, uint64_t *lead);
 #include "photo.h"
 
 static void cam_stop(struct cam *c)
@@ -852,6 +856,9 @@ static int cam_start(struct cam *c)
 		}
 	}
 
+	piano_photo_timing_reset(&c->timing);
+	struct v4l2_event_subscription sync = { .type = V4L2_EVENT_FRAME_SYNC };
+	c->frame_sync = cfg->vcm && xioctl(c->vid_fd, VIDIOC_SUBSCRIBE_EVENT, &sync) == 0;
 	if (xioctl(c->vid_fd, VIDIOC_STREAMON, &type) < 0) {
 		logmsg(c, "STREAMON: %s", strerror(errno));
 		goto out;
@@ -1315,7 +1322,7 @@ static void cam_frame(struct cam *c)
 			control_update(c, &s);
 		}
 		af_update(c, y, c->bpl);
-		photo_frame(c, y, uv, b.sequence);
+		photo_frame(c, y, uv, &b);
 
 		out = y;
 		if (output_bgrx) {
@@ -1384,6 +1391,22 @@ static void notify_ready(void)
 }
 
 #include "manual-controls.h"
+
+static int current_exposure_ns(struct cam *c, uint64_t *lead)
+{
+	struct v4l2_query_ext_ctrl q = { .id = V4L2_CID_EXPOSURE };
+	struct exposure_timing timing;
+	int lines;
+
+	if (control_query(c, 0, &q) < 0 || exposure_timing(c, &q, &timing) < 0 ||
+	    control_get(c, 0, &lines) < 0 || lines < q.minimum || lines > q.maximum)
+		return -1;
+	/* JN1 integration begins before physical SOF by the exposure time,
+	 * the sensor's 1 ms ADC offset, and one line. Round lead upwards. */
+	*lead = exposure_ns(&timing, lines) + UINT64_C(1000000) +
+		(timing.line_ns_num + timing.line_ns_den - 1) / timing.line_ns_den;
+	return 0;
+}
 
 static void on_signal(int sig)
 {
@@ -1469,7 +1492,7 @@ int main(void)
 			is_vid[n++] = false;
 			if (c->streaming) {
 				pfd[n] = (struct pollfd){ .fd = c->vid_fd,
-							  .events = POLLIN };
+							  .events = POLLIN | (c->frame_sync ? POLLPRI : 0) };
 				owner[n] = c;
 				is_vid[n++] = true;
 			}
@@ -1497,7 +1520,9 @@ int main(void)
 			if (!pfd[i].revents)
 				continue;
 			if (is_vid[i]) {
-				if (owner[i]->streaming)
+				if (owner[i]->streaming && pfd[i].revents & POLLPRI)
+					photo_sync_events(owner[i]);
+				if (owner[i]->streaming && pfd[i].revents & POLLIN)
 					cam_frame(owner[i]);
 			} else if (pfd[i].revents & POLLPRI) {
 				loopback_event(owner[i]);

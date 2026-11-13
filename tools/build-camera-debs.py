@@ -75,7 +75,7 @@ def main():
         # Permit vector-loop setup/tails for the two-pixel NV12 conversion.
         run(a.cross_compile + 'gcc', '-O2', '-fvect-cost-model=cheap', '-Wall', '-Wextra',
             '-ffile-prefix-map=' + str(REPO) + '=/piano',
-            source / 'piano-camerad.c', '-lm', '-o', out / 'piano-camerad')
+            source / 'piano-camerad.c', source / 'photo-timing.c', '-lm', '-o', out / 'piano-camerad')
         run(a.cross_compile + 'gcc', '-O2', '-Wall', '-Wextra', '-Werror',
             source / 'piano-camera-ctl.c', '-o', out / 'piano-camera-ctl')
     archive = out / 'loopback-source.tar'
