@@ -37,7 +37,7 @@ VM 仍隐藏。控制中心构建及运行时均要求含新 enum/schema 的 GSD
 是 Shell 侧围绕目标的偏移；绝对曲线消除该钳位，手动调整语义不变。认领、指数平滑、
 限流、Shell 背光接口与 0 lux 处理保持不变；曲线模式下 0 lux 直接查曲线。文件缺失或
 任一行解析失败时记录一次 warning 并回退原生相对行为，不提供曲线的安装完全不受影响。
-补丁不含机型数据；曲线数据由各设备仓的设备包提供（平板仓从本机 ColorOS
+补丁不含机型数据；曲线数据由各设备仓的设备包提供（一加平板 2 Pro 仓从本机 ColorOS
 `display_brightness_config_P_D.xml` 与 `display_brightness_config_common.xml` 的
 lux_table 43 提取，并与真机平稳采样交叉验证）。上游提供等价的每设备曲线机制后撤去。
 
