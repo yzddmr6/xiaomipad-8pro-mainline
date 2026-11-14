@@ -41,6 +41,8 @@ results do not establish support for other models, capacities or accessories.
 
 ### v1.4.0
 
+连接有线电源时，GNOME 顶栏显示电池侧净充电功率和当前充电通路。 While wired power is connected, the GNOME top bar shows net battery charging power and the active charging protocol.
+
 Wi-Fi 冷启动时先校准 WCN7860，再应用 22 dBm 的板级发射功率上限。实际功率受固件和监管域约束。
 
 Wi-Fi calibrates the WCN7860 at cold boot before applying the 22 dBm board transmit-power limit. Actual power is subject to firmware and regulatory limits.
