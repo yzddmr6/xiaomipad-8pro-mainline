@@ -14,7 +14,7 @@ USB-C external displays (DisplayPort Alt Mode, tested at 4K 60 Hz as an extended
 desktop), charging and system suspend. The power button locks the screen by default and
 GNOME offers Power Saver, Balanced and Performance modes. Optional command-line virtual
 machines run Ubuntu and Windows 11 ARM guests; see the [VM guide](VIRTUALIZATION.md).
-Waydroid runs Android apps with software rendering.
+Waydroid can use Adreno 830 hardware rendering. The M80p stylus supports pressure, hover and both barrel buttons.
 
 The system player (GStreamer), Firefox (H.264/HEVC/VP9) and Chrome (H.264/VP9) use
 hardware decoding automatically; AV1 uses software decoding. H.264/H.265 hardware
@@ -24,13 +24,13 @@ speaker volume cap because speaker protection is absent. System time is set from
 Sensor calibration defaults are included; see the
 [calibration instructions](../device/sensors/README.zh-CN.md) to use your own tablet's calibration.
 
-Not yet supported: stylus, fingerprint, disk hibernation and hardware clock writes.
+Not yet supported: fingerprint, disk hibernation and hardware clock writes.
 
 ## Test configuration
 
 Results are from one Xiaomi Pad 8 Pro (`piano`), model 25091RP04C (China), with
 Snapdragon SM8750P, 16 GB RAM, 512 GB UFS and an unlocked bootloader. The stock build
-is OS3.0.303.0.WPYCNXM on slot A. Software is Linux 7.2.15 with the piano patches,
+is OS3.0.303.0.WPYCNXM on slot A. The current kernel is Linux 7.4-rc2 with the piano patches,
 Ubuntu 26.04 Desktop ARM64 and Mesa 26.2 for desktop and snap applications; sensors
 use the default calibration. The kernel input is pinned in
 [kernel/source.json](../kernel/source.json). The v0.2.0 fresh installation was

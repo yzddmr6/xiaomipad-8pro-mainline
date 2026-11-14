@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Install the bundled App Center update
+Requires=snapd.seeded.service
+After=snapd.seeded.service
+Before=piano-snap-graphics.service display-manager.service
+ConditionPathExists=!/var/lib/tablet-app-center/installed-1488
+
+[Service]
+Type=oneshot
+StateDirectory=tablet-app-center
+ExecStart=/usr/libexec/tablet-app-center-install
+
+[Install]
+WantedBy=multi-user.target

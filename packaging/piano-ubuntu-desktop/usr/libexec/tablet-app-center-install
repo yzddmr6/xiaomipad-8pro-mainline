@@ -1,0 +1,29 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: MIT
+"""Update the seeded App Center from its signed local archive, preserving the user's channel."""
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+
+bundle = Path('/usr/share/tablet-app-center')
+lock = json.loads((bundle / 'inputs.json').read_text())
+revision = lock['revision']
+
+def installed():
+    response = subprocess.check_output(['snap', 'debug', 'api', '/v2/snaps/snap-store'])
+    entry = json.loads(response)['result']
+    return str(entry['revision']), entry['tracking-channel']
+
+current, channel = installed()
+if current.isdecimal() and int(current) < revision:
+    prefix = f'snap-store_{revision}'
+    for filename, digest in lock['sha256'].items():
+        with (bundle / filename).open('rb') as data:
+            if hashlib.file_digest(data, 'sha256').hexdigest() != digest:
+                raise ValueError(f'{filename}: unexpected digest')
+    subprocess.run(['snap', 'ack', bundle / (prefix + '.assert')], check=True)
+    subprocess.run(['snap', 'install', bundle / (prefix + '.snap'), '--channel=' + channel], check=True)
+    if installed() != (str(revision), channel):
+        raise RuntimeError('App Center revision or tracking channel differs after installation')
+Path('/var/lib/tablet-app-center', f'installed-{revision}').touch()

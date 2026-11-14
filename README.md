@@ -205,8 +205,6 @@ fastboot -s <serial> reboot
 
 **初始设置之后。** 初始设置会把「计算机」栏设为主机名，之后可用 `sudo hostnamectl hostname --static <名字>` 修改。第一次 `apt install` 之前先 `sudo apt update`，镜像不带软件包索引。
 
-**应用中心。** 联网后运行 `sudo snap refresh snap-store gnome-46-2404` 更新应用中心。
-
 **自检。** 运行 `piano-check` 查看本地状态，或运行 `piano-check --markdown` 生成可贴入 issue 的自检摘要；不需要 root，摘要不含设备序列号、无线地址、网络名或用户名。
 
 ## 开发与贡献

@@ -207,8 +207,6 @@ A host write resets slot A's retry counter; the next Ubuntu boot marks the slot 
 
 **After Initial Setup.** Initial Setup sets the hostname from its *Computer* field; change it later with `sudo hostnamectl hostname --static <name>`. Run `sudo apt update` before the first `apt install`: the image ships without package indexes.
 
-**App Center.** Once online, run `sudo snap refresh snap-store gnome-46-2404` to update App Center.
-
 **Self-check.** Run `piano-check` for local status, or `piano-check --markdown` for an issue-ready summary. It needs no root privileges and omits device serials, radio addresses, network names and account names.
 
 ## Development and Contributions

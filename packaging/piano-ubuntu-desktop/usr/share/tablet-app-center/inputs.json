@@ -1,0 +1,12 @@
+{
+  "name": "snap-store",
+  "architecture": "arm64",
+  "channel": "2/stable/ubuntu-26.04",
+  "version": "0+git.476c121a",
+  "revision": 1488,
+  "sha256": {
+    "snap-store_1488.snap": "b8b2bc24548995b2cb918e2e55ea58e6eabb64ab30c1693274b85153fe006930",
+    "snap-store_1488.assert": "35b2c6ec3ab2e6dbd831d31269346a594c7b96a9de76b1d8c8833d46cb0f8654"
+  },
+  "download_url": "https://api.snapcraft.io/api/v1/snaps/download/gjf3IPXoRiipCu9K0kVu52f0H56fIksg_1488.snap"
+}

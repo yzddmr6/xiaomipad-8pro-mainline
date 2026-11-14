@@ -13,6 +13,8 @@ import re
 import shutil
 import subprocess
 
+from lib.app_center_input import stage_app_center
+
 PROJECT = '2026 yzddmr6 (adapted sources: NOTICE in this directory)'
 # Licences whose full text Debian ships in /usr/share/common-licenses; the others are included.
 COMMON_LICENSES = {'GPL-2.0-only': 'GPL-2', 'GPL-2.0-or-later': 'GPL-2', 'Apache-2.0': 'Apache-2.0'}
@@ -349,6 +351,7 @@ def main():
     desktop = stages / 'piano-ubuntu-desktop'
     shutil.copytree(repo / 'packaging/piano-ubuntu-desktop', desktop, ignore=untracked)
     tree(repo / 'packaging/piano-ubuntu-desktop', desktop, '.')
+    stage_app_center(desktop / 'usr/share/tablet-app-center')
     shutil.copytree(repo / 'packaging/release-notifier', desktop, dirs_exist_ok=True, ignore=untracked)
     release_file = desktop / 'usr/share/mainline-release/version'
     release_file.parent.mkdir(parents=True, exist_ok=True)
@@ -386,18 +389,21 @@ def main():
             '  sed -i -e \'$a\\\' /etc/machine-info\n'
             '  printf "CHASSIS=convertible\\n" >> /etc/machine-info\n'
             ' fi\n'
+            ' deb-systemd-helper enable tablet-app-center-install.service >/dev/null\n'
             ' deb-systemd-helper enable piano-firefox-snap-remove.service >/dev/null\n'
             ' deb-systemd-helper --user enable piano-panel-srgb.service >/dev/null\n'
             ' deb-systemd-helper --user enable mainline-release-notifier.timer >/dev/null\nfi\n',
             prerm='#!/bin/sh\nset -e\nif [ "$1" = remove ]; then\n'
-                  ' deb-systemd-helper --user disable piano-panel-srgb.service >/dev/null\n'
+                  ' deb-systemd-helper disable tablet-app-center-install.service >/dev/null\n'
+            ' deb-systemd-helper --user disable piano-panel-srgb.service >/dev/null\n'
                   ' deb-systemd-helper --user disable mainline-release-notifier.timer >/dev/null\nfi\n',
             postrm='#!/bin/sh\nset -e\nif [ "$1" = purge ]; then\n'
                    ' if [ -f /etc/machine-info ]; then\n'
                    '  sed -i \'/^CHASSIS=convertible$/d\' /etc/machine-info\n'
                    '  if [ ! -s /etc/machine-info ]; then rm -f /etc/machine-info; fi\n'
                    ' fi\n'
-                   ' deb-systemd-helper --user purge piano-panel-srgb.service >/dev/null\n'
+                   ' deb-systemd-helper purge tablet-app-center-install.service >/dev/null\n'
+            ' deb-systemd-helper --user purge piano-panel-srgb.service >/dev/null\n'
                    ' deb-systemd-helper --user purge mainline-release-notifier.timer >/dev/null\nfi\n',
             conffiles=['/etc/apt/preferences.d/piano-resources', '/etc/apt/preferences.d/piano-power-button-lock', '/etc/tuned/piano-ppd.conf',
                        '/etc/xdg/mimeapps.list'],
