@@ -136,7 +136,7 @@ Not yet supported: fingerprint.
 
 | Function | Hardware / implementation | Status | Notes |
 |---|---|---|---|
-| Wi-Fi | Qualcomm WCN7860 / ath12k | ✅ works | Stable 2.4 GHz and 5 GHz 80 MHz links |
+| Wi-Fi | Qualcomm WCN7860 / ath12k | ✅ works | Stable 2.4 GHz and 5 GHz 80 MHz links. Wi-Fi calibrates the WCN7860 at cold boot before applying the 22 dBm board transmit-power limit. Actual power is subject to firmware and regulatory limits. |
 | Bluetooth | Qualcomm WCN7860 / `hci_qca` | ✅ works | Pairing, file transfer and audio work |
 | USB device mode | USB 3 / 5 Gbit/s networking (NCM) | ✅ works | SSH over the USB cable in developer mode, off by default |
 | USB host / OTG | Type-C role switching / USB 3 / 5 Gbit/s | 🟡 partial | USB sticks, keyboards, mice and docks work at 5 Gbit/s in both orientations; a plain OTG adapter may not be detected when re-plugged right after an OTG device is removed |

@@ -41,6 +41,10 @@ results do not establish support for other models, capacities or accessories.
 
 ### v1.4.0
 
+Wi-Fi 冷启动时先校准 WCN7860，再应用 22 dBm 的板级发射功率上限。实际功率受固件和监管域约束。
+
+Wi-Fi calibrates the WCN7860 at cold boot before applying the 22 dBm board transmit-power limit. Actual power is subject to firmware and regulatory limits.
+
 Waydroid 图形包支持 Adreno 830 硬件渲染，可从 GNOME 启动 Android 应用。 弱 USB 电源下空闲 15 分钟可自动挂起。充电功率充足或开发者通道启用时保持唤醒。系统在本地记录输入和电池充电遥测。
 
 Waydroid runs Android apps from GNOME with Adreno 830 hardware rendering. The tablet can suspend after 15 idle minutes on a weak USB supply. Sufficient charging power or an active developer connection keeps it awake. Charging samples are recorded locally.
