@@ -1,0 +1,8 @@
+<schemalist>
+  <schema id="org.gnome.shell.extensions.tablet-charge" path="/org/gnome/shell/extensions/tablet-charge/">
+    <key name="show-on-battery" type="b">
+      <default>false</default>
+      <summary>Display net power when unplugged</summary>
+    </key>
+  </schema>
+</schemalist>

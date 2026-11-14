@@ -1,0 +1,7 @@
+{
+    "uuid": "charge-indicator@tablet-linux",
+    "name": "Tablet Charging Power",
+    "description": "Live battery power and wired charging details",
+    "shell-version": ["50"],
+    "settings-schema": "org.gnome.shell.extensions.tablet-charge"
+}

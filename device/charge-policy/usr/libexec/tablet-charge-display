@@ -1,0 +1,115 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: MIT
+"""Read just the charging measurements needed by the Shell panel."""
+import json
+import os
+from pathlib import Path
+import re
+import runpy
+import sys
+
+# The event sampler owns the supply topology, contract location and sysfs reader.
+sampler = runpy.run_path(str(Path(__file__).with_name('tablet-charge-sample')))
+read = sampler['read']
+
+
+def contract_fields(raw):
+    # Some kernel exit reasons contain spaces.
+    return dict(re.findall(r'(\w+)=(.*?)(?=\s+\w+=|$)', raw or ''))
+
+
+def number(fields, key):
+    try:
+        return int(fields[key])
+    except (ValueError, KeyError):
+        return None
+
+
+def path_details(device, source, fields, usb):
+    def value(key):
+        return number(fields, key)
+
+    mv, ma = value('request_mv'), value('request_ma')
+    if device == 'piano':
+        kind = value('type')
+        if value('cp') == 2 and value('pump_type') in (10, 11, 12):
+            verified = read(source / 'xiaomi/pd_verifed', int)
+            return ('MiPPS' if verified == 1 else 'PPS'), mv, ma
+        if value('cp') == 2 and value('pump_type') in (7, 8):
+            # QC uses relative voltage pulses, with no absolute current request.
+            return 'QC', None, None
+        if value('hv') == 2:
+            if value('hv_pps'):
+                return 'PPS', 9000, None
+            if kind in (5, 6, 7, 8):
+                return 'QC', 9000, None
+            return 'PD', 9000, None
+        if kind in (10, 11, 12):
+            return 'PD', None, None
+    else:
+        protocol = fields.get('protocol')
+        if protocol == 'supervooc':
+            # The serial engine does not publish a voltage/current request.
+            return 'SUPERVOOC', None, None
+        if protocol in ('ufcs', 'pps') and fields.get('state') in ('ramp', 'charging', 'taper'):
+            return protocol.upper(), mv, ma
+        fixed = value('fixed_pd_mv') or value('qc_mv')
+        if fixed:
+            limit = value('fixed_icl_ua')
+            return (f'PD {fixed / 1000:g} V' if value('fixed_pd_mv') else 'QC',
+                    fixed, limit / 1000 if limit else None)
+    active = re.search(r'\[([^]]+)\]', usb or '')
+    usb = active[1] if active else usb
+    if usb in ('PD', 'PD_DRP', 'PD_PPS'):
+        return 'PD', None, None
+    if usb in ('SDP', 'CDP', 'DCP', 'C', 'ACA', 'BrickID', 'USB_FLOAT'):
+        return 'USB', None, None
+    return None, None, None
+
+
+def snapshot(root, device, show_offline):
+    supplies = root / 'class/power_supply'
+    source = supplies / sampler['SOURCE'][device]
+    online, usb, raw = sampler['contract_state'](root, device)
+    fields = contract_fields(raw)
+    if online not in (0, 1, 2):
+        return {}
+    row = dict(device=device, online=online, exits=number(fields, 'exits'))
+    try:
+        row['partner'] = (root / 'class/typec/port0-partner').stat().st_ino
+    except OSError:
+        pass
+    if online or show_offline:
+        uv = read(source / 'voltage_now', int) if online else None
+        ua = read(source / 'current_now', int) if online else None
+        cells = []
+        for name in sampler['CELLS'][device]:
+            node = supplies / name
+            v = read(node / 'voltage_now', int)
+            i = read(node / 'current_now', int)
+            t = read(node / 'temp', int)
+            full = read(node / 'charge_full', int)
+            soc = read(node / 'capacity', int)
+            cells.append(dict(volts=v / 1e6 if v and v > 0 else None,
+                              temp=t / 10 if t is not None else None,
+                              watts=v * i / 1e12 if v and v > 0 and i is not None else None,
+                              remaining_wh=v * full / 1e12 * (1 - soc / 100)
+                              if v and v > 0 and full and full > 0 and soc is not None and 0 <= soc <= 100 else None))
+        watts = sum(c['watts'] for c in cells) if all(c['watts'] is not None for c in cells) else None
+        path, mv, ma = path_details(device, source, fields, usb) if online else (None, None, None)
+        row.update(cells=cells, watts=watts, volts=uv / 1e6 if uv and uv > 0 else None,
+                   amps=ua / 1e6 if ua is not None and ua >= 0 else None,
+                   path=path, request_v=mv / 1000 if mv and mv > 0 else None,
+                   request_a=ma / 1000 if ma and ma > 0 else None,
+                   reason=fields.get('last_exit'), secondary=fields.get(
+                       'hv_exit' if device == 'piano' else 'fixed_exit'),
+                   minutes=round(60 * sum(c['remaining_wh'] for c in cells) / watts)
+                   if online and watts and watts > 0 and all(c['remaining_wh'] is not None for c in cells) else None)
+    return row if read(source / 'online', int) == online else {}
+
+
+if __name__ == '__main__':
+    board = read(Path('/usr/share/tablet-charge/device'))
+    root = Path(os.environ.get('TABLET_CHARGE_SYSFS', '/sys'))
+    print(json.dumps(snapshot(root, board, '--on-battery' in sys.argv)
+                     if board in ('piano', 'erhai') else {}))
