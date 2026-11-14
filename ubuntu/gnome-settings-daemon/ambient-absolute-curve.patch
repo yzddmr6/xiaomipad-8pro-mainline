@@ -1,0 +1,214 @@
+From: GreenTeodoro839 <GreenTeodoro839@users.noreply.github.com>
+Subject: power: optional absolute ambient-light brightness curve
+
+A device may install /usr/share/gnome-settings-daemon/ambient-brightness-curve
+with ascending "lux percent" pairs. When the file is present and valid,
+the ambient reading selects the target percentage directly through the
+curve and the stock relative normalization is bypassed: there is no
+baseline to renormalize, so anchors can no longer peg the target at the
+clamp, and manual adjustments remain Shell's brightness bias around the
+curve target. Parsing failures, too few points, non-ascending levels or
+out-of-range percentages keep the stock relative behaviour, so an absent
+or malformed file never changes an installation that ships no curve.
+Claiming, smoothing, throttling and the Shell backlight interface are
+unchanged, and zero-lux readings participate in curve mode without the
+renormalization guard.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+
+--- a/plugins/power/gsd-power-manager.c
++++ b/plugins/power/gsd-power-manager.c
+@@ -22,6 +22,7 @@
+ 
+ #include "config.h"
+ #include <math.h>
++#include <stdio.h>
+ 
+ #include <stdlib.h>
+ #include <string.h>
+@@ -100,6 +101,16 @@
+  * The value has been chosen arbitrarily but seems to work in practice. */
+ #define GSD_AMBIENT_NORMALIZE_CONSTANT (1.5f)
+ 
++/* Optional per-device curve mapping lux directly to a target brightness
++ * percentage. When the file exists and parses, it replaces the relative
++ * normalization: the ambient reading selects the target and the user's
++ * manual adjustments stay Shell's brightness bias around it. Any parse
++ * failure falls back to the stock relative behaviour.
++ */
++#define AMBIENT_CURVE_FILENAME \
++        "/usr/share/gnome-settings-daemon/ambient-brightness-curve"
++#define AMBIENT_CURVE_MIN_POINTS 2
++
+ static const gchar introspection_xml[] =
+ "<node>"
+ "  <interface name='org.gnome.SettingsDaemon.Power.Keyboard'>"
+@@ -151,6 +162,9 @@
+         gboolean                 session_is_active;
+         gboolean                 screen_blanked;
+         gboolean                 light_claimed;
++        gdouble                 *ambient_curve_levels;
++        gdouble                 *ambient_curve_targets;
++        gsize                    ambient_curve_n_points;
+         UpClient                *up_client;
+         GPtrArray               *devices_array;
+         UpDevice                *device_composite;
+@@ -2942,6 +2956,102 @@
+         }
+ }
+ 
++static gdouble
++ambient_curve_target (GsdPowerManager *manager,
++                      gdouble          lux)
++{
++        gsize i;
++
++        if (lux <= manager->ambient_curve_levels[0])
++                return manager->ambient_curve_targets[0];
++
++        for (i = 1; i < manager->ambient_curve_n_points; i++) {
++                gdouble span;
++
++                if (lux >= manager->ambient_curve_levels[i])
++                        continue;
++
++                span = manager->ambient_curve_levels[i] -
++                       manager->ambient_curve_levels[i - 1];
++                if (span <= 0.f)
++                        return manager->ambient_curve_targets[i];
++
++                return manager->ambient_curve_targets[i - 1] +
++                        ((lux - manager->ambient_curve_levels[i - 1]) / span) *
++                        (manager->ambient_curve_targets[i] -
++                         manager->ambient_curve_targets[i - 1]);
++        }
++
++        return manager->ambient_curve_targets[manager->ambient_curve_n_points - 1];
++}
++
++static void
++ambient_curve_load (GsdPowerManager *manager)
++{
++        g_autofree gchar *contents = NULL;
++        g_auto (GStrv) lines = NULL;
++        GArray *levels, *targets;
++        gsize i, n;
++
++        if (!g_file_get_contents (AMBIENT_CURVE_FILENAME, &contents, NULL, NULL))
++                return;
++
++        levels = g_array_sized_new (FALSE, FALSE, sizeof (gdouble), 16);
++        targets = g_array_sized_new (FALSE, FALSE, sizeof (gdouble), 16);
++        lines = g_strsplit (contents, "\n", 0);
++
++        for (i = 0; lines[i] != NULL; i++) {
++                const gchar *line = lines[i];
++                gchar *comment, *end = NULL, *end2 = NULL;
++                gdouble lux, percent;
++
++                comment = strchr (line, '#');
++                if (comment != NULL)
++                        *comment = '\0';
++                if (line[strspn (line, " \t\r")] == '\0')
++                        continue;
++
++                lux = g_ascii_strtod (line, &end);
++                if (end == NULL || end == line)
++                        goto invalid;
++                while (g_ascii_isspace (*end))
++                        end++;
++                percent = g_ascii_strtod (end, &end2);
++                if (end2 == NULL || end2 == end)
++                        goto invalid;
++                if (lux < 0.f || percent < 0.f || percent > 100.f ||
++                    (levels->len > 0 &&
++                     lux <= g_array_index (levels, gdouble, levels->len - 1)))
++                        goto invalid;
++
++                g_array_append_val (levels, lux);
++                g_array_append_val (targets, percent);
++                continue;
++
++invalid:
++                g_warning ("Invalid line in %s, using stock ambient brightness",
++                           AMBIENT_CURVE_FILENAME);
++                g_array_free (levels, TRUE);
++                g_array_free (targets, TRUE);
++                return;
++        }
++
++        n = levels->len;
++        if (n < AMBIENT_CURVE_MIN_POINTS) {
++                g_warning ("Too few points in %s, using stock ambient brightness",
++                           AMBIENT_CURVE_FILENAME);
++                g_array_free (levels, TRUE);
++                g_array_free (targets, TRUE);
++                return;
++        }
++
++        manager->ambient_curve_levels =
++                (gdouble *) g_array_free (levels, FALSE);
++        manager->ambient_curve_targets =
++                (gdouble *) g_array_free (targets, FALSE);
++        manager->ambient_curve_n_points = n;
++}
++
+ static void
+ iio_proxy_changed (GsdPowerManager *manager)
+ {
+@@ -2975,12 +3085,16 @@
+          * the normalization scale. Keep a pending user renormalization until
+          * a positive reading arrives rather than dividing by zero.
+          */
+-        if (manager->ambient_norm_required && ambient_last_absolute == 0.f)
++        if (manager->ambient_curve_n_points == 0 &&
++            manager->ambient_norm_required && ambient_last_absolute == 0.f)
+                 return;
+         g_debug ("Read absolute light level: %f", ambient_last_absolute);
+ 
+-        /* the user has asked to renormalize */
+-        if (manager->ambient_norm_required) {
++        /* the user has asked to renormalize; an installed curve is
++         * absolute and has no baseline to renormalize
++         */
++        if (manager->ambient_curve_n_points == 0 &&
++            manager->ambient_norm_required) {
+                 g_debug ("Normalizing light level");
+ 
+                 manager->ambient_norm_value = ambient_last_absolute * GSD_AMBIENT_NORMALIZE_CONSTANT;
+@@ -2999,9 +3113,13 @@
+         manager->ambient_update_last_time = current_time;
+ 
+         /* calculate exponential weighted moving average */
+-        brightness = ambient_last_absolute * 100.f / manager->ambient_norm_value;
+-        brightness = MIN (brightness, 100.f);
+-        brightness = MAX (brightness, 0.f);
++        if (manager->ambient_curve_n_points > 0)
++                brightness = ambient_curve_target (manager, ambient_last_absolute);
++        else {
++                brightness = ambient_last_absolute * 100.f / manager->ambient_norm_value;
++                brightness = MIN (brightness, 100.f);
++                brightness = MAX (brightness, 0.f);
++        }
+ 
+         manager->ambient_accumulator = (alpha * brightness) +
+                 (1.0 - alpha) * manager->ambient_accumulator;
+@@ -3152,6 +3270,7 @@
+         manager->ambient_norm_value = -1.f;
+         manager->ambient_update_last_time = 0;
+         manager->ambient_set_last_time = 0;
++        ambient_curve_load (manager);
+ 
+         /* Set up a delay inhibitor to be informed about suspend attempts */
+         g_signal_connect (manager->logind_proxy, "g-signal",
+@@ -3267,6 +3386,10 @@
+ 
+         g_debug ("Stopping power manager");
+ 
++        g_clear_pointer (&manager->ambient_curve_levels, g_free);
++        g_clear_pointer (&manager->ambient_curve_targets, g_free);
++        manager->ambient_curve_n_points = 0;
++
+         if (manager->inhibit_lid_switch_timer_id != 0) {
+                 g_source_remove (manager->inhibit_lid_switch_timer_id);
+                 manager->inhibit_lid_switch_timer_id = 0;

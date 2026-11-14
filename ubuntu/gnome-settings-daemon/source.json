@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "base_version": "50.0-1ubuntu1",
-  "local_version": "50.0-1ubuntu1+piano2",
+  "local_version": "50.0-1ubuntu1+piano3",
   "files": [
     {
       "file": "gnome-settings-daemon_50.0.orig.tar.xz",
@@ -32,7 +32,7 @@
     "keyring_sha256": "80a36b0a6de2f69f49d2df75ef473ccde121e9e190b9ea01d20a4f63778d5c31",
     "dsc_maintainer_signature": "Not separately verified"
   },
-  "state": "AUTHENTICATED_PATCHED_SOURCE_AND_BINARY_TESTS_PASSED_NOT_HARDWARE_VERIFIED",
+  "state": "AUTHENTICATED_PATCHED_SOURCE_NOT_BUILT_NOT_TESTED",
   "patches": [
     {
       "file": "power-button-lock.patch",
@@ -45,11 +45,16 @@
       "license": "GPL-2.0-or-later"
     },
     {
+      "file": "ambient-absolute-curve.patch",
+      "sha256": "e8201438ca4fe6fc57afb240b4afe8f51b86e6b06e63a7d25141afdadf3463c4",
+      "license": "GPL-2.0-or-later"
+    },
+    {
       "file": "test-inhibition-order.patch",
       "sha256": "01ecad1e55dd495ee6d8f5434608c84ce8da8528ab4458522b93c6d0b6b40d1d",
       "license": "GPL-2.0-or-later"
     }
   ],
-  "changelog_entry_sha256": "6e8c9f20cf5dd8eacd92416655db7051ee90b77e4dccfe2c458412fdb4c64376",
+  "changelog_entry_sha256": "6a37d3c0680caaf357ea2c307dcdb019076797683aa3acfc41b671cf375e29b5",
   "exit_condition": "Drop when upstream or Ubuntu supplies equivalent functionality and native regression passes."
 }
