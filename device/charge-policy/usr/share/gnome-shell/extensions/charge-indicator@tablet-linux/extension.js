@@ -52,6 +52,7 @@ export default class ChargeIndicator extends Extension {
         Main.panel.addToStatusArea(this.uuid, this._button);
         this._button.hide();
         this._baseline = null;
+        this._previousExits = null;
         this._partner = null;
         this._secondary = null;
         this._lastReason = null;
@@ -170,7 +171,7 @@ export default class ChargeIndicator extends Extension {
         rows.path.text = path;
         rows.request.text = [format(s.request_v, 'V', 2), format(s.request_a, 'A', 2)].join(' · ');
         rows.exits.text = s.online && Number.isFinite(count) ? String(count) : dash;
-        rows.reason.text = s.online && this._lastReason
+        rows.reason.text = s.online && (s.reason || s.secondary) && this._lastReason
             ? exitReason(this._lastReason, chinese) : dash;
         this._button.show();
     }
