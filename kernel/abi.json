@@ -411,6 +411,12 @@
       "kernel_commit": "340bd4b70572788cba272a5062e327aadbb41d66",
       "config_sha256": "10134627246f4913c0e9b1ecf010217fe5fc4e186350b80412d77ef0463c4271",
       "upload": 1
+    },
+    {
+      "kernel_release": "7.4.0-rc2-piano93",
+      "kernel_commit": "cf880eae76d4b0ba51a3d72c54b8fe1940ded6c7",
+      "config_sha256": "40d3a0317241372f7f40f9769552f117b899c6562d1456fd9f146b1142abb8f4",
+      "upload": 1
     }
   ]
 }
