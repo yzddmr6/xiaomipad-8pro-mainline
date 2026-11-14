@@ -240,6 +240,11 @@ def main():
         shared = repo / 'device/charge-policy'
         shutil.copytree(shared, support, dirs_exist_ok=True, ignore=untracked)
         tree(shared, support, '.')
+        # Package the shared files with the same modes on both boards, regardless of checkout umask.
+        for source in shared.rglob('*'):
+            if source.is_file():
+                installed = support / source.relative_to(shared)
+                installed.chmod(0o755 if source.stat().st_mode & 0o111 else 0o644)
         for p in support.rglob('*'):
             if p.is_file() and p.read_bytes().startswith(b'#!'):
                 p.chmod(0o755)
