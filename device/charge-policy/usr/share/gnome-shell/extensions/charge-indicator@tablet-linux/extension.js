@@ -145,13 +145,20 @@ export default class ChargeIndicator extends Extension {
         });
     }
 
-    _update(s) {
+    _exitHistory(s) {
         let count = s.exits;
         const newPartner = this._partner && s.partner && this._partner !== s.partner;
         if (!s.online || newPartner) {
             this._lastReason = null;
             this._previousExits = null;
         }
+        this._partner = s.partner;
+        if (newPartner)
+            this._baseline = null;
+        // The serial retry counter resets on detach. PPS exits use a separate,
+        // cumulative counter. Keep its baseline across a serial session.
+        if (s.serial)
+            return [s.serial.rehandshakes, s.serial.reason];
         // The fixed-voltage path exports its last reason without a counter.
         // An observed change can still explain why the voltage dropped.
         if (s.online && s.secondary && s.secondary !== 'none' &&
@@ -161,17 +168,19 @@ export default class ChargeIndicator extends Extension {
         if (s.device === 'erhai') {
             if (!s.online)
                 this._baseline = Number.isFinite(count) ? count : null;
-            else if (newPartner)
-                this._baseline = null;
             if (count === 0)
                 this._baseline = 0;
             count = Number.isFinite(count) && this._baseline !== null && count >= this._baseline
                 ? count - this._baseline : null;
         }
-        this._partner = s.partner;
         if (s.online && count > 0 && count !== this._previousExits && s.reason && s.reason !== 'none')
             this._lastReason = s.reason;
         this._previousExits = count;
+        return [count, s.reason || s.secondary ? this._lastReason : null];
+    }
+
+    _update(s) {
+        const [count, reason] = this._exitHistory(s);
         if (s.online == null || (!s.online && !this._settings.get_boolean('show-on-battery'))) {
             this._button.hide();
             return;
@@ -192,8 +201,7 @@ export default class ChargeIndicator extends Extension {
         rows.path.text = path;
         rows.request.text = available(format(s.request_v, 'V', 2, 0), format(s.request_a, 'A', 2, 0));
         rows.exits.text = s.online && Number.isFinite(count) ? String(count) : dash;
-        rows.reason.text = s.online && (s.reason || s.secondary) && this._lastReason
-            ? exitReason(this._lastReason, chinese) : dash;
+        rows.reason.text = s.online && reason && reason !== 'none' ? exitReason(reason, chinese) : dash;
         this._awakeRow.visible = Object.hasOwn(s, 'awake');
         rows.awake.text = s.awake == null ? dash : s.awake ? tr('Yes', '是') : tr('No', '否');
         this._button.show();

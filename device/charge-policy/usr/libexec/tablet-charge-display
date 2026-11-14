@@ -49,8 +49,8 @@ def path_details(device, source, fields, usb):
     else:
         protocol = fields.get('protocol')
         if protocol == 'supervooc':
-            # The serial engine does not publish a voltage/current request.
-            return 'SUPERVOOC', None, None
+            # Older kernels filled request_ma from the inactive PPS engine.
+            return 'SUPERVOOC', None, ma if 'request_code' in fields else None
         if protocol in ('ufcs', 'pps') and fields.get('state') in ('ramp', 'charging', 'taper'):
             return protocol.upper(), mv, ma
         if value('qc_mv'):
@@ -105,10 +105,14 @@ def snapshot(root, device, show_offline):
                               if v and v > 0 and full and full > 0 and soc is not None and 0 <= soc <= 100 else None))
         watts = sum(c['watts'] for c in cells) if all(c['watts'] is not None for c in cells) else None
         path, mv, ma = path_details(device, source, fields, usb) if online else (None, None, None)
+        serial = path == 'SUPERVOOC' and 'request_code' in fields
+        if serial:
+            row['serial'] = dict(rehandshakes=number(fields, 'rehandshakes'),
+                                 reason=fields.get('svooc_last_exit', fields.get('last_exit')))
         row.update(cells=cells, watts=watts, volts=uv / 1e6 if uv and uv > 0 else None,
                    amps=ua / 1e6 if ua is not None and ua >= 0 else None,
                    path=path, request_v=mv / 1000 if mv and mv > 0 else None,
-                   request_a=ma / 1000 if ma and ma > 0 else None,
+                   request_a=ma / 1000 if ma is not None and (ma > 0 or (serial and ma == 0)) else None,
                    reason=fields.get('last_exit'), secondary=fields.get(
                        'hv_exit' if device == 'piano' else 'fixed_exit'),
                    minutes=round(60 * sum(c['remaining_wh'] for c in cells) / watts)
