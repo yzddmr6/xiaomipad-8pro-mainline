@@ -1,56 +1,34 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: MIT
-"""Keep GNOME awake only while the wired supply is providing surplus power."""
+"""Keep GNOME awake while the kernel holds the wired charging wakeup source."""
 from pathlib import Path
-import re
 import sys
 
 from gi.repository import Gio, GLib
 import pyudev
 
-SUPPLIES = {
-    'piano': ('xiaomi-mca-usb', ('bq27z561-0', 'bq27z561-1')),
-    'erhai': ('qcom-battmgr-usb', ('qcom-battmgr-bat',)),
-}
+WAKE_SOURCES = {'piano': 'xiaomi-mca-charge', 'erhai': 'qcom-battmgr-charge'}
+WAKEUP = Path('/sys/class/wakeup')
 SESSION = 'org.gnome.SessionManager'
 SESSION_PATH = '/org/gnome/SessionManager'
-# Require a margin above system consumption equal to a whole 5 V, 0.5 A
-# USB port. Both the input and the net battery power are measured.
-MARGIN_UW = 2_500_000
 
 
-def power_uw(node):
-    voltage = int((node / 'voltage_now').read_text())
-    current = int((node / 'current_now').read_text())
-    if voltage <= 0:
-        raise ValueError('no voltage measurement')
-    return voltage * current // 1_000_000
-
-
-def charging_surplus(sysfs, device):
-    source_name, gauges = SUPPLIES[device]
-    source = sysfs / source_name
-    try:
-        if int((source / 'online').read_text()) <= 0:
-            return False
-        usb_type = (source / 'usb_type').read_text().strip()
-        kinds = re.findall(r'\[([^]]+)\]', usb_type)
-        kind = kinds[0] if len(kinds) == 1 else usb_type
-        if kind not in ('PD', 'PD_DRP', 'PD_PPS', 'DCP', 'BrickID', 'SUPERVOOC'):
-            return False
-        pin = power_uw(source)
-        if pin <= MARGIN_UW:
-            return False
-        battery = sum(power_uw(sysfs / name) for name in gauges)
-        return min(pin, battery) > MARGIN_UW and int((source / 'online').read_text()) > 0
-    except (OSError, ValueError):
-        return False
+def charging_awake(sysfs, device):
+    for name in sysfs.glob('*/name'):
+        try:
+            if name.read_text().strip() != WAKE_SOURCES[device]:
+                continue
+            if int(name.with_name('active_time_ms').read_text()) > 0:
+                return True
+        except (OSError, ValueError):
+            continue
+    return False
 
 
 class ChargeIdle:
     def __init__(self, device):
         self.device = device
-        self.sysfs = Path('/sys/class/power_supply')
+        self.sysfs = WAKEUP
         self.owner = None
         self.cookie = None
         self.pending = 0
@@ -62,7 +40,7 @@ class ChargeIdle:
                               GLib.IOCondition.IN, self.power_event)
         Gio.bus_watch_name_on_connection(self.bus, SESSION, Gio.BusNameWatcherFlags.NONE,
                                          self.appeared, self.vanished)
-        # Source-type changes are notified. ADC values and taper are not.
+        # Reconcile after a missed uevent or a driver reload.
         GLib.timeout_add_seconds(15, self.update)
 
     def appeared(self, bus, name, owner):
@@ -88,15 +66,15 @@ class ChargeIdle:
     def update(self):
         if not self.owner:
             return GLib.SOURCE_CONTINUE
-        strong = charging_surplus(self.sysfs, self.device)
+        awake = charging_awake(self.sysfs, self.device)
         try:
-            if strong and self.cookie is None:
+            if awake and self.cookie is None:
                 # Only suspend, not screen blanking (GNOME's IDLE flag).
-                args = GLib.Variant('(susu)', ('tablet-charge-idle', 0, 'Fast charging', 4))
+                args = GLib.Variant('(susu)', ('tablet-charge-idle', 0, 'Wired charging', 4))
                 reply = self.bus.call_sync(self.owner, SESSION_PATH, SESSION, 'Inhibit',
                                            args, None, Gio.DBusCallFlags.NONE, 5000, None)
                 self.cookie, = reply.unpack()
-            elif not strong and self.cookie is not None:
+            elif not awake and self.cookie is not None:
                 self.bus.call_sync(self.owner, SESSION_PATH, SESSION, 'Uninhibit',
                                    GLib.Variant('(u)', (self.cookie,)), None,
                                    Gio.DBusCallFlags.NONE, 5000, None)
@@ -109,9 +87,9 @@ class ChargeIdle:
 
 if __name__ == '__main__':
     device = Path('/usr/share/tablet-charge/device').read_text().strip()
-    if device in SUPPLIES:
+    if device in WAKE_SOURCES:
         if sys.argv[1:] == ['--status']:
-            print('inhibit' if charging_surplus(Path('/sys/class/power_supply'), device) else 'allow')
+            print('inhibit' if charging_awake(WAKEUP, device) else 'allow')
         else:
             policy = ChargeIdle(device)
             GLib.MainLoop().run()
