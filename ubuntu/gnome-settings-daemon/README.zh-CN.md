@@ -1,6 +1,6 @@
 # gnome-settings-daemon：电源键锁屏动作源包补丁
 
-固定 Ubuntu 26.04 源包 `50.0-1ubuntu1`，本地版本 `50.0-1ubuntu1+piano2`。
+固定 Ubuntu 26.04 源包 `50.0-1ubuntu1`，本地版本 `50.0-1ubuntu1+piano3`。
 源包已认证；按 Ubuntu 发行版流程构建 ARM64 软件包。配套运行时包的固定摘要与发布接入见 [Ubuntu 集成](../README.md)。
 补丁按原文件 GPL-2.0-or-later 分发，许可见 [COPYING](COPYING)，不适用集成仓的 MIT 许可。
 
@@ -28,6 +28,18 @@ Shell 的 `org.gnome.ScreenSaver.Lock`，成功返回后调用 `SetActive(true)`
 VM 仍隐藏。控制中心构建及运行时均要求含新 enum/schema 的 GSD 本地版本。
 
 环境光补丁 `ambient-zero.patch` 保留 GSD 原有的认领、平滑与 Shell 背光接口：已建立归一化基准后，0 lux 作为有效黑暗参与目标计算；负数和非有限读数不参与。需要重新建立基准时，0 lux 不提供除数，等待正读数，保留用户手动亮度控制。
+
+绝对环境光曲线补丁 `ambient-absolute-curve.patch` 提供每设备曲线机制：当
+`/usr/share/gnome-settings-daemon/ambient-brightness-curve` 存在且可解析时（每行一个
+`lux percent` 数据点，`#` 注释，lux 严格递增，percent 在 0–100，至少两个点），环境光
+读数经分段线性插值直接得到目标亮度，跳过相对归一化与其全部重置路径。相对算法以
+"锚定时刻 lux × 1.5" 为基准，锚定时刻被遮挡时目标会长期钳位在最大值，且手动调整只
+是 Shell 侧围绕目标的偏移；绝对曲线消除该钳位，手动调整语义不变。认领、指数平滑、
+限流、Shell 背光接口与 0 lux 处理保持不变；曲线模式下 0 lux 直接查曲线。文件缺失或
+任一行解析失败时记录一次 warning 并回退原生相对行为，不提供曲线的安装完全不受影响。
+补丁不含机型数据；曲线数据由各设备仓的设备包提供（一加平板 2 Pro 仓从本机 ColorOS
+`display_brightness_config_P_D.xml` 与 `display_brightness_config_common.xml` 的
+lux_table 43 提取，并与真机平稳采样交叉验证）。上游提供等价的每设备曲线机制后撤去。
 
 ## 认证并准备源包
 
@@ -69,6 +81,8 @@ cp "$assets/power-button-lock.patch" source/debian/patches/piano-power-button-lo
 printf '\n%s\n' piano-power-button-lock.patch >>source/debian/patches/series
 cp "$assets/ambient-zero.patch" source/debian/patches/piano-ambient-zero.patch
 printf '%s\n' piano-ambient-zero.patch >>source/debian/patches/series
+cp "$assets/ambient-absolute-curve.patch" source/debian/patches/piano-ambient-absolute-curve.patch
+printf '%s\n' piano-ambient-absolute-curve.patch >>source/debian/patches/series
 cp "$assets/test-inhibition-order.patch" source/debian/patches/piano-test-inhibition-order.patch
 printf '%s\n' piano-test-inhibition-order.patch >>source/debian/patches/series
 { cat "$assets/changelog-entry"; printf '\n'; cat source/debian/changelog; } >source/debian/changelog.new

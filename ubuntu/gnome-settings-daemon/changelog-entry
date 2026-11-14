@@ -1,9 +1,12 @@
-gnome-settings-daemon (50.0-1ubuntu1+piano2) UNRELEASED; urgency=medium
+gnome-settings-daemon (50.0-1ubuntu1+piano3) UNRELEASED; urgency=medium
 
   * Establish the test inhibitor before arming its short idle timeout.
   * Keep the existing power-button lock action.
   * Consume zero ambient light after normalization, preserving the filter and
     user controls; reject invalid samples and defer a zero normalization base.
+  * Map ambient light to brightness through an optional per-device absolute
+    curve file; keep the stock relative normalization when it is absent or
+    invalid.
 
- -- yzddmr6 <46088090+yzddmr6@users.noreply.github.com>  Mon, 09 Nov 2026 19:25:00 +0800
+ -- GreenTeodoro839 <GreenTeodoro839@users.noreply.github.com>  Fri, 14 Nov 2026 22:45:00 +0800
 
