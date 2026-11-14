@@ -1,0 +1,15 @@
+[Unit]
+Description=Record tablet charging contract changes
+
+[Service]
+ExecStart=/usr/libexec/tablet-charge-sample monitor
+Restart=on-failure
+StateDirectory=tablet-charge
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

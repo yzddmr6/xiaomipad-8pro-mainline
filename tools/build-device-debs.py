@@ -312,17 +312,17 @@ def main():
                 ' deb-systemd-invoke stop piano-debug.service >/dev/null || true\n'
                 ' deb-systemd-helper purge piano-debug.service >/dev/null\n'
                 ' deb-systemd-helper enable piano-slot-success.service '
-                'piano-debug-timeout.service piano-emergency-android.service piano-pen-radio.service tablet-charge-sample.timer >/dev/null\n'
+                'piano-debug-timeout.service piano-emergency-android.service piano-pen-radio.service tablet-charge-sample.timer tablet-charge-events.service >/dev/null\n'
                 # Shipped unit files change between versions (restart policy, dependencies);
                 # the running manager must read them before the next activation.
                 ' if [ -d /run/systemd/system ]; then systemctl --system daemon-reload >/dev/null || true; fi\n'
-                ' if [ -d /run/systemd/system ]; then deb-systemd-invoke start tablet-charge-sample.timer >/dev/null || true; fi\n'
+                ' if [ -d /run/systemd/system ]; then deb-systemd-invoke start tablet-charge-sample.timer tablet-charge-events.service >/dev/null || true; fi\n'
                 'fi\n',
                 prerm='#!/bin/sh\nset -e\nif [ "$1" = remove ]; then\n'
-                      ' deb-systemd-invoke stop piano-emergency-android.service piano-pen-radio.service tablet-charge-sample.timer >/dev/null || true\n'
-                      ' deb-systemd-helper disable piano-emergency-android.service piano-pen-radio.service tablet-charge-sample.timer >/dev/null\nfi\n',
+                      ' deb-systemd-invoke stop piano-emergency-android.service piano-pen-radio.service tablet-charge-sample.timer tablet-charge-events.service >/dev/null || true\n'
+                      ' deb-systemd-helper disable piano-emergency-android.service piano-pen-radio.service tablet-charge-sample.timer tablet-charge-events.service >/dev/null\nfi\n',
                 postrm='#!/bin/sh\nset -e\nif [ "$1" = purge ]; then\n'
-                       ' deb-systemd-helper purge piano-emergency-android.service piano-pen-radio.service tablet-charge-sample.timer >/dev/null\nfi\n',
+                       ' deb-systemd-helper purge piano-emergency-android.service piano-pen-radio.service tablet-charge-sample.timer tablet-charge-events.service >/dev/null\nfi\n',
                 recommends='openssh-server',  # developer mode only; piano-devmode refuses without sshd
                 third_party=support_third_party,
                 conffiles=['/etc/security/limits.d/90-piano-gunyah.conf', '/etc/dracut.conf.d/91-piano-gunyah.conf'],
