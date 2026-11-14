@@ -42,7 +42,7 @@ def path_details(device, source, fields, usb):
             if value('hv_pps'):
                 return 'PPS', 9000, None
             if kind in (5, 6, 7, 8):
-                return 'QC', 9000, None
+                return 'QC', None, None
             return 'PD', 9000, None
         if kind in (10, 11, 12):
             return 'PD', None, None
@@ -53,10 +53,12 @@ def path_details(device, source, fields, usb):
             return 'SUPERVOOC', None, None
         if protocol in ('ufcs', 'pps') and fields.get('state') in ('ramp', 'charging', 'taper'):
             return protocol.upper(), mv, ma
-        fixed = value('fixed_pd_mv') or value('qc_mv')
+        if value('qc_mv'):
+            return 'QC', None, None
+        fixed = value('fixed_pd_mv')
         if fixed:
             limit = value('fixed_icl_ua')
-            return (f'PD {fixed / 1000:g} V' if value('fixed_pd_mv') else 'QC',
+            return (f'PD {fixed / 1000:g} V',
                     fixed, limit / 1000 if limit else None)
     active = re.search(r'\[([^]]+)\]', usb or '')
     usb = active[1] if active else usb
@@ -80,6 +82,12 @@ def snapshot(root, device, show_offline):
     except OSError:
         pass
     if online or show_offline:
+        wake_name = 'xiaomi-mca-charge' if device == 'piano' else 'qcom-battmgr-charge'
+        for name in (root / 'class/wakeup').glob('*/name'):
+            if read(name) == wake_name:
+                active = read(name.with_name('active_time_ms'), int)
+                row['awake'] = active > 0 if active is not None else None
+                break
         uv = read(source / 'voltage_now', int) if online else None
         ua = read(source / 'current_now', int) if online else None
         cells = []

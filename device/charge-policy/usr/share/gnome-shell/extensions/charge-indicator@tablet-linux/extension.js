@@ -12,8 +12,26 @@ import {exitReason} from './reasons.js';
 const dash = '—';
 const chinese = /^zh([_.@-]|$)/i.test(GLib.get_language_names()[0]);
 const tr = (en, zh) => chinese ? zh : en;
-const format = (value, unit, digits = 1) => Number.isFinite(value)
-    ? `${Number(value.toFixed(digits)).toLocaleString()} ${unit}` : dash;
+function format(value, unit, digits = 0, minimum = digits) {
+    if (!Number.isFinite(value))
+        return dash;
+    const number = value.toLocaleString(undefined, {
+        minimumFractionDigits: minimum,
+        maximumFractionDigits: digits,
+    });
+    return `${number} ${unit}`;
+}
+
+function available(...parts) {
+    return parts.filter(part => part !== dash).join(' · ') || dash;
+}
+
+function timeToFull(minutes) {
+    const unit = tr('min', '分钟');
+    if (!Number.isFinite(minutes) || minutes <= 60)
+        return format(minutes, unit);
+    return `${format(Math.floor(minutes / 60), tr('h', '小时'))} ${format(minutes % 60, unit)}`;
+}
 
 export default class ChargeIndicator extends Extension {
     enable() {
@@ -28,6 +46,7 @@ export default class ChargeIndicator extends Extension {
             this._rows[key] = new St.Label({text: dash});
             item.add_child(this._rows[key]);
             this._button.menu.addMenuItem(item);
+            return item;
         };
         row('input', tr('Charger input', '充电器输入'));
         row('battery', tr('Net battery power', '电池净功率'));
@@ -39,6 +58,8 @@ export default class ChargeIndicator extends Extension {
         row('request', tr('Requested', '请求电压和电流'));
         row('exits', tr('Exits this connection', '本次快充退出'));
         row('reason', tr('Last exit', '上次退出原因'));
+        this._awakeRow = row('awake', tr('Staying awake to keep charging', '保持唤醒以继续快充'));
+        this._awakeRow.hide();
         this._rows.reason.clutter_text.line_wrap = true;
         this._rows.reason.style = 'max-width: 22em;';
         this._button.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
@@ -155,24 +176,26 @@ export default class ChargeIndicator extends Extension {
             this._button.hide();
             return;
         }
-        const net = format(s.watts, 'W');
+        const net = format(s.watts, 'W', 1, 0);
         const path = s.online ? s.path ?? dash : tr('Battery', '电池供电');
         const down = s.watts < 0;
-        this._label.text = `${down ? '↘' : '⚡'} ${net} · ${path}`;
+        this._label.text = `${down ? '↘' : '⚡'} ${available(net, path)}`;
         this._label.style = down ? 'color: #ffbe6f;' : null;
         this._button.accessible_name = this._label.text;
         const rows = this._rows;
         const inputPower = s.volts != null && s.amps != null ? s.volts * s.amps : null;
-        rows.input.text = [format(s.volts, 'V', 2), format(s.amps, 'A', 2), format(inputPower, 'W')].join(' · ');
+        rows.input.text = available(format(s.volts, 'V', 1), format(s.amps, 'A', 2), format(inputPower, 'W'));
         rows.battery.text = net;
-        rows.cells.text = s.cells.map(c => format(c.volts, 'V', 3)).join(' / ');
-        rows.temperature.text = s.cells.map(c => format(c.temp, '°C')).join(' / ');
-        rows.eta.text = format(s.minutes, tr('min', '分钟'), 0);
+        rows.cells.text = s.cells.map(c => format(c.volts, 'V', 2)).join(' / ');
+        rows.temperature.text = s.cells.map(c => format(c.temp, '°C', 1)).join(' / ');
+        rows.eta.text = timeToFull(s.minutes);
         rows.path.text = path;
-        rows.request.text = [format(s.request_v, 'V', 2), format(s.request_a, 'A', 2)].join(' · ');
+        rows.request.text = available(format(s.request_v, 'V', 2, 0), format(s.request_a, 'A', 2, 0));
         rows.exits.text = s.online && Number.isFinite(count) ? String(count) : dash;
         rows.reason.text = s.online && (s.reason || s.secondary) && this._lastReason
             ? exitReason(this._lastReason, chinese) : dash;
+        this._awakeRow.visible = Object.hasOwn(s, 'awake');
+        rows.awake.text = s.awake == null ? dash : s.awake ? tr('Yes', '是') : tr('No', '否');
         this._button.show();
     }
 
@@ -183,6 +206,6 @@ export default class ChargeIndicator extends Extension {
         Gio.DBus.session.signal_unsubscribe(this._displaySignal);
         Gio.DBus.system.signal_unsubscribe(this._powerSignal);
         this._button.destroy();
-        this._button = this._label = this._rows = this._settings = null;
+        this._button = this._label = this._awakeRow = this._rows = this._settings = null;
     }
 }
