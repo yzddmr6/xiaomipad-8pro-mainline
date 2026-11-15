@@ -4,6 +4,11 @@
 
 create runs on the build host. upgrade and rollback run on the target and retain
 both package batches and a copy of the previous boot set. They never reboot.
+After a completed upgrade or rollback, and again on request with cleanup, the
+target keeps only what that transaction can still use: its two batches and
+their boot sets, and the kernels they, the running system or a kept boot set
+need. Other batches, boot copies, kernels, packages dropped from the releases
+and orphaned kernel files are removed after the plan is written to cleanup.json.
 """
 import argparse
 import contextlib
@@ -11,12 +16,21 @@ import fcntl
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+
+
+KERNEL_PACKAGES = ('linux-image-', 'linux-headers-', 'erhai-kernel-image-')
+MODULE_ROOTS = (Path('/usr/lib/modules'), Path('/lib/modules'))
+UNIT_LINKS = Path('/etc/systemd/system')
+KERNEL_RETENTION = Path('/usr/libexec/erhai-kernel-retention')
+BANNER = re.compile(rb'Linux version ([0-9][A-Za-z0-9.+_~-]*) \(')
+UNIT = re.compile(r'[A-Za-z0-9:_.@\\-]+\.(?:service|socket|timer|path|target|mount|automount|swap|slice)')
+APT_PURGE = ['apt-get', '-o', 'APT::Get::AutomaticRemove=false', 'purge']
 
 
 def run(args, **kw):
@@ -242,6 +256,326 @@ def switch_boot(product, directory):
     run(command)
 
 
+def kernel_release(package):
+    """Release in a kernel package name such as linux-image-7.4.0-rc2-piano98."""
+    for prefix in KERNEL_PACKAGES:
+        if package.startswith(prefix) and package[len(prefix):][:1].isdigit():
+            return package[len(prefix):]
+    return None
+
+
+def boot_release(directory):
+    """Kernel release a saved boot set starts: its identity record, else the boot.img banner."""
+    for name in ('kernel.json', 'manifest.json', 'meta.json'):
+        try:
+            record = json.loads((directory / name).read_text())
+        except (OSError, ValueError):
+            continue
+        if isinstance(record, dict):
+            if isinstance(record.get('kernel_release'), str) and record['kernel_release']:
+                return record['kernel_release']
+            # Older OnePlus installers recorded only the payload path.
+            legacy = re.fullmatch(r'/usr/lib/erhai/boot/([a-z0-9.+-]{1,64})', str(record.get('source', '')))
+            if legacy:
+                return legacy[1]
+    try:
+        match = BANNER.search((directory / 'boot.img').read_bytes())
+    except OSError:
+        return None
+    return match[1].decode() if match else None
+
+
+def size(path):
+    try:
+        if path.is_dir() and not path.is_symlink():
+            return sum(os.lstat(os.path.join(d, f)).st_size for d, _, files in os.walk(path) for f in files)
+        return path.lstat().st_size
+    except OSError:
+        return 0
+
+
+def remove(path):
+    if path.is_dir() and not path.is_symlink():
+        shutil.rmtree(path)
+    elif path.exists() or path.is_symlink():
+        path.unlink()
+
+
+def relation_names(field):
+    return {re.split(r'[\s(:\[]', choice.strip(), maxsplit=1)[0]
+            for part in field.split(',') for choice in part.split('|') if choice.strip()}
+
+
+def package_states():
+    """Every package dpkg knows: its state, dependencies and the packages it replaces."""
+    text = subprocess.check_output(['dpkg-query', '-W', '-f=${db:Status-Abbrev}\t${Package}\t'
+                                    '${Depends}, ${Pre-Depends}\t${Conflicts}, ${Breaks}, ${Replaces}\n'], text=True)
+    rows = {}
+    for line in text.splitlines():
+        status, name, depends, replaced = line.split('\t')
+        rows[name] = dict(status=status.strip(), depends=relation_names(depends),
+                          replaced=relation_names(replaced))
+    return rows
+
+
+def owners(paths):
+    """Packages whose file lists name each path exactly."""
+    found = {str(p): set() for p in paths}
+    if found:
+        result = subprocess.run(['dpkg-query', '-S', *found], capture_output=True, text=True)
+        if result.returncode > 1:  # 1 only means that some paths have no owner
+            raise subprocess.CalledProcessError(result.returncode, 'dpkg-query -S', result.stdout, result.stderr)
+        for line in result.stdout.splitlines():
+            names, separator, path = line.partition(': ')
+            if separator and path in found and not line.startswith('diversion '):
+                found[path] |= {n.strip().split(':')[0] for n in names.split(',')}
+    return found
+
+
+def changed_conffiles(package):
+    """Configuration files of package that the administrator changed; purging would delete them."""
+    text = subprocess.run(['dpkg-query', '-W', '-f=${Conffiles}\n', package],
+                          capture_output=True, text=True).stdout
+    changed = []
+    for line in text.splitlines():
+        words = line.split()
+        while words and words[-1] in ('obsolete', 'remove-on-upgrade'):
+            words.pop()
+        if len(words) < 2 or not words[0].startswith('/') or words[-1] == 'newconffile':
+            continue
+        path = Path(' '.join(words[:-1]))
+        try:
+            if hashlib.md5(path.read_bytes(), usedforsecurity=False).hexdigest() != words[-1]:
+                changed.append(str(path))
+        except OSError:
+            pass  # already deleted by the administrator: purging cannot remove it
+    return changed
+
+
+def unit_names(package):
+    """systemd units a package ships or purges, including those of removed packages."""
+    listed = subprocess.run(['dpkg-query', '-L', package], capture_output=True, text=True).stdout
+    names = {PurePosixPath(p).name for p in listed.splitlines()
+             if '/systemd/system/' in p and UNIT.fullmatch(PurePosixPath(p).name)}
+    script = subprocess.run(['dpkg-query', '--control-path', package, 'postrm'],
+                            capture_output=True, text=True).stdout.strip()
+    if script:
+        with contextlib.suppress(OSError):
+            for line in Path(script).read_text(errors='replace').splitlines():
+                if 'deb-systemd-helper' in line:
+                    names |= set(UNIT.findall(line))
+    return names
+
+
+def dangling_links(names):
+    """Enable links under /etc/systemd/system whose unit is gone and was named by a purged package."""
+    links = []
+    for directory, subdirectories, files in os.walk(UNIT_LINKS):
+        for name in subdirectories + files:
+            path = Path(directory, name)
+            if path.is_symlink() and not path.exists() and (
+                    name in names or PurePosixPath(os.readlink(path)).name in names):
+                links.append(path)
+    return sorted(links)
+
+
+def simulate(packages):
+    """Names APT would remove when purging packages, or why it would not just do that."""
+    result = subprocess.run([APT_PURGE[0], '-s', *APT_PURGE[1:], *sorted(packages)],
+                            capture_output=True, text=True, env=dict(os.environ, LC_ALL='C'))
+    if result.returncode:
+        return None, (result.stderr.strip().splitlines() or ['APT simulation failed'])[-1]
+    installs = re.findall(r'^Inst (\S+)', result.stdout, re.M)
+    if installs:
+        return None, 'APT would install ' + ', '.join(sorted(installs))
+    return {n.split(':')[0] for n in re.findall(r'^(?:Purg|Remv) (\S+)', result.stdout, re.M)}, None
+
+
+def purgeable(candidates):
+    """The candidates APT purges without removing anything else, and why the rest stay."""
+    wanted = set(candidates)
+    if not wanted or simulate(wanted)[0] == wanted:
+        return wanted, {}
+    good, refused = set(), {}
+    # Removal propagates to dependants, so a candidate whose own purge stays
+    # within the candidates can only pull in other such candidates.
+    for name in sorted(wanted):
+        removed, reason = simulate({name})
+        if removed is None or name not in removed:
+            refused[name] = reason or 'APT would not purge it'
+        elif removed - wanted:
+            refused[name] = 'APT would also remove ' + ', '.join(sorted(removed - wanted))
+        else:
+            good.add(name)
+    if good and simulate(good)[0] != good:
+        refused.update(dict.fromkeys(good, 'APT would not purge exactly these packages together'))
+        good = set()
+    return good, refused
+
+
+def cleanup(product, store, state, manifests=None):
+    """Remove what neither the recorded transaction nor the running system still needs.
+
+    The plan is computed completely and written to cleanup.json before the first
+    removal. Every step is idempotent; a rerun plans afresh from what is left.
+    """
+    if state.get('phase') not in ('upgraded', 'rolled-back'):
+        raise ValueError('cleanup needs a completed upgrade or rollback; the transaction is '
+                         + str(state.get('phase')))
+    ids = (state['to'], state['previous'])
+    lost = [i for i in ids if not (manifests or {}).get(i) and not (store / i).is_dir()]
+    if lost:
+        raise ValueError('the recorded transaction batch ' + ' and '.join(lost) + ' is missing; nothing removed; '
+                         'the next whole-release upgrade records a new transaction')
+    manifests = {i: (manifests or {}).get(i) or verify(store / i) for i in ids}
+    names = {x['package'] for m in manifests.values() for x in m['packages']}
+    boot = Path(state['boot'])
+    sets = {prefix + i for i in ids for prefix in ('boot-', 'boot-before-')}
+    keep = {*ids, *sets, '.lock', 'transaction.json', 'cleanup.json'} | ({boot.name} if boot.parent == store else set())
+    plan, skipped, dropped = [], [], {}
+    for entry in sorted(store.iterdir()):
+        if entry.name in keep:
+            continue
+        reason = 'not ' + ' or '.join(ids)
+        if entry.name.startswith('boot-'):
+            reason = 'boot set copy of a batch ' + reason
+        elif entry.is_dir() and not entry.is_symlink() and (entry / 'manifest.json').exists():
+            try:
+                dropped[entry.name] = {x['package'] for x in read_json(entry / 'manifest.json')['packages']}
+            except (OSError, ValueError, KeyError, TypeError):
+                dropped[entry.name] = set()
+                reason += '; its manifest has no package list'
+            reason = 'release batch ' + reason
+        else:
+            reason = 'interrupted copy or temporary file'
+        plan.append(dict(kind='store', path=str(entry), bytes=size(entry), reason=reason))
+
+    rows = package_states()
+    present = {n for n, r in rows.items() if r['status'] in ('ii', 'rc')}
+    config_only = {n for n, r in rows.items() if r['status'] == 'rc'}
+    running = os.uname().release
+    roots = []
+    for root in MODULE_ROOTS:
+        if root.is_dir() and all(root.resolve() != r.resolve() for r in roots):
+            roots.append(root)
+    releases = {p.name for root in roots for p in root.iterdir()
+                if p.is_dir() and not p.is_symlink() and not p.name.startswith('.')}
+    named = {}
+    for n in present:
+        if kernel_release(n):
+            named.setdefault(kernel_release(n), set()).add(n)
+    initrds = {p.name[len('initrd.img-'):]: p for p in Path('/boot').glob('initrd.img-*')
+               if p.is_file() and not p.is_symlink()}
+    releases |= named.keys() | initrds.keys()
+    found = owners([root / r for root in MODULE_ROOTS for r in releases])
+    owned = {r: (set().union(*(found[str(root / r)] for root in MODULE_ROOTS)) | named.get(r, set())) & present
+             for r in releases}
+    kernels = {running} | {r for r in releases if owned[r] & names} | ({kernel_release(n) for n in names} - {None})
+    switch = Path('/var/lib') / product / 'switch'
+    unknown = []
+    for directory in [store / n for n in sorted(sets)] + [boot, switch / 'ubuntu', switch / 'ubuntu.prev']:
+        if directory.is_dir():
+            release = boot_release(directory)
+            if release:
+                kernels.add(release)
+            else:
+                unknown.append(str(directory))
+    protected = set().union(*(owned.get(r, set()) for r in (releases if unknown else kernels)))
+    if unknown:
+        skipped.append(dict(kind='kernels', reason='all kept: no kernel release recorded in ' + ', '.join(unknown)))
+
+    reasons = {}
+    for r in sorted(releases - kernels):
+        for n in sorted(owned[r] - protected):
+            reasons[n] = f'kernel {r}: not running, in neither batch and started by no kept boot set'
+    for batch, members in sorted(dropped.items()):
+        for n in sorted((members & present) - names - protected):
+            reasons.setdefault(n, 'only in removed batch ' + batch)
+    sources = {n for n in names if rows.get(n, {}).get('status') == 'ii'}
+    sources |= {d for n in sources for d in rows[n]['depends'] if rows.get(d, {}).get('status') == 'ii'}
+    for s in sorted(sources):
+        for n in sorted((rows[s]['replaced'] & config_only) - names - protected):
+            reasons.setdefault(n, 'configuration left after ' + s + ' replaced it')
+    for n in sorted(reasons):
+        changed = changed_conffiles(n)
+        if changed:
+            skipped.append(dict(kind='package', package=n,
+                                reason=reasons.pop(n) + '; kept for its changed ' + ', '.join(changed)))
+    good, refused = purgeable(reasons)
+    skipped += [dict(kind='package', package=n, reason=reasons[n] + '; kept: ' + refused[n]) for n in sorted(refused)]
+    plan += [dict(kind='package', package=n, reason=reasons[n]) for n in sorted(good)]
+    units = set().union(*(unit_names(n) for n in good))
+
+    for r in [] if unknown else sorted(releases - kernels):
+        paths = [root / r for root in roots if (root / r).is_dir()] + ([initrds[r]] if r in initrds else [])
+        staying = sorted((owned[r] - good) - config_only)
+        if staying and paths:
+            skipped.append(dict(kind='kernel files', paths=list(map(str, paths)),
+                                reason=f'kernel {r} stays installed: ' + ', '.join(staying)))
+        elif paths:
+            plan += [dict(kind='kernel files', release=r, path=str(p), bytes=size(p),
+                          reason=f'kernel {r} is not kept and no remaining package owns it') for p in paths]
+    for directory in sorted((Path('/var/lib') / product).glob('rollback-*')):
+        named_release = directory.name[len('rollback-'):]
+        started = boot_release(directory)
+        if directory.is_dir() and not directory.is_symlink() and not {named_release, started} & kernels:
+            plan.append(dict(kind='rollback copy', path=str(directory), bytes=size(directory),
+                             reason=f'manual boot set copy for kernel {started or named_release}, which is not kept'))
+    plan += [dict(kind='unit link', path=str(p), reason='enable link to a unit of a purged package')
+             for p in dangling_links(units)]
+
+    record = store / 'cleanup.json'
+    try:
+        runs = read_json(record)['runs']
+    except (OSError, ValueError, KeyError, TypeError):
+        runs = []
+    entry = dict(product=product, transaction={k: state[k] for k in ('to', 'previous', 'boot', 'phase')},
+                 running_kernel=running, kept=dict(batches=list(ids), kernels=sorted(kernels)),
+                 remove=plan, skipped=skipped, status='planned')
+    # A rerun that finds nothing new keeps the record of the run that removed things.
+    write = bool(plan) or not runs or runs[-1].get('skipped') != skipped
+    if write:
+        runs = runs[-19:] + [entry]
+        atomic_json(record, dict(schema=1, runs=runs))
+    try:
+        if good:
+            run([APT_PURGE[0], '-y', *APT_PURGE[1:], *sorted(good)],
+                env=dict(os.environ, DEBIAN_FRONTEND='noninteractive'))
+        listed = {x['path'] for x in plan if x['kind'] == 'unit link'}
+        for link in dangling_links(units):
+            if str(link) not in listed:
+                plan.append(dict(kind='unit link', path=str(link), reason='enable link to a unit of a purged package'))
+            link.unlink()
+        left = [x for x in plan if x['kind'] == 'kernel files' and Path(x['path']).exists()]
+        installed_now = installed().keys()
+        found = owners([root / x['release'] for x in left for root in MODULE_ROOTS])
+        for item in left:
+            r = item['release']
+            users = set().union(*(found[str(root / r)] for root in MODULE_ROOTS)) & installed_now
+            users |= {n for n in installed_now if kernel_release(n) == r}
+            if users:
+                item['result'] = 'kept: still owned by ' + ', '.join(sorted(users))
+            else:
+                remove(Path(item['path']))
+        for item in plan:
+            if item['kind'] in ('rollback copy', 'store'):
+                remove(Path(item['path']))
+        if product == 'erhai' and os.access(KERNEL_RETENTION, os.X_OK):
+            # Regenerate APT's kernel protection from the kernels now selected.
+            run([str(KERNEL_RETENTION), running])
+    except (OSError, subprocess.CalledProcessError) as error:
+        entry['status'] = 'failed: ' + str(error)
+        if write:
+            atomic_json(record, dict(schema=1, runs=runs))
+        raise
+    entry['status'] = 'done'
+    if write:
+        atomic_json(record, dict(schema=1, runs=runs))
+    removed = [x for x in plan if 'result' not in x]
+    return dict(cleanup=entry['status'], removed=len(removed), skipped=len(skipped),
+                freed_bytes=sum(x.get('bytes', 0) for x in removed), record=str(record))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest='action', required=True)
@@ -255,6 +589,8 @@ def main():
     p = sub.add_parser('upgrade'); p.add_argument('repository', type=Path)
     p.add_argument('--previous', type=Path, required=True)
     p = sub.add_parser('rollback'); p.add_argument('--product', choices=('piano', 'erhai'), required=True)
+    p = sub.add_parser('cleanup', help='remove what earlier releases left behind (also run by upgrade and rollback)')
+    p.add_argument('--product', choices=('piano', 'erhai'), required=True)
     a = ap.parse_args()
     if a.action == 'create':
         a.output.mkdir(parents=True, exist_ok=False); (a.output / 'pool').mkdir()
@@ -304,6 +640,11 @@ def main():
             else:
                 shutil.copytree(Path('/var/lib') / product / 'switch/ubuntu', new_boot)
             state['phase'] = 'upgraded'; atomic_json(state_path, state)
+            manifests = {m['id']: m, old['id']: old}
+        elif a.action == 'cleanup':
+            if not state_path.exists():
+                raise ValueError('no release transaction on this system; nothing to clean up after')
+            state = read_json(state_path); manifests = None
         else:
             state = read_json(state_path)
             already_rolled_back = state['phase'] == 'rolled-back'
@@ -317,14 +658,22 @@ def main():
             targets = [f'{n}={rows[n]["version"]}' for n in sorted(selected)]
             targets += [x['package'] + '-' for x in newer['packages']
                         if x['package'] in current and x['package'] not in rows
-                        and not x['package'].startswith(('linux-image-', 'linux-headers-', 'erhai-kernel-image-'))]
+                        and not x['package'].startswith(KERNEL_PACKAGES)]
             activate(repo, product)
             solve_and_install(targets, product)
             state['phase'] = 'userspace-restored'; atomic_json(state_path, state)
             if not already_rolled_back:
                 switch_boot(product, state['boot'])
             state['phase'] = 'rolled-back'; atomic_json(state_path, state)
+            manifests = {old['id']: old, newer['id']: newer}
         print(json.dumps(state, indent=2))
+        try:
+            print(json.dumps(cleanup(product, store, state, manifests), indent=2))
+        except (ValueError, OSError, subprocess.CalledProcessError) as error:
+            if a.action == 'cleanup':
+                raise
+            raise ValueError(f'the {a.action} is complete, but removing what earlier releases left failed: '
+                             f'{error}; after fixing it, run: install.py cleanup --product {product}') from error
 
 if __name__ == '__main__':
     try:
