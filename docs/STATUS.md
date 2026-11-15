@@ -1,6 +1,6 @@
 # Release history and current support
 
-Current release: **v1.4.0**. See the [README](../README.en.md#hardware-support) or
+Current release: **v1.4.1**. See the [README](../README.en.md#hardware-support) or
 [中文 README](../README.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
@@ -38,6 +38,12 @@ verified on this unit; later versions were tested on the installed system. These
 results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
+
+### v1.4.1
+
+整组升级或回退完成后，自动清掉旧的发布批次、旧内核、旧启动镜像备份和不再使用的旧包，只保留当前版本和用于回退的上一版。GunyahVM 升到 1.3.0，可以在平板上直接从 Apple 的服务器创建 macOS 虚拟机。任一颗电量计报告电芯内短路或超出安全工作区时，按原厂把充电电流降到八成；充电口检测到液体时保持 5 V、不进电荷泵，干了以后自动恢复快充。
+
+After a full upgrade or a rollback, old release batches, old kernels, old boot image backups and packages that are no longer used are removed automatically; only the current version and the previous one kept for rollback remain. GunyahVM 1.3.0 creates macOS VMs on the tablet directly from Apple's servers. When either fuel gauge reports an internal short or a safe-operating-area alert, charging current drops to 80 %, as the stock firmware does; while liquid is detected in the charging port, charging stays at 5 V without the charge pump, and fast charging resumes once the port is dry.
 
 ### v1.4.0
 
