@@ -2,15 +2,15 @@
 
 [English](UPGRADE.en.md) ｜ [项目首页](../README.md) ｜ [全新安装](INSTALL.md) ｜ [切换与恢复](FLASHING.md)
 
-本页说明如何把已经装好的 Ubuntu 升级到新版本的内核和配套软件包，不重装、不动分区、不清数据。
-升级前提：已按 [INSTALL.md](INSTALL.md) 做完最后一步（`/etc/piano` 中有 `boot-profile.json`、`boot-signing.pem` 和 `boot-partitions.json`），能开启开发者模式，电量不低于 40%。
+本页说明如何把已经装好的 Ubuntu 升级到新版本的内核和配套软件包，不重装、不动分区、不清数据。整组升级全程在平板上完成，不需要电脑，步骤见[整组升级（只用平板）](#整组升级只用平板)；各版本的注意事项在下面对应的小节。
+升级前提：已按 [INSTALL.md](INSTALL.md) 做完最后一步（`/etc/piano` 中有 `boot-profile.json`、`boot-signing.pem` 和 `boot-partitions.json`）。
 
-发布附件里的 `piano-ubuntu-<版本>-packages.zip` 就是升级包：解压后 `debs/` 下是该版本安装在镜像里的全部项目软件包。总是整组一起安装，不要只装其中一个。
+发布附件里的 `piano-ubuntu-v<版本>-packages.zip` 是新版本的完整软件包批次，`piano-ubuntu-v<版本>-rollback.zip` 是供整版回退的上一版批次。总是用升级工具整组安装，不要只装其中一个包。
 
 
 ## v1.4.0 → v1.4.1
 
-从 v1.4.0 升级，解压软件包和回退附件，整组升级时使用 `piano-1.4.1` 和 `--previous piano-1.4.0-rollback-1.4.1`。升级前关闭虚拟机，完成后重启。
+从 v1.4.0 升级：按[整组升级（只用平板）](#整组升级只用平板)在平板上下载并解压软件包和回退两个附件，整组升级时使用 `piano-1.4.1` 和 `--previous piano-1.4.0-rollback-1.4.1`。升级前关闭虚拟机，完成后重启。
 
 从 1.4.1 起，整组升级成功或整版回退完成后，工具自动清掉不再需要的东西：旧批次、启动镜像副本、旧内核及其模块，以及版本里已经去掉的项目包；只留本次升级的新旧两批、它们的启动镜像组，以及正在运行或回退要用的内核。以前按本页手工保存的 `/var/lib/piano/rollback-<内核版本>` 副本，对应内核不再保留的也一并删掉。个人文件、Waydroid、虚拟机和改过的配置文件不受影响，删了什么、为什么删记在 `/var/lib/piano/releases/cleanup.json`。以后需要再清理时，可以先加 `--dry-run` 预览要删的内容和原因（不做任何改动），再正式执行：
 
@@ -204,62 +204,57 @@ sudo apt-mark unhold gnome-settings-daemon gnome-settings-daemon-common gnome-co
 
 本版启用系统待机并恢复 GNOME 默认空闲策略；休眠到磁盘仍关闭。原有个人电源设置不会被覆盖，可在“设置 → 电源”中调整。安装后重启，使新内核、WirePlumber 相机隔离和桌面颜色用户单元一起生效。相机后摄为固定焦距。保留旧内核及其匹配模块供回退。
 
-## 1. 下载并校验
+## 整组升级（只用平板）
 
-在主机上，把发布页的 `piano-ubuntu-<版本>-packages.zip` 和 `SHA256SUMS.assets` 下载到一个空目录：
+以下步骤都在平板上完成。`<版本>` 是要升级到的版本（发布页标题里的版本号，不带 `v`），`<上一版>` 是平板当前的版本。
 
-```bash
-sha256sum -c --ignore-missing SHA256SUMS.assets    # 预期 packages.zip 一行 "OK"
-unzip piano-ubuntu-<版本>-packages.zip               # 得到 debs/
-```
+1. **下载。** 用 Firefox 打开[最新发布页](https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/latest)，下载 `piano-ubuntu-v<版本>-packages.zip`、`piano-ubuntu-v<版本>-rollback.zip` 和 `SHA256SUMS.assets`，默认存到「下载」目录。
 
-## 2. 保留回退
+2. **校验并解压。** 打开「终端」：
 
-升级会把当前启动镜像组换成新内核的，旧组自动保留为 `ubuntu.prev`。主机上按 [FLASHING.md「镜像组」](FLASHING.md#镜像组)保留当前 Ubuntu 镜像组和 Android 镜像组的副本，这是从 Fastboot 恢复的依据。
+   ```sh
+   cd "$(xdg-user-dir DOWNLOAD)"
+   sha256sum -c --ignore-missing SHA256SUMS.assets   # packages 和 rollback 两行都应为 OK
+   unzip -o piano-ubuntu-v<版本>-packages.zip        # 得到 repositories/piano-<版本>
+   unzip -o piano-ubuntu-v<版本>-rollback.zip        # 得到 repositories/piano-<上一版>-rollback-<版本>
+   ```
 
-## 3. 传到平板
+3. **预览清理（可选）。** 从 1.4.1 起，整组升级完成后会自动清掉旧版本留下的批次、内核和启动镜像副本。想先看会删什么、为什么删，可运行下面的命令，它只列出、不做改动；从没做过整组升级的全新安装会提示没有可清理的记录，跳过即可：
 
-在平板终端打开开发者模式，再从主机复制：
+   ```sh
+   sudo /usr/bin/python3 repositories/piano-<版本>/install.py cleanup --product piano --dry-run
+   ```
 
-```bash
-# 平板
-sudo piano-devmode on
-# 主机
-python3 "$REPO/tools/piano-devmode-ssh.py" --serial <SERIAL> --check     # 预期 "... ready"
-scp -r debs <USER>@192.168.88.2:
-```
+4. **整组升级。** 先正常关闭正在运行的虚拟机，再运行：
 
-## 4. 安装
+   ```sh
+   sudo systemd-run --unit=piano-release-upgrade --setenv=DEBIAN_FRONTEND=noninteractive \
+     /usr/bin/python3 "$PWD/repositories/piano-<版本>/install.py" upgrade \
+     "$PWD/repositories/piano-<版本>" --previous "$PWD/repositories/piano-<上一版>-rollback-<版本>"
+   journalctl -f -u piano-release-upgrade   # 出现 "Deactivated successfully" 后按 Ctrl+C
+   sudo dpkg --audit                        # 应无输出
+   ```
 
-用临时单元运行安装，SSH 断开也不会中止；内核包的安装会重建 initrd，约 10 分钟。
+   升级在独立的系统单元里运行，关掉终端也不会中断。若中途失败，先运行 `sudo dpkg --configure -a`，再重跑同一条升级命令。
 
-```bash
-sudo apt update
-sudo systemd-run --unit=piano-upgrade --setenv=DEBIAN_FRONTEND=noninteractive \
-  apt-get install -y /home/<USER>/debs/*.deb
-journalctl -f -u piano-upgrade
-# 预期 "Piano boot image set prepared for <新版本内核>" 和 "Slot A now holds store/ubuntu"，
-# 最后 "piano-upgrade.service: Deactivated successfully."
-sudo dpkg --audit                          # 预期无输出
-sudo piano-boot-switch verify              # 预期退出码 0
-```
+5. **重启并核对。**
 
-## 5. 重启并核对
+   ```sh
+   sudo reboot
+   ```
 
-```bash
-sudo systemctl reboot
-```
+   重新登录后：
 
-重新登录后：
+   ```sh
+   uname -r                                 # 应为新版本的内核
+   sudo piano-boot-switch status            # 应为 "occupant": "ubuntu"
+   ```
 
-```bash
-uname -r                                   # 预期新版本的内核
-sudo piano-boot-switch status              # 预期 "occupant": "ubuntu"
-sudo piano-slot-success --check            # 预期 "state": "already-successful"
-sudo piano-devmode off                     # 不再需要主机连接时关闭
-```
+   升级工具已在 `/var/lib/piano/releases/` 保留回退要用的新旧两批，确认正常后可以删掉「下载」目录里的附件和解压出的 `repositories/`、`debs/`、`optional/`。
 
-旧内核包仍然装着，回退镜像组用得到它；确认新版本正常使用一段时间后，可用 `sudo apt purge linux-image-<旧版本>` 清理。
+### 用电脑传输（可选）
+
+也可以在电脑上下载并校验同样三个文件，再经开发者模式传到平板：平板终端运行 `sudo piano-devmode on`，电脑上运行 `scp piano-ubuntu-v<版本>-packages.zip piano-ubuntu-v<版本>-rollback.zip SHA256SUMS.assets <USER>@192.168.88.2:`，然后在平板终端（或经 `ssh <USER>@192.168.88.2`）的家目录里从第 2 步继续，`cd` 改为 `cd ~`。不再需要时运行 `sudo piano-devmode off`。
 
 ## 回退
 
@@ -268,7 +263,7 @@ sudo piano-devmode off                     # 不再需要主机连接时关闭
   sudo piano-boot-switch import-ubuntu --from /var/lib/piano/switch/ubuntu.prev   # 预期 "result": "imported"
   sudo piano-boot-switch to-ubuntu --reboot                                      # 写回旧组并重启
   ```
-- **系统进不去：** 长按电源 + 音量下进入 Fastboot，用主机上保存的旧 Ubuntu 镜像组写回：
+- **系统进不去：** 需要电脑。长按电源 + 音量下进入 Fastboot，用事先按 [FLASHING.md「镜像组」](FLASHING.md#镜像组)保存到电脑上的旧 Ubuntu 镜像组写回：
   ```bash
   python3 "$REPO/tools/piano-switch.py" --serial <SERIAL> --images <旧 ubuntu 镜像组> --rollback <android-set>
   fastboot -s <SERIAL> reboot

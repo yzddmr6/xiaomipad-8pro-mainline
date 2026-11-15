@@ -3,18 +3,20 @@
 [中文](UPGRADE.md) ｜ [Project home](../README.en.md) ｜ [Fresh installation](INSTALL.en.md) ｜ [Switching and recovery](FLASHING.en.md)
 
 This page upgrades an installed Ubuntu to a new release's kernel and device packages without
-reinstalling, repartitioning or erasing data. Prerequisites: the final step of
+reinstalling, repartitioning or erasing data. The whole-release upgrade runs entirely on the
+tablet, no computer needed; the steps are in [Whole-release upgrade (tablet only)](#whole-release-upgrade-tablet-only),
+and the notes for each release are in the sections below. Prerequisite: the final step of
 [INSTALL.en.md](INSTALL.en.md) is done (`/etc/piano` holds `boot-profile.json`, `boot-signing.pem` and
-`boot-partitions.json`), developer mode can be enabled, and the battery is at 40 % or more.
+`boot-partitions.json`).
 
-The release asset `piano-ubuntu-<version>-packages.zip` is the upgrade package: its `debs/`
-directory holds every project package installed in that release's image. Always install the
-whole set together, never a single package.
+The release asset `piano-ubuntu-v<version>-packages.zip` is the new release's complete package
+batch, and `piano-ubuntu-v<version>-rollback.zip` is the previous batch kept for a whole-release
+rollback. Always install the whole set with the upgrade tool, never a single package.
 
 
 ## v1.4.0 → v1.4.1
 
-To upgrade from v1.4.0, extract the package and rollback repositories. Select `piano-1.4.1` with `--previous piano-1.4.0-rollback-1.4.1` for the whole-release upgrade. Shut down virtual machines before upgrading and reboot afterwards.
+To upgrade from v1.4.0, download and extract the package and rollback attachments on the tablet as in [Whole-release upgrade (tablet only)](#whole-release-upgrade-tablet-only). Select `piano-1.4.1` with `--previous piano-1.4.0-rollback-1.4.1` for the whole-release upgrade. Shut down virtual machines before upgrading and reboot afterwards.
 
 From 1.4.1, a successful whole-release upgrade or a completed rollback removes what is no longer needed: earlier batches, boot image copies, old kernels and their modules, and project packages dropped from the releases. It keeps the two batches of this upgrade, their boot sets, and the kernels that are running or needed for rollback. Copies saved by hand as `/var/lib/piano/rollback-<kernel version>` are removed when their kernel is no longer kept. Personal files, Waydroid, virtual machines and changed configuration files are not affected; `/var/lib/piano/releases/cleanup.json` records what was removed and why. To clean up again later, preview the plan with `--dry-run`, which lists what would be removed and why without changing anything, then run it:
 
@@ -217,67 +219,70 @@ Install the complete v0.3.0 `packages.zip` together: kernel, device support and 
 
 System suspend and GNOME's default idle policy are now enabled; disk hibernation remains disabled. Existing personal power settings are preserved and can be changed in Settings → Power. Reboot after installation to activate the new kernel, WirePlumber camera isolation and session color-profile unit. Rear focus is fixed. Keep the previous kernel and matching modules for rollback.
 
-## 1. Download and verify
+## Whole-release upgrade (tablet only)
 
-On the host, download `piano-ubuntu-<version>-packages.zip` and `SHA256SUMS.assets` from the
-release page into an empty directory:
+Every step runs on the tablet. `<version>` is the release you upgrade to (the version in the
+release title, without the `v`), and `<previous>` is the version the tablet runs now.
 
-```bash
-sha256sum -c --ignore-missing SHA256SUMS.assets    # expect one "OK" line for packages.zip
-unzip piano-ubuntu-<version>-packages.zip            # yields debs/
-```
+1. **Download.** Open the [latest release](https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/latest)
+   in Firefox and download `piano-ubuntu-v<version>-packages.zip`, `piano-ubuntu-v<version>-rollback.zip`
+   and `SHA256SUMS.assets`. They are saved to the Downloads folder.
 
-## 2. Keep a rollback
+2. **Verify and extract.** Open Terminal:
 
-The upgrade replaces the current boot set with one for the new kernel; the old set is kept
-automatically as `ubuntu.prev`. Keep copies of the current Ubuntu set and the Android set on the host as described in
-[FLASHING.en.md "Image sets"](FLASHING.en.md#image-sets); they are the basis for recovery from Fastboot.
+   ```sh
+   cd "$(xdg-user-dir DOWNLOAD)"
+   sha256sum -c --ignore-missing SHA256SUMS.assets   # both the packages and rollback lines say OK
+   unzip -o piano-ubuntu-v<version>-packages.zip     # yields repositories/piano-<version>
+   unzip -o piano-ubuntu-v<version>-rollback.zip     # yields repositories/piano-<previous>-rollback-<version>
+   ```
 
-## 3. Copy to the tablet
+3. **Preview the cleanup (optional).** From 1.4.1, a completed whole-release upgrade removes the
+   batches, kernels and boot image copies earlier releases left. To see what would be removed and
+   why, run the command below; it only lists and changes nothing. A fresh installation that has
+   never had a whole-release upgrade reports that there is nothing to clean up; skip this step then:
 
-Enable developer mode in a terminal on the tablet, then copy from the host:
+   ```sh
+   sudo /usr/bin/python3 repositories/piano-<version>/install.py cleanup --product piano --dry-run
+   ```
 
-```bash
-# tablet
-sudo piano-devmode on
-# host
-python3 "$REPO/tools/piano-devmode-ssh.py" --serial <SERIAL> --check     # expect "... ready"
-scp -r debs <USER>@192.168.88.2:
-```
+4. **Upgrade.** Shut down running virtual machines, then run:
 
-## 4. Install
+   ```sh
+   sudo systemd-run --unit=piano-release-upgrade --setenv=DEBIAN_FRONTEND=noninteractive \
+     /usr/bin/python3 "$PWD/repositories/piano-<version>/install.py" upgrade \
+     "$PWD/repositories/piano-<version>" --previous "$PWD/repositories/piano-<previous>-rollback-<version>"
+   journalctl -f -u piano-release-upgrade   # press Ctrl+C after "Deactivated successfully"
+   sudo dpkg --audit                        # expect no output
+   ```
 
-Run the installation in a transient unit so that a dropped SSH session cannot abort it; the
-kernel package rebuilds the initrd, which takes about 10 minutes.
+   The upgrade runs in its own system unit, so closing the terminal does not interrupt it. If it
+   fails, run `sudo dpkg --configure -a` and then the same upgrade command again.
 
-```bash
-sudo apt update
-sudo systemd-run --unit=piano-upgrade --setenv=DEBIAN_FRONTEND=noninteractive \
-  apt-get install -y /home/<USER>/debs/*.deb
-journalctl -f -u piano-upgrade
-# expect "Piano boot image set prepared for <new kernel>" and "Slot A now holds store/ubuntu",
-# finally "piano-upgrade.service: Deactivated successfully."
-sudo dpkg --audit                          # expect no output
-sudo piano-boot-switch verify              # expect exit code 0
-```
+5. **Reboot and check.**
 
-## 5. Reboot and check
+   ```sh
+   sudo reboot
+   ```
 
-```bash
-sudo systemctl reboot
-```
+   After logging in again:
 
-After logging in again:
+   ```sh
+   uname -r                                 # expect the new kernel
+   sudo piano-boot-switch status            # expect "occupant": "ubuntu"
+   ```
 
-```bash
-uname -r                                   # expect the new kernel
-sudo piano-boot-switch status              # expect "occupant": "ubuntu"
-sudo piano-slot-success --check            # expect "state": "already-successful"
-sudo piano-devmode off                     # once the host connection is no longer needed
-```
+   The upgrade tool keeps the two batches needed for rollback in `/var/lib/piano/releases/`.
+   Once the new release works, you can delete the attachments and the extracted `repositories/`,
+   `debs/` and `optional/` from the Downloads folder.
 
-The previous kernel package stays installed; the rollback set needs it. Once the new release has
-proven itself, remove it with `sudo apt purge linux-image-<old version>`.
+### Transfer from a computer (optional)
+
+You can also download and verify the same three files on a computer and copy them over developer
+mode: run `sudo piano-devmode on` in a terminal on the tablet, run
+`scp piano-ubuntu-v<version>-packages.zip piano-ubuntu-v<version>-rollback.zip SHA256SUMS.assets <USER>@192.168.88.2:`
+on the computer, then continue from step 2 in the home directory on the tablet (or over
+`ssh <USER>@192.168.88.2`), using `cd ~` instead. Run `sudo piano-devmode off` when you no longer need it.
 
 ## Rollback
 
@@ -287,8 +292,8 @@ proven itself, remove it with `sudo apt purge linux-image-<old version>`.
   sudo piano-boot-switch import-ubuntu --from /var/lib/piano/switch/ubuntu.prev   # expect "result": "imported"
   sudo piano-boot-switch to-ubuntu --reboot                                       # writes the old set back and reboots
   ```
-- **Ubuntu does not boot:** hold Power + Volume Down for Fastboot and write the old Ubuntu set
-  saved on the host:
+- **Ubuntu does not boot:** this needs a computer. Hold Power + Volume Down for Fastboot and write
+  the old Ubuntu set saved on the computer beforehand as in [FLASHING.en.md "Image sets"](FLASHING.en.md#image-sets):
   ```bash
   python3 "$REPO/tools/piano-switch.py" --serial <SERIAL> --images <old ubuntu set> --rollback <android-set>
   fastboot -s <SERIAL> reboot
