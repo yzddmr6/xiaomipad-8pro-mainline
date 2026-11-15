@@ -1,42 +1,18 @@
 {
   "schema": 1,
-  "version": "1.2.0-1",
+  "version": "1.3.0-1",
   "desktop_id": "io.github.yzddmr6.GunyahVM.desktop",
   "packages": [
     {
       "package": "gunyahvm",
-      "version": "1.2.0-1",
+      "version": "1.3.0-1",
       "architecture": "arm64",
-      "file": "gunyahvm_1.2.0-1_arm64.deb",
-      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.2.0/gunyahvm_1.2.0-1_arm64.deb",
-      "sha256": "86492e28110b1e05c659e4b1e2b5c55d122eaf51601c0e3e26dbd0d32b52bbb6"
-    },
-    {
-      "package": "gunyahvm-runtime",
-      "version": "1.2.0-1",
-      "architecture": "arm64",
-      "file": "gunyahvm-runtime_1.2.0-1_arm64.deb",
-      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.2.0/gunyahvm-runtime_1.2.0-1_arm64.deb",
-      "sha256": "ee53a42cf77ce0ef7f8a6e831543514432711f2cd5fd79a27fad2f4d32c5b7e2"
-    },
-    {
-      "package": "gunyahvm-guest-kernel",
-      "version": "1.2.0-1",
-      "architecture": "arm64",
-      "file": "gunyahvm-guest-kernel_1.2.0-1_arm64.deb",
-      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.2.0/gunyahvm-guest-kernel_1.2.0-1_arm64.deb",
-      "sha256": "23f5f7938a720a90ff95eac525eb231b304a96ee4087c5ab7315ffdfd7c5397e"
-    },
-    {
-      "package": "gunyahvm-guest-mesa",
-      "version": "1.2.0-1",
-      "architecture": "arm64",
-      "file": "gunyahvm-guest-mesa_1.2.0-1_arm64.deb",
-      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.2.0/gunyahvm-guest-mesa_1.2.0-1_arm64.deb",
-      "sha256": "c9379b3bb9d9d39c717aab09d51c8030f8de4fb9253641c0903408dd38ce38a3"
+      "file": "gunyahvm_1.3.0-1_arm64.deb",
+      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.3.0/gunyahvm_1.3.0-1_arm64.deb",
+      "sha256": "161606f0883e8ca35abfa271d6bbaf60fc5a984a93145f0529474e08eabf4f1f"
     }
   ],
-  "release_url": "https://github.com/yzddmr6/GunyahVM/releases/tag/v1.2.0",
+  "release_url": "https://github.com/yzddmr6/GunyahVM/releases/tag/v1.3.0",
   "dependencies": [
     {
       "package": "gir1.2-casilda-1.0",
@@ -61,6 +37,14 @@
       "file": "libliftoff0_0.5.0-1.1build1_arm64.deb",
       "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/universe/libl/libliftoff/libliftoff0_0.5.0-1.1build1_arm64.deb",
       "sha256": "7d68b1917cd606ed890f7e2eb39c6243d51339c3862f785388813539c1827868"
+    },
+    {
+      "package": "liblzfse1",
+      "version": "1.0-2",
+      "architecture": "arm64",
+      "file": "liblzfse1_1.0-2_arm64.deb",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261111T000000Z/pool/universe/l/lzfse/liblzfse1_1.0-2_arm64.deb",
+      "sha256": "87406b28062a45fec366d02735ac9a14f1c29caecb6f25a2c46ef5c674eae720"
     },
     {
       "package": "libseat1",

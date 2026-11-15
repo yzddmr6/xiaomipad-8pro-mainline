@@ -568,6 +568,6 @@ components.
 
 Package this release with `package-release-assets.py pack --separate-rollback` to keep the previous complete repository in its own ZIP within the per-attachment size limit.
 
-The GunyahVM 1.2.0 lock covers four application packages, two Casilda packages
-and nine system dependencies. Include all of them in the release repository. Updating the lock requires whole-release upgrade/rollback and application checks, but
+The GunyahVM 1.3.0 lock covers one application package, two Casilda packages
+and ten system dependencies. Include all of them in the release repository. Updating the lock requires whole-release upgrade/rollback and application checks, but
 no Mesa compilation. Keep host Mesa and Snap build outputs separate.

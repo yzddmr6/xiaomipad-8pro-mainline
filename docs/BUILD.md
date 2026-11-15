@@ -451,6 +451,6 @@ CDSP 固件和原厂 DSP 运行文件已随仓库提供，正常构建不需要�
 loopback 模块。根镜像、整版 APT 仓库与附件始终用最终组件重新装配和校验。
 本版使用 `package-release-assets.py pack --separate-rollback` 将上一版完整仓库另存为 rollback ZIP，以满足单附件大小限制。
 
-GunyahVM 1.2.0 的输入锁包含四个应用包、两个 Casilda 包和九个系统依赖。
+GunyahVM 1.3.0 的输入锁包含一个应用包、两个 Casilda 包和十个系统依赖。
 组装时将整组放入发布包池。换版时更新该组的源锁，再重跑整组升级、
 回退及应用门槛，无需重编 Mesa。宿主 Mesa 与 Snap 的构建输出目录分别保留。
