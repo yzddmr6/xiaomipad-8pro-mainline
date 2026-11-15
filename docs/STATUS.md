@@ -51,9 +51,9 @@ Waydroid 图形包支持 Adreno 830 硬件渲染，可从 GNOME 启动 Android �
 
 Waydroid runs Android apps from GNOME with Adreno 830 hardware rendering. With a wired charger connected, locking the tablet or closing the cover turns off the screen. The system stays awake so fast charging can continue until full. It stays awake while the charger remains connected and resumes normal sleep behavior after unplugging. The tablet can suspend when idle on an SDP or CDP computer port; USB developer mode keeps the connection awake. Charging samples are recorded locally.
 
-支持小米 MiPPS、第三方 PPS、QC3 class B 和 QC3.5 电荷泵快充，以及固定 PD 9 V 充电。系统根据电源能力、电芯温度和电压调节电流，接近充满时逐步降流，由 buck 完成恒压收尾。可恢复的供电或温度异常解除后会重新尝试快充。
+支持小米 MiPPS、第三方 PPS、QC3 class B 和 QC3.5 电荷泵快充，以及固定 PD 9 V 充电。系统根据电源能力、电芯温度和电压调节电流，接近充满时逐步降流，由 buck 完成恒压收尾。可恢复的供电或温度异常解除后会重新尝试快充。 原装充电器实测从 45% 充至满电约 38 分钟。
 
-Supports Xiaomi MiPPS, third-party PPS, QC3 class B and QC3.5 charge-pump fast charging, and fixed 9 V USB PD. Charging current follows the supply capability, cell temperature and voltage. Current tapers near full charge and the buck converter finishes the constant-voltage phase. Fast charging resumes after recoverable supply or temperature conditions clear.
+Supports Xiaomi MiPPS, third-party PPS, QC3 class B and QC3.5 charge-pump fast charging, and fixed 9 V USB PD. Charging current follows the supply capability, cell temperature and voltage. Current tapers near full charge and the buck converter finishes the constant-voltage phase. Fast charging resumes after recoverable supply or temperature conditions clear. With the original charger, charging from 45% to full took about 38 minutes in a measured run.
 
 ### v1.3.1
 

@@ -1,8 +1,10 @@
 # Ubuntu for Xiaomi Pad 8 Pro
 
-Native Ubuntu 26.04 LTS with the GNOME desktop on the Xiaomi Pad 8 Pro (codename `piano`, Snapdragon 8 Elite), dual-booting with Android, on a device-adapted kernel based on upstream Linux 7.2. Not a container, not a remote desktop. [中文](README.md)
+Native Ubuntu 26.04 LTS with the GNOME desktop on the Xiaomi Pad 8 Pro (codename `piano`, Snapdragon 8 Elite), dual-booting with Android, on a device-adapted kernel based on upstream Linux. Not a container, not a remote desktop. [中文](README.md)
 
 **Latest release: see [Releases](https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/latest). Official builds are published only in this repository's Releases, free of charge.** What works is in [Hardware Support](#hardware-support).
+
+**Turn your tablet into a touchscreen Linux computer:** run Linux applications on the native GNOME desktop, manage ARM64 virtual machines with the preinstalled GunyahVM, and use Waydroid for Android applications with Adreno GPU acceleration. With the original charger, charging from 45% to full took about 38 minutes in a measured run.
 
 ## 🧭 Our Approach
 
@@ -166,7 +168,7 @@ Some HEVC videos may drop a small number of frames in Firefox. Chromium snap is 
 | Battery gauge / temperature | 2 × TI BQ27Z561 / thermal zones | ✅ works | Charge level, voltage, current and temperatures |
 | Board temperatures | PMIC ADC thermistors | ✅ works | 11 on-board temperature readings, shown on the task manager Temperature page |
 | Charging | `xiaomi_mca` / SC8541 | ✅ works | Supports Xiaomi MiPPS, third-party PPS, QC3 class B and QC3.5 charge-pump fast charging, and fixed 9 V USB PD. Charging current follows the supply capability, cell temperature and voltage. Current tapers near full charge and the buck converter finishes the constant-voltage phase. Fast charging resumes after recoverable supply or temperature conditions clear. Settings → Power offers “Preserve Battery Health”: stop at 80% and resume at 75% While wired power is connected, the GNOME top bar shows net battery charging power and the active charging protocol. With a wired charger connected, locking the tablet or closing the cover turns off the screen. The system stays awake so fast charging can continue until full. It stays awake while the charger remains connected and resumes normal sleep behavior after unplugging. |
-| Suspend | suspend-to-idle | ✅ works | Timer, keyboard, power-button and cover-open wake; default system idle policy; 15-minute idle suspend on weak sources, with inhibition while charging strongly or in developer mode Connecting a charging cable wakes the tablet. |
+| Suspend | suspend-to-idle | ✅ works | Timer, keyboard, power-button and cover-open wake; default system idle policy; 15-minute idle suspend on SDP/CDP computer ports; other wired chargers and developer mode keep the system awake. Connecting a charging cable wakes the tablet. |
 
 Not yet supported: disk hibernation, hardware clock writes (time is set from the network after boot).
 

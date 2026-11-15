@@ -1,8 +1,10 @@
 # Ubuntu for Xiaomi Pad 8 Pro
 
-在小米平板 8 Pro（代号 `piano`，骁龙 8 至尊版）上原生运行 Ubuntu 26.04 LTS GNOME 桌面，与 Android 双系统共存，内核基于上游 Linux 7.2 适配。不是容器，不是远程桌面。[English](README.en.md)
+在小米平板 8 Pro（代号 `piano`，骁龙 8 至尊版）上原生运行 Ubuntu 26.04 LTS GNOME 桌面，与 Android 双系统共存，内核基于上游 Linux 适配。不是容器，不是远程桌面。[English](README.en.md)
 
 **最新版本见 [Releases](https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/latest)。官方发布只在本仓库 Releases，免费提供。** 支持状态见[硬件支持](#硬件支持)。
+
+**把平板变成一台触屏 Linux 电脑：** 原生 GNOME 桌面运行 Linux 应用，预装 GunyahVM 管理 ARM64 虚拟机，也可通过 Waydroid 运行 Android 应用并使用 Adreno GPU 加速。 原装充电器实测从 45% 充至满电约 38 分钟。
 
 ## 🧭 路线选择
 
@@ -164,7 +166,7 @@ Firefox 播放部分 HEVC 视频可能有轻微丢帧。Chromium snap 不支持�
 | 电量 / 温度 | 2 × TI BQ27Z561 / 温区 | ✅ 可用 | 电量、电压、电流和温度可读 |
 | 机身温度 | PMIC ADC 热敏电阻 | ✅ 可用 | 11 路板载温度可读，任务管理器“温度”页可看 |
 | 充电 | `xiaomi_mca` / SC8541 | ✅ 可用 | 支持小米 MiPPS、第三方 PPS、QC3 class B 和 QC3.5 电荷泵快充，以及固定 PD 9 V 充电。系统根据电源能力、电芯温度和电压调节电流，接近充满时逐步降流，由 buck 完成恒压收尾。可恢复的供电或温度异常解除后会重新尝试快充。 「设置 → 电源」可开启「保护电池健康」：80% 停充、降到 75% 复充 连接有线电源时，GNOME 顶栏显示电池侧净充电功率和当前充电通路。 接着有线充电器时，锁屏或合盖后屏幕关闭，系统保持唤醒，快充可持续至充满。充满后仍保持唤醒，拔线后恢复正常休眠。 |
-| 待机 | suspend-to-idle | ✅ 可用 | 支持定时、键盘、电源键和开盖唤醒，使用系统默认空闲策略；弱源下空闲 15 分钟可挂起，强源净充电或开发者模式保持唤醒 支持插入充电线唤醒。 |
+| 待机 | suspend-to-idle | ✅ 可用 | 支持定时、键盘、电源键和开盖唤醒，使用系统默认空闲策略；电脑 SDP/CDP 口下空闲 15 分钟可挂起，其他有线充电器或开发者模式保持唤醒。支持插入充电线唤醒。 |
 
 暂不支持：休眠到磁盘、硬件时钟写入（启动后联网校时）。
 
