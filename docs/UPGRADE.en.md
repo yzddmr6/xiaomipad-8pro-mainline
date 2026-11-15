@@ -12,6 +12,18 @@ directory holds every project package installed in that release's image. Always 
 whole set together, never a single package.
 
 
+## v1.4.0 → v1.4.1
+
+To upgrade from v1.4.0, extract the package and rollback repositories. Select `piano-1.4.1` with `--previous piano-1.4.0-rollback-1.4.1` for the whole-release upgrade. Shut down virtual machines before upgrading and reboot afterwards.
+
+From 1.4.1, a successful whole-release upgrade or a completed rollback removes what is no longer needed: earlier batches, boot image copies, old kernels and their modules, and project packages dropped from the releases. It keeps the two batches of this upgrade, their boot sets, and the kernels that are running or needed for rollback. Copies saved by hand as `/var/lib/piano/rollback-<kernel version>` are removed when their kernel is no longer kept. Personal files, Waydroid, virtual machines and changed configuration files are not affected; `/var/lib/piano/releases/cleanup.json` records what was removed and why. To clean up again later, run:
+
+```sh
+sudo /usr/bin/python3 /var/lib/piano/releases/piano-1.4.1/install.py cleanup --product piano
+```
+
+GunyahVM moves to 1.3.0 as a single `gunyahvm` package; APT removes the former `gunyahvm-runtime`, `gunyahvm-guest-kernel` and `gunyahvm-guest-mesa` packages during the upgrade.
+
 ## v1.3.1 → v1.4.0
 
 To upgrade from v1.3.1, extract the package and rollback repositories. Select `piano-1.4.0` with `--previous piano-1.3.1-rollback-1.4.0` for the whole-release upgrade, then reboot.
@@ -217,14 +229,7 @@ unzip piano-ubuntu-<version>-packages.zip            # yields debs/
 ## 2. Keep a rollback
 
 The upgrade replaces the current boot set with one for the new kernel; the old set is kept
-automatically as `ubuntu.prev`. Save an independent copy as well, so that a later upgrade cannot
-rotate it away. On the tablet:
-
-```bash
-sudo cp -a /var/lib/piano/switch/ubuntu /var/lib/piano/rollback-$(uname -r)
-```
-
-Also keep copies of the current Ubuntu set and the Android set on the host as described in
+automatically as `ubuntu.prev`. Keep copies of the current Ubuntu set and the Android set on the host as described in
 [FLASHING.en.md "Image sets"](FLASHING.en.md#image-sets); they are the basis for recovery from Fastboot.
 
 ## 3. Copy to the tablet
@@ -275,10 +280,11 @@ proven itself, remove it with `sudo apt purge linux-image-<old version>`.
 
 ## Rollback
 
-- **Ubuntu still boots:**
+- **Ubuntu still boots:** after a whole-release upgrade from v1.2.1 or later, use the complete release
+  rollback above; after an earlier upgrade, use the automatically kept `ubuntu.prev`:
   ```bash
-  sudo piano-boot-switch import-ubuntu --from /var/lib/piano/rollback-<old version>   # expect "result": "imported"
-  sudo piano-boot-switch to-ubuntu --reboot                                           # writes the old set back and reboots
+  sudo piano-boot-switch import-ubuntu --from /var/lib/piano/switch/ubuntu.prev   # expect "result": "imported"
+  sudo piano-boot-switch to-ubuntu --reboot                                       # writes the old set back and reboots
   ```
 - **Ubuntu does not boot:** hold Power + Volume Down for Fastboot and write the old Ubuntu set
   saved on the host:

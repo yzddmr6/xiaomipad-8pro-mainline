@@ -8,6 +8,18 @@
 发布附件里的 `piano-ubuntu-<版本>-packages.zip` 就是升级包：解压后 `debs/` 下是该版本安装在镜像里的全部项目软件包。总是整组一起安装，不要只装其中一个。
 
 
+## v1.4.0 → v1.4.1
+
+从 v1.4.0 升级，解压软件包和回退附件，整组升级时使用 `piano-1.4.1` 和 `--previous piano-1.4.0-rollback-1.4.1`。升级前关闭虚拟机，完成后重启。
+
+从 1.4.1 起，整组升级成功或整版回退完成后，工具自动清掉不再需要的东西：旧批次、启动镜像副本、旧内核及其模块，以及版本里已经去掉的项目包；只留本次升级的新旧两批、它们的启动镜像组，以及正在运行或回退要用的内核。以前按本页手工保存的 `/var/lib/piano/rollback-<内核版本>` 副本，对应内核不再保留的也一并删掉。个人文件、Waydroid、虚拟机和改过的配置文件不受影响，删了什么、为什么删记在 `/var/lib/piano/releases/cleanup.json`。以后需要时可以手动再清一次：
+
+```sh
+sudo /usr/bin/python3 /var/lib/piano/releases/piano-1.4.1/install.py cleanup --product piano
+```
+
+GunyahVM 更新到 1.3.0，合并为单个 `gunyahvm` 包；升级时 APT 自动移除旧的 `gunyahvm-runtime`、`gunyahvm-guest-kernel` 和 `gunyahvm-guest-mesa`。
+
 ## v1.3.1 → v1.4.0
 
 从 v1.3.1 升级，解压软件包和回退附件，整组升级时使用 `piano-1.4.0` 和 `--previous piano-1.3.1-rollback-1.4.0`。完成后重启。
@@ -202,13 +214,7 @@ unzip piano-ubuntu-<版本>-packages.zip               # 得到 debs/
 
 ## 2. 保留回退
 
-升级会把当前启动镜像组换成新内核的，旧组自动保留为 `ubuntu.prev`。再额外保存一份独立副本，以防之后再次升级把 `ubuntu.prev` 也轮换掉。在平板上：
-
-```bash
-sudo cp -a /var/lib/piano/switch/ubuntu /var/lib/piano/rollback-$(uname -r)
-```
-
-主机上也按 [FLASHING.md「镜像组」](FLASHING.md#镜像组)保留当前 Ubuntu 镜像组和 Android 镜像组的副本，这是从 Fastboot 恢复的依据。
+升级会把当前启动镜像组换成新内核的，旧组自动保留为 `ubuntu.prev`。主机上按 [FLASHING.md「镜像组」](FLASHING.md#镜像组)保留当前 Ubuntu 镜像组和 Android 镜像组的副本，这是从 Fastboot 恢复的依据。
 
 ## 3. 传到平板
 
@@ -256,10 +262,10 @@ sudo piano-devmode off                     # 不再需要主机连接时关闭
 
 ## 回退
 
-- **系统能进 Ubuntu：**
+- **系统能进 Ubuntu：** v1.2.1 及以后的整组升级用上文的「整版回退」；更早的升级用自动保留的 `ubuntu.prev`：
   ```bash
-  sudo piano-boot-switch import-ubuntu --from /var/lib/piano/rollback-<旧版本>   # 预期 "result": "imported"
-  sudo piano-boot-switch to-ubuntu --reboot                                     # 写回旧组并重启
+  sudo piano-boot-switch import-ubuntu --from /var/lib/piano/switch/ubuntu.prev   # 预期 "result": "imported"
+  sudo piano-boot-switch to-ubuntu --reboot                                      # 写回旧组并重启
   ```
 - **系统进不去：** 长按电源 + 音量下进入 Fastboot，用主机上保存的旧 Ubuntu 镜像组写回：
   ```bash
