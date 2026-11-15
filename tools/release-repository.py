@@ -31,6 +31,8 @@ KERNEL_RETENTION = Path('/usr/libexec/erhai-kernel-retention')
 BANNER = re.compile(rb'Linux version ([0-9][A-Za-z0-9.+_~-]*) \(')
 UNIT = re.compile(r'[A-Za-z0-9:_.@\\-]+\.(?:service|socket|timer|path|target|mount|automount|swap|slice)')
 APT_PURGE = ['apt-get', '-o', 'APT::Get::AutomaticRemove=false', 'purge']
+PROJECT_PREFIXES = ('piano-', 'erhai-', 'qcom-npu-', 'gunyahvm', 'linux-image-')
+PROJECT_BUILD = re.compile(r'[+~](piano|erhai|sm8750|gunyahvm)')
 
 
 def run(args, **kw):
@@ -62,6 +64,19 @@ def index_stanza(repo, deb):
     control = '\n'.join(line for i, line in enumerate(lines) if not empty(i))
     return (f'{control}\nFilename: {deb.relative_to(repo)}\nSize: {deb.stat().st_size}\n'
             f'MD5sum: {md5}\nSHA1: {sha1}\nSHA256: {sha256}\n')
+
+
+def project_package(row):
+    """Built by this project: its name or source, or its version marks a project build."""
+    return (row['package'].startswith(PROJECT_PREFIXES) or row['source'].startswith(PROJECT_PREFIXES)
+            or bool(PROJECT_BUILD.search(row['version'])))
+
+
+def updated_by_distribution(row, current):
+    """A distribution package the system updated past this batch keeps the update."""
+    version = current.get(row['package'])
+    return (version not in (None, row['version']) and not project_package(row) and
+            subprocess.run(['dpkg', '--compare-versions', version, 'gt', row['version']]).returncode == 0)
 
 
 def read_json(path):
@@ -166,36 +181,42 @@ def keep(repo, store):
 def previous_for_installed(previous, old, repo, new, before, store):
     """Retain the exact installed release versions alongside the previous release.
 
-    Project release packages must match the supplied previous batch, unless the
-    unit already runs the exact build the new batch carries, for example a
-    GunyahVM release installed on its own; that archive is copied from the new
-    batch. Ubuntu Mesa/libdrm may have received normal archive updates since that
-    release; their exact cohort is captured via authenticated APT. Both go into
-    the snapshot <previous>-before-<new> before anything changes.
+    Project packages must match the supplied previous batch, unless the unit
+    already runs the exact build the new batch carries, for example a GunyahVM
+    release installed on its own; that archive is copied from the new batch.
+    Distribution packages a batch ships, such as the Mesa/libdrm cohort or
+    libraries, may have received normal Ubuntu updates since that release; the
+    exact installed cohort of each such source is captured via authenticated APT.
+    Both go into the snapshot <previous>-before-<new> before anything changes.
     """
     rows = {x['package']: x for x in old['packages']}
-    managed = {x['package'] for x in old['packages'] + new['packages']}
-    missing = {n: before[n] for n in managed & before.keys()
+    newer = {x['package']: x for x in new['packages']}
+    missing = {n: before[n] for n in (rows.keys() | newer.keys()) & before.keys()
                if n not in rows or rows[n]['version'] != before[n]}
     if not missing:
         return previous, old
     source_by_name = {x['package']: x['source'] for x in old['packages'] + new['packages']}
-    newer = {x['package']: x for x in new['packages']}
-    ubuntu = {n for n in missing if source_by_name.get(n) in ('mesa', 'libdrm')}
-    project = sorted(set(missing) - ubuntu)
+    cohort = {n for n in missing if source_by_name.get(n) in ('mesa', 'libdrm')}
+    rest = sorted(set(missing) - cohort)
     architecture = dict(line.split('\t') for line in subprocess.check_output(
-        ['dpkg-query', '-W', '-f=${Package}\t${Architecture}\n', *project], text=True).splitlines()) if project else {}
-    carried = {n for n in project if n in newer and newer[n]['version'] == missing[n]
+        ['dpkg-query', '-W', '-f=${Package}\t${Architecture}\n', *rest], text=True).splitlines()) if rest else {}
+    carried = {n for n in rest if n in newer and newer[n]['version'] == missing[n]
                and newer[n]['architecture'] == architecture.get(n)}
-    unknown = {n: missing[n] for n in project if n not in carried}
+    distribution = cohort | {n for n in set(rest) - carried
+                             if not any(project_package(r) for r in (rows.get(n), newer.get(n)) if r)}
+    unknown = {n: missing[n] for n in rest if n not in carried | distribution}
     if unknown:
         raise ValueError('previous batch is missing exact installed release packages: ' + json.dumps(unknown))
     versions = {}
-    for n in sorted(ubuntu):
+    for n in sorted(distribution):
         source = source_by_name[n]
         if source in versions and versions[source] != missing[n]:
             raise ValueError('installed source cohort has mixed versions: ' + source)
         versions[source] = missing[n]
+    # Every installed member of a captured source must be at the captured version.
+    for n, source in source_by_name.items():
+        if source in versions and n in before and n not in carried and before[n] != versions[source]:
+            raise ValueError('installed source cohort has mixed versions: ' + source)
     identifier = old['id'] + '-before-' + new['id']
     dest = store / identifier
     if dest.exists():
@@ -222,15 +243,15 @@ def previous_for_installed(previous, old, repo, new, before, store):
         shutil.copyfile(repo / newer[n]['file'], temporary / newer[n]['file'])
     with tempfile.TemporaryDirectory(prefix='release-archives-', dir='/var/tmp') as download:
         for name, source in sorted(source_by_name.items()):
-            if source not in versions:
+            if source not in versions or name in carried:
                 continue
             version = versions[source]
             available = subprocess.run(['apt-cache', 'show', name + '=' + version],
                                        capture_output=True, text=True)
             if available.returncode or not available.stdout.strip():
                 if name in before:
-                    raise ValueError('exact installed Ubuntu package unavailable: ' + name + '=' + version)
-                continue  # e.g. automatic debug packages absent from the old archive
+                    raise ValueError('exact installed distribution package unavailable: ' + name + '=' + version)
+                continue  # e.g. automatic debug packages absent from the archive
             run(['apt-get', 'download', name + '=' + version], cwd=download)
         for archive in Path(download).glob('*.deb'):
             shutil.copyfile(archive, temporary / 'pool' / archive.name)
@@ -667,7 +688,7 @@ def main():
                 atomic_json(state_path, state)
             current = installed()
             targets = [f'{x["package"]}={x["version"]}' for x in m['packages']
-                       if x['install'] or x['package'] in current]
+                       if (x['install'] or x['package'] in current) and not updated_by_distribution(x, current)]
             activate(repo, product)
             solve_and_install(targets, product)
             new_boot = store / ('boot-' + m['id'])
@@ -692,7 +713,8 @@ def main():
             # Keep optional packages installed after upgrading when the preceding
             # complete source cohort contains their earlier versions.
             selected |= current.keys() & rows.keys()
-            targets = [f'{n}={rows[n]["version"]}' for n in sorted(selected)]
+            targets = [f'{n}={rows[n]["version"]}' for n in sorted(selected)
+                       if not updated_by_distribution(rows[n], current)]
             targets += [x['package'] + '-' for x in newer['packages']
                         if x['package'] in current and x['package'] not in rows
                         and not x['package'].startswith(KERNEL_PACKAGES)]
