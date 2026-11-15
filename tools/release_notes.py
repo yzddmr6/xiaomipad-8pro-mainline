@@ -50,6 +50,9 @@ def change_sections(changes):
         body, has_advice, advice = body.partition(f'\n\n## {advice_heading}\n\n')
         # Keep consecutive top-level updates in one compact Markdown list.
         body = re.sub(r'(^- [^\n]+)\n(?:[ \t]*\n)+(?=- )', r'\1\n', body, flags=re.M)
+        # Every update is "**Label**：text" (Chinese) or "**Label**: text" (English), as in earlier releases.
+        separator = '：' if language == 'zh' else ': '
+        body = re.sub(r'^(- \*\*[^*\n]+\*\*)(?:[：:][ \t\u3000]*|[ \t\u3000]+)', lambda m: m.group(1) + separator, body, flags=re.M)
         result.update({f'title_suffix_{language}': title_suffix,
                        f'upgrade_section_{language}': f'## {advice_heading}\n\n{advice.strip()}\n\n' if has_advice else '',
                        f'summary_{language}': summary.strip(),
@@ -82,8 +85,9 @@ def validate_notes(notes, version):
             raise ValueError('release sections are missing or out of order')
         updates = half.split(f'## {headings[0]}\n', 1)[1].split(f'## {headings[1]}\n', 1)[0]
         bullets = [line for line in updates.splitlines() if line.startswith('- ')]
-        if not bullets or any(not re.match(r'- \*\*[^*]+\*\*', line) for line in bullets):
-            raise ValueError('each release update must start with a bold label')
+        label = r'- \*\*[^*]+\*\*' + ('：' if headings[0] == '更新' else ': ')
+        if not bullets or any(not re.match(label, line) for line in bullets):
+            raise ValueError('each release update must start with a bold label followed by a colon')
         if support not in half or 'SHA256SUMS.assets' not in half:
             raise ValueError('release support or download guidance is missing')
         license_lines = [line for line in half.splitlines() if line.startswith(licensing)]
