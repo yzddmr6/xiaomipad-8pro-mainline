@@ -19,7 +19,6 @@ set -u
 
 . "${0%/*}/switch-common.sh"
 PROG=piano-switch
-DEV_DIR=
 
 : "${PIANO_PATH:=/system/bin}"
 PATH=$PIANO_PATH:$PATH
@@ -38,7 +37,6 @@ MNT=$PIANO_STATE/mnt
 LOCK=$PIANO_STATE/lock
 MOUNTED=0
 LOCKED=0
-[ "$PIANO_SWITCH_TEST" != 1 ] || DEV_DIR=$PIANO_STATE
 
 log() {
 	line="$(date '+%Y-%m-%dT%H:%M:%S%z') $*"
@@ -173,7 +171,6 @@ device=$(getprop ro.product.device)
 [ "$device" = piano ] || die "this is '$device', not piano"
 slot=$(switch_bootconfig_slots "$PIANO_BOOTCONFIG")
 [ "$slot" = _a ] || die "active slot is not _a (bootconfig: ${slot:-unreadable})"
-require_switch_battery
 
 mkdir "$LOCK" 2>/dev/null || die "another switch is running (or remove a stale $LOCK)"
 LOCKED=1

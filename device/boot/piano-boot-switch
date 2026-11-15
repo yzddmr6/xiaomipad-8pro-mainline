@@ -197,30 +197,11 @@ def cmd_verify(host, args):
     return report
 
 
-def require_switch_battery(host):
-    helper = Path(slot.__file__).with_name('switch-common.sh')
-    result = subprocess.run(['sh', str(helper), '--battery',
-                             str(host.path('/sys/class/power_supply'))],
-                            capture_output=True, text=True)
-    if result.stderr:
-        say(host, result.stderr.rstrip(), error=True)
-    if result.returncode or not result.stdout.strip().isdigit():
-        raise slot.Refusal('battery-unknown',
-                           'Cannot read battery charge; switching requires at least 40%. '
-                           '无法读取电量，切换需要至少 40%。')
-    level = int(result.stdout.strip())
-    if level < 40:
-        raise slot.Refusal('battery-low',
-                           f'Battery {level}%; switching requires at least 40%. '
-                           '电量不足，切换需要至少 40%。')
-
-
 def cmd_switch(host, args):
     target = 'android' if args.command == 'to-android' else 'ubuntu'
     ctx = Context(host, write=not args.dry_run)
     report = {'target': target}
     with slot.slot_lock(host):
-        require_switch_battery(host)
         sums, _ = slot.known_sums(host)
         current = slot.occupant(slot.slot_hashes(ctx.parts), sums)
         report['occupant_before'] = current or 'unknown'

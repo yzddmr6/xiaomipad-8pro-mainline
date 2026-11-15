@@ -594,34 +594,27 @@ class Cli(unittest.TestCase):
 
 
 
-class Battery(Base):
-    def test_battery_gate(self):
+class LowBattery(Base):
+    """Writing a boot set takes seconds and touches only slot A; slot B and Fastboot stay intact."""
+
+    def test_switches_at_any_or_unreadable_charge(self):
         battery = self.p.root / 'sys/class/power_supply/battery'
-        for target in ('to-android', 'to-ubuntu'):
-            for value in ('0', '39', '', 'garbage', '-1', '101', '40.0'):
-                with self.subTest(target=target, value=value):
+        for value in ('0', '1', '39', '', 'garbage'):
+            for target in ('android', 'ubuntu'):
+                with self.subTest(value=value, target=target):
                     (battery / 'capacity').write_text(value)
                     self.p.host.events.clear()
-                    code = 'battery-low' if value in ('0', '39') else 'battery-unknown'
-                    self.refused(code, target, '--desktop')
-                    self.assertNotIn(['systemctl', 'reboot'], self.runs())
-        (battery / 'capacity').unlink()
-        self.refused('battery-unknown', 'to-android')
+                    rc, report = self.run_tool('to-' + target, '--desktop')
+                    self.assertEqual((rc, report['result']), (0, 'written'), report)
+                    self.assert_slot(target)
+                    self.assertIn(['systemctl', 'reboot'], self.runs())
         shutil.rmtree(battery.parent)
-        self.refused('battery-unknown', 'to-android')
+        rc, report = self.run_tool('to-android')
+        self.assertEqual((rc, report['result']), (0, 'written'), report)
+        self.assert_slot('android')
+        self.assertNotIn('battery', (self.store / 'switch.log').read_text().lower())
 
-    def test_battery_notification(self):
-        (self.p.root / 'sys/class/power_supply/battery/capacity').write_text('39')
-        before = self.p.slot_content()
-        rc, report = self.run_tool('to-android', '--desktop',
-                                   env={'PKEXEC_UID': str(os.getuid())})
-        self.assertEqual((rc, report['code']), (1, 'battery-low'))
-        self.assertEqual(before, self.p.slot_content())
-        self.assertIn('40%', self.runs()[0][-4])
-        self.assertIn('40%', (self.store / 'switch.log').read_text())
-
-    def test_boundary_and_repeat_reboot(self):
-        (self.p.root / 'sys/class/power_supply/battery/capacity').write_text('40')
+    def test_repeat_reboot(self):
         for target in ('android', 'ubuntu'):
             rc, report = self.run_tool('to-' + target)
             self.assertEqual(rc, 0, report)

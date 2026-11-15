@@ -292,19 +292,16 @@ check "rc 64" [ "$RC" = 64 ]
 check "no writes" no_writes
 end
 
-for level in 39 unknown missing; do
-	begin "refuses battery $level before any write"
+for level in 0 39 unknown missing; do
+	begin "switches at battery $level"
 	setup; mkroot
 	if [ "$level" = missing ]; then rm "$W/state/power_supply/battery/capacity"
 	else printf '%s\n' "$level" > "$W/state/power_supply/battery/capacity"; fi
 	run --
-	refused "$CASE" 1 '40%'
+	check 'rc 0' [ "$RC" = 0 ]; check 'reboot' rebooted
+	check 'slot ubuntu' [ "$(slot)" = ubuntu ]
 	end
 done
-begin "battery 40 permits switching"
-setup; mkroot; echo 40 > "$W/state/power_supply/battery/capacity"; run --
-check 'rc 0' [ "$RC" = 0 ]; check 'reboot' rebooted
-end
 begin "conflicting bootconfig refuses slot"
 setup; mkroot; printf 'androidboot.slot_suffix = "_b"\nandroidboot.slot_suffix = "_a"\n' > "$W/bootconfig"; run --
 refused "$CASE" 1 'active slot is not _a'
