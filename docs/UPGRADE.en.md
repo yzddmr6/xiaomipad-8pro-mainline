@@ -16,9 +16,10 @@ whole set together, never a single package.
 
 To upgrade from v1.4.0, extract the package and rollback repositories. Select `piano-1.4.1` with `--previous piano-1.4.0-rollback-1.4.1` for the whole-release upgrade. Shut down virtual machines before upgrading and reboot afterwards.
 
-From 1.4.1, a successful whole-release upgrade or a completed rollback removes what is no longer needed: earlier batches, boot image copies, old kernels and their modules, and project packages dropped from the releases. It keeps the two batches of this upgrade, their boot sets, and the kernels that are running or needed for rollback. Copies saved by hand as `/var/lib/piano/rollback-<kernel version>` are removed when their kernel is no longer kept. Personal files, Waydroid, virtual machines and changed configuration files are not affected; `/var/lib/piano/releases/cleanup.json` records what was removed and why. To clean up again later, run:
+From 1.4.1, a successful whole-release upgrade or a completed rollback removes what is no longer needed: earlier batches, boot image copies, old kernels and their modules, and project packages dropped from the releases. It keeps the two batches of this upgrade, their boot sets, and the kernels that are running or needed for rollback. Copies saved by hand as `/var/lib/piano/rollback-<kernel version>` are removed when their kernel is no longer kept. Personal files, Waydroid, virtual machines and changed configuration files are not affected; `/var/lib/piano/releases/cleanup.json` records what was removed and why. To clean up again later, preview the plan with `--dry-run`, which lists what would be removed and why without changing anything, then run it:
 
 ```sh
+sudo /usr/bin/python3 /var/lib/piano/releases/piano-1.4.1/install.py cleanup --product piano --dry-run
 sudo /usr/bin/python3 /var/lib/piano/releases/piano-1.4.1/install.py cleanup --product piano
 ```
 
