@@ -47,6 +47,23 @@ def metadata(path):
     return dict(l.split(': ', 1) for l in raw.splitlines() if ': ' in l and not l.startswith(' '))
 
 
+def index_stanza(repo, deb):
+    """The APT index entry dpkg-scanpackages writes for deb, from dpkg-deb alone."""
+    digests = [hashlib.md5(usedforsecurity=False), hashlib.sha1(usedforsecurity=False), hashlib.sha256()]
+    with deb.open('rb') as stream:
+        for block in iter(lambda: stream.read(1 << 20), b''):
+            for digest in digests:
+                digest.update(block)
+    md5, sha1, sha256 = (d.hexdigest() for d in digests)
+    lines = subprocess.check_output(['dpkg-deb', '-f', str(deb)], text=True).rstrip('\n').splitlines()
+
+    def empty(i):  # a field without a value, such as an empty Depends:, which dpkg-scanpackages drops
+        return re.fullmatch(r'[^\s:]+:\s*', lines[i]) and not (i + 1 < len(lines) and lines[i + 1][:1].isspace())
+    control = '\n'.join(line for i, line in enumerate(lines) if not empty(i))
+    return (f'{control}\nFilename: {deb.relative_to(repo)}\nSize: {deb.stat().st_size}\n'
+            f'MD5sum: {md5}\nSHA1: {sha1}\nSHA256: {sha256}\n')
+
+
 def read_json(path):
     return json.loads(path.read_text())
 
@@ -74,8 +91,8 @@ def inventory(repo, identifier, product, default_names):
     if not rows or not set(default_names).issubset(names):
         raise ValueError('empty repository or missing default package')
     atomic_json(repo / 'manifest.json', dict(schema=1, id=identifier, product=product, packages=rows))
-    with (repo / 'Packages').open('w') as out:
-        run(['dpkg-scanpackages', 'pool', '/dev/null'], cwd=repo, stdout=out)
+    # Snapshots are indexed on the target, and release roots carry no dpkg-dev.
+    (repo / 'Packages').write_text('\n'.join(index_stanza(repo, p) for p in sorted((repo / 'pool').glob('*.deb'))))
     shutil.copyfile(__file__, repo / 'install.py')
     (repo / 'install.py').chmod(0o755)
     checker = Path(__file__).with_name('check-host-mesa.py')
