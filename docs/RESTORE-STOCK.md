@@ -70,7 +70,7 @@ python3 -I tools/prepare-stock-restore.py \
 按[维护 RAM 镜像](FLASHING.md#维护-ram-镜像)操作，正常退出 Ubuntu 后进入 Fastboot，
 绑定自己序列号临时启动已校验镜像；不要在仍挂载 `/`、`/home` 的 Ubuntu 内改表。
 先检查 RAM 根、内部存储完全未挂载、无磁盘 swap／holders、LUN0 唯一且几何和 GUID 一致，
-电量至少 40%，`piano-maint status` 为 `Fastboot reboot ready`。
+`piano-maint status` 为 `Fastboot reboot ready`。
 状态不明就停止，不重复 `fastboot boot`，不从主机重置 USB。
 
 本次在普通 Linux 中无法免密提权读原始 GPT，因此在维护环境中读取；没有绕过权限。

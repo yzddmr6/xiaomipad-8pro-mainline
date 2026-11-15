@@ -55,7 +55,6 @@ Long-form technical articles, write-ups and progress updates are published on th
 - **The bootloader must be unlocked** through Xiaomi's official process, and Android must be rooted (to read partitions for the backup).
 - **Only stock build OS3.0.303.0.WPYCNXM on slot A is supported.**
 - **Back up first.** Before any write, back up every partition except `userdata` and the partition table of every UFS LUN. Slot A's stock `boot`, `init_boot` and `vendor_boot` are your way back to Android.
-- **Keep at least 40 % before switching systems.**
 - **No speaker protection.** The speakers play, but with a capped volume; do not raise the gain yourself.
 - **Verified on one unit only:** model 25091RP04C (China), 16 GB RAM, 512 GB storage. Other models and capacities are unverified.
 - **Recovery:** with no picture or no response, hold Power + Volume Down for Fastboot and write Android back with `tools/piano-switch.py`, see [Usage and Maintenance](#usage-and-maintenance).
@@ -78,7 +77,7 @@ Project: https://github.com/yzddmr6/xiaomipad-8pro-mainline , latest release (th
 
 1. First git clone the repository and check out the tag of the latest release. Read README.en.md "Read Before Installing", docs/INSTALL.en.md, docs/FLASHING.en.md and the safety rules in section 1 of docs/AGENT-GUIDE.en.md before doing anything.
 2. Download every asset of that GitHub release into one empty directory, run sha256sum -c SHA256SUMS.assets first, then restore the release directory as the release notes describe and verify it again.
-3. Check the host tools (adb, fastboot, python3, zstd, sgdisk, sfdisk, img2simg and the rest of the "Prerequisites" table in INSTALL) and the tablet (product piano, stock build OS3.0.303.0.WPYCNXM, current slot a, unlocked, rooted, battery at least 40 %). If anything does not match, stop and tell me; do not work around it.
+3. Check the host tools (adb, fastboot, python3, zstd, sgdisk, sfdisk, img2simg and the rest of the "Prerequisites" table in INSTALL) and the tablet (product piano, stock build OS3.0.303.0.WPYCNXM, current slot a, unlocked, rooted). If anything does not match, stop and tell me; do not work around it.
 4. Follow docs/INSTALL.en.md strictly in order and explicitly select my tablet with -s or --serial in every device command. Before each step, tell me in a sentence or two what it does and where it writes. For every operation that writes to the tablet (partition table, erase, flash, slot A), list the exact commands and wait for me to reply "confirm" before running them.
 5. Never write vbmeta, dtbo, any _b partition, persist or any other calibration, modem or firmware partition; never run fastboot --set-active=b; never use calibration, per-unit configuration or images from another tablet.
 6. No write step before the backup is complete and its hashes verified. Keep the backup and my per-unit files outside the repository; never commit or upload them anywhere.

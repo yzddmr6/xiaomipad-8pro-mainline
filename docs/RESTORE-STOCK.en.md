@@ -80,7 +80,7 @@ Use the [maintenance RAM image](FLASHING.en.md#maintenance-ram-image): shut Ubun
 enter Fastboot and temporarily boot the verified image with your serial explicitly bound.
 Never restore GPT from Ubuntu while its `/` and `/home` are mounted on the partitions being removed.
 Verify a RAM root, no mounted internal-storage partitions, no disk swaps/holders, unique LUN0 with the
-expected geometry/GUID, at least 40% battery, and `Fastboot reboot ready` from `piano-maint status`.
+expected geometry/GUID, and `Fastboot reboot ready` from `piano-maint status`.
 Stop on uncertainty; do not repeat `fastboot boot` or reset USB from the host.
 
 The ordinary installed Linux session required interactive privilege escalation for raw GPT reads, so

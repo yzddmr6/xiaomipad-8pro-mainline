@@ -15,8 +15,7 @@ switching tools, the slot attributes, Fastboot recovery and what must never be w
 - another tablet's images, calibration or addresses.
 
 Bind every command to your tablet (`adb -s <SERIAL>`, `fastboot -s <SERIAL>`,
-`piano-switch.py --serial <SERIAL>`) and run one tool against it at a time. Leave Android with at
-least 40 % battery before partition work. Current charging support and limitations are in
+`piano-switch.py --serial <SERIAL>`) and run one tool against it at a time. Current charging support and limitations are in
 [STATUS.md](STATUS.md); the early diagnostic kernel's lack of charging is historical.
 
 Before writing, [back up](INSTALL.en.md#2-back-up) and keep both boot sets on the host.

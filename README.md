@@ -55,7 +55,6 @@
 - **必须先解锁 Bootloader**（按小米官方流程），并取得 Android root（用于读取分区做备份）。
 - **只支持原厂版本 OS3.0.303.0.WPYCNXM，运行在 A 槽。**
 - **先备份。** 任何写入之前，备份除 `userdata` 外的全部分区和每个 UFS LUN 的分区表。切回 Android 需要 A 槽原厂的 `boot`、`init_boot`、`vendor_boot`。
-- **切换系统前保持电量不低于 40%。**
 - **没有扬声器保护。** 扬声器可以播放，但音量上限受限，不要自行提高增益。
 - **只在一台机器上验证过：** 型号 25091RP04C（国行），16 GB 内存，512 GB 存储。其他型号和容量未验证。
 - **恢复方法：** 无画面或无响应时，长按电源 + 音量下进入 Fastboot，用 `tools/piano-switch.py` 写回 Android，见[使用与维护](#使用与维护)。
@@ -78,7 +77,7 @@
 
 1. 先 git clone 该仓库并检出最新发布版本对应的标签，通读 README.md 的「安装前请阅读」、docs/INSTALL.md、docs/FLASHING.md，以及 docs/AGENT-GUIDE.md 第 1 节的安全规则，然后再开始。
 2. 从该版本的 GitHub Release 把全部附件下载到一个空目录，先执行 sha256sum -c SHA256SUMS.assets，再按 Release 说明还原发布目录并再次校验。
-3. 检查主机工具（adb、fastboot、python3、zstd、sgdisk、sfdisk、img2simg 等，以 INSTALL 的「准备」表为准）和平板状态（型号 piano、原厂版本 OS3.0.303.0.WPYCNXM、当前 A 槽、已解锁、已 root、电量不低于 40%）。任何一项不符就停下来告诉我，不要绕过。
+3. 检查主机工具（adb、fastboot、python3、zstd、sgdisk、sfdisk、img2simg 等，以 INSTALL 的「准备」表为准）和平板状态（型号 piano、原厂版本 OS3.0.303.0.WPYCNXM、当前 A 槽、已解锁、已 root）。任何一项不符就停下来告诉我，不要绕过。
 4. 严格按 docs/INSTALL.md 的步骤顺序执行，每条设备命令都用 -s 或 --serial 明确指定我的平板。每一步开始前用一两句话告诉我这步做什么、会写哪里；凡是写入平板的操作（分区表、擦除、flash、写 A 槽），先列出将要执行的命令，等我回复「确认」再执行。
 5. 绝不写入 vbmeta、dtbo、任何 _b 分区、persist 或其他校准、基带、固件分区；绝不执行 fastboot --set-active=b；绝不使用别的平板的标定、设备专属配置或镜像。
 6. 备份完成并校验哈希之后才能进入任何写入步骤。备份和本机文件放在仓库之外的目录，不要提交，不要上传到任何地方。
