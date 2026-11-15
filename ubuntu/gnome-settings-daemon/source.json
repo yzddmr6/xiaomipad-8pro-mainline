@@ -32,7 +32,7 @@
     "keyring_sha256": "80a36b0a6de2f69f49d2df75ef473ccde121e9e190b9ea01d20a4f63778d5c31",
     "dsc_maintainer_signature": "Not separately verified"
   },
-  "state": "AUTHENTICATED_PATCHED_SOURCE_BINARY_BUILT_AMBIENT_CURVE_DEVICE_VERIFIED",
+  "state": "AUTHENTICATED_PATCHED_SOURCE_NOT_REBUILT_AFTER_REVIEW_FIXES",
   "patches": [
     {
       "file": "power-button-lock.patch",
@@ -46,7 +46,7 @@
     },
     {
       "file": "ambient-absolute-curve.patch",
-      "sha256": "e8201438ca4fe6fc57afb240b4afe8f51b86e6b06e63a7d25141afdadf3463c4",
+      "sha256": "b6a2751ee0aeeaa94434656b2612044b8d8d97a3804e82b02696ae1cee98b82c",
       "license": "GPL-2.0-or-later"
     },
     {
@@ -55,6 +55,6 @@
       "license": "GPL-2.0-or-later"
     }
   ],
-  "changelog_entry_sha256": "6a37d3c0680caaf357ea2c307dcdb019076797683aa3acfc41b671cf375e29b5",
+  "changelog_entry_sha256": "4e5c72b4c341872a57d0a921084758b5a0d1e61d1497f539ce510eba32d0eaf2",
   "exit_condition": "Drop when upstream or Ubuntu supplies equivalent functionality and native regression passes."
 }

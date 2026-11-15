@@ -5,8 +5,9 @@ gnome-settings-daemon (50.0-1ubuntu1+piano3) UNRELEASED; urgency=medium
   * Consume zero ambient light after normalization, preserving the filter and
     user controls; reject invalid samples and defer a zero normalization base.
   * Map ambient light to brightness through an optional per-device absolute
-    curve file; keep the stock relative normalization when it is absent or
-    invalid.
+    curve file; keep the stock relative normalization when it is absent,
+    invalid or non-finite. Seed the filter from the first curve result so the
+    first reading is not delayed and a 0% target is still emitted.
 
- -- GreenTeodoro839 <GreenTeodoro839@users.noreply.github.com>  Fri, 14 Nov 2026 22:45:00 +0800
+ -- GreenTeodoro839 <GreenTeodoro839@users.noreply.github.com>  Sat, 14 Nov 2026 22:45:00 +0800
 
