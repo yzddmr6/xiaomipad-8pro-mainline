@@ -16,7 +16,6 @@ is still emitted; claiming, smoothing, throttling and the Shell backlight
 interface are otherwise unchanged, and zero-lux readings participate in
 curve mode without the renormalization guard.
 
-Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
 Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
 
 --- a/plugins/power/gsd-power-manager.c
