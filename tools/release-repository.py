@@ -425,13 +425,16 @@ def unit_names(package):
     return names
 
 
-def dangling_links(names):
-    """Enable links under /etc/systemd/system whose unit is gone and was named by a purged package."""
+def dangling_links(names, now=True):
+    """Enable links under /etc/systemd/system to units named by purged packages, whose unit is gone.
+
+    With now=False, also the links that a purge could leave dangling.
+    """
     links = []
     for directory, subdirectories, files in os.walk(UNIT_LINKS):
         for name in subdirectories + files:
             path = Path(directory, name)
-            if path.is_symlink() and not path.exists() and (
+            if path.is_symlink() and (not now or not path.exists()) and (
                     name in names or PurePosixPath(os.readlink(path)).name in names):
                 links.append(path)
     return sorted(links)
@@ -471,11 +474,12 @@ def purgeable(candidates):
     return good, refused
 
 
-def cleanup(product, store, state, manifests=None):
+def cleanup(product, store, state, manifests=None, dry_run=False):
     """Remove what neither the recorded transaction nor the running system still needs.
 
     The plan is computed completely and written to cleanup.json before the first
     removal. Every step is idempotent; a rerun plans afresh from what is left.
+    A dry run returns the plan, including APT's simulations, and changes nothing.
     """
     if state.get('phase') not in ('upgraded', 'rolled-back'):
         raise ValueError('cleanup needs a completed upgrade or rollback; the transaction is '
@@ -581,13 +585,20 @@ def cleanup(product, store, state, manifests=None):
                              reason=f'manual boot set copy for kernel {started or named_release}, which is not kept'))
     plan += [dict(kind='unit link', path=str(p), reason='enable link to a unit of a purged package')
              for p in dangling_links(units)]
+    transaction = {k: state[k] for k in ('to', 'previous', 'boot', 'phase')}
+    if dry_run:
+        later = [dict(kind='unit link', path=str(p), reason='removed if the purge leaves it dangling')
+                 for p in dangling_links(units, now=False) if str(p) not in {x['path'] for x in plan if 'path' in x}]
+        return dict(dry_run=True, product=product, transaction=transaction, running_kernel=running,
+                    kept=dict(batches=list(ids), kernels=sorted(kernels)), remove=plan + later, skipped=skipped,
+                    freed_bytes=sum(x.get('bytes', 0) for x in plan))
 
     record = store / 'cleanup.json'
     try:
         runs = read_json(record)['runs']
     except (OSError, ValueError, KeyError, TypeError):
         runs = []
-    entry = dict(product=product, transaction={k: state[k] for k in ('to', 'previous', 'boot', 'phase')},
+    entry = dict(product=product, transaction=transaction,
                  running_kernel=running, kept=dict(batches=list(ids), kernels=sorted(kernels)),
                  remove=plan, skipped=skipped, status='planned')
     # A rerun that finds nothing new keeps the record of the run that removed things.
@@ -649,6 +660,7 @@ def main():
     p = sub.add_parser('rollback'); p.add_argument('--product', choices=('piano', 'erhai'), required=True)
     p = sub.add_parser('cleanup', help='remove what earlier releases left behind (also run by upgrade and rollback)')
     p.add_argument('--product', choices=('piano', 'erhai'), required=True)
+    p.add_argument('--dry-run', action='store_true', help='print the plan; write, remove and purge nothing')
     a = ap.parse_args()
     if a.action == 'create':
         a.output.mkdir(parents=True, exist_ok=False); (a.output / 'pool').mkdir()
@@ -665,8 +677,11 @@ def main():
         print(json.dumps(verify(a.repository), indent=2)); return
     product = verify(a.repository)['product'] if a.action == 'upgrade' else a.product
     guard(product)
-    store = Path('/var/lib') / product / 'releases'; store.mkdir(parents=True, exist_ok=True)
-    with (store / '.lock').open('w') as lock:
+    store = Path('/var/lib') / product / 'releases'
+    if a.action == 'cleanup' and not (store / 'transaction.json').is_file():
+        raise ValueError('no release transaction on this system; nothing to clean up after')
+    store.mkdir(parents=True, exist_ok=True)
+    with (store / '.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         state_path = store / 'transaction.json'
         if a.action == 'upgrade':
@@ -700,8 +715,6 @@ def main():
             state['phase'] = 'upgraded'; atomic_json(state_path, state)
             manifests = {m['id']: m, old['id']: old}
         elif a.action == 'cleanup':
-            if not state_path.exists():
-                raise ValueError('no release transaction on this system; nothing to clean up after')
             state = read_json(state_path); manifests = None
         else:
             state = read_json(state_path)
@@ -727,7 +740,8 @@ def main():
             manifests = {old['id']: old, newer['id']: newer}
         print(json.dumps(state, indent=2))
         try:
-            print(json.dumps(cleanup(product, store, state, manifests), indent=2))
+            print(json.dumps(cleanup(product, store, state, manifests,
+                                     dry_run=a.action == 'cleanup' and a.dry_run), indent=2))
         except (ValueError, OSError, subprocess.CalledProcessError) as error:
             if a.action == 'cleanup':
                 raise
