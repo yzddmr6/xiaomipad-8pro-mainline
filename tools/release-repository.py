@@ -163,12 +163,15 @@ def keep(repo, store):
     return dest, m
 
 
-def previous_for_installed(previous, old, new, before, store):
-    """Retain locally updated Ubuntu dependencies alongside the previous release.
+def previous_for_installed(previous, old, repo, new, before, store):
+    """Retain the exact installed release versions alongside the previous release.
 
-    Project release packages must match the supplied previous batch. Ubuntu
-    Mesa/libdrm may have received normal archive updates since that release.
-    Capture their exact cohort via authenticated APT before changing anything.
+    Project release packages must match the supplied previous batch, unless the
+    unit already runs the exact build the new batch carries, for example a
+    GunyahVM release installed on its own; that archive is copied from the new
+    batch. Ubuntu Mesa/libdrm may have received normal archive updates since that
+    release; their exact cohort is captured via authenticated APT. Both go into
+    the snapshot <previous>-before-<new> before anything changes.
     """
     rows = {x['package']: x for x in old['packages']}
     managed = {x['package'] for x in old['packages'] + new['packages']}
@@ -177,14 +180,22 @@ def previous_for_installed(previous, old, new, before, store):
     if not missing:
         return previous, old
     source_by_name = {x['package']: x['source'] for x in old['packages'] + new['packages']}
-    if any(source_by_name.get(n) not in ('mesa', 'libdrm') for n in missing):
-        raise ValueError('previous batch is missing exact installed release packages: ' + json.dumps(missing))
+    newer = {x['package']: x for x in new['packages']}
+    ubuntu = {n for n in missing if source_by_name.get(n) in ('mesa', 'libdrm')}
+    project = sorted(set(missing) - ubuntu)
+    architecture = dict(line.split('\t') for line in subprocess.check_output(
+        ['dpkg-query', '-W', '-f=${Package}\t${Architecture}\n', *project], text=True).splitlines()) if project else {}
+    carried = {n for n in project if n in newer and newer[n]['version'] == missing[n]
+               and newer[n]['architecture'] == architecture.get(n)}
+    unknown = {n: missing[n] for n in project if n not in carried}
+    if unknown:
+        raise ValueError('previous batch is missing exact installed release packages: ' + json.dumps(unknown))
     versions = {}
-    for n, version in missing.items():
+    for n in sorted(ubuntu):
         source = source_by_name[n]
-        if source in versions and versions[source] != version:
+        if source in versions and versions[source] != missing[n]:
             raise ValueError('installed source cohort has mixed versions: ' + source)
-        versions[source] = version
+        versions[source] = missing[n]
     identifier = old['id'] + '-before-' + new['id']
     dest = store / identifier
     if dest.exists():
@@ -197,9 +208,18 @@ def previous_for_installed(previous, old, new, before, store):
     if temporary.exists():
         shutil.rmtree(temporary)
     shutil.copytree(previous, temporary)
+    # A carried build replaces its previous row. Packages it breaks were not
+    # installed beside it, so a rollback must not try to restore them.
+    broken = set()
+    for n in carried:
+        fields = metadata(repo / newer[n]['file'])
+        broken |= relation_names(fields.get('Breaks', '') + ',' + fields.get('Conflicts', ''))
+    broken = (broken & rows.keys()) - before.keys() - carried
     for row in old['packages']:
-        if row['source'] in versions:
+        if row['source'] in versions or row['package'] in carried | broken:
             (temporary / row['file']).unlink()
+    for n in sorted(carried):
+        shutil.copyfile(repo / newer[n]['file'], temporary / newer[n]['file'])
     with tempfile.TemporaryDirectory(prefix='release-archives-', dir='/var/tmp') as download:
         for name, source in sorted(source_by_name.items()):
             if source not in versions:
@@ -215,10 +235,10 @@ def previous_for_installed(previous, old, new, before, store):
         for archive in Path(download).glob('*.deb'):
             shutil.copyfile(archive, temporary / 'pool' / archive.name)
     saved = inventory(temporary, identifier, old['product'],
-                      {x['package'] for x in old['packages'] if x['install']})
+                      {x['package'] for x in old['packages'] if x['install']} - broken)
     available = {x['package']:x['version'] for x in saved['packages']}
     if any(available.get(n) != v for n, v in missing.items()):
-        raise ValueError('incomplete exact Ubuntu rollback capture')
+        raise ValueError('incomplete exact rollback capture')
     verify(temporary); temporary.rename(dest)
     return dest, saved
 
@@ -636,7 +656,7 @@ def main():
             state = read_json(state_path) if state_path.exists() else None
             if not state or state['to'] != m['id']:
                 before = installed()
-                previous, old = previous_for_installed(previous, old, m, before, store)
+                previous, old = previous_for_installed(previous, old, repo, m, before, store)
                 managed = {x['package'] for x in old['packages'] + m['packages']}
                 boot = Path('/var/lib') / product / 'switch/ubuntu'
                 saved = store / ('boot-before-' + m['id'])
