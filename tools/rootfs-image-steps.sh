@@ -35,6 +35,11 @@ in_target() {
 # (qemu-user does not pass the FITRIM ioctl through).
 trim_target() { fstrim -v "$T"; }
 
+# An awk condition on "status package" lines: a kernel package that is not the
+# piano kernel, that is every distribution kernel image, module, header and tool
+# package of any version or flavour, their metapackages, and kdump.
+FOREIGN_KERNEL='$2 ~ /^linux-(image|image-unsigned|modules|modules-extra|main-modules-[a-z0-9]+|headers|tools|cloud-tools|buildinfo|lib-rust)-[0-9]/ || $2 ~ /^linux-((image|headers|tools)-)?(generic|lowlatency|virtual)(-|$)/ || $2 == "kdump-tools"'
+
 # PHASES (params.sh) selects the work: "base kernel" for a whole build, "base"
 # to stop after the distribution kernels are purged (the cacheable state that does
 # not depend on the piano kernel), "kernel" to continue from such a base.
@@ -148,9 +153,7 @@ in_target dpkg-query -W -f '${db:Status-Abbrev}|${Package}|${Version}|${Architec
 	>"$OUT/dpkg-query-base.txt"
 kernels=$(in_target dpkg-query -W -f '${db:Status-Abbrev} ${Package}\n' | awk '
 	$1 != "ii" { next }
-	$2 ~ /^linux-(generic|image-generic|headers-generic|tools-generic)/ ||
-	$2 ~ /^linux-(image|image-unsigned|modules|modules-extra|main-modules-[a-z0-9]+|headers|tools)-[0-9].*-generic$/ ||
-	$2 == "kdump-tools" { print $2 }')
+	'"$FOREIGN_KERNEL"' { print $2 }')
 [ -n "$kernels" ] || fail 'no distribution kernel packages found'
 echo "purging:" $kernels
 df -B1 --output=used "$T" | tail -1 >"$OUT/used-bytes-before-purge.txt"
@@ -173,8 +176,9 @@ audit=$(in_target dpkg --audit)
 rm -r "$T/var/cache/piano-install"
 
 
-left=$(in_target dpkg-query -W -f '${db:Status-Abbrev} ${Package}\n' 'linux-image-*' 'linux-modules-*' \
-	'linux-headers-*' 'kdump-tools' 2>/dev/null | awk 'substr($1, 2, 1) != "n" && $2 != "linux-image-'"$RELEASE"'" { print $2 }')
+left=$(in_target dpkg-query -W -f '${db:Status-Abbrev} ${Package}\n' | awk -v keep="linux-image-$RELEASE" '
+	substr($1, 2, 1) == "n" || $2 == keep { next }
+	'"$FOREIGN_KERNEL"' { print $2 }')
 [ -z "$left" ] || fail "kernel packages left besides linux-image-$RELEASE: $left"
 in_target apt-get --simulate autoremove </dev/null >"$OUT/autoremove-simulate.txt"
 ! grep '^Remv ' "$OUT/autoremove-simulate.txt" || fail 'apt autoremove would still remove packages'

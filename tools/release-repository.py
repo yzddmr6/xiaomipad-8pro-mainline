@@ -24,7 +24,11 @@ import sys
 import tempfile
 
 
-KERNEL_PACKAGES = ('linux-image-', 'linux-headers-', 'erhai-kernel-image-')
+# A kernel package of one release: the project's or any distribution kernel image,
+# module, header or tool package. Distribution kernel metapackages follow none.
+KERNEL_PACKAGE = re.compile(r'(?:linux-(?:image(?:-unsigned)?|headers|modules(?:-extra)?|main-modules-[a-z0-9]+|tools'
+                            r'|cloud-tools|buildinfo|lib-rust)|erhai-kernel-image)-([0-9].*)')
+KERNEL_META = re.compile(r'linux-(?:(?:image|headers|tools)-)?(?:generic|lowlatency|virtual)(?:-.+)?')
 MODULE_ROOTS = (Path('/usr/lib/modules'), Path('/lib/modules'))
 UNIT_LINKS = Path('/etc/systemd/system')
 KERNEL_RETENTION = Path('/usr/libexec/erhai-kernel-retention')
@@ -316,10 +320,8 @@ def switch_boot(product, directory):
 
 def kernel_release(package):
     """Release in a kernel package name such as linux-image-7.4.0-rc2-piano98."""
-    for prefix in KERNEL_PACKAGES:
-        if package.startswith(prefix) and package[len(prefix):][:1].isdigit():
-            return package[len(prefix):]
-    return None
+    match = KERNEL_PACKAGE.fullmatch(package)
+    return match[1] if match else None
 
 
 def boot_release(directory):
@@ -550,6 +552,8 @@ def cleanup(product, store, state, manifests=None, dry_run=False):
     for r in sorted(releases - kernels):
         for n in sorted(owned[r] - protected):
             reasons[n] = f'kernel {r}: not running, in neither batch and started by no kept boot set'
+    for n in sorted(n for n in present if KERNEL_META.fullmatch(n)):
+        reasons[n] = 'distribution kernel metapackage; only the project kernel boots'
     for batch, members in sorted(dropped.items()):
         for n in sorted((members & present) - names - protected):
             reasons.setdefault(n, 'only in removed batch ' + batch)
@@ -730,7 +734,7 @@ def main():
                        if not updated_by_distribution(rows[n], current)]
             targets += [x['package'] + '-' for x in newer['packages']
                         if x['package'] in current and x['package'] not in rows
-                        and not x['package'].startswith(KERNEL_PACKAGES)]
+                        and not kernel_release(x['package'])]
             activate(repo, product)
             solve_and_install(targets, product)
             state['phase'] = 'userspace-restored'; atomic_json(state_path, state)
