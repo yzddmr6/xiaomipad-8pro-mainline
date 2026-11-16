@@ -101,7 +101,7 @@ Project: https://github.com/yzddmr6/xiaomipad-8pro-mainline , latest release (th
 
 ### Upgrading an existing installation
 
-Follow [docs/UPGRADE.en.md](docs/UPGRADE.en.md) to upgrade the kernel and the device packages from the release's `packages.zip`; the upgrade keeps a rollback boot set.
+Open the release notification and select Update. After the download, review the cleanup preview and select Install. Restart when prompted. To restore the previous release, open System Update, select Roll back to previous release, then restart. If the existing notification only offers release notes, use the manual procedure below for this first upgrade. See the [manual upgrade procedure](docs/UPGRADE.en.md).
 
 ### Building from source
 
@@ -140,20 +140,20 @@ Not yet supported: fingerprint.
 | Wi-Fi | Qualcomm WCN7860 / ath12k | ✅ works | Stable 2.4 GHz and 5 GHz 80 MHz links. Wi-Fi calibrates the WCN7860 at cold boot before applying the 22 dBm board transmit-power limit. Actual power is subject to firmware and regulatory limits. |
 | Bluetooth | Qualcomm WCN7860 / `hci_qca` | ✅ works | Pairing, file transfer and audio work |
 | USB device mode | USB 3 / 5 Gbit/s networking (NCM) | ✅ works | SSH over the USB cable in developer mode, off by default |
-| USB host / OTG | Type-C role switching / USB 3 / 5 Gbit/s | 🟡 partial | USB sticks, keyboards, mice and docks work at 5 Gbit/s in both orientations; a plain OTG adapter may not be detected when re-plugged right after an OTG device is removed |
+| USB host / OTG | Type-C role switching / USB 3 / 5 Gbit/s | 🟡 partial | USB sticks, keyboards, mice and docks work at 5 Gbit/s in both orientations; a plain OTG adapter may not be detected when re-plugged right after an OTG device is removed USB optical drives read ISO 9660, Joliet and UDF. |
 | USB-C external display | DisplayPort Alt Mode | ✅ works | Both orientations and hot-plug; tested at 4K 60 Hz as an extended desktop |
 
 ### Audio, Video and Sensors
 
 | Function | Hardware / implementation | Status | Notes |
 |---|---|---|---|
-| Speakers | FS19xx quad amplifiers | ✅ works | Playback on all four speakers; maximum volume increased; keep the default volume cap |
+| Speakers | FS19xx quad amplifiers | ✅ works | Playback on all four speakers; maximum volume increased; keep the default volume cap Stereo channels follow screen orientation. |
 | Internal microphones | DMIC / ADSP / PipeWire | ✅ works | Recording verified |
 | Video decoding | Qualcomm Iris / V4L2 | ✅ works | Automatic hardware decoding in the system player (GStreamer), Firefox (H.264/HEVC/VP9) and Chrome (H.264/VP9); AV1 uses software decoding |
 | Video encoding | Qualcomm Iris / V4L2 | ✅ works | H.264/H.265 at 1080p and 4K verified |
 | Cameras | Rear S5KJN1SQ03, front OV32D40 | ✅ works | Front and rear cameras available in camera apps; rear autofocus and manual focus, manual exposure and white balance, and a shared camera activity light |
 | Rear torch | Qualcomm PMIC LED | 🟡 partial | Torch and exposure-synchronised rear flash; camera applications need to integrate their own flash controls |
-| Accelerometer, gyro, light, proximity | SSC / hexagonrpcd / libssc | ✅ works | SensorProxy reports orientation and ambient light. Enable Automatic Brightness in Settings → Power |
+| Accelerometer, gyro, light, proximity | SSC / hexagonrpcd / libssc | ✅ works | SensorProxy reports orientation and ambient light. Enable Automatic Brightness in Settings → Power Brightness follows the tablet’s own curve and is retained across restarts. |
 | Auto-rotation | SensorProxy / Mutter | ✅ works | Rotates with the keyboard detached; locked by GNOME's rule while the keyboard is attached |
 
 Some HEVC videos may drop a small number of frames in Firefox. Chromium snap is not covered by this acceleration integration.
@@ -166,7 +166,7 @@ Some HEVC videos may drop a small number of frames in Firefox. Chromium snap is 
 | Power modes | GNOME / TuneD | ✅ works | Power Saver, Balanced and Performance in quick settings or Settings → Power; Balanced by default |
 | Battery gauge / temperature | 2 × TI BQ27Z561 / thermal zones | ✅ works | Charge level, voltage, current and temperatures |
 | Board temperatures | PMIC ADC thermistors | ✅ works | 11 on-board temperature readings, shown on the task manager Temperature page |
-| Charging | `xiaomi_mca` / SC8541 | ✅ works | Supports Xiaomi MiPPS, third-party PPS, QC3 class B and QC3.5 charge-pump fast charging, and fixed 9 V USB PD. Charging current follows the supply capability, cell temperature and voltage. Current tapers near full charge and the buck converter finishes the constant-voltage phase. Fast charging resumes after recoverable supply or temperature conditions clear. Settings → Power offers “Preserve Battery Health”: stop at 80% and resume at 75% While wired power is connected, the GNOME top bar shows net battery charging power and the active charging protocol. With a wired charger connected, locking the tablet or closing the cover turns off the screen. The system stays awake so fast charging can continue until full. It stays awake while the charger remains connected and resumes normal sleep behavior after unplugging. |
+| Charging | `xiaomi_mca` / SC8541 | ✅ works | Supports Xiaomi MiPPS, third-party PPS, QC3 class B and QC3.5 charge-pump fast charging, and fixed 9 V USB PD. Charging current follows the supply capability, cell temperature and voltage. Current tapers near full charge and the buck converter finishes the constant-voltage phase. Fast charging resumes after recoverable supply or temperature conditions clear. Settings → Power offers “Preserve Battery Health”: stop at 80% and resume at 75% While wired power is connected, the GNOME top bar shows net battery charging power and the active charging protocol. With a wired charger connected, locking the tablet or closing the cover turns off the screen. The system stays awake so fast charging can continue until full. It stays awake while the charger remains connected and resumes normal sleep behavior after unplugging. Pause charging in the charging menu to run directly from the charger. The setting survives restarts. |
 | Suspend | suspend-to-idle | ✅ works | Timer, keyboard, power-button and cover-open wake; default system idle policy; 15-minute idle suspend on SDP/CDP computer ports; other wired chargers and developer mode keep the system awake. Connecting a charging cable wakes the tablet. |
 
 Not yet supported: disk hibernation, hardware clock writes (time is set from the network after boot).

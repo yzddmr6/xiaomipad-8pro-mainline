@@ -14,6 +14,12 @@ batch, and `piano-ubuntu-v<version>-rollback.zip` is the previous batch kept for
 rollback. Always install the whole set with the upgrade tool, never a single package.
 
 
+## v1.4.1 → v1.5.0
+
+Open the release notification and select Update. After the download, review the cleanup preview and select Install. Restart when prompted. To restore the previous release, open System Update, select Roll back to previous release, then restart. If the existing notification only offers release notes, use the manual procedure below for this first upgrade.
+
+For a manual whole-release upgrade use `piano-1.5.0` and `--previous piano-1.4.1-rollback-1.5.0`. Shut down virtual machines first and restart after installation.
+
 ## v1.4.0 → v1.4.1
 
 To upgrade from v1.4.0, download and extract the package and rollback attachments on the tablet as in [Whole-release upgrade (tablet only)](#whole-release-upgrade-tablet-only). Select `piano-1.4.1` with `--previous piano-1.4.0-rollback-1.4.1` for the whole-release upgrade. Shut down virtual machines before upgrading and reboot afterwards.

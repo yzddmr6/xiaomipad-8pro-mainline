@@ -1,6 +1,6 @@
 # Release history and current support
 
-Current release: **v1.4.1**. See the [README](../README.en.md#hardware-support) or
+Current release: **v1.5.0**. See the [README](../README.en.md#hardware-support) or
 [中文 README](../README.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
@@ -38,6 +38,12 @@ verified on this unit; later versions were tested on the installed system. These
 results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
+
+### v1.5.0
+
+可从通知整组升级系统，从充电菜单暂停充电，并根据屏幕方向切换立体声声道。按本机环境光曲线调节亮度，登录界面保留重启前的亮度，USB 光驱可读取 ISO 9660、Joliet 与 UDF。
+
+Update the whole system from the release notification, pause charging from the charging menu, and keep stereo aligned with the screen. Automatic brightness follows the tablet’s ambient-light curve. The login screen preserves brightness across reboots. USB optical drives read ISO 9660, Joliet and UDF.
 
 ### v1.4.1
 
