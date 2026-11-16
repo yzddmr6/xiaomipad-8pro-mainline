@@ -27,6 +27,9 @@ for phase,index in [('downloading',0),('verifying',1),('extracting',2),('install
  for i,(row,status) in enumerate(app.steps.values()):
   assert status.get_text()==('40%' if i==0 and index==0 else 'Done' if i<index else 'In progress' if i==index else 'Waiting'),(phase,i,status.get_text())
 assert len(module.brief_message('noise\nerror: '+('x'*5000))) <= 100
+for phase in ('prepared', 'failed_rollback'):
+ app.render({'phase':phase,'error':'exact installed distribution package unavailable: libcamera0.7=0.7.0-1ubuntu2'})
+ assert 'Software Updater' in app.page.get_description()
 reason = 'Package configuration failed'
 app.render({'phase':'failed_rollback','error':reason})
 assert app.page.get_description() == reason

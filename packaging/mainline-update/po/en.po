@@ -206,3 +206,6 @@ msgstr "Check for updates"
 
 msgid "Close"
 msgstr "Close"
+
+msgid "Install all system updates in Software Updater, then return here and try the update again."
+msgstr "Install all system updates in Software Updater, then return here and try the update again."

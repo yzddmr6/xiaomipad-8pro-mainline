@@ -206,3 +206,6 @@ msgstr "检查更新"
 
 msgid "Close"
 msgstr "关闭"
+
+msgid "Install all system updates in Software Updater, then return here and try the update again."
+msgstr "请先在“软件更新器”里装完系统更新，再回到此窗口点击更新。"

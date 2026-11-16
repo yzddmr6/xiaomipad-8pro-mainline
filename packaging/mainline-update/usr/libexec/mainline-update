@@ -219,6 +219,11 @@ class App(Adw.Application):
             text = ''
         elif phase == 'interrupted':
             text = brief_message(text)
+        error = state.get('error', '')
+        if phase in ('prepared', 'failed_rollback', 'interrupted', 'failed_download') and (
+                'exact installed distribution package unavailable:' in error or
+                "Can't find a source to download version" in error):
+            description = _('Install all system updates in Software Updater, then return here and try the update again.')
         self.page.set_description(description)
         active = phase in ('downloading','verifying','extracting','installing','recovering','rolling_back')
         self.pipeline.set_visible(active)
