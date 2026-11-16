@@ -200,7 +200,7 @@ class App(Adw.Application):
             'rolling_back': _('Restoring the previous complete release.'),
             'rolled_back': _('The previous release is restored. Restart when convenient.'),
         }
-        self.page.set_description(descriptions.get(phase,''))
+        description = descriptions.get(phase, '')
         detail = f"{state.get('current','')} → {self.version}"
         if phase == 'complete': detail = state.get('rollback_version') or self.version
         elif phase == 'up_to_date': detail = state.get('current','')
@@ -213,8 +213,13 @@ class App(Adw.Application):
             warning.append(_('Metered connection: this download counts towards your data allowance.'))
         self.notice.set_text('\n'.join(warning)); self.notice.set_visible(bool(warning))
         text = state.get('rollback_error') or state.get('error') or state.get('message') or ''
-        if phase.startswith('failed') or phase == 'interrupted':
+        if phase.startswith('failed'):
+            if text:
+                description = GLib.markup_escape_text(brief_message(text))
+            text = ''
+        elif phase == 'interrupted':
             text = brief_message(text)
+        self.page.set_description(description)
         active = phase in ('downloading','verifying','extracting','installing','recovering','rolling_back')
         self.pipeline.set_visible(active)
         order = ['downloading','verifying','extracting','installing']

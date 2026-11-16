@@ -27,7 +27,10 @@ for phase,index in [('downloading',0),('verifying',1),('extracting',2),('install
  for i,(row,status) in enumerate(app.steps.values()):
   assert status.get_text()==('40%' if i==0 and index==0 else 'Done' if i<index else 'In progress' if i==index else 'Waiting'),(phase,i,status.get_text())
 assert len(module.brief_message('noise\nerror: '+('x'*5000))) <= 100
-app.render({'phase':'failed_rollback'})
+reason = 'Package configuration failed'
+app.render({'phase':'failed_rollback','error':reason})
+assert app.page.get_description() == reason
+assert reason not in app.extra.get_text()
 assert app.buttons.get_first_child().get_label()=='Retry installation'
 assert app.buttons.get_first_child().get_next_sibling().has_css_class('destructive-action')
 # GunyahVM 1.3.0 `list` returns config/status, and marks stale monitors interrupted.
