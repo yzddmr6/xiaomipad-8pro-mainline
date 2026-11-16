@@ -6,14 +6,35 @@ msgstr ""
 msgid "%.1f MiB/s · %d s remaining"
 msgstr "%.1f MiB/s · 剩余 %d 秒"
 
+msgid "%d s remaining"
+msgstr "剩余 %d 秒"
+
+msgid "Check virtual machines again"
+msgstr "重新检查虚拟机"
+
+msgid "Checking the release size and SHA-256 checksums."
+msgstr "正在核对发布大小与 SHA-256 校验和。"
+
 msgid "Cleanup preview"
 msgstr "会清理的内容"
 
 msgid "Close all virtual machines before installing."
 msgstr "安装前请关闭所有虚拟机。"
 
+msgid "Close running virtual machines: %s"
+msgstr "请关闭正在运行的虚拟机：%s"
+
 msgid "Continue"
 msgstr "继续"
+
+msgid "Continue retries the upgrade and its documented recovery. Rollback is also available."
+msgstr "继续会重试升级及指南中的修复，也可以回退。"
+
+msgid "Done"
+msgstr "已完成"
+
+msgid "Download"
+msgstr "下载"
 
 msgid "Download and install"
 msgstr "下载并安装"
@@ -24,11 +45,23 @@ msgstr "下载失败，请重试"
 msgid "Download size: %.1f MiB"
 msgstr "下载大小：%.1f MiB"
 
+msgid "Download the release, then review cleanup before installing."
+msgstr "下载新版本，确认清理预览后安装。"
+
 msgid "Downloading"
 msgstr "下载中"
 
+msgid "Extract"
+msgstr "解压"
+
 msgid "Extracting"
 msgstr "正在解压"
+
+msgid "Following the recovery steps in the upgrade guide."
+msgstr "正在按升级指南修复未完成的软件包。"
+
+msgid "In progress"
+msgstr "进行中"
 
 msgid "Install"
 msgstr "安装"
@@ -39,8 +72,17 @@ msgstr "安装失败，可以回退"
 msgid "Installing"
 msgstr "安装中"
 
+msgid "Installing the complete release. Keep the device on."
+msgstr "正在安装整组更新，请保持设备开机。"
+
+msgid "Interrupted"
+msgstr "已中断"
+
 msgid "Later"
 msgstr "稍后"
+
+msgid "Metered connection: this download counts towards your data allowance."
+msgstr "当前网络按流量计费，下载会消耗套餐流量。"
 
 msgid "On a metered connection, this download counts towards your data allowance."
 msgstr "按流量计费的网络会消耗上述下载流量。"
@@ -48,11 +90,20 @@ msgstr "按流量计费的网络会消耗上述下载流量。"
 msgid "Package recovery is attempted before rollback is offered."
 msgstr "已先尝试按升级指南修复软件包，再提供回退。"
 
+msgid "Preparing the verified release installer."
+msgstr "正在准备已校验的发布安装器。"
+
 msgid "Previous installation did not finish"
 msgstr "上次安装没有完成"
 
 msgid "Reclaimed %.1f MiB"
 msgstr "已释放 %.1f MiB"
+
+msgid "Recovery could not complete. Retry installation or restore the previous release."
+msgstr "自动修复未完成，可重试安装或回退到上一版。"
+
+msgid "Release notes · Changes"
+msgstr "发布说明 · 更新"
 
 msgid "Repairing interrupted packages"
 msgstr "正在修复未完成的软件包"
@@ -63,11 +114,23 @@ msgstr "立即重启"
 msgid "Restart to complete the update"
 msgstr "重启以完成更新"
 
+msgid "Restoring the previous complete release."
+msgstr "正在恢复上一版完整系统。"
+
 msgid "Retry"
 msgstr "重试"
 
+msgid "Retry installation"
+msgstr "重试安装"
+
+msgid "Retry the interrupted installation or restore the previous release."
+msgstr "可以重试中断的安装，或恢复上一版。"
+
 msgid "Review cleanup"
 msgstr "预览清理"
+
+msgid "Review what will be removed, then confirm installation."
+msgstr "查看将清理的内容，然后确认安装。"
 
 msgid "Roll back"
 msgstr "回退"
@@ -84,8 +147,17 @@ msgstr "正在回退"
 msgid "Space to reclaim: %.1f MiB"
 msgstr "预计释放空间：%.1f MiB"
 
+msgid "Space to reclaim: %s"
+msgstr "预计释放空间：%s"
+
 msgid "System Update"
 msgstr "系统更新"
+
+msgid "The previous release is restored. Restart when convenient."
+msgstr "已恢复上一版，可在方便时重启。"
+
+msgid "The system has not been changed. Retry the download."
+msgstr "系统尚未更改，可以重试下载。"
 
 msgid "Update available"
 msgstr "发现新版本"
@@ -93,11 +165,26 @@ msgstr "发现新版本"
 msgid "Updated to %s"
 msgstr "已更新到 %s"
 
+msgid "Verify"
+msgstr "校验"
+
 msgid "Verifying checksums"
 msgstr "正在校验"
 
 msgid "View detailed log"
 msgstr "查看详细日志"
 
-msgid "Continue retries the upgrade and its documented recovery. Rollback is also available."
-msgstr "继续会重试升级及指南中的修复，也可以回退。"
+msgid "Waiting"
+msgstr "等待"
+
+msgid "Waiting for confirmation"
+msgstr "等待确认"
+
+msgid "You can close this window; the download can resume."
+msgstr "可以关闭此窗口，下载支持断点续传。"
+
+msgid "Your update is installed. Restart when convenient."
+msgstr "更新已安装，可在方便时重启。"
+
+msgid "Retry rollback"
+msgstr "重试回退"

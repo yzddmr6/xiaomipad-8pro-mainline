@@ -73,6 +73,9 @@ class Offline(unittest.TestCase):
             self.assertFalse(self.updater._has_transaction(prepared))
         with mock.patch.object(Path,'read_text',return_value='{"to":"piano-2.0"}'):
             self.assertTrue(self.updater._has_transaction(prepared))
+    def test_update_notes_section(self):
+        self.updater.project={'notes_heading':'更新'}
+        self.assertEqual(self.updater._release_notes({'body':'## 其他\n不显示\n## 更新\n实际更新\n## 安装\n不显示'}),'实际更新')
     def test_last_json(self):
         self.assertEqual(core.Updater._last_json('log\n{"phase":"upgraded","nested":{"x":1}}\n{"remove":[],"freed_bytes":7}'),dict(remove=[],freed_bytes=7))
 if __name__=='__main__':

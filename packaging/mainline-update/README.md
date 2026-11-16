@@ -29,8 +29,13 @@ with APT installation. There are no password-free polkit rules.
 An interrupted service exposes the installer's transaction phase and offers Continue /
 Rollback. The first login after a different kernel boot ID sends the completion notice;
 logging out and back in before reboot does not claim completion. Detailed logs come from
-`journalctl -u mainline-update.service`. A metered-connection advisory and download size
-are always displayed, avoiding a dependency on a particular network manager.
+`journalctl -u mainline-update.service`. The metered-connection advisory follows Gio.NetworkMonitor; download sizes use
+GLib.format_size. Running VM names come from the read-only `gunyahvm list` CLI
+(config/status contract from GunyahVM 1.3.0); stopped and interrupted instances
+are omitted. A missing optional CLI does not block the window. Refreshing the VM
+list requires a user action; installation buttons wait for known active VMs to stop.
+The GTK frontend uses Adw.ToolbarView and compact Adw.StatusPage layouts, with
+release changes in an expander and separate download/verify/extract/install rows.
 
 Offline network/security checks: `sudo python3 packaging/mainline-update/tests/offline.py`.
 `tests/transactions.py /path/to/released/install.py` is **only** for the disposable

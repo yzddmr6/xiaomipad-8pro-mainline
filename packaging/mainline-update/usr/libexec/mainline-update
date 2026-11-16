@@ -28,6 +28,13 @@ TITLES = {
     'rolling_back': _('Rolling back'), 'rolled_back': _('Rollback complete — restart'),
 }
 
+def brief_message(text):
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    reasons = [line for line in lines if any(word in line.lower() for word in
+               ('error', 'failed', 'sha-256', 'interrupted', 'could not'))]
+    reason = (reasons or lines or [''])[0]
+    return reason if len(reason) <= 100 else reason[:99] + '…'
+
 class App(Adw.Application):
     def __init__(self):
         super().__init__(application_id='org.mainline.Update', flags=Gio.ApplicationFlags.NON_UNIQUE)
@@ -42,23 +49,51 @@ class App(Adw.Application):
 
     def activate(self, *unused):
         self.window = Adw.ApplicationWindow(application=self, title=_('System Update'))
-        self.window.set_default_size(640, 660)
-        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        outer.append(Adw.HeaderBar())
-        scroll = Gtk.ScrolledWindow(vexpand=True)
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20,
-                      margin_top=28, margin_bottom=28, margin_start=32, margin_end=32)
-        scroll.set_child(box); outer.append(scroll)
-        self.title = Gtk.Label(wrap=True, xalign=0)
-        self.title.add_css_class('title-1'); box.append(self.title)
-        self.detail = Gtk.Label(wrap=True, xalign=0, selectable=True)
-        box.append(self.detail)
+        self.window.set_default_size(480, 650)
+        toolbar = Adw.ToolbarView()
+        toolbar.add_top_bar(Adw.HeaderBar())
+        self.page = Adw.StatusPage()
+        self.page.add_css_class('compact')
+        self.page.set_icon_name('software-update-available-symbolic')
+        clamp = Adw.Clamp(maximum_size=420, tightening_threshold=320)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        clamp.set_child(box)
+        self.page.set_child(clamp)
+        toolbar.set_content(self.page)
+        self.window.set_content(toolbar)
+        self.notice = Gtk.Label(wrap=True, justify=Gtk.Justification.CENTER)
+        self.notice.add_css_class('warning'); box.append(self.notice)
+        self.pipeline = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
+        self.pipeline.add_css_class('boxed-list')
+        self.steps = {}
+        for key, label in [('downloading',_('Download')),('verifying',_('Verify')),('extracting',_('Extract')),('installing',_('Install'))]:
+            row = Adw.ActionRow(title=label)
+            status = Gtk.Label(label=_('Waiting'))
+            status.add_css_class('dim-label'); row.add_suffix(status)
+            self.pipeline.append(row); self.steps[key] = (row,status)
+        box.append(self.pipeline)
         self.progress = Gtk.ProgressBar(show_text=True); box.append(self.progress)
-        self.extra = Gtk.Label(wrap=True, xalign=0, selectable=True); box.append(self.extra)
-        self.buttons = Gtk.Box(spacing=12); box.append(self.buttons)
-        self.window.set_content(outer); self.window.present()
+        self.extra = Gtk.Label(wrap=True, justify=Gtk.Justification.CENTER)
+        self.extra.add_css_class('dim-label'); box.append(self.extra)
+        self.notes = Adw.ExpanderRow(title=_('Release notes · Changes'))
+        self.notes_text = Gtk.Label(wrap=True, xalign=0, margin_top=12,
+                                   margin_bottom=12, margin_start=16, margin_end=16)
+        self.notes.add_row(self.notes_text)
+        notes_box = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
+        notes_box.add_css_class('boxed-list'); notes_box.append(self.notes)
+        self.notes_box = notes_box
+        self.buttons = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10,
+                               halign=Gtk.Align.CENTER)
+        box.append(self.buttons)
+        box.append(notes_box)
+        self.vms = []
+        self.network = Gio.NetworkMonitor.get_default()
+        self.network.connect('notify::network-metered', lambda *args: self.render({}))
+        self.window.present()
         if self.preview is not None:
+            self.vms = self.preview.get('running_vms', [])
             self.render(self.preview); return
+        self.refresh_vms()
         try:
             self.bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
             self.bus.signal_subscribe(BUS, BUS, 'Progress', PATH, None,
@@ -66,6 +101,25 @@ class App(Adw.Application):
         except GLib.Error as error:
             self.render({'phase':'failed_download','error':str(error)}); return
         self.call('GetState', (), self.initial)
+
+    def refresh_vms(self):
+        def work():
+            import shutil, subprocess
+            names = []
+            if shutil.which('gunyahvm'):
+                try:
+                    result = subprocess.run(['gunyahvm','list'], capture_output=True,
+                                            text=True, timeout=15, check=True)
+                    for vm in json.loads(result.stdout):
+                        if vm.get('status',{}).get('state') in ('running','starting','stopping','restarting'):
+                            names.append(str(vm['config']['name']))
+                except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+                    pass
+            def updated():
+                self.vms = names
+                if hasattr(self,'view_state'): self.render({})
+            GLib.idle_add(updated)
+        threading.Thread(target=work, daemon=True).start()
 
     def call(self, method, args=(), done=None):
         self.buttons.set_sensitive(False)
@@ -90,60 +144,107 @@ class App(Adw.Application):
         else:
             self.render(state)
 
-    def button(self, label, action):
-        button = Gtk.Button(label=label)
-        button.connect('clicked', lambda *_: action())
+    def button(self, label, action, style=None):
+        button = Gtk.Button(label=label, height_request=44, width_request=220)
+        if style:
+            button.add_css_class(style)
+            if style == 'suggested-action': button.add_css_class('pill')
+        button.connect('clicked', lambda *args: action())
         self.buttons.append(button)
+        return button
 
-    def render(self, state):
+    def render(self, incoming):
         self.buttons.set_sensitive(True)
         while self.buttons.get_first_child():
             self.buttons.remove(self.buttons.get_first_child())
-        if not hasattr(self, 'view_state'):
-            self.view_state = {}
-        if state.get('phase') != self.view_state.get('phase'):
-            self.view_state.pop('display_phase', None)
-            self.view_state.pop('error', None)
-        self.view_state.update(state)
+        if not hasattr(self, 'view_state'): self.view_state = {}
+        if incoming.get('phase') and incoming['phase'] != self.view_state.get('phase'):
+            for key in ('display_phase','error','rollback_error','message'):
+                self.view_state.pop(key, None)
+        self.view_state.update(incoming)
         state = self.view_state
         phase = state.get('display_phase', state.get('phase','idle'))
         self.version = state.get('version', self.version)
-        self.title.set_text(TITLES.get(phase, phase))
+        self.page.set_title(TITLES.get(phase, phase))
+        self.page.set_icon_name('dialog-error-symbolic' if phase.startswith('failed') else
+                                'dialog-warning-symbolic' if phase == 'interrupted' else
+                                'emblem-ok-symbolic' if phase in ('reboot_pending','rolled_back') else
+                                'software-update-available-symbolic')
+        descriptions = {
+            'idle': _('Download the release, then review cleanup before installing.'),
+            'downloading': _('You can close this window; the download can resume.'),
+            'verifying': _('Checking the release size and SHA-256 checksums.'),
+            'extracting': _('Preparing the verified release installer.'),
+            'installing': _('Installing the complete release. Keep the device on.'),
+            'recovering': _('Following the recovery steps in the upgrade guide.'),
+            'reboot_pending': _('Your update is installed. Restart when convenient.'),
+            'failed_rollback': _('Recovery could not complete. Retry installation or restore the previous release.'),
+            'interrupted': _('Retry the interrupted installation or restore the previous release.'),
+            'failed_download': _('The system has not been changed. Retry the download.'),
+            'prepared': _('Review what will be removed, then confirm installation.'),
+            'rolling_back': _('Restoring the previous complete release.'),
+            'rolled_back': _('The previous release is restored. Restart when convenient.'),
+        }
+        self.page.set_description(descriptions.get(phase,''))
         detail = f"{state.get('current','')} → {self.version}"
-        if state.get('total_bytes'):
-            detail += '\n' + _('Download size: %.1f MiB') % (state['total_bytes']/1048576)
-        detail += '\n' + _('Close all virtual machines before installing.')
-        self.detail.set_text(detail)
-        text = state.get('rollback_error') or state.get('error') or state.get('message') or state.get('notes','')
+        if state.get('total_bytes'): detail += ' · ' + GLib.format_size(state['total_bytes'])
+        warning = []
+        if self.vms:
+            warning.append(_('Close running virtual machines: %s') % ', '.join(self.vms))
+        metered = self.preview.get('metered', False) if self.preview is not None else self.network.get_network_metered()
+        if metered and phase in ('idle','downloading','failed_download'):
+            warning.append(_('Metered connection: this download counts towards your data allowance.'))
+        self.notice.set_text('\n'.join(warning)); self.notice.set_visible(bool(warning))
+        text = state.get('rollback_error') or state.get('error') or state.get('message') or ''
+        if phase.startswith('failed') or phase == 'interrupted':
+            text = brief_message(text)
+        active = phase in ('downloading','verifying','extracting','installing','recovering','rolling_back')
+        self.pipeline.set_visible(active)
+        order = ['downloading','verifying','extracting','installing']
+        index = order.index(phase) if phase in order else 3 if phase in ('recovering','failed_rollback','interrupted') else 4
+        self.steps['downloading'][0].set_subtitle(state.get('file','') if phase == 'downloading' else '')
+        for i,(key,(row,status)) in enumerate(self.steps.items()):
+            label = _('Done') if i < index else _('In progress') if i == index and active else _('Waiting')
+            if i == 3 and phase in ('failed_rollback','interrupted'): label = _('Interrupted')
+            if i == 3 and phase == 'prepared': label = _('Waiting for confirmation')
+            status.set_text(label)
+        size = state.get('size',0); received = state.get('received',0)
+        speed = max(0,state.get('bytes_per_second',0))
+        self.progress.set_visible(phase == 'downloading')
+        self.progress.set_fraction(min(1,received/size) if size else 0)
+        progress = '%d%%' % (100*received/size) if size else ''
+        if speed:
+            progress += ' · ' + GLib.format_size(speed) + '/s · ' + _('%d s remaining') % max(0,(size-received)/speed)
+        self.progress.set_text(progress)
+        if phase == 'downloading': self.steps['downloading'][1].set_text(progress.split(' · ')[0])
+        self.notes_text.set_text(state.get('notes',''))
+        self.notes_box.set_visible(bool(state.get('notes')))
         if phase == 'idle':
-            text += '\n\n' + _('On a metered connection, this download counts towards your data allowance.')
-            self.button(_('Download and install'), lambda:self.call('Prepare',(self.version,)))
+            self.button(_('Download and install'), lambda:self.call('Prepare',(self.version,)), 'suggested-action')
         elif phase == 'prepared':
             preview = state.get('cleanup_preview',{})
-            text = _('Cleanup preview') + '\n'
-            for item in preview.get('remove', preview.get('items', [])):
+            text += '\n' + _('Cleanup preview') + '\n'
+            for item in preview.get('remove',preview.get('items',[])):
                 text += '• ' + str(item.get('reason',item.get('kind',''))) + ': ' + str(item.get('package',item.get('path',''))) + '\n'
-            text += _('Space to reclaim: %.1f MiB') % (preview.get('freed_bytes',0)/1048576)
-            self.button(_('Install'), lambda:self.call('Install',(self.version,)))
+            text += _('Space to reclaim: %s') % GLib.format_size(preview.get('freed_bytes',0))
+            install = self.button(_('Install'), lambda:self.call('Install',(self.version,)), 'suggested-action')
+            install.set_sensitive(not self.vms)
         elif phase in ('failed_rollback','interrupted'):
-            text += '\n' + (_('Continue retries the upgrade and its documented recovery. Rollback is also available.') if phase == 'interrupted' else _('Package recovery is attempted before rollback is offered.'))
-            self.button(_('Continue'), lambda:self.call('Resume'))
-            self.button(_('Roll back to previous release'), lambda:self.call('Rollback'))
+            if state.get('phase') == 'rolling_back':
+                self.button(_('Retry rollback'), lambda:self.call('Resume'), 'destructive-action').set_sensitive(not self.vms)
+            else:
+                self.button(_('Retry installation'), lambda:self.call('Resume'), 'suggested-action').set_sensitive(not self.vms)
+                self.button(_('Roll back to previous release'), lambda:self.call('Rollback'), 'destructive-action')
             self.button(_('View detailed log'), self.logs)
         elif phase == 'failed_download':
-            self.button(_('Retry'), lambda:self.call('Prepare',(self.version,)))
+            self.button(_('Retry'), lambda:self.call('Prepare',(self.version,)), 'suggested-action')
             self.button(_('View detailed log'), self.logs)
         elif phase in ('reboot_pending','rolled_back'):
-            self.button(_('Restart now'), self.restart)
+            self.button(_('Restart now'), self.restart, 'suggested-action')
             self.button(_('Later'), self.window.close)
-            if phase == 'reboot_pending':
-                self.button(_('Roll back'), lambda:self.call('Rollback'))
-        size = state.get('size',0); received = state.get('received',0)
-        self.progress.set_fraction(min(1,received/size) if size else 0)
-        speed = state.get('bytes_per_second',0) if phase == 'downloading' else 0
-        self.progress.set_visible(phase in ('downloading','verifying','extracting','installing','recovering','rolling_back'))
-        self.progress.set_text((_('%.1f MiB/s · %d s remaining') % (speed/1048576,(size-received)/speed)) if speed else TITLES.get(phase,phase))
-        self.extra.set_text(text)
+            if phase == 'reboot_pending': self.button(_('Roll back to previous release'), lambda:self.call('Rollback'), 'destructive-action')
+        if self.vms: self.button(_('Check virtual machines again'), self.refresh_vms)
+        self.extra.set_text(detail + ('\n\n'+text.strip() if text.strip() else ''))
         return False
 
     def logs(self):

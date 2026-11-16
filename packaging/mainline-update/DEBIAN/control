@@ -3,7 +3,7 @@ Version: 0.1.0
 Section: gnome
 Priority: optional
 Architecture: all
-Depends: python3, python3-gi, gir1.2-gtk-4.0, gir1.2-adw-1, polkitd, systemd
+Depends: python3, python3-gi, gir1.2-gtk-4.0, gir1.2-adw-1 (>= 1.4), polkitd, systemd
 Maintainer: yzddmr6 <yzddmr6@gmail.com>
 Description: One-tap updater for mainline tablet releases
  Download, verify, install, and roll back a complete project release from GNOME.

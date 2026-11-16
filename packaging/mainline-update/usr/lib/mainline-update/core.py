@@ -417,6 +417,16 @@ class Updater:
         _atomic_json(self._state_path(), state)
         self._event(**state)
 
+    def _release_notes(self, release):
+        heading = self.project.get('notes_heading', 'Changes')
+        body = release.get('body') or ''
+        notes = ''
+        match = re.search(rf'^##\s+{re.escape(heading)}\s*\n(.*?)(?=^##\s|\Z)', body,
+                          flags=re.M | re.S | re.I)
+        if match:
+            notes = match[1].strip()
+        return notes
+
     def overview(self, requested_version=None):
         current = self._installed_version()
         version, release = self._release(requested_version)
@@ -430,13 +440,7 @@ class Updater:
             names.append(rollback_pattern.format(version=version))
         if any(name not in assets for name in names):
             raise UpdateError('release is missing required update attachments')
-        heading = self.project.get('notes_heading', 'Changes')
-        body = release.get('body') or ''
-        notes = ''
-        match = re.search(rf'^##\s+{re.escape(heading)}\s*\n(.*?)(?=^##\s|\Z)', body,
-                          flags=re.M | re.S | re.I)
-        if match:
-            notes = match[1].strip()
+        notes = self._release_notes(release)
         return {
             'current': current,
             'version': version,
@@ -512,6 +516,7 @@ class Updater:
                     'phase': 'prepared', 'current': current, 'version': target,
                     'new_batch': str(new_batch), 'previous_batch': str(rollback_path),
                     'release_url': release.get('html_url', ''), 'cleanup_preview': cleanup,
+                    'notes': self._release_notes(release),
                     'package_bytes': (cache / 'new' / 'assets' / package_name).stat().st_size,
                 }
                 self._save(prepared)

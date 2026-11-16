@@ -17,8 +17,9 @@ def run(args):subprocess.run(list(map(str,args)),check=True,stdout=subprocess.DE
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 for product in ((sys.argv[3],) if len(sys.argv)>3 else ('piano','erhai')):
     store=Path('/var/lib')/product/'releases'
-    saved=store.with_name('releases-authority')
-    if store.exists():store.rename(saved)
+    # Overlay lower directories cannot be renamed across layers. This store
+    # belongs to the disposable fixture and is reset for compact transactions.
+    if store.exists():shutil.rmtree(store)
     boot=Path('/var/lib')/product/'switch/ubuntu';boot.mkdir(parents=True,exist_ok=True)
     for name in ('boot.img','init_boot.img','vendor_boot.img'):(boot/name).write_bytes(b'offline boot fixture')
     # This is the same boot-boundary recorder as apt-scenarios, with no device nodes.
@@ -81,7 +82,7 @@ for product in ((sys.argv[3],) if len(sys.argv)>3 else ('piano','erhai')):
     if product=='piano':config['rollback_asset']='rollback.zip'
     configfile=fixtures/'project.json';configfile.write_text(json.dumps(config))
     for scenario in ('normal','recovery-once','failure-rollback','jump'):
-        if len(sys.argv)>2 and scenario != sys.argv[2]:
+        if len(sys.argv)>2 and sys.argv[2] != 'all' and scenario != sys.argv[2]:
             continue
         if store.exists():shutil.rmtree(store)
         cache=fixtures/('cache-'+scenario);state=fixtures/('state-'+scenario)
