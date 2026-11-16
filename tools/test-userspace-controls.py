@@ -29,8 +29,8 @@ class Speaker(unittest.TestCase):
  def test_four_orientations_and_recreated_node(self):
   for transform,expected in enumerate([(0,1,2,3),(1,3,0,2),(3,2,1,0),(2,0,3,1)]):
    with patch('subprocess.run') as run:
-    run.return_value.stdout=json.dumps([{'id':14,'type':'PipeWire:Interface:Node','info':{'props':{'node.name':self.service.config['control_node']}}}]);self.service.set_matrix(transform)
+    run.return_value.stdout=json.dumps([{'id':14,'type':'PipeWire:Interface:Node','info':{'props':{'object.serial':54,'node.name':self.service.config['control_node']}}}]);self.service.set_matrix(transform)
     params=json.loads(run.call_args.args[0][-1])['params'];gains=params[1::2];self.assertEqual([gains[i*4:(i+1)*4].index(1) for i in range(4)],list(expected))
     self.service.set_matrix(transform);self.assertEqual(run.call_count,3) # second call only dumps
-    run.return_value.stdout=run.return_value.stdout.replace('14','15');self.service.set_matrix(transform);self.assertEqual(run.call_count,5)
+    run.return_value.stdout=run.return_value.stdout.replace('54','55');self.service.set_matrix(transform);self.assertEqual(run.call_count,5)
 if __name__=='__main__':unittest.main()

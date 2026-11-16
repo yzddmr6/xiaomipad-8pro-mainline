@@ -44,7 +44,11 @@ class SpeakerRotation:
             line, _length = stream.read_line_finish(result)
             if line is None:
                 return
-            if b'"node.name"' in line or b'"state": "running"' in line:
+            # pw-dump also reports unrelated nodes and playback state changes.
+            # React only when the filter itself is announced.
+            key, _, value = line.strip().partition(b':')
+            if (key == b'"node.name"' and
+                    value.strip().rstrip(b',') == json.dumps(self.config["control_node"]).encode()):
                 self.update()
             self.watch_pipewire()
         except GLib.Error:
@@ -83,12 +87,15 @@ class SpeakerRotation:
                               stdout=subprocess.PIPE, timeout=5)
         nodes = json.loads(dump.stdout)
         target = self.config["control_node"]
-        node_id = next(
-            obj["id"] for obj in nodes
+        node = next(
+            obj for obj in nodes
             if obj.get("type", "").endswith(":Node")
             and obj.get("info", {}).get("props", {}).get("node.name") == target
         )
-        if self.last_node == node_id and self.last_transform == transform:
+        node_id = node["id"]
+        # Global IDs can be reused in the same server after a node is removed.
+        identity = (node_id, node["info"]["props"]["object.serial"])
+        if self.last_node == identity and self.last_transform == transform:
             return
         subprocess.run(
             ["pw-cli", "set-param", str(node_id), "Props",
@@ -97,7 +104,7 @@ class SpeakerRotation:
             text=True, timeout=5,
         )
         self.last_transform = transform
-        self.last_node = node_id
+        self.last_node = identity
 
     def update(self):
         try:
