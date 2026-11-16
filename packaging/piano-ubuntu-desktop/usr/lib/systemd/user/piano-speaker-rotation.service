@@ -1,0 +1,11 @@
+[Unit]
+Description=Rotate stereo output across the tablet speakers
+After=pipewire.service wireplumber.service
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/piano/speaker-rotation.py /usr/share/piano/speaker-rotation/config.json
+
+[Install]
+WantedBy=graphical-session.target

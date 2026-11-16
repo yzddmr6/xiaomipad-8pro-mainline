@@ -1,0 +1,1 @@
+ACTION=="add", SUBSYSTEM=="power_supply", ATTR{type}=="Battery", TEST=="charge_behaviour", TAG+="systemd", ENV{SYSTEMD_WANTS}+="tablet-charge-behaviour.service"

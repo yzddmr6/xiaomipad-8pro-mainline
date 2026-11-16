@@ -329,7 +329,9 @@ def main():
                       ' deb-systemd-invoke stop piano-emergency-android.service piano-pen-radio.service tablet-charge-sample.timer tablet-charge-events.service >/dev/null || true\n'
                       ' deb-systemd-helper disable piano-emergency-android.service piano-pen-radio.service tablet-charge-sample.timer tablet-charge-events.service >/dev/null\nfi\n',
                 postrm='#!/bin/sh\nset -e\nif [ "$1" = purge ]; then\n'
-                       ' deb-systemd-helper purge piano-emergency-android.service piano-pen-radio.service tablet-charge-sample.timer tablet-charge-events.service >/dev/null\nfi\n',
+                       ' deb-systemd-helper purge piano-emergency-android.service piano-pen-radio.service tablet-charge-sample.timer tablet-charge-events.service >/dev/null\n'
+                       ' rm -- /var/lib/tablet-charge/behaviour 2>/dev/null || true\n'
+                       ' rmdir /var/lib/tablet-charge 2>/dev/null || true\nfi\n',
                 recommends='openssh-server',  # developer mode only; piano-devmode refuses without sshd
                 third_party=support_third_party,
                 conffiles=['/etc/security/limits.d/90-piano-gunyah.conf', '/etc/dracut.conf.d/91-piano-gunyah.conf'],
@@ -378,7 +380,7 @@ def main():
          'usr/share/pipewire/client.conf.d/50-piano-speaker-upmix.conf')
     (desktop / 'usr/libexec/piano/gunyahvm-favorite').chmod(0o755)
     # fake-hwclock: the RTC cannot be set; it restores the time saved at shutdown or hourly.
-    package('piano-ubuntu-desktop', desktop, 'qcom-npu-runtime, qcom-npu-demo-model, piano-npu-firmware, gunyahvm (>= 1.3.0-1), resources (= 1.10.2-0ubuntu3.1+piano2), gir1.2-mutter-18 (= 50.1-0ubuntu2.5+sm8750.1), libmutter-18-0 (= 50.1-0ubuntu2.5+sm8750.1), mutter-common (= 50.1-0ubuntu2.5+sm8750.1), mutter-common-bin (= 50.1-0ubuntu2.5+sm8750.1), wireplumber (>= 0.5.13-1ubuntu1.1), gnome-settings-daemon (= 50.0-1ubuntu1+piano2), gnome-settings-daemon-common (= 50.0-1ubuntu1+piano2), gnome-control-center (= 1:50.3-0ubuntu0.2+piano2), gnome-control-center-data (= 1:50.3-0ubuntu0.2+piano2), piano-mesa, piano-iris-vaapi (>= 0.1.0+git.f587b14-0piano4), gdm3, gnome-shell (>= 50), colord, colord-data, python3-gi, fake-hwclock, python3, console-setup, snapd, init-system-helpers, tuned-ppd (>= 2.25.1), showtime, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, gstreamer1.0-plugins-bad, gstreamer1.0-libav',
+    package('piano-ubuntu-desktop', desktop, 'qcom-npu-runtime, qcom-npu-demo-model, piano-npu-firmware, gunyahvm (>= 1.3.0-1), resources (= 1.10.2-0ubuntu3.1+piano2), gir1.2-mutter-18 (= 50.1-0ubuntu2.5+sm8750.1), libmutter-18-0 (= 50.1-0ubuntu2.5+sm8750.1), mutter-common (= 50.1-0ubuntu2.5+sm8750.1), mutter-common-bin (= 50.1-0ubuntu2.5+sm8750.1), wireplumber (>= 0.5.13-1ubuntu1.1), gnome-settings-daemon (= 50.0-1ubuntu1+piano3), gnome-settings-daemon-common (= 50.0-1ubuntu1+piano3), gnome-control-center (= 1:50.3-0ubuntu0.2+piano2), gnome-control-center-data (= 1:50.3-0ubuntu0.2+piano2), piano-mesa, piano-iris-vaapi (>= 0.1.0+git.f587b14-0piano4), gdm3, gnome-shell (>= 50), colord, colord-data, python3-gi, fake-hwclock, python3, console-setup, snapd, init-system-helpers, tuned-ppd (>= 2.25.1), showtime, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, gstreamer1.0-plugins-bad, gstreamer1.0-libav',
             'Piano Ubuntu desktop defaults: graphics, clock without RTC, speaker up-mix and UCM, '
             'GNOME Shell 50 on-screen keyboard guard',
             '#!/bin/sh\nset -e\nif [ "$1" = configure ]; then\n'
@@ -391,11 +393,11 @@ def main():
             ' fi\n'
             ' deb-systemd-helper enable tablet-app-center-install.service >/dev/null\n'
             ' deb-systemd-helper enable piano-firefox-snap-remove.service >/dev/null\n'
-            ' deb-systemd-helper --user enable piano-panel-srgb.service >/dev/null\n'
+            ' deb-systemd-helper --user enable piano-panel-srgb.service >/dev/null\n deb-systemd-helper --user enable piano-speaker-rotation.service >/dev/null\n'
             ' deb-systemd-helper --user enable mainline-release-notifier.timer >/dev/null\nfi\n',
             prerm='#!/bin/sh\nset -e\nif [ "$1" = remove ]; then\n'
                   ' deb-systemd-helper disable tablet-app-center-install.service >/dev/null\n'
-            ' deb-systemd-helper --user disable piano-panel-srgb.service >/dev/null\n'
+            ' deb-systemd-helper --user disable piano-panel-srgb.service >/dev/null\n deb-systemd-helper --user disable piano-speaker-rotation.service >/dev/null\n'
                   ' deb-systemd-helper --user disable mainline-release-notifier.timer >/dev/null\nfi\n',
             postrm='#!/bin/sh\nset -e\nif [ "$1" = purge ]; then\n'
                    ' if [ -f /etc/machine-info ]; then\n'
@@ -403,7 +405,7 @@ def main():
                    '  if [ ! -s /etc/machine-info ]; then rm -f /etc/machine-info; fi\n'
                    ' fi\n'
                    ' deb-systemd-helper purge tablet-app-center-install.service >/dev/null\n'
-            ' deb-systemd-helper --user purge piano-panel-srgb.service >/dev/null\n'
+            ' deb-systemd-helper --user purge piano-panel-srgb.service >/dev/null\n deb-systemd-helper --user purge piano-speaker-rotation.service >/dev/null\n'
                    ' deb-systemd-helper --user purge mainline-release-notifier.timer >/dev/null\nfi\n',
             conffiles=['/etc/apt/preferences.d/piano-resources', '/etc/apt/preferences.d/piano-power-button-lock', '/etc/tuned/piano-ppd.conf',
                        '/etc/xdg/mimeapps.list'],

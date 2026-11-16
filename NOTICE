@@ -488,3 +488,7 @@ piano-camera-ctl and the camerad manual control interface derive from
 Project-SunUEFI efcf9eb3cd4dc8417bacdb2aa57dea15f3e6de20 (slwyts
 <slwyts@foxmail.com>, Cryolitia PukNgae <cryolitia@gmail.com>), under
 the MIT license in device/camera/LICENSE.
+
+Ambient brightness curve: GreenTeodoro839, PR #23, https://github.com/yzddmr6/xiaomipad-8pro-mainline/pull/23 (824269d); original patch authors and trailers retained. Shared installer dependency handling: JackJunbao, OnePlus PR #21 (e2b7808).
+
+Screen-relative speaker routing follows zczyh0922's design and Erhai slot map: https://github.com/yzddmr6/onepluspad-2pro-mainline/issues/24 . The Piano slot map remains the board's own UCM mapping.
