@@ -221,6 +221,8 @@ class App(Adw.Application):
             text = ''
         elif phase == 'interrupted':
             text = brief_message(text)
+        elif phase in ('rolled_back', 'reboot_pending', 'complete'):
+            text = ''
         error = state.get('error', '')
         if phase in ('prepared', 'failed_rollback', 'interrupted', 'failed_download') and (
                 'exact installed distribution package unavailable:' in error or

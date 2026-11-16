@@ -14,7 +14,7 @@ a = p.parse_args()
 source = Path(__file__).resolve().parent
 a.output.mkdir(parents=True, exist_ok=True)
 product=json.loads((source/'usr/share/mainline-update/project.json').read_text())['product']
-version='0.1.0+'+product+'6'
+version='0.1.0+'+product+'7'
 os.environ.setdefault('SOURCE_DATE_EPOCH', '1794787200')
 with tempfile.TemporaryDirectory() as temp:
     stage = Path(temp)/'package'

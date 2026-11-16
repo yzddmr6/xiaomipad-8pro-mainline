@@ -629,6 +629,8 @@ class Updater:
                 self._save(prepared)
             if prepared.get('phase') != 'prepared':
                 raise UpdateError('update files are not prepared')
+            for field in ('error', 'rollback_error', 'message'):
+                prepared.pop(field, None)
             current = self._installed_version()
             if current not in (prepared.get('current'), prepared.get('version')):
                 raise UpdateError('installed version changed after update preparation')
@@ -672,6 +674,8 @@ class Updater:
             if not self._has_transaction(prepared):
                 raise UpdateError('the installer has no matching transaction to roll back')
             installer, new_batch, _ = self._installer(prepared)
+            for field in ('error', 'rollback_error', 'message'):
+                state.pop(field, None)
             self._save({**state, 'phase': 'rolling_back'})
             try:
                 with self._inhibit_sleep():

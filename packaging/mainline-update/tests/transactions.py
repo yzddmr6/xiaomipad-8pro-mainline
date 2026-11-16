@@ -154,6 +154,7 @@ for product in ((sys.argv[3],) if len(sys.argv)>3 else ('piano','erhai')):
         if scenario != 'failure-rollback':
             fail.unlink(missing_ok=True)
         result=u.rollback();assert result['phase']=='rolled_back',result
+        assert not any(result.get(k) for k in ('error','rollback_error','message'))
         assert result['freed_bytes']==result['installer_result']['freed_bytes']
         assert Path('/opt/update-fixture/version').read_text().strip()==old
         assert all((slots/(n+'_a')).read_bytes()==b'old '+n.encode() for n in names)
