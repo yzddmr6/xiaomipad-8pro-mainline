@@ -1,0 +1,6 @@
+# The login screen keeps the backlight that systemd-backlight restored from
+# the last session. After login, automatic brightness follows each user's
+# own setting. GDM compiles this directory when it starts; a file in
+# /etc/gdm3/greeter.dconf-defaults still takes precedence.
+[org/gnome/settings-daemon/plugins/power]
+ambient-enabled=false
