@@ -45,6 +45,12 @@ assert app.notice.get_visible() and 'Ubuntu work' in app.notice.get_text() and '
 app.render({'phase':'rolling_back','display_phase':'interrupted'})
 assert app.buttons.get_first_child().get_label()=='Retry rollback'
 assert app.buttons.get_first_child().has_css_class('destructive-action')
+app.render({'phase':'reboot_pending','display_phase':'reboot_pending','completion_notified':True})
+assert app.page.get_title()=='Update complete'
+assert app.buttons.get_first_child().get_label()=='Check for updates'
+app.render({'phase':'downloading','version':'1.6.0'})
+assert app.page.get_title()=='Downloading'
+assert not app.view_state.get('completion_notified')
 # Standard status/description labels have no selectable cursor.
 def walk(widget):
  yield widget

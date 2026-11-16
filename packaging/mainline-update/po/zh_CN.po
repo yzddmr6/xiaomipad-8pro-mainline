@@ -188,3 +188,21 @@ msgstr "更新已安装，可在方便时重启。"
 
 msgid "Retry rollback"
 msgstr "重试回退"
+
+msgid "Update complete"
+msgstr "更新已完成"
+
+msgid "Up to date"
+msgstr "已是最新版本"
+
+msgid "The restart is complete. You can check for another release."
+msgstr "重启已完成，可以检查后续更新。"
+
+msgid "No newer release was found."
+msgstr "未发现更新的版本。"
+
+msgid "Check for updates"
+msgstr "检查更新"
+
+msgid "Close"
+msgstr "关闭"

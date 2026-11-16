@@ -17,6 +17,7 @@ _ = gettext.translation('mainline-update', '/usr/share/locale', fallback=True).g
 BUS = 'org.mainline.Update1'
 PATH = '/org/mainline/Update1'
 TITLES = {
+    'complete': _('Update complete'), 'up_to_date': _('Up to date'),
     'idle': _('Update available'), 'downloading': _('Downloading'),
     'verifying': _('Verifying checksums'), 'extracting': _('Extracting'),
     'prepared': _('Review cleanup'), 'installing': _('Installing'),
@@ -133,13 +134,13 @@ class App(Adw.Application):
             except (GLib.Error, ValueError) as error:
                 def failed(message=str(error)):
                     self.call('GetState', (), lambda state: self.render(
-                        state if state.get('phase') in ('failed_rollback','interrupted')
+                        {**state,'error':message} if state.get('phase') in ('failed_rollback','interrupted','prepared','reboot_pending','rolled_back')
                         else {**state,'phase':'failed_download','error':message})) if method != 'GetState' else self.render({'phase':'failed_download','error':message})
                 GLib.idle_add(failed)
         threading.Thread(target=work, daemon=True).start()
 
     def initial(self, state):
-        if state.get('phase') in ('idle','failed_download','rolled_back'):
+        if state.get('phase') in ('idle','failed_download') or (state.get('completion_notified') and self.version):
             self.call('GetOverview', (self.version,), self.render)
         else:
             self.render(state)
@@ -159,18 +160,22 @@ class App(Adw.Application):
             self.buttons.remove(self.buttons.get_first_child())
         if not hasattr(self, 'view_state'): self.view_state = {}
         if incoming.get('phase') and incoming['phase'] != self.view_state.get('phase'):
-            for key in ('display_phase','error','rollback_error','message'):
+            for key in ('display_phase','error','rollback_error','message','completion_notified','rollback_version'):
                 self.view_state.pop(key, None)
         self.view_state.update(incoming)
         state = self.view_state
         phase = state.get('display_phase', state.get('phase','idle'))
+        if state.get('completion_notified') and phase in ('reboot_pending','rolled_back'):
+            phase = 'complete'
         self.version = state.get('version', self.version)
         self.page.set_title(TITLES.get(phase, phase))
         self.page.set_icon_name('dialog-error-symbolic' if phase.startswith('failed') else
                                 'dialog-warning-symbolic' if phase == 'interrupted' else
-                                'emblem-ok-symbolic' if phase in ('reboot_pending','rolled_back') else
+                                'emblem-ok-symbolic' if phase in ('reboot_pending','rolled_back','complete','up_to_date') else
                                 'software-update-available-symbolic')
         descriptions = {
+            'complete': _('The restart is complete. You can check for another release.'),
+            'up_to_date': _('No newer release was found.'),
             'idle': _('Download the release, then review cleanup before installing.'),
             'downloading': _('You can close this window; the download can resume.'),
             'verifying': _('Checking the release size and SHA-256 checksums.'),
@@ -187,6 +192,8 @@ class App(Adw.Application):
         }
         self.page.set_description(descriptions.get(phase,''))
         detail = f"{state.get('current','')} → {self.version}"
+        if phase == 'complete': detail = state.get('rollback_version') or self.version
+        elif phase == 'up_to_date': detail = state.get('current','')
         if state.get('total_bytes'): detail += ' · ' + GLib.format_size(state['total_bytes'])
         warning = []
         if self.vms:
@@ -219,7 +226,12 @@ class App(Adw.Application):
         if phase == 'downloading': self.steps['downloading'][1].set_text(progress.split(' · ')[0])
         self.notes_text.set_text(state.get('notes',''))
         self.notes_box.set_visible(bool(state.get('notes')))
-        if phase == 'idle':
+        if phase in ('complete','up_to_date'):
+            self.button(_('Check for updates'), lambda:self.call('GetOverview',('',)), 'suggested-action')
+            if (phase == 'complete' and not state.get('rollback_version')) or state.get('rollback_available'):
+                self.button(_('Roll back to previous release'), lambda:self.call('Rollback'), 'destructive-action')
+            self.button(_('Close'), self.window.close)
+        elif phase == 'idle':
             self.button(_('Download and install'), lambda:self.call('Prepare',(self.version,)), 'suggested-action')
         elif phase == 'prepared':
             preview = state.get('cleanup_preview',{})

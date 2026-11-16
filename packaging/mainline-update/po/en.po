@@ -188,3 +188,21 @@ msgstr "Your update is installed. Restart when convenient."
 
 msgid "Retry rollback"
 msgstr "Retry rollback"
+
+msgid "Update complete"
+msgstr "Update complete"
+
+msgid "Up to date"
+msgstr "Up to date"
+
+msgid "The restart is complete. You can check for another release."
+msgstr "The restart is complete. You can check for another release."
+
+msgid "No newer release was found."
+msgstr "No newer release was found."
+
+msgid "Check for updates"
+msgstr "Check for updates"
+
+msgid "Close"
+msgstr "Close"

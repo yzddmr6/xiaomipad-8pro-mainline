@@ -28,7 +28,9 @@ with APT installation. There are no password-free polkit rules.
 
 An interrupted service exposes the installer's transaction phase and offers Continue /
 Rollback. The first login after a different kernel boot ID sends the completion notice;
-logging out and back in before reboot does not claim completion. Detailed logs come from
+logging out and back in before reboot does not claim completion. After the notice,
+the window offers a fresh update check while retaining the completed release’s
+rollback action; later installations and rollbacks get their own completion notice. Detailed logs come from
 `journalctl -u mainline-update.service`. The metered-connection advisory follows Gio.NetworkMonitor; download sizes use
 GLib.format_size. Running VM names come from the read-only `gunyahvm list` CLI
 (config/status contract from GunyahVM 1.3.0); stopped and interrupted instances

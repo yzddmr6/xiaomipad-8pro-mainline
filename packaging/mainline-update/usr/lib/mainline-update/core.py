@@ -432,7 +432,10 @@ class Updater:
         version, release = self._release(requested_version)
         if subprocess.run(['dpkg', '--compare-versions', version, 'gt', current],
                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode:
-            raise UpdateError('the requested release is not newer than the installed version')
+            state = self.state()
+            return {'phase': 'up_to_date', 'current': current, 'version': current,
+                    'rollback_available': (state.get('phase') == 'reboot_pending' and
+                        state.get('version') == current and self._has_transaction(state))}
         assets = self._assets(release)
         names = [self.project['package_asset'].format(version=version)]
         rollback_pattern = self.project.get('rollback_asset')
@@ -450,7 +453,7 @@ class Updater:
             'assets': [{'name': name, 'size': assets[name]['size']} for name in names],
             'total_bytes': sum(assets[name]['size'] for name in names),
             'release_url': release.get('html_url') or '',
-            'phase': self.state().get('phase', 'idle'),
+            'phase': 'idle',
         }
 
     def prepare(self, version):
@@ -458,7 +461,9 @@ class Updater:
         try:
             with self._inhibit_sleep():
                 previous_state = self.state()
-                if previous_state.get('phase') in ('installing', 'recovering', 'rolling_back', 'failed_rollback', 'prepared', 'reboot_pending'):
+                completed = (previous_state.get('phase') == 'reboot_pending' and
+                             previous_state.get('completion_notified'))
+                if not completed and previous_state.get('phase') in ('installing', 'recovering', 'rolling_back', 'failed_rollback', 'prepared', 'reboot_pending'):
                     raise UpdateError('finish, continue or roll back the existing update first')
                 current = self._installed_version()
                 target, release = self._release(version)
@@ -655,7 +660,7 @@ class Updater:
                     freed_bytes = sum(item.get('bytes', 0) for item in last.get('remove', []) if 'result' not in item)
             except (OSError, ValueError, IndexError, AttributeError):
                 pass
-            state = {**prepared, 'phase': 'reboot_pending', 'freed_bytes': freed_bytes,
+            state = {**prepared, 'phase': 'reboot_pending', 'freed_bytes': freed_bytes, 'completion_notified': False,
                      'installer_result': result, 'boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip()}
             self._save(state)
             return state
@@ -688,7 +693,7 @@ class Updater:
                 self._save(state)
                 return state
             state = {**state, 'phase': 'rolled_back', 'installer_result': result,
-                     'rollback_version': state.get('current'),
+                     'rollback_version': state.get('current'), 'completion_notified': False,
                      'boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip()}
             self._save(state)
             return state
@@ -717,6 +722,8 @@ class Updater:
     def mark_completion_notified(self):
         fd = self._with_lock()
         try:
+            if not self.completion_notice():
+                raise UpdateError('there is no completed update to acknowledge')
             state = self.state()
             state['completion_notified'] = True
             self._save(state)

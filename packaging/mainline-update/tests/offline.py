@@ -76,6 +76,19 @@ class Offline(unittest.TestCase):
     def test_update_notes_section(self):
         self.updater.project={'notes_heading':'更新'}
         self.assertEqual(self.updater._release_notes({'body':'## 其他\n不显示\n## 更新\n实际更新\n## 安装\n不显示'}),'实际更新')
+    def test_already_installed_keeps_rollback(self):
+        self.updater._installed_version=lambda:'2.0'
+        self.updater._release=lambda version=None:('2.0',{'tag_name':'v2.0'})
+        self.updater.state=lambda:{'phase':'reboot_pending','version':'2.0','completion_notified':True}
+        self.updater._has_transaction=lambda state:True
+        overview=self.updater.overview()
+        self.assertEqual(overview['phase'],'up_to_date')
+        self.assertTrue(overview['rollback_available'])
+    def test_acknowledgement_requires_completed_boot(self):
+        self.updater._with_lock=lambda:os.open(self.root/'lock',os.O_CREAT|os.O_RDWR,0o600)
+        self.updater.completion_notice=lambda:None
+        self.updater._save=lambda state:self.fail('premature completion changed state')
+        with self.assertRaises(core.UpdateError):self.updater.mark_completion_notified()
     def test_last_json(self):
         self.assertEqual(core.Updater._last_json('log\n{"phase":"upgraded","nested":{"x":1}}\n{"remove":[],"freed_bytes":7}'),dict(remove=[],freed_bytes=7))
 if __name__=='__main__':
