@@ -77,13 +77,16 @@ class Service:
         invocation.return_value(GLib.Variant('(s)', (encode(result),)))
 
     def _worker(self, invocation, sender, method, args):
+        counted = False
         try:
             if method in ('Prepare', 'Install', 'Resume'):
                 self.authorize(sender, ACTION_INSTALL)
             elif method == 'Rollback':
                 self.authorize(sender, ACTION_ROLLBACK)
-            with self.guard:
-                self.active += 1
+            if method != 'GetOverview':
+                with self.guard:
+                    self.active += 1
+                    counted = True
             updater = self.updater()
             if method == 'GetOverview':
                 result = updater.overview(args[0] or None)
@@ -102,16 +105,21 @@ class Service:
         except (UpdateError, OSError, GLib.Error, ValueError) as error:
             invocation.return_dbus_error(INTERFACE + '.Error.Failed', str(error))
         finally:
-            with self.guard:
-                self.active = max(0, self.active - 1)
+            if counted:
+                with self.guard:
+                    self.active -= 1
 
     def method_call(self, connection, sender, object_path, interface_name,
                     method_name, parameters, invocation):
         try:
             if method_name == 'GetState':
                 state = self.updater().state()
-                if not self.active and state.get('phase') in ('installing', 'recovering', 'rolling_back'):
-                    state['display_phase'] = 'interrupted'
+                with self.guard:
+                    if not self.active:
+                        if state.get('phase') in ('installing', 'recovering', 'rolling_back'):
+                            state['display_phase'] = 'interrupted'
+                        elif state.get('phase') in ('downloading', 'verifying', 'extracting'):
+                            state['display_phase'] = 'failed_download'
                 invocation.return_value(GLib.Variant('(s)', (encode(state),)))
                 return
             if method_name == 'GetCompletionNotice':

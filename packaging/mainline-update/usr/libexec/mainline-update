@@ -89,12 +89,15 @@ class App(Adw.Application):
         box.append(notes_box)
         self.vms = []
         self.network = Gio.NetworkMonitor.get_default()
-        self.network.connect('notify::network-metered', lambda *args: self.render({}))
+        self.network.connect('notify::network-metered', lambda *args: self.render({}) if hasattr(self, 'view_state') else None)
         self.window.present()
         if self.preview is not None:
             self.vms = self.preview.get('running_vms', [])
             self.render(self.preview); return
         self.refresh_vms()
+        self.connect_service()
+
+    def connect_service(self):
         try:
             self.bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
             self.bus.signal_subscribe(BUS, BUS, 'Progress', PATH, None,
@@ -133,9 +136,14 @@ class App(Adw.Application):
                 GLib.idle_add(done or self.render, value)
             except (GLib.Error, ValueError) as error:
                 def failed(message=str(error)):
-                    self.call('GetState', (), lambda state: self.render(
-                        {**state,'error':message} if state.get('phase') in ('failed_rollback','interrupted','prepared','reboot_pending','rolled_back')
-                        else {**state,'phase':'failed_download','error':message})) if method != 'GetState' else self.render({'phase':'failed_download','error':message})
+                    if method in ('GetState', 'GetOverview'):
+                        self.render({'phase':'failed_download', 'retry_discovery':True, 'error':message})
+                    else:
+                        def show_state(state):
+                            if state.get('phase') == 'idle':
+                                state['phase'] = 'failed_download'
+                            self.render({**state, 'error':message})
+                        self.call('GetState', (), show_state)
                 GLib.idle_add(failed)
         threading.Thread(target=work, daemon=True).start()
 
@@ -160,8 +168,10 @@ class App(Adw.Application):
             self.buttons.remove(self.buttons.get_first_child())
         if not hasattr(self, 'view_state'): self.view_state = {}
         if incoming.get('phase') and incoming['phase'] != self.view_state.get('phase'):
-            for key in ('display_phase','error','rollback_error','message','completion_notified','rollback_version'):
+            for key in ('display_phase','error','rollback_error','message','retry_discovery','completion_notified','rollback_version'):
                 self.view_state.pop(key, None)
+        if 'phase' in incoming and 'display_phase' not in incoming:
+            self.view_state.pop('display_phase', None)
         self.view_state.update(incoming)
         state = self.view_state
         phase = state.get('display_phase', state.get('phase','idle'))
@@ -249,7 +259,13 @@ class App(Adw.Application):
                 self.button(_('Roll back to previous release'), lambda:self.call('Rollback'), 'destructive-action')
             self.button(_('View detailed log'), self.logs)
         elif phase == 'failed_download':
-            self.button(_('Retry'), lambda:self.call('Prepare',(self.version,)), 'suggested-action')
+            if not hasattr(self, 'bus'):
+                retry = self.connect_service
+            elif state.get('retry_discovery') or not self.version:
+                retry = lambda: self.call('GetOverview', (self.version,))
+            else:
+                retry = lambda: self.call('Prepare', (self.version,))
+            self.button(_('Retry'), retry, 'suggested-action')
             self.button(_('View detailed log'), self.logs)
         elif phase in ('reboot_pending','rolled_back'):
             self.button(_('Restart now'), self.restart, 'suggested-action')

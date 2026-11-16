@@ -51,6 +51,18 @@ assert app.buttons.get_first_child().get_label()=='Check for updates'
 app.render({'phase':'downloading','version':'1.6.0'})
 assert app.page.get_title()=='Downloading'
 assert not app.view_state.get('completion_notified')
+# A failed lookup must retry discovery even when no release version is known.
+app.bus = object()
+with mock.patch.object(app, 'call') as call:
+ app.render({'phase':'failed_download','version':'','retry_discovery':True})
+ app.buttons.get_first_child().emit('clicked')
+ call.assert_called_once_with('GetOverview', ('',))
+ call.reset_mock()
+ app.render({'phase':'downloading','display_phase':'failed_download','version':'1.6.0'})
+ app.buttons.get_first_child().emit('clicked')
+ call.assert_called_once_with('Prepare', ('1.6.0',))
+ app.render({'phase':'downloading','size':10,'received':3})
+ assert app.page.get_title()=='Downloading'
 # Standard status/description labels have no selectable cursor.
 def walk(widget):
  yield widget

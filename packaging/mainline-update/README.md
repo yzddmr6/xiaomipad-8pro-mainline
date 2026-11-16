@@ -3,7 +3,7 @@
 Build the product package with `python3 packaging/mainline-update/build.py --output out/update`.
 Include that deb in the complete release repository and root-image package inputs alongside
 the desktop metapackage. Product data gives the packages distinct Debian versions
-(`0.1.0+piano1` / `0.1.0+erhai1`) so package identity is unambiguous. Its product settings come from
+(`0.1.0+piano2` / `0.1.0+erhai2`) so package identity is unambiguous. Its product settings come from
 `usr/share/mainline-update/project.json`; all other files must match across products.
 The updater depends on the existing release marker and attachment installer contract.
 
