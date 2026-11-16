@@ -84,37 +84,41 @@ def open_uri(bus, url, activation_token=None):
         bus.signal_unsubscribe(subscription)
 
 
-class NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        return None
-
-
-def latest(repository):
-    """Do not fetch the release page or send cookies, locale or installed version."""
-    request = urllib.request.Request(repository + '/releases/latest',
-                                     headers={'User-Agent': 'Release-Notifier'})
-    try:
-        with urllib.request.build_opener(NoRedirect).open(request, timeout=15):
+try:
+    from mainline_update.release import latest
+except ImportError:
+    class NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
             return None
-    except urllib.error.HTTPError as response:
-        with response:
-            if response.code != 302:
+
+
+    def latest(repository):
+        """Do not fetch the release page or send cookies, locale or installed version."""
+        request = urllib.request.Request(repository + '/releases/latest',
+                                         headers={'User-Agent': 'Release-Notifier'})
+        try:
+            with urllib.request.build_opener(NoRedirect).open(request, timeout=15):
                 return None
-            location = response.headers.get('Location', '')
-    except (OSError, urllib.error.URLError, http.client.HTTPException, ValueError):
-        return None
-    prefix = repository + '/releases/tag/'
-    if not location.startswith(prefix):
-        return None
-    tag = location[len(prefix):]
-    # Project release tags are v<Debian version>; forbid URL/markup metacharacters.
-    if not re.fullmatch(r'v?[0-9][0-9A-Za-z.+~\-]{0,127}', tag):
-        return None
-    version = tag.removeprefix('v')
-    if subprocess.run(['dpkg', '--validate-version', version],
-                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode:
-        return None
-    return version, location
+        except urllib.error.HTTPError as response:
+            with response:
+                if response.code != 302:
+                    return None
+                location = response.headers.get('Location', '')
+        except (OSError, urllib.error.URLError, http.client.HTTPException, ValueError):
+            return None
+        prefix = repository + '/releases/tag/'
+        if not location.startswith(prefix):
+            return None
+        tag = location[len(prefix):]
+        # Project release tags are v<Debian version>; forbid URL/markup metacharacters.
+        if not re.fullmatch(r'v?[0-9][0-9A-Za-z.+~\-]{0,127}', tag):
+            return None
+        version = tag.removeprefix('v')
+        if subprocess.run(['dpkg', '--validate-version', version],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode:
+            return None
+        return version, location
+
 
 
 def newer(candidate, installed):
@@ -186,12 +190,22 @@ def notify(product, repository, state):
             return
         if name == 'ActivationToken':
             activation_token = values[1]
-        elif name == 'ActionInvoked' and values[1] in ('default', 'view'):
+        elif name == 'ActionInvoked' and values[1] in ('default', 'view', 'update'):
             if opening:
                 return
             opening = True
             try:
-                open_uri(bus, url, activation_token)
+                if values[1] == 'update':
+                    environment = os.environ.copy()
+                    if activation_token:
+                        environment['XDG_ACTIVATION_TOKEN'] = activation_token
+                    command = ['systemd-run', '--user', '--collect', '--quiet']
+                    if activation_token:
+                        command.append('--setenv=XDG_ACTIVATION_TOKEN')
+                    subprocess.run([*command, '/usr/libexec/mainline-update', version],
+                                   env=environment, check=True)
+                else:
+                    open_uri(bus, url, activation_token)
             except (OSError, ValueError, GLib.Error, subprocess.CalledProcessError) as error:
                 print(f'{APP}: {error}', file=sys.stderr)
             finally:
@@ -203,10 +217,11 @@ def notify(product, repository, state):
                                         Gio.DBusSignalFlags.NONE, signal)
     title = '有新版本可用' if chinese() else 'New release available'
     action = '查看更新说明' if chinese() else 'View release notes'
-    # Both clicking the banner and its single button open the same pinned release.
+    # The update action opens the selected release in the updater.
     arguments = GLib.Variant('(susssasa{sv}i)', (
         product, 0, 'software-update-available', title, f'{product} {version}',
-        ['default', action, 'view', action],
+        (['default', action, 'update', '更新' if chinese() else 'Update', 'view', action]
+         if Path('/usr/libexec/mainline-update').is_file() else ['default', action, 'view', action]),
         {'desktop-entry': GLib.Variant('s', APP)}, -1))
     try:
         notification_id = bus.call_sync(BUS, OBJECT, BUS, 'Notify', arguments,

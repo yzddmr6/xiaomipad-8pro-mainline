@@ -1,0 +1,208 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+msgid "%.1f MiB/s · %d s remaining"
+msgstr "%.1f MiB/s · %d s remaining"
+
+msgid "%d s remaining"
+msgstr "%d s remaining"
+
+msgid "Check virtual machines again"
+msgstr "Check virtual machines again"
+
+msgid "Checking the release size and SHA-256 checksums."
+msgstr "Checking the release size and SHA-256 checksums."
+
+msgid "Cleanup preview"
+msgstr "Cleanup preview"
+
+msgid "Close all virtual machines before installing."
+msgstr "Close all virtual machines before installing."
+
+msgid "Close running virtual machines: %s"
+msgstr "Close running virtual machines: %s"
+
+msgid "Continue"
+msgstr "Continue"
+
+msgid "Continue retries the upgrade and its documented recovery. Rollback is also available."
+msgstr "Continue retries the upgrade and its documented recovery. Rollback is also available."
+
+msgid "Done"
+msgstr "Done"
+
+msgid "Download"
+msgstr "Download"
+
+msgid "Download and install"
+msgstr "Download and install"
+
+msgid "Download failed — retry"
+msgstr "Download failed — retry"
+
+msgid "Download size: %.1f MiB"
+msgstr "Download size: %.1f MiB"
+
+msgid "Download the release, then review cleanup before installing."
+msgstr "Download the release, then review cleanup before installing."
+
+msgid "Downloading"
+msgstr "Downloading"
+
+msgid "Extract"
+msgstr "Extract"
+
+msgid "Extracting"
+msgstr "Extracting"
+
+msgid "Following the recovery steps in the upgrade guide."
+msgstr "Following the recovery steps in the upgrade guide."
+
+msgid "In progress"
+msgstr "In progress"
+
+msgid "Install"
+msgstr "Install"
+
+msgid "Installation failed — rollback available"
+msgstr "Installation failed — rollback available"
+
+msgid "Installing"
+msgstr "Installing"
+
+msgid "Installing the complete release. Keep the device on."
+msgstr "Installing the complete release. Keep the device on."
+
+msgid "Interrupted"
+msgstr "Interrupted"
+
+msgid "Later"
+msgstr "Later"
+
+msgid "Metered connection: this download counts towards your data allowance."
+msgstr "Metered connection: this download counts towards your data allowance."
+
+msgid "On a metered connection, this download counts towards your data allowance."
+msgstr "On a metered connection, this download counts towards your data allowance."
+
+msgid "Package recovery is attempted before rollback is offered."
+msgstr "Package recovery is attempted before rollback is offered."
+
+msgid "Preparing the verified release installer."
+msgstr "Preparing the verified release installer."
+
+msgid "Previous installation did not finish"
+msgstr "Previous installation did not finish"
+
+msgid "Reclaimed %.1f MiB"
+msgstr "Reclaimed %.1f MiB"
+
+msgid "Recovery could not complete. Retry installation or restore the previous release."
+msgstr "Recovery could not complete. Retry installation or restore the previous release."
+
+msgid "Release notes · Changes"
+msgstr "Release notes · Changes"
+
+msgid "Repairing interrupted packages"
+msgstr "Repairing interrupted packages"
+
+msgid "Restart now"
+msgstr "Restart now"
+
+msgid "Restart to complete the update"
+msgstr "Restart to complete the update"
+
+msgid "Restoring the previous complete release."
+msgstr "Restoring the previous complete release."
+
+msgid "Retry"
+msgstr "Retry"
+
+msgid "Retry installation"
+msgstr "Retry installation"
+
+msgid "Retry the interrupted installation or restore the previous release."
+msgstr "Retry the interrupted installation or restore the previous release."
+
+msgid "Review cleanup"
+msgstr "Review cleanup"
+
+msgid "Review what will be removed, then confirm installation."
+msgstr "Review what will be removed, then confirm installation."
+
+msgid "Roll back"
+msgstr "Roll back"
+
+msgid "Roll back to previous release"
+msgstr "Roll back to previous release"
+
+msgid "Rollback complete — restart"
+msgstr "Rollback complete — restart"
+
+msgid "Rolling back"
+msgstr "Rolling back"
+
+msgid "Space to reclaim: %.1f MiB"
+msgstr "Space to reclaim: %.1f MiB"
+
+msgid "Space to reclaim: %s"
+msgstr "Space to reclaim: %s"
+
+msgid "System Update"
+msgstr "System Update"
+
+msgid "The previous release is restored. Restart when convenient."
+msgstr "The previous release is restored. Restart when convenient."
+
+msgid "The system has not been changed. Retry the download."
+msgstr "The system has not been changed. Retry the download."
+
+msgid "Update available"
+msgstr "Update available"
+
+msgid "Updated to %s"
+msgstr "Updated to %s"
+
+msgid "Verify"
+msgstr "Verify"
+
+msgid "Verifying checksums"
+msgstr "Verifying checksums"
+
+msgid "View detailed log"
+msgstr "View detailed log"
+
+msgid "Waiting"
+msgstr "Waiting"
+
+msgid "Waiting for confirmation"
+msgstr "Waiting for confirmation"
+
+msgid "You can close this window; the download can resume."
+msgstr "You can close this window; the download can resume."
+
+msgid "Your update is installed. Restart when convenient."
+msgstr "Your update is installed. Restart when convenient."
+
+msgid "Retry rollback"
+msgstr "Retry rollback"
+
+msgid "Update complete"
+msgstr "Update complete"
+
+msgid "Up to date"
+msgstr "Up to date"
+
+msgid "The restart is complete. You can check for another release."
+msgstr "The restart is complete. You can check for another release."
+
+msgid "No newer release was found."
+msgstr "No newer release was found."
+
+msgid "Check for updates"
+msgstr "Check for updates"
+
+msgid "Close"
+msgstr "Close"

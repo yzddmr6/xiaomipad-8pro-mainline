@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=System Update
+Name[zh_CN]=系统更新
+Exec=/usr/libexec/mainline-update
+Icon=system-software-update
+Type=Application
+Categories=System;Settings;
+StartupNotify=true
