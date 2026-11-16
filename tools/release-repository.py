@@ -78,9 +78,10 @@ def project_package(row):
 
 def updated_by_distribution(row, current):
     """A distribution package the system updated past this batch keeps the update."""
-    version = current.get(row['package'])
-    return (version not in (None, row['version']) and not project_package(row) and
-            subprocess.run(['dpkg', '--compare-versions', version, 'gt', row['version']]).returncode == 0)
+    local = current.get(row['package'])
+    return (local is not None and local['version'] != row['version']
+            and not project_package(local) and not project_package(row)
+            and subprocess.run(['dpkg', '--compare-versions', local['version'], 'gt', row['version']]).returncode == 0)
 
 
 def read_json(path):
@@ -149,10 +150,15 @@ def verify(repo):
 
 
 def installed(*, include_unconfigured=False):
-    text = subprocess.check_output(['dpkg-query', '-W', '-f=${db:Status-Abbrev}\t${Package}\t${Version}\n'], text=True)
-    return {p: v for state, p, v in (l.split('\t') for l in text.splitlines())
-            if state.startswith('ii') or (include_unconfigured and state[:1] == 'i'
-                                          and state[1:2] in ('U', 'F', 'H', 'W', 't'))}
+    fields = '${db:Status-Abbrev}\t${Package}\t${Version}\t${source:Package}\t${Architecture}\n'
+    text = subprocess.check_output(['dpkg-query', '-W', '-f=' + fields], text=True)
+    rows = {}
+    for line in text.splitlines():
+        state, name, version, source, arch = line.split('\t')
+        if state.startswith('ii') or (include_unconfigured and state[:1] == 'i'
+                                      and state[1:2] in ('U', 'F', 'H', 'W', 't')):
+            rows[name] = dict(package=name, version=version, source=source, architecture=arch)
+    return rows
 
 
 def guard(product):
@@ -184,7 +190,7 @@ def keep(repo, store):
     return dest, m
 
 
-def previous_for_installed(previous, old, repo, new, before, store):
+def previous_for_installed(previous, old, repo, new, local, store):
     """Retain the exact installed release versions alongside the previous release.
 
     Project packages must match the supplied previous batch, unless the unit
@@ -197,6 +203,7 @@ def previous_for_installed(previous, old, repo, new, before, store):
     """
     rows = {x['package']: x for x in old['packages']}
     newer = {x['package']: x for x in new['packages']}
+    before = {name: row['version'] for name, row in local.items()}
     added_unchanged = {n for n, row in newer.items()
                        if n not in rows and before.get(n) == row['version']}
     missing = {n: before[n] for n in ((rows.keys() | newer.keys()) & before.keys()) - added_unchanged
@@ -204,15 +211,15 @@ def previous_for_installed(previous, old, repo, new, before, store):
     if not missing:
         return previous, old
     source_by_name = {x['package']: x['source'] for x in old['packages'] + new['packages']}
-    cohort = {n for n in missing if source_by_name.get(n) in ('mesa', 'libdrm')}
-    rest = sorted(set(missing) - cohort)
-    architecture = dict(line.split('\t') for line in subprocess.check_output(
-        ['dpkg-query', '-W', '-f=${Package}\t${Architecture}\n', *rest], text=True).splitlines()) if rest else {}
-    carried = {n for n in rest if n in newer and newer[n]['version'] == missing[n]
-               and newer[n]['architecture'] == architecture.get(n)}
-    distribution = cohort | {n for n in set(rest) - carried
-                             if not any(project_package(r) for r in (rows.get(n), newer.get(n)) if r)}
-    unknown = {n: missing[n] for n in rest if n not in carried | distribution}
+    # A new batch can replace a distribution binary with a project build.
+    # Use dpkg's source and version for the installed members of each cohort.
+    for name in source_by_name.keys() & local.keys():
+        source_by_name[name] = local[name]['source']
+    distribution = {name for name in missing if not project_package(local[name])}
+    carried = {name for name in missing.keys() - distribution if name in newer
+               and newer[name]['version'] == missing[name]
+               and newer[name]['architecture'] == local[name]['architecture']}
+    unknown = {name: missing[name] for name in missing.keys() - carried - distribution}
     if unknown:
         raise ValueError('previous batch is missing exact installed release packages: ' + json.dumps(unknown))
     versions = {}
@@ -245,7 +252,7 @@ def previous_for_installed(previous, old, repo, new, before, store):
         broken |= relation_names(fields.get('Breaks', '') + ',' + fields.get('Conflicts', ''))
     broken = (broken & rows.keys()) - before.keys() - carried
     for row in old['packages']:
-        if row['source'] in versions or row['package'] in carried | broken:
+        if source_by_name[row['package']] in versions or row['package'] in carried | broken:
             (temporary / row['file']).unlink()
     for n in sorted(carried):
         shutil.copyfile(repo / newer[n]['file'], temporary / newer[n]['file'])
@@ -708,7 +715,7 @@ def main():
                 saved = store / ('boot-before-' + m['id'])
                 if not saved.exists():
                     shutil.copytree(boot, saved)
-                state = dict(product=product, to=m['id'], previous=old['id'], before={n:before[n] for n in managed & before.keys()},
+                state = dict(product=product, to=m['id'], previous=old['id'], before={n:before[n]['version'] for n in managed & before.keys()},
                              boot=str(saved), phase='prepared')
                 atomic_json(state_path, state)
             current = installed()
@@ -733,14 +740,18 @@ def main():
             newer = verify(store / state['to'])
             # New-only unpacked/half-configured packages also need removal.
             current = installed(include_unconfigured=True); rows = {x['package']:x for x in old['packages']}
-            selected = set(state['before']) | {x['package'] for x in old['packages'] if x['install']}
+            # PR #21 leaves pre-existing, newly managed packages at the same
+            # version out of the snapshot. Rollback must leave them installed.
+            unchanged = {r['package'] for r in newer['packages'] if r['package'] not in rows
+                         and state['before'].get(r['package']) == r['version']}
+            selected = (set(state['before']) - unchanged) | {x['package'] for x in old['packages'] if x['install']}
             # Keep optional packages installed after upgrading when the preceding
             # complete source cohort contains their earlier versions.
             selected |= current.keys() & rows.keys()
             targets = [f'{n}={rows[n]["version"]}' for n in sorted(selected)
                        if not updated_by_distribution(rows[n], current)]
             targets += [x['package'] + '-' for x in newer['packages']
-                        if x['package'] in current and x['package'] not in rows
+                        if x['package'] in current and x['package'] not in rows and x['package'] not in unchanged
                         and not kernel_release(x['package'])]
             activate(repo, product)
             solve_and_install(targets, product, repair_unpacked=False)

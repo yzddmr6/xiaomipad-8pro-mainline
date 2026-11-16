@@ -50,7 +50,8 @@ class PreviousBatchCohort(unittest.TestCase):
     def resolve(self, new_rows, before):
         return release_repository.previous_for_installed(
             self.previous, self.old, self.previous, batch('erhai-0.9.0', new_rows),
-            before, self.store)
+            {r['package']: dict(r, version=before[r['package']])
+             for r in new_rows if r['package'] in before}, self.store)
 
     def test_new_dependencies_at_new_version_do_not_block_upgrade(self):
         """Regression for erhai v0.8.1 -> v0.9.0.
@@ -68,7 +69,7 @@ class PreviousBatchCohort(unittest.TestCase):
     def test_other_installed_dependency_version_requires_authenticated_capture(self):
         self.previous.mkdir()
         before = {'erhai-device': DEVICE['version'], 'libxcb-ewmh2': '0.4.1-1'}
-        with patch.object(release_repository.subprocess, 'check_output', return_value='libxcb-ewmh2\tarm64\n'), patch.object(release_repository.subprocess, 'run') as archive:
+        with patch.object(release_repository.subprocess, 'run') as archive:
             archive.return_value.returncode = 100
             archive.return_value.stdout = ''
             with self.assertRaisesRegex(ValueError, 'exact installed distribution package unavailable'):
@@ -77,9 +78,23 @@ class PreviousBatchCohort(unittest.TestCase):
 
     def test_drifted_release_package_is_still_rejected(self):
         before = {'erhai-device': '0.8.0+other'}
-        with patch.object(release_repository.subprocess, 'check_output', return_value='erhai-device\tarm64\n'):
-            with self.assertRaisesRegex(ValueError, 'previous batch is missing'):
-                self.resolve([DEVICE], before)
+        with self.assertRaisesRegex(ValueError, 'previous batch is missing'):
+            self.resolve([DEVICE], before)
+
+    def test_replacement_rejects_mixed_installed_source_versions(self):
+        local = {n: row(n, version, 'stock-source')
+                 for n, version in [('library', '1'), ('library-common', '2')]}
+        target = [row(n, '3+sm8750.1', 'piano-replacement') for n in local]
+        with self.assertRaisesRegex(ValueError, 'mixed versions: stock-source'):
+            release_repository.previous_for_installed(
+                self.previous, self.old, self.previous, batch('erhai-next', target), local, self.store)
+
+    def test_keep_only_genuine_distribution_updates(self):
+        target = row('library', '1', 'stock-source')
+        for source, expected in [('stock-source', True), ('piano-replacement', False)]:
+            with self.subTest(source=source):
+                current = {'library': row('library', '2', source)}
+                self.assertEqual(release_repository.updated_by_distribution(target, current), expected)
 
     def test_unchanged_cohort_is_returned_untouched(self):
         before = {'erhai-device': DEVICE['version']}
@@ -90,11 +105,14 @@ class PreviousBatchCohort(unittest.TestCase):
 
 class RepairPolicy(unittest.TestCase):
     def test_rollback_inventory_includes_broken_new_only_packages(self):
-        status = 'ii \tgood\t1\niF \tbad\t2\niU \tnew\t3\nrc \tremoved\t4\niH \thalf\t5\n'
+        status = ''.join(f'{state}\t{name}\t{version}\torigin\tarm64\n' for state, name, version in (
+            ('ii ', 'good', '1'), ('iF ', 'bad', '2'), ('iU ', 'new', '3'),
+            ('rc ', 'removed', '4'), ('iH ', 'half', '5')))
         with patch.object(release_repository.subprocess, 'check_output', return_value=status):
-            self.assertEqual(release_repository.installed(), {'good': '1'})
-            self.assertEqual(release_repository.installed(include_unconfigured=True),
-                             {'good': '1', 'bad': '2', 'new': '3', 'half': '5'})
+            self.assertEqual(release_repository.installed(), {
+                'good': dict(package='good', version='1', source='origin', architecture='arm64')})
+            self.assertEqual(set(release_repository.installed(include_unconfigured=True)),
+                             {'good', 'bad', 'new', 'half'})
 
     def test_upgrade_repairs_unpacked_dependencies(self):
         with patch.object(release_repository, 'apt_preferences', return_value=contextlib.nullcontext([])), patch.object(release_repository, 'run') as run, patch.object(release_repository.subprocess, 'check_output', side_effect=['unpacked dependency', '']):
