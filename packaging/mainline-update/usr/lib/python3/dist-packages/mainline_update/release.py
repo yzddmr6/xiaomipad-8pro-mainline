@@ -23,7 +23,7 @@ def valid_version(version):
 def latest(repository):
     """Resolve releases/latest without fetching a page or sending cookies."""
     request = urllib.request.Request(repository + '/releases/latest',
-                                     headers={'User-Agent': 'Mainline-Release-Notifier'})
+                                     headers={'User-Agent': 'Release-Notifier'})
     try:
         with urllib.request.build_opener(NoRedirect).open(request, timeout=15):
             return None
