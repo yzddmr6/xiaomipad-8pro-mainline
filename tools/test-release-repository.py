@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 """The previous batch must not be asked to retain packages it never managed."""
 import importlib.util
+import json
 from pathlib import Path
 import tempfile
 import contextlib
@@ -101,6 +102,29 @@ class PreviousBatchCohort(unittest.TestCase):
         got_previous, got_old = self.resolve([DEVICE], before)
         self.assertIs(got_previous, self.previous)
         self.assertIs(got_old, self.old)
+
+
+class RetainedBootSet(unittest.TestCase):
+    def test_already_installed_kernel_after_rollback(self):
+        release = '7.4.0-rc2-piano100'
+        target = row('linux-image-' + release, '1', 'linux')
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            store = base / 'releases'
+            store.mkdir()
+            for name, abi in [('ubuntu', '7.4.0-rc2-piano99'), ('ubuntu.prev', release)]:
+                directory = base / 'switch' / name
+                directory.mkdir(parents=True)
+                (directory / 'manifest.json').write_text(json.dumps({'kernel_release': abi}))
+                (directory / 'boot.img').write_bytes(abi.encode())
+            manifest = dict(id='piano-new', packages=[target])
+            with patch.object(release_repository, 'run') as rebuild:
+                saved = release_repository.upgrade_boot_set('piano', store, manifest)
+                self.assertEqual((saved / 'boot.img').read_bytes(), release.encode())
+                rebuild.assert_not_called()
+                (saved / 'manifest.json').write_text('{"kernel_release":"wrong"}')
+                with self.assertRaisesRegex(ValueError, 'retained boot set'):
+                    release_repository.upgrade_boot_set('piano', store, manifest)
 
 
 class RepairPolicy(unittest.TestCase):

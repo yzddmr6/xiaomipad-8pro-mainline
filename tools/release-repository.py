@@ -393,6 +393,34 @@ def boot_release(directory):
     return match[1].decode() if match else None
 
 
+def upgrade_boot_set(product, store, manifest):
+    """Retain the target before the switcher rotates its two registered sets."""
+    saved = store / ('boot-' + manifest['id'])
+    registered = store.parent / 'switch' / 'ubuntu'
+    expected = {r for row in manifest['packages'] if row['install']
+                and (r := kernel_release(row['package']))}
+    if saved.exists():
+        if expected and boot_release(saved) not in expected:
+            raise ValueError('retained boot set does not match the new release kernel')
+        return saved
+    # APT leaves an already installed kernel alone. After a rollback its
+    # matching boot set can therefore still be in ubuntu.prev.
+    candidates = [registered, registered.with_name('ubuntu.prev')]
+    if product == 'erhai' and len(expected) == 1:
+        candidates.append(Path('/usr/lib/erhai/boot') / next(iter(expected)))
+    for source in candidates:
+        if source.is_dir() and (not expected or boot_release(source) in expected):
+            save_boot(source, saved)
+            return saved
+    if product == 'piano' and len(expected) == 1:
+        # Rebuild with this unit's boot profile and installed target initrd.
+        run(['piano-boot-update', next(iter(expected))])
+        if boot_release(registered) in expected:
+            save_boot(registered, saved)
+            return saved
+    raise ValueError('no boot set matches the new release kernel')
+
+
 def size(path):
     try:
         if path.is_dir() and not path.is_symlink():
@@ -784,14 +812,7 @@ def main():
             state['phase'] = 'prepared'; atomic_json(state_path, state)
             activate(repo, product)
             solve_and_install(targets, product)
-            new_boot = store / ('boot-' + m['id'])
-            if not new_boot.exists():
-                current_boot = Path('/var/lib') / product / 'switch/ubuntu'
-                expected = {kernel_release(x['package']) for x in m['packages'] if x['install']} - {None}
-                if expected and boot_release(current_boot) not in expected:
-                    raise ValueError('registered boot set does not match the new release kernel')
-                save_boot(current_boot, new_boot)
-            switch_boot(product, new_boot)
+            switch_boot(product, upgrade_boot_set(product, store, m))
             state['phase'] = 'upgraded'; atomic_json(state_path, state)
         elif a.action == 'cleanup':
             state = read_json(state_path); manifests = None
