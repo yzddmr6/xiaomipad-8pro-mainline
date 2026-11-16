@@ -70,6 +70,22 @@ export default class ChargeIndicator extends Extension {
             this._settings.set_boolean('show-on-battery', on);
             this._refresh();
         });
+        this._behaviour = new PopupMenu.PopupSwitchMenuItem(tr('Pause battery charging', '暂停电池充电'), false);
+        this._button.menu.addMenuItem(this._behaviour);
+        this._behaviour.connect('toggled', (_item, on) => {
+            if (this._readingBehaviour)
+                return;
+            this._behaviour.reactive = false;
+            const process = Gio.Subprocess.new(['pkexec', '/usr/libexec/tablet-charge-behaviour',
+                on ? 'inhibit-charge' : 'auto'], Gio.SubprocessFlags.NONE);
+            process.wait_async(null, (proc, result) => {
+                try { proc.wait_finish(result); } catch (_) { /* Read back the actual state. */ }
+                if (this._button) {
+                    this._behaviour.reactive = true;
+                    this._refresh();
+                }
+            });
+        });
         Main.panel.addToStatusArea(this.uuid, this._button);
         this._button.hide();
         this._baseline = null;
@@ -110,6 +126,27 @@ export default class ChargeIndicator extends Extension {
     }
 
     _refresh() {
+        let behaviour = null;
+        try {
+            const dir = Gio.File.new_for_path('/sys/class/power_supply');
+            const entries = dir.enumerate_children('standard::name', Gio.FileQueryInfoFlags.NONE, null);
+            let entry;
+            while ((entry = entries.next_file(null))) {
+                const supply = dir.get_child(entry.get_name());
+                const type = supply.get_child('type').load_contents(null)[1];
+                if (new TextDecoder().decode(type).trim() !== 'Battery')
+                    continue;
+                const file = supply.get_child('charge_behaviour');
+                if (file.query_exists(null))
+                    behaviour = new TextDecoder().decode(file.load_contents(null)[1]);
+            }
+            entries.close(null);
+        } catch (_) { /* Optional kernel attribute. */ }
+        this._behaviour.visible = behaviour !== null && behaviour.includes('inhibit-charge');
+        this._readingBehaviour = true;
+        this._behaviour.setToggleState(behaviour?.includes('[inhibit-charge]') ?? false);
+        this._readingBehaviour = false;
+
         this._stop();
         if (this._screenOff || Main.screenShield?.active)
             return;

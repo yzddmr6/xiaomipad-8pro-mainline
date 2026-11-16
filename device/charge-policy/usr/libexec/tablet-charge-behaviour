@@ -1,0 +1,42 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: MIT
+"""Persist and apply the standard power_supply charge behaviour."""
+from pathlib import Path
+import sys
+
+STATE = Path('/var/lib/tablet-charge/behaviour')
+
+def apply(mode, supplies=Path('/sys/class/power_supply')):
+    if mode not in ('auto', 'inhibit-charge'):
+        raise ValueError('unsupported charge behaviour')
+    found = False
+    for supply in supplies.iterdir():
+        if (supply / 'type').read_text().strip() != 'Battery':
+            continue
+        knob = supply / 'charge_behaviour'
+        if not knob.exists():
+            continue
+        supported = knob.read_text().replace('[', '').replace(']', '').split()
+        if mode not in supported:
+            continue
+        knob.write_text(mode + '\n')
+        found = True
+    if not found:
+        raise RuntimeError('charge behaviour is not available')
+
+
+def main():
+    mode = sys.argv[1] if len(sys.argv) == 2 else ''
+    if mode == 'restore':
+        if not STATE.exists():
+            return
+        apply(STATE.read_text().strip())
+    else:
+        apply(mode)
+        STATE.parent.mkdir(parents=True, exist_ok=True)
+        temp = STATE.with_suffix('.tmp')
+        temp.write_text(mode + '\n')
+        temp.replace(STATE)
+
+if __name__ == '__main__':
+    main()

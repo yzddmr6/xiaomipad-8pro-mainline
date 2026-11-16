@@ -1,0 +1,5 @@
+[Unit]
+Description=Restore battery charging preference
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/tablet-charge-behaviour restore
