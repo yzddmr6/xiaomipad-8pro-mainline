@@ -37,7 +37,7 @@ for product in ((sys.argv[3],) if len(sys.argv)>3 else ('piano','erhai')):
         stub.chmod(0o755)
     fixtures=base/product;fixtures.mkdir(exist_ok=True)
     batches={}
-    for version in ('70.0','71.0','72.0'):
+    for version in ('69.0','70.0','71.0','72.0'):
         pkg=fixtures/('pkg-'+version);(pkg/'DEBIAN').mkdir(parents=True)
         (pkg/'DEBIAN/control').write_text(f'Package: piano-update-fixture\nVersion: {version}\nArchitecture: all\nMaintainer: Offline fixture <noreply@example.invalid>\nDescription: Offline updater transaction fixture\n')
         hook=pkg/'DEBIAN/postinst'
@@ -103,10 +103,19 @@ for product in ((sys.argv[3],) if len(sys.argv)>3 else ('piano','erhai')):
         old='70.0' if scenario=='jump' else '71.0'
         fail=Path('/opt/update-fixture/fail');fail.unlink(missing_ok=True)
         run(['dpkg','-i',fixtures/(old+'.deb')])
-        # The currently retained batch must become removable only in the new transaction.
-        stale=store/(product+'-obsolete')
-        stale.mkdir(parents=True)
-        shutil.copyfile(batches[old]/'manifest.json',stale/'manifest.json')
+        # Both installed batches are protected by the current transaction.
+        # After the next release is installed, 69.0 must appear in the preview
+        # and in the identical list of removals from this upgrade.
+        stale=store/batches['69.0'].name
+        shutil.copytree(batches['69.0'],stale)
+        shutil.copytree(batches[old],store/batches[old].name)
+        previous_state=dict(product=product, to=batches[old].name, previous=stale.name,
+                            boot=str(store/('boot-before-'+batches[old].name)),
+                            phase='upgraded', before={})
+        (store/'transaction.json').write_text(json.dumps(previous_state))
+        protected=module.cleanup(product,store,previous_state,dry_run=True)
+        assert stale.name in protected['kept']['batches']
+        assert str(stale) not in {row.get('path') for row in protected['remove']}
         for n in names:
             (boot/(n+'.img')).write_bytes(b'old '+n.encode())
             (slots/(n+'_a')).write_bytes(b'old '+n.encode())
@@ -116,7 +125,7 @@ for product in ((sys.argv[3],) if len(sys.argv)>3 else ('piano','erhai')):
         if scenario.startswith('recovery') or scenario=='failure-rollback':fail.write_text('once' if scenario=='recovery-once' else 'always')
         preview=prepared['cleanup_preview']
         assert preview['transaction']['to']==product+'-72.0' and str(stale) in {x.get('path') for x in preview['remove']}
-        assert stale.exists() and not (store/'transaction.json').exists()
+        assert stale.exists() and json.loads((store/'transaction.json').read_text())==previous_state
         calls=[];actual=u._run
         def traced(argv,**kw):calls.append(list(map(str,argv)));return actual(argv,**kw)
         u._run=traced
@@ -127,7 +136,9 @@ for product in ((sys.argv[3],) if len(sys.argv)>3 else ('piano','erhai')):
         if scenario=='recovery-once':
             assert ['/usr/bin/apt-get','-y','-f','install'] in calls and sum('upgrade' in c for c in calls)==2,calls
         if result['phase']=='reboot_pending':
-            assert result['freed_bytes']==preview['freed_bytes']
+            assert result['freed_bytes']==preview['freed_bytes'] and not stale.exists()
+            cleanup_run=json.loads((store/'cleanup.json').read_text())['runs'][-1]
+            assert cleanup_run['remove']==preview['remove'],(cleanup_run['remove'],preview['remove'])
             assert all((slots/(n+'_a')).read_bytes()==('72.0-'+n).encode() for n in names)
         if scenario=='normal':
             fault=Path('/run/fixture-omit-slot-write')
