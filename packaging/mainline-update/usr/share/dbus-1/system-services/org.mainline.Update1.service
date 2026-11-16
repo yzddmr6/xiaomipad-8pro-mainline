@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=org.mainline.Update1
+Exec=/usr/libexec/mainline-update-service
+User=root
+SystemdService=mainline-update.service

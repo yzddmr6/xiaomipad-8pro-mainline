@@ -1,0 +1,103 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+msgid "%.1f MiB/s · %d s remaining"
+msgstr "%.1f MiB/s · %d s remaining"
+
+msgid "Cleanup preview"
+msgstr "Cleanup preview"
+
+msgid "Close all virtual machines before installing."
+msgstr "Close all virtual machines before installing."
+
+msgid "Continue"
+msgstr "Continue"
+
+msgid "Download and install"
+msgstr "Download and install"
+
+msgid "Download failed — retry"
+msgstr "Download failed — retry"
+
+msgid "Download size: %.1f MiB"
+msgstr "Download size: %.1f MiB"
+
+msgid "Downloading"
+msgstr "Downloading"
+
+msgid "Extracting"
+msgstr "Extracting"
+
+msgid "Install"
+msgstr "Install"
+
+msgid "Installation failed — rollback available"
+msgstr "Installation failed — rollback available"
+
+msgid "Installing"
+msgstr "Installing"
+
+msgid "Later"
+msgstr "Later"
+
+msgid "On a metered connection, this download counts towards your data allowance."
+msgstr "On a metered connection, this download counts towards your data allowance."
+
+msgid "Package recovery is attempted before rollback is offered."
+msgstr "Package recovery is attempted before rollback is offered."
+
+msgid "Previous installation did not finish"
+msgstr "Previous installation did not finish"
+
+msgid "Reclaimed %.1f MiB"
+msgstr "Reclaimed %.1f MiB"
+
+msgid "Repairing interrupted packages"
+msgstr "Repairing interrupted packages"
+
+msgid "Restart now"
+msgstr "Restart now"
+
+msgid "Restart to complete the update"
+msgstr "Restart to complete the update"
+
+msgid "Retry"
+msgstr "Retry"
+
+msgid "Review cleanup"
+msgstr "Review cleanup"
+
+msgid "Roll back"
+msgstr "Roll back"
+
+msgid "Roll back to previous release"
+msgstr "Roll back to previous release"
+
+msgid "Rollback complete — restart"
+msgstr "Rollback complete — restart"
+
+msgid "Rolling back"
+msgstr "Rolling back"
+
+msgid "Space to reclaim: %.1f MiB"
+msgstr "Space to reclaim: %.1f MiB"
+
+msgid "System Update"
+msgstr "System Update"
+
+msgid "Update available"
+msgstr "Update available"
+
+msgid "Updated to %s"
+msgstr "Updated to %s"
+
+msgid "Verifying checksums"
+msgstr "Verifying checksums"
+
+msgid "View detailed log"
+msgstr "View detailed log"
+
+msgid "Continue retries the upgrade and its documented recovery. Rollback is also available."
+msgstr "Continue retries the upgrade and its documented recovery. Rollback is also available."

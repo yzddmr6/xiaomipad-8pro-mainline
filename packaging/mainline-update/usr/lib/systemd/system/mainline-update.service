@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT
+[Unit]
+Description=Mainline release updater
+After=dbus.service
+
+[Service]
+Type=dbus
+BusName=org.mainline.Update1
+ExecStart=/usr/libexec/mainline-update-service
+Restart=on-failure
+User=root
+Group=root
+UMask=0077
+CacheDirectory=mainline-update
+CacheDirectoryMode=0700
+StateDirectory=mainline-update
+StateDirectoryMode=0700

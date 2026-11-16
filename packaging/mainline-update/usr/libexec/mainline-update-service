@@ -1,0 +1,148 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 yzddmr6
+"""D-Bus root service for mainline-update."""
+import json
+import threading
+
+import gi
+gi.require_version('Gio', '2.0')
+from gi.repository import Gio, GLib
+
+from pathlib import Path
+import sys
+sys.path.insert(0, '/usr/lib/mainline-update')
+from core import Updater, UpdateError
+
+
+BUS_NAME = 'org.mainline.Update1'
+OBJECT_PATH = '/org/mainline/Update1'
+INTERFACE = 'org.mainline.Update1'
+POLKIT = 'org.freedesktop.PolicyKit1'
+POLKIT_PATH = '/org/freedesktop/PolicyKit1/Authority'
+ACTION_INSTALL = 'org.mainline.Update.install'
+ACTION_ROLLBACK = 'org.mainline.Update.rollback'
+XML = """<node>
+  <interface name="org.mainline.Update1">
+    <method name="GetOverview"><arg name="version" type="s" direction="in"/><arg name="json" type="s" direction="out"/></method>
+    <method name="GetState"><arg name="json" type="s" direction="out"/></method>
+    <method name="Prepare"><arg name="version" type="s" direction="in"/><arg name="json" type="s" direction="out"/></method>
+    <method name="Install"><arg name="version" type="s" direction="in"/><arg name="json" type="s" direction="out"/></method>
+    <method name="Resume"><arg name="json" type="s" direction="out"/></method>
+    <method name="Rollback"><arg name="json" type="s" direction="out"/></method>
+    <method name="GetCompletionNotice"><arg name="json" type="s" direction="out"/></method>
+    <method name="MarkCompletionNotified"/>
+    <signal name="Progress"><arg name="json" type="s"/></signal>
+  </interface>
+</node>"""
+
+
+def encode(value):
+    return json.dumps(value, ensure_ascii=False)
+
+
+class Service:
+    def __init__(self, connection):
+        self.connection = connection
+        self.active = 0
+        self.guard = threading.Lock()
+        self.info = Gio.DBusNodeInfo.new_for_xml(XML).interfaces[0]
+        connection.register_object(OBJECT_PATH, self.info, self.method_call, None, None)
+
+    def emit_progress(self, value):
+        try:
+            self.connection.emit_signal(None, OBJECT_PATH, INTERFACE, 'Progress',
+                                        GLib.Variant('(s)', (encode(value),)))
+        except GLib.Error:
+            pass
+
+    def updater(self):
+        return Updater(progress=self.emit_progress)
+
+    def authorize(self, sender, action):
+        connection = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+        subject = ('system-bus-name', {'name': GLib.Variant('s', sender)})
+        result = connection.call_sync(
+            POLKIT, POLKIT_PATH, POLKIT + '.Authority', 'CheckAuthorization',
+            GLib.Variant('((sa{sv})sa{ss}us)',
+                         (subject, action, {}, 1, '')),
+            GLib.VariantType.new('((bba{ss}))'), Gio.DBusCallFlags.NONE, 120000, None)
+        authorized, challenge, _details = result.unpack()[0]
+        if not authorized:
+            raise UpdateError('管理员认证未完成' if challenge else '当前会话没有管理员权限')
+
+    def _reply(self, invocation, result):
+        if invocation.get_connection().is_closed():
+            return
+        invocation.return_value(GLib.Variant('(s)', (encode(result),)))
+
+    def _worker(self, invocation, sender, method, args):
+        try:
+            if method in ('Prepare', 'Install', 'Resume'):
+                self.authorize(sender, ACTION_INSTALL)
+            elif method == 'Rollback':
+                self.authorize(sender, ACTION_ROLLBACK)
+            with self.guard:
+                self.active += 1
+            updater = self.updater()
+            if method == 'GetOverview':
+                result = updater.overview(args[0] or None)
+            elif method == 'Prepare':
+                result = updater.prepare(args[0])
+            elif method == 'Install':
+                state = updater.state()
+                if state.get('version') != args[0]:
+                    raise UpdateError('selected release does not match prepared files')
+                result = updater.install()
+            elif method == 'Resume':
+                result = updater.resume()
+            elif method == 'Rollback':
+                result = updater.rollback()
+            self._reply(invocation, result)
+        except (UpdateError, OSError, GLib.Error, ValueError) as error:
+            invocation.return_dbus_error(INTERFACE + '.Error.Failed', str(error))
+        finally:
+            with self.guard:
+                self.active = max(0, self.active - 1)
+
+    def method_call(self, connection, sender, object_path, interface_name,
+                    method_name, parameters, invocation):
+        try:
+            if method_name == 'GetState':
+                state = self.updater().state()
+                if not self.active and state.get('phase') in ('installing', 'recovering', 'rolling_back'):
+                    state['display_phase'] = 'interrupted'
+                invocation.return_value(GLib.Variant('(s)', (encode(state),)))
+                return
+            if method_name == 'GetCompletionNotice':
+                result = self.updater().completion_notice()
+                invocation.return_value(GLib.Variant('(s)', (encode(result) if result else '',)))
+                return
+            if method_name == 'MarkCompletionNotified':
+                self.updater().mark_completion_notified()
+                invocation.return_value(None)
+                return
+            args = parameters.unpack()
+            threading.Thread(target=self._worker,
+                             args=(invocation, sender, method_name, args), daemon=True).start()
+        except (UpdateError, OSError, GLib.Error, ValueError) as error:
+            invocation.return_dbus_error(INTERFACE + '.Error.Failed', str(error))
+
+
+def main():
+    loop = GLib.MainLoop()
+    service = {'instance': None}
+
+    def bus_acquired(connection, _name):
+        service['instance'] = Service(connection)
+
+    owner = Gio.bus_own_name(Gio.BusType.SYSTEM, BUS_NAME, Gio.BusNameOwnerFlags.NONE,
+                             bus_acquired, lambda *_: None, lambda *_: loop.quit())
+    try:
+        loop.run()
+    finally:
+        Gio.bus_unown_name(owner)
+
+
+if __name__ == '__main__':
+    main()

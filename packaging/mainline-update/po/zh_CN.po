@@ -1,0 +1,103 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: zh_CN\n"
+
+msgid "%.1f MiB/s · %d s remaining"
+msgstr "%.1f MiB/s · 剩余 %d 秒"
+
+msgid "Cleanup preview"
+msgstr "会清理的内容"
+
+msgid "Close all virtual machines before installing."
+msgstr "安装前请关闭所有虚拟机。"
+
+msgid "Continue"
+msgstr "继续"
+
+msgid "Download and install"
+msgstr "下载并安装"
+
+msgid "Download failed — retry"
+msgstr "下载失败，请重试"
+
+msgid "Download size: %.1f MiB"
+msgstr "下载大小：%.1f MiB"
+
+msgid "Downloading"
+msgstr "下载中"
+
+msgid "Extracting"
+msgstr "正在解压"
+
+msgid "Install"
+msgstr "安装"
+
+msgid "Installation failed — rollback available"
+msgstr "安装失败，可以回退"
+
+msgid "Installing"
+msgstr "安装中"
+
+msgid "Later"
+msgstr "稍后"
+
+msgid "On a metered connection, this download counts towards your data allowance."
+msgstr "按流量计费的网络会消耗上述下载流量。"
+
+msgid "Package recovery is attempted before rollback is offered."
+msgstr "已先尝试按升级指南修复软件包，再提供回退。"
+
+msgid "Previous installation did not finish"
+msgstr "上次安装没有完成"
+
+msgid "Reclaimed %.1f MiB"
+msgstr "已释放 %.1f MiB"
+
+msgid "Repairing interrupted packages"
+msgstr "正在修复未完成的软件包"
+
+msgid "Restart now"
+msgstr "立即重启"
+
+msgid "Restart to complete the update"
+msgstr "重启以完成更新"
+
+msgid "Retry"
+msgstr "重试"
+
+msgid "Review cleanup"
+msgstr "预览清理"
+
+msgid "Roll back"
+msgstr "回退"
+
+msgid "Roll back to previous release"
+msgstr "回退到上一版"
+
+msgid "Rollback complete — restart"
+msgstr "回退完成，请重启"
+
+msgid "Rolling back"
+msgstr "正在回退"
+
+msgid "Space to reclaim: %.1f MiB"
+msgstr "预计释放空间：%.1f MiB"
+
+msgid "System Update"
+msgstr "系统更新"
+
+msgid "Update available"
+msgstr "发现新版本"
+
+msgid "Updated to %s"
+msgstr "已更新到 %s"
+
+msgid "Verifying checksums"
+msgstr "正在校验"
+
+msgid "View detailed log"
+msgstr "查看详细日志"
+
+msgid "Continue retries the upgrade and its documented recovery. Rollback is also available."
+msgstr "继续会重试升级及指南中的修复，也可以回退。"

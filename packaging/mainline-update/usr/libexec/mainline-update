@@ -1,0 +1,161 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 yzddmr6
+"""User-session UI. All privileged work belongs to the D-Bus service."""
+import gettext
+import json
+import os
+from pathlib import Path
+import sys
+import threading
+import gi
+gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
+from gi.repository import Adw, Gio, GLib, Gtk
+
+_ = gettext.translation('mainline-update', '/usr/share/locale', fallback=True).gettext
+BUS = 'org.mainline.Update1'
+PATH = '/org/mainline/Update1'
+TITLES = {
+    'idle': _('Update available'), 'downloading': _('Downloading'),
+    'verifying': _('Verifying checksums'), 'extracting': _('Extracting'),
+    'prepared': _('Review cleanup'), 'installing': _('Installing'),
+    'recovering': _('Repairing interrupted packages'),
+    'reboot_pending': _('Restart to complete the update'),
+    'failed_download': _('Download failed — retry'),
+    'failed_rollback': _('Installation failed — rollback available'),
+    'interrupted': _('Previous installation did not finish'),
+    'rolling_back': _('Rolling back'), 'rolled_back': _('Rollback complete — restart'),
+}
+
+class App(Adw.Application):
+    def __init__(self):
+        super().__init__(application_id='org.mainline.Update', flags=Gio.ApplicationFlags.NON_UNIQUE)
+        self.version = ''
+        self.preview = None
+        args = sys.argv[1:]
+        if '--preview-json' in args:
+            self.preview = json.loads(Path(args[args.index('--preview-json')+1]).read_text())
+        elif args:
+            self.version = args[0]
+        self.connect('activate', self.activate)
+
+    def activate(self, *unused):
+        self.window = Adw.ApplicationWindow(application=self, title=_('System Update'))
+        self.window.set_default_size(640, 660)
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        outer.append(Adw.HeaderBar())
+        scroll = Gtk.ScrolledWindow(vexpand=True)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20,
+                      margin_top=28, margin_bottom=28, margin_start=32, margin_end=32)
+        scroll.set_child(box); outer.append(scroll)
+        self.title = Gtk.Label(wrap=True, xalign=0)
+        self.title.add_css_class('title-1'); box.append(self.title)
+        self.detail = Gtk.Label(wrap=True, xalign=0, selectable=True)
+        box.append(self.detail)
+        self.progress = Gtk.ProgressBar(show_text=True); box.append(self.progress)
+        self.extra = Gtk.Label(wrap=True, xalign=0, selectable=True); box.append(self.extra)
+        self.buttons = Gtk.Box(spacing=12); box.append(self.buttons)
+        self.window.set_content(outer); self.window.present()
+        if self.preview is not None:
+            self.render(self.preview); return
+        try:
+            self.bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+            self.bus.signal_subscribe(BUS, BUS, 'Progress', PATH, None,
+                Gio.DBusSignalFlags.NONE, lambda *a: self.render(json.loads(a[-1].unpack()[0])))
+        except GLib.Error as error:
+            self.render({'phase':'failed_download','error':str(error)}); return
+        self.call('GetState', (), self.initial)
+
+    def call(self, method, args=(), done=None):
+        self.buttons.set_sensitive(False)
+        def work():
+            try:
+                result = self.bus.call_sync(BUS, PATH, BUS, method,
+                    GLib.Variant('(s)', args) if args else None,
+                    GLib.VariantType.new('(s)'), Gio.DBusCallFlags.NONE, 2147483647, None)
+                value = json.loads(result.unpack()[0])
+                GLib.idle_add(done or self.render, value)
+            except (GLib.Error, ValueError) as error:
+                def failed(message=str(error)):
+                    self.call('GetState', (), lambda state: self.render(
+                        state if state.get('phase') in ('failed_rollback','interrupted')
+                        else {**state,'phase':'failed_download','error':message})) if method != 'GetState' else self.render({'phase':'failed_download','error':message})
+                GLib.idle_add(failed)
+        threading.Thread(target=work, daemon=True).start()
+
+    def initial(self, state):
+        if state.get('phase') in ('idle','failed_download','rolled_back'):
+            self.call('GetOverview', (self.version,), self.render)
+        else:
+            self.render(state)
+
+    def button(self, label, action):
+        button = Gtk.Button(label=label)
+        button.connect('clicked', lambda *_: action())
+        self.buttons.append(button)
+
+    def render(self, state):
+        self.buttons.set_sensitive(True)
+        while self.buttons.get_first_child():
+            self.buttons.remove(self.buttons.get_first_child())
+        if not hasattr(self, 'view_state'):
+            self.view_state = {}
+        if state.get('phase') != self.view_state.get('phase'):
+            self.view_state.pop('display_phase', None)
+            self.view_state.pop('error', None)
+        self.view_state.update(state)
+        state = self.view_state
+        phase = state.get('display_phase', state.get('phase','idle'))
+        self.version = state.get('version', self.version)
+        self.title.set_text(TITLES.get(phase, phase))
+        detail = f"{state.get('current','')} → {self.version}"
+        if state.get('total_bytes'):
+            detail += '\n' + _('Download size: %.1f MiB') % (state['total_bytes']/1048576)
+        detail += '\n' + _('Close all virtual machines before installing.')
+        self.detail.set_text(detail)
+        text = state.get('rollback_error') or state.get('error') or state.get('message') or state.get('notes','')
+        if phase == 'idle':
+            text += '\n\n' + _('On a metered connection, this download counts towards your data allowance.')
+            self.button(_('Download and install'), lambda:self.call('Prepare',(self.version,)))
+        elif phase == 'prepared':
+            preview = state.get('cleanup_preview',{})
+            text = _('Cleanup preview') + '\n'
+            for item in preview.get('remove', preview.get('items', [])):
+                text += '• ' + str(item.get('reason',item.get('kind',''))) + ': ' + str(item.get('package',item.get('path',''))) + '\n'
+            text += _('Space to reclaim: %.1f MiB') % (preview.get('freed_bytes',0)/1048576)
+            self.button(_('Install'), lambda:self.call('Install',(self.version,)))
+        elif phase in ('failed_rollback','interrupted'):
+            text += '\n' + (_('Continue retries the upgrade and its documented recovery. Rollback is also available.') if phase == 'interrupted' else _('Package recovery is attempted before rollback is offered.'))
+            self.button(_('Continue'), lambda:self.call('Resume'))
+            self.button(_('Roll back to previous release'), lambda:self.call('Rollback'))
+            self.button(_('View detailed log'), self.logs)
+        elif phase == 'failed_download':
+            self.button(_('Retry'), lambda:self.call('Prepare',(self.version,)))
+            self.button(_('View detailed log'), self.logs)
+        elif phase in ('reboot_pending','rolled_back'):
+            self.button(_('Restart now'), self.restart)
+            self.button(_('Later'), self.window.close)
+            if phase == 'reboot_pending':
+                self.button(_('Roll back'), lambda:self.call('Rollback'))
+        size = state.get('size',0); received = state.get('received',0)
+        self.progress.set_fraction(min(1,received/size) if size else 0)
+        speed = state.get('bytes_per_second',0) if phase == 'downloading' else 0
+        self.progress.set_visible(phase in ('downloading','verifying','extracting','installing','recovering','rolling_back'))
+        self.progress.set_text((_('%.1f MiB/s · %d s remaining') % (speed/1048576,(size-received)/speed)) if speed else TITLES.get(phase,phase))
+        self.extra.set_text(text)
+        return False
+
+    def logs(self):
+        # journalctl supplies read-only system logs; no root command in the UI.
+        import subprocess
+        result = subprocess.run(['journalctl','-u','mainline-update.service','--no-pager','-n','100'],capture_output=True,text=True)
+        self.extra.set_text(result.stdout or result.stderr)
+
+    def restart(self):
+        self.bus.call('org.freedesktop.login1','/org/freedesktop/login1',
+            'org.freedesktop.login1.Manager','Reboot',GLib.Variant('(b)',(True,)),
+            None,Gio.DBusCallFlags.NONE,-1,None,None,None)
+
+if __name__ == '__main__':
+    App().run([sys.argv[0]])

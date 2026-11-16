@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=System update completion
+Exec=/usr/libexec/mainline-update-notice
+OnlyShowIn=GNOME;
+NoDisplay=true
