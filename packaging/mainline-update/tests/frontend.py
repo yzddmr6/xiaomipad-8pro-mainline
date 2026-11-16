@@ -30,6 +30,8 @@ assert len(module.brief_message('noise\nerror: '+('x'*5000))) <= 100
 for phase in ('prepared', 'failed_rollback'):
  app.render({'phase':phase,'error':'exact installed distribution package unavailable: libcamera0.7=0.7.0-1ubuntu2'})
  assert 'Software Updater' in app.page.get_description()
+app.render({'phase':'prepared','error':"Command '['apt-get', 'download', 'libcamera0.7=0.7.0-1ubuntu2']' returned non-zero exit status 100."})
+assert 'Software Updater' in app.page.get_description()
 reason = 'Package configuration failed'
 app.render({'phase':'failed_rollback','error':reason})
 assert app.page.get_description() == reason

@@ -222,7 +222,9 @@ class App(Adw.Application):
         error = state.get('error', '')
         if phase in ('prepared', 'failed_rollback', 'interrupted', 'failed_download') and (
                 'exact installed distribution package unavailable:' in error or
-                "Can't find a source to download version" in error):
+                "Can't find a source to download version" in error or
+                ("Command '['apt-get', 'download', '" in error and
+                 "']' returned non-zero exit status" in error)):
             description = _('Install all system updates in Software Updater, then return here and try the update again.')
         self.page.set_description(description)
         active = phase in ('downloading','verifying','extracting','installing','recovering','rolling_back')
