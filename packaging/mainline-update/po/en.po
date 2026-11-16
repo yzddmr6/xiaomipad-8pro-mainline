@@ -162,6 +162,9 @@ msgstr "The system has not been changed. Retry the download."
 msgid "Update available"
 msgstr "Update available"
 
+msgid "Rolled back to %s"
+msgstr "Rolled back to %s"
+
 msgid "Updated to %s"
 msgstr "Updated to %s"
 

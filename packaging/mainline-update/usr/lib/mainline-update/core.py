@@ -683,6 +683,7 @@ class Updater:
                 self._save(state)
                 return state
             state = {**state, 'phase': 'rolled_back', 'installer_result': result,
+                     'freed_bytes': result.get('freed_bytes', 0),
                      'rollback_version': state.get('current'), 'completion_notified': False,
                      'boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip()}
             self._save(state)

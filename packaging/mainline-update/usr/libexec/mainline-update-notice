@@ -13,7 +13,7 @@ try:
         session = Gio.bus_get_sync(Gio.BusType.SESSION,None)
         session.call_sync('org.freedesktop.Notifications','/org/freedesktop/Notifications','org.freedesktop.Notifications','Notify',
             GLib.Variant('(susssasa{sv}i)',('System Update',0,'system-software-update',
-                _('Updated to %s') % state['version'],
+                (_('Rolled back to %s') if state['rolled_back'] else _('Updated to %s')) % state['version'],
                 _('Reclaimed %.1f MiB') % (state['freed_bytes']/1048576),[],{},-1)),
             None,Gio.DBusCallFlags.NONE,5000,None)
         bus.call_sync(*args,'MarkCompletionNotified',None,None,Gio.DBusCallFlags.NONE,5000,None)
