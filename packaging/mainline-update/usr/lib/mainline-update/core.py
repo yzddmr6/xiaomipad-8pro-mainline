@@ -515,8 +515,8 @@ class Updater:
                 if not os.access(new_batch / 'install.py', os.X_OK):
                     raise UpdateError('release installer is not executable')
                 self._save({'phase': 'extracting', 'current': current, 'version': target})
-                cleanup = self._run([sys.executable, str(new_batch / 'install.py'), 'cleanup',
-                                     '--product', self.project['product'], '--dry-run'], allow_empty=True)
+                cleanup = self._run([sys.executable, str(new_batch / 'install.py'), 'preview-upgrade',
+                                     str(new_batch), '--previous', str(rollback_path)])
                 prepared = {
                     'phase': 'prepared', 'current': current, 'version': target,
                     'new_batch': str(new_batch), 'previous_batch': str(rollback_path),
@@ -535,7 +535,7 @@ class Updater:
         finally:
             os.close(fd)
 
-    def _run(self, argv, allow_empty=False, env=None):
+    def _run(self, argv, env=None):
         process = subprocess.Popen(list(map(str, argv)), text=True, stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT, env=env, bufsize=1,
                                    errors='replace')
@@ -552,8 +552,6 @@ class Updater:
         code = process.wait()
         output = ''.join(tail)
         if code:
-            if allow_empty and 'no release transaction on this system' in output:
-                return {'items': [], 'freed_bytes': 0, 'message': '没有可清理的旧批次'}
             raise UpdateError(output[-4000:].strip() or f'command failed: {argv[0]}')
         return self._last_json(output) or {'text': output[-4000:].strip()}
 
@@ -651,15 +649,7 @@ class Updater:
                          'recovery': 'UPGRADE recovery attempted; see journal for the failing step'}
                 self._save(state)
                 return state
-            cleanup_record = Path('/var/lib') / self.project['product'] / 'releases' / 'cleanup.json'
-            freed_bytes = 0
-            try:
-                record = json.loads(cleanup_record.read_text(encoding='utf-8'))
-                last = record.get('runs', [{}])[-1]
-                if last.get('status') == 'done':
-                    freed_bytes = sum(item.get('bytes', 0) for item in last.get('remove', []) if 'result' not in item)
-            except (OSError, ValueError, IndexError, AttributeError):
-                pass
+            freed_bytes = result.get('freed_bytes', 0)
             state = {**prepared, 'phase': 'reboot_pending', 'freed_bytes': freed_bytes, 'completion_notified': False,
                      'installer_result': result, 'boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip()}
             self._save(state)

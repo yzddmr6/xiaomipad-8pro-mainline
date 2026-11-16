@@ -50,6 +50,11 @@ with mock.patch('shutil.which',return_value='/usr/bin/gunyahvm'),mock.patch('sub
 assert app.vms==['Ubuntu work']
 assert not app.buttons.get_first_child().get_sensitive()
 assert app.notice.get_visible() and 'Ubuntu work' in app.notice.get_text() and 'Windows' not in app.notice.get_text()
+for phase in ('rolling_back', 'rolled_back'):
+ app.render(dict(phase=phase,current='1.4.1',version='1.5.0'))
+ assert app.extra.get_text().startswith('1.5.0 → 1.4.1'),app.extra.get_text()
+app.render({'phase':'rolled_back','rollback_version':'1.4.1','completion_notified':True})
+assert app.extra.get_text().startswith('1.4.1')
 app.render({'phase':'rolling_back','display_phase':'interrupted'})
 assert app.buttons.get_first_child().get_label()=='Retry rollback'
 assert app.buttons.get_first_child().has_css_class('destructive-action')

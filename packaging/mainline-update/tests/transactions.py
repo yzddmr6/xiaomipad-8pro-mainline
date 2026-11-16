@@ -22,9 +22,19 @@ for product in ((sys.argv[3],) if len(sys.argv)>3 else ('piano','erhai')):
     if store.exists():shutil.rmtree(store)
     boot=Path('/var/lib')/product/'switch/ubuntu';boot.mkdir(parents=True,exist_ok=True)
     for name in ('boot.img','init_boot.img','vendor_boot.img'):(boot/name).write_bytes(b'offline boot fixture')
-    # This is the same boot-boundary recorder as apt-scenarios, with no device nodes.
-    stub=Path('/usr/local/sbin')/('piano-boot-switch' if product=='piano' else 'erhai-switch-install-ubuntu-images')
-    stub.write_text('#!/bin/sh\nexit 0\n');stub.chmod(0o755)
+    Path('/etc/offline-product').write_text(product)
+    Path('/results').mkdir(exist_ok=True)
+    slots=Path('/dev/disk/by-partlabel')
+    slots.mkdir(parents=True,exist_ok=True)
+    names=('boot','init_boot','vendor_boot')
+    for name in names:
+        node=slots/(name+'_a')
+        assert not node.is_symlink() and not node.is_block_device()
+        node.write_bytes(b'old '+name.encode())
+    for tool in ('piano-boot-switch','erhai-switch','erhai-switch-install-ubuntu-images'):
+        stub=Path('/usr/local/sbin')/tool
+        shutil.copyfile(Path(__file__).with_name('boot-switch-fixture.py'),stub)
+        stub.chmod(0o755)
     fixtures=base/product;fixtures.mkdir(exist_ok=True)
     batches={}
     for version in ('70.0','71.0','72.0'):
@@ -32,6 +42,9 @@ for product in ((sys.argv[3],) if len(sys.argv)>3 else ('piano','erhai')):
         (pkg/'DEBIAN/control').write_text(f'Package: piano-update-fixture\nVersion: {version}\nArchitecture: all\nMaintainer: Offline fixture <noreply@example.invalid>\nDescription: Offline updater transaction fixture\n')
         hook=pkg/'DEBIAN/postinst'
         hook.write_text('#!/bin/sh\nset -e\n'+('if [ -f /opt/update-fixture/fail ]; then\n mode=$(cat /opt/update-fixture/fail)\n [ "$mode" != once ] || rm /opt/update-fixture/fail\n exit 1\nfi\n' if version=='72.0' else '')+f'mkdir -p /opt/update-fixture\necho {version} > /opt/update-fixture/version\n')
+        with hook.open('a') as script:
+            for n in names:
+                script.write(f'printf "%s" "{version}-{n}" > "{boot}/{n}.img"\n')
         hook.chmod(0o755)
         deb=fixtures/(version+'.deb');run(['dpkg-deb','--build',pkg,deb])
         batch=fixtures/('repositories/'+product+'-'+version)
@@ -90,10 +103,20 @@ for product in ((sys.argv[3],) if len(sys.argv)>3 else ('piano','erhai')):
         old='70.0' if scenario=='jump' else '71.0'
         fail=Path('/opt/update-fixture/fail');fail.unlink(missing_ok=True)
         run(['dpkg','-i',fixtures/(old+'.deb')])
+        # The currently retained batch must become removable only in the new transaction.
+        stale=store/(product+'-obsolete')
+        stale.mkdir(parents=True)
+        shutil.copyfile(batches[old]/'manifest.json',stale/'manifest.json')
+        for n in names:
+            (boot/(n+'.img')).write_bytes(b'old '+n.encode())
+            (slots/(n+'_a')).write_bytes(b'old '+n.encode())
         u=Updater(configfile)
         prepared=u.prepare('72.0')
         assert Path(prepared['previous_batch']).name==(product+'-70.0' if scenario=='jump' else product+'-71.0-rollback-72.0')
         if scenario.startswith('recovery') or scenario=='failure-rollback':fail.write_text('once' if scenario=='recovery-once' else 'always')
+        preview=prepared['cleanup_preview']
+        assert preview['transaction']['to']==product+'-72.0' and str(stale) in {x.get('path') for x in preview['remove']}
+        assert stale.exists() and not (store/'transaction.json').exists()
         calls=[];actual=u._run
         def traced(argv,**kw):calls.append(list(map(str,argv)));return actual(argv,**kw)
         u._run=traced
@@ -103,12 +126,29 @@ for product in ((sys.argv[3],) if len(sys.argv)>3 else ('piano','erhai')):
             assert ['/usr/bin/dpkg','--configure','-a'] in calls,calls
         if scenario=='recovery-once':
             assert ['/usr/bin/apt-get','-y','-f','install'] in calls and sum('upgrade' in c for c in calls)==2,calls
+        if result['phase']=='reboot_pending':
+            assert result['freed_bytes']==preview['freed_bytes']
+            assert all((slots/(n+'_a')).read_bytes()==('72.0-'+n).encode() for n in names)
+        if scenario=='normal':
+            fault=Path('/run/fixture-omit-slot-write')
+            fault.touch()
+            try:
+                bad=u.rollback()
+                assert bad['phase']=='failed_rollback' and 'readback differs' in bad['rollback_error'],bad
+                assert json.loads((store/'transaction.json').read_text())['phase']!='rolled-back'
+            finally:
+                fault.unlink()
         # Keep the failed new package's fault active: the previous package's
         # postinst works, so whole-release rollback must actually downgrade it.
         if scenario != 'failure-rollback':
             fail.unlink(missing_ok=True)
         result=u.rollback();assert result['phase']=='rolled_back',result
         assert Path('/opt/update-fixture/version').read_text().strip()==old
+        assert all((slots/(n+'_a')).read_bytes()==b'old '+n.encode() for n in names)
+        if scenario=='normal':
+            prepared=u.prepare('72.0')
+            assert u.install()['phase']=='reboot_pending'
+            assert all((slots/(n+'_a')).read_bytes()==('72.0-'+n).encode() for n in names)
         assert not subprocess.check_output(['dpkg','--audit'],text=True).strip()
         print('PASS',product,scenario,'real attachment installer upgrade/rollback',flush=True)
     server.shutdown()

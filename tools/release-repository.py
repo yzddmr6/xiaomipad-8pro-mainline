@@ -174,8 +174,8 @@ def guard(product):
         raise ValueError('device identity unavailable; refusing installation')
 
 
-def keep(repo, store):
-    m = verify(repo)
+def keep(repo, store, manifest=None):
+    m = manifest if manifest is not None else verify(repo)
     dest = store / m['id']
     if dest.exists():
         if verify(dest) != m or sha(dest / 'SHA256SUMS') != sha(repo / 'SHA256SUMS'):
@@ -326,9 +326,44 @@ def solve_and_install(targets, product, *, repair_unpacked=True):
 
 
 def switch_boot(product, directory):
-    command = (['piano-boot-switch', 'import-ubuntu', '--from', str(directory)] if product == 'piano'
-               else ['erhai-switch-install-ubuntu-images', str(directory)])
-    run(command)
+    directory = Path(directory)
+    parts = ('boot', 'init_boot', 'vendor_boot')
+    wanted = {name: sha(directory / (name + '.img')) for name in parts}
+    if product == 'piano':
+        suffix = '_a'  # Piano's switcher owns only slot A.
+        run(['piano-boot-switch', 'import-ubuntu', '--from', str(directory)])
+        run(['piano-boot-switch', 'to-ubuntu', '--only-if-ubuntu'])
+    else:
+        # The OnePlus switcher resolves the active slot from boot metadata or GPT.
+        status = subprocess.check_output(['erhai-switch', 'status'], text=True)
+        match = re.search(r'(?m)^.*?slot suffix:\s*(_[ab])\s*$', status)
+        if not match:
+            raise ValueError('OnePlus switcher did not identify the active slot')
+        suffix = match[1]
+    nodes = {name: Path('/dev/disk/by-partlabel') / (name + suffix) for name in parts}
+    if product == 'erhai':
+        # postinst may already have activated this exact triplet. Avoid rotating
+        # ubuntu.prev a second time, but compare all three partitions either way.
+        registered = Path('/var/lib/erhai/switch/ubuntu')
+        if not all((registered / (n + '.img')).is_file() and
+                   sha(registered / (n + '.img')) == wanted[n] and sha(nodes[n]) == wanted[n]
+                   for n in parts):
+            run(['erhai-switch-install-ubuntu-images', str(directory)])
+    for name, node in nodes.items():
+        actual = sha(node)
+        if actual != wanted[name]:
+            raise ValueError(f'{node.name} readback differs from {directory.name}: '
+                             f'expected {wanted[name]}, read {actual}')
+
+
+def save_boot(source, destination):
+    if destination.exists():
+        return
+    incoming = destination.with_name('.' + destination.name + '.incoming')
+    if incoming.exists():
+        shutil.rmtree(incoming)
+    shutil.copytree(source, incoming)
+    incoming.rename(destination)
 
 
 def kernel_release(package):
@@ -489,7 +524,7 @@ def purgeable(candidates):
     return good, refused
 
 
-def cleanup(product, store, state, manifests=None, dry_run=False):
+def cleanup(product, store, state, manifests=None, dry_run=False, upgrading_from=None):
     """Remove what neither the recorded transaction nor the running system still needs.
 
     The plan is computed completely and written to cleanup.json before the first
@@ -550,7 +585,13 @@ def cleanup(product, store, state, manifests=None, dry_run=False):
     kernels = {running} | {r for r in releases if owned[r] & names} | ({kernel_release(n) for n in names} - {None})
     switch = Path('/var/lib') / product / 'switch'
     unknown = []
-    for directory in [store / n for n in sorted(sets)] + [boot, switch / 'ubuntu', switch / 'ubuntu.prev']:
+    switch_sets = [switch / 'ubuntu', switch / 'ubuntu.prev']
+    if upgrading_from is not None:
+        incoming_kernels = {kernel_release(x['package']) for x in manifests[ids[0]]['packages'] if x['install']} - {None}
+        if incoming_kernels and upgrading_from not in incoming_kernels:
+            # Importing a different kernel rotates the current set into ubuntu.prev.
+            switch_sets = [switch / 'ubuntu']
+    for directory in [store / n for n in sorted(sets)] + [boot, *switch_sets]:
         if directory.is_dir():
             release = boot_release(directory)
             if release:
@@ -672,8 +713,10 @@ def main():
     p.add_argument('--default-package', action='append', default=[])
     p.add_argument('--output', type=Path, required=True)
     p = sub.add_parser('verify'); p.add_argument('repository', type=Path)
-    p = sub.add_parser('upgrade'); p.add_argument('repository', type=Path)
-    p.add_argument('--previous', type=Path, required=True)
+    for action in ('upgrade', 'preview-upgrade'):
+        p = sub.add_parser(action)
+        p.add_argument('repository', type=Path)
+        p.add_argument('--previous', type=Path, required=True)
     p = sub.add_parser('rollback'); p.add_argument('--product', choices=('piano', 'erhai'), required=True)
     p = sub.add_parser('cleanup', help='remove what earlier releases left behind (also run by upgrade and rollback)')
     p.add_argument('--product', choices=('piano', 'erhai'), required=True)
@@ -692,7 +735,9 @@ def main():
         return
     if a.action == 'verify':
         print(json.dumps(verify(a.repository), indent=2)); return
-    product = verify(a.repository)['product'] if a.action == 'upgrade' else a.product
+    upgrading = a.action in ('upgrade', 'preview-upgrade')
+    new_manifest = verify(a.repository) if upgrading else None
+    product = new_manifest['product'] if upgrading else a.product
     guard(product)
     store = Path('/var/lib') / product / 'releases'
     if a.action == 'cleanup' and not (store / 'transaction.json').is_file():
@@ -701,41 +746,57 @@ def main():
     with (store / '.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         state_path = store / 'transaction.json'
-        if a.action == 'upgrade':
-            repo, m = keep(a.repository, store)
-            previous, old = keep(a.previous, store)
+        if upgrading:
+            preview = a.action == 'preview-upgrade'
+            repo, m = (a.repository, new_manifest) if preview else keep(a.repository, store, new_manifest)
+            previous, old = a.previous, verify(a.previous)
             if old['product'] != product or old['id'] == m['id']:
                 raise ValueError('previous release is not a different batch of this product')
             state = read_json(state_path) if state_path.exists() else None
             if not state or state['to'] != m['id']:
                 before = installed()
-                previous, old = previous_for_installed(previous, old, repo, m, before, store)
+                # Build an exact snapshot before selecting the retained previous ID.
+                # Preview has no durable package, boot or transaction side effects.
+                with (tempfile.TemporaryDirectory(prefix='release-preview-', dir='/var/tmp')
+                      if preview else contextlib.nullcontext(store)) as staging:
+                    previous, old = previous_for_installed(previous, old, repo, m, before, Path(staging))
+                    if not preview and previous.parent != store:
+                        previous, old = keep(previous, store, old)
                 managed = {x['package'] for x in old['packages'] + m['packages']}
                 boot = Path('/var/lib') / product / 'switch/ubuntu'
                 saved = store / ('boot-before-' + m['id'])
-                if not saved.exists():
-                    shutil.copytree(boot, saved)
                 state = dict(product=product, to=m['id'], previous=old['id'], before={n:before[n]['version'] for n in managed & before.keys()},
                              boot=str(saved), phase='prepared')
-                atomic_json(state_path, state)
+                if not preview:
+                    save_boot(boot, saved)
+                    atomic_json(state_path, state)
+            else:
+                old = verify(store / state['previous'])
+            manifests = {m['id']: m, old['id']: old}
+            if preview:
+                active_boot = Path('/var/lib') / product / 'switch/ubuntu'
+                print(json.dumps(cleanup(product, store, dict(state, phase='upgraded'), manifests,
+                                         dry_run=True, upgrading_from=boot_release(active_boot)), indent=2))
+                return
             current = installed()
             targets = [f'{x["package"]}={x["version"]}' for x in m['packages']
                        if (x['install'] or x['package'] in current) and not updated_by_distribution(x, current)]
+            state['phase'] = 'prepared'; atomic_json(state_path, state)
             activate(repo, product)
             solve_and_install(targets, product)
             new_boot = store / ('boot-' + m['id'])
-            if new_boot.exists():
-                if state['phase'] in ('rolled-back', 'userspace-restored'):
-                    switch_boot(product, new_boot)
-            else:
-                shutil.copytree(Path('/var/lib') / product / 'switch/ubuntu', new_boot)
+            if not new_boot.exists():
+                current_boot = Path('/var/lib') / product / 'switch/ubuntu'
+                expected = {kernel_release(x['package']) for x in m['packages'] if x['install']} - {None}
+                if expected and boot_release(current_boot) not in expected:
+                    raise ValueError('registered boot set does not match the new release kernel')
+                save_boot(current_boot, new_boot)
+            switch_boot(product, new_boot)
             state['phase'] = 'upgraded'; atomic_json(state_path, state)
-            manifests = {m['id']: m, old['id']: old}
         elif a.action == 'cleanup':
             state = read_json(state_path); manifests = None
         else:
             state = read_json(state_path)
-            already_rolled_back = state['phase'] == 'rolled-back'
             repo = store / state['previous']; old = verify(repo)
             newer = verify(store / state['to'])
             # New-only unpacked/half-configured packages also need removal.
@@ -756,8 +817,7 @@ def main():
             activate(repo, product)
             solve_and_install(targets, product, repair_unpacked=False)
             state['phase'] = 'userspace-restored'; atomic_json(state_path, state)
-            if not already_rolled_back:
-                switch_boot(product, state['boot'])
+            switch_boot(product, state['boot'])
             state['phase'] = 'rolled-back'; atomic_json(state_path, state)
             manifests = {old['id']: old, newer['id']: newer}
         print(json.dumps(state, indent=2))

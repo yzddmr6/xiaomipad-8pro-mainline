@@ -203,6 +203,8 @@ class App(Adw.Application):
         description = descriptions.get(phase, '')
         detail = f"{state.get('current','')} → {self.version}"
         if phase == 'complete': detail = state.get('rollback_version') or self.version
+        elif phase in ('rolling_back', 'rolled_back') or state.get('phase') == 'rolling_back':
+            detail = f"{self.version} → {state.get('current', '')}"
         elif phase == 'up_to_date': detail = state.get('current','')
         if state.get('total_bytes'): detail += ' · ' + GLib.format_size(state['total_bytes'])
         warning = []
