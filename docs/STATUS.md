@@ -39,6 +39,12 @@ results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
 
+### v1.6.1
+
+内存紧张、GPU 又在忙时，GPU 完成的通知不再等后台清理，回收内存时桌面和应用的线程也不再等 GPU，桌面和虚拟机不再卡住。GunyahVM 升到 1.4.0：虚拟机默认用足 CPU、内存和 GPU，显示跟随面板刷新率，开虚拟机前不用再先加载驱动。
+
+When memory runs low while the GPU is busy, GPU completion no longer waits for background cleanup, and memory reclaim no longer makes desktop and application threads wait for the GPU, so the desktop and virtual machines no longer stall. GunyahVM 1.4.0 uses the CPU, memory and GPU in full by default, follows the panel refresh rate, and no longer needs drivers loaded by hand before a VM starts.
+
 ### v1.6.0
 
 项目更新通过签名 APT 源分发，新安装的系统预装签名密钥。GunyahVM 可独立更新。
