@@ -45,7 +45,9 @@ results do not establish support for other models, capacities or accessories.
 
 Fresh installations include the archive keyring for project updates through APT. GunyahVM can update independently.
 
-⟦DRAFT:内核与 GunyahVM 最终候选验收⟧
+内核的系统级缓存（LLCC）切片表改用社区提交到上游的 SM8750 修正，32 个切片全部与原厂配置一致。
+
+The kernel system-level cache (LLCC) slice table now uses the SM8750 fix submitted upstream; all 32 slices match the stock configuration.
 
 ### v1.5.0
 
