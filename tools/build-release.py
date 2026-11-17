@@ -9,8 +9,6 @@ Layout of the output directory:
            --no-serial, same kernel and DTB) with maintenance-manifest.json
   rootfs/  root.sparse.img (for fastboot flash linux_rootfs), its manifest and
            offline verification
-  debs/    the piano packages installed in the image (kernel, device support,
-           firmware, Mesa, desktop defaults)
   tools/   piano-switch.py and the KernelSU module zip
   RELEASE-NOTES.md, release-manifest.json, SHA256SUMS
 The data partition is not shipped; follow docs/INSTALL.en.md to create it.
@@ -139,9 +137,7 @@ def stage_virtualization(packages, source, out, root_packages):
     dest.mkdir(parents=True)
     result = []
     for name, (path, ver) in found.items():
-        shutil.copyfile(path, dest / path.name)
-        result.append({'package': name, 'version': ver, 'file': 'optional/virtualization/' + path.name,
-                       'sha256': sha(dest / path.name)})
+        result.append({'package': name, 'version': ver, 'sha256': sha(path)})
     shutil.copyfile(source, dest / 'piano-virtualization-source.tar.zst')
     return result
 
@@ -157,8 +153,6 @@ def main():
     ap.add_argument('--max-fill-mib', type=int, default=sparse_image.DEFAULT_MAX_FILL_MIB,
                     help='FILL limit per sparse image (on free blocks for the ext4 root)')
     ap.add_argument('--allow-fill', action='store_true', help='Report FILL beyond the limit without stopping')
-    ap.add_argument('--release-repository', type=Path, help='Complete local APT batch retained in package attachments')
-    ap.add_argument('--previous-release-repository', type=Path, help='Complete previous batch supplied for upgrade rollback')
     ap.add_argument('--output', type=Path, required=True, help='New release directory')
     ap.add_argument('--changes', type=Path, required=True,
                     help='Bilingual summary, updates and known limitations (UTF-8)')
@@ -248,7 +242,7 @@ def main():
 
     out = a.output.resolve()
     out.mkdir(parents=True, exist_ok=False)
-    for d in ('boot', 'rootfs', 'debs', 'tools'):
+    for d in ('boot', 'rootfs', 'tools'):
         (out / d).mkdir()
     for name in SET_FILES:
         shutil.copy2(s / name, out / 'boot' / name)
@@ -264,37 +258,9 @@ def main():
         if check.get('rootfs_sparse_sha256') != rootfs['outputs']['root.sparse.img']['sha256']:
             raise SystemExit('The QEMU boot check belongs to another image')
         shutil.copy2(a.boot_check, out / 'rootfs/qemu-boot-check.json')
-    local = json.loads((build / 'inputs-local.json').read_text())
-    for entry in rootfs['packages']:
-        if entry['source'] != 'piano':
-            continue
-        path = Path(local[entry['file']])
-        if sha(path) != entry['sha256']:
-            raise SystemExit(f'{path.name} changed after the image build')
-        shutil.copy2(path, out / 'debs' / path.name)
     shutil.copy2(REPO / 'tools/piano-switch.py', out / 'tools/piano-switch.py')
     subprocess.run(['sh', str(REPO / 'device/android/piano-switch-ksu/build.sh'), str(out / 'tools')],
                    check=True, stdout=subprocess.DEVNULL)
-
-    if a.release_repository:
-        import importlib.util
-        spec = importlib.util.spec_from_file_location('release_repository', REPO / 'tools/release-repository.py')
-        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
-        batch = module.verify(a.release_repository)
-        expected = rootfs.get('release_repository')
-        if not expected or batch['id'] != expected['id'] or sha(a.release_repository / 'manifest.json') != expected['manifest_sha256']:
-            raise ValueError('release repository differs from the root image input')
-        shutil.copytree(a.release_repository, out / 'repositories' / batch['id'])
-    elif rootfs.get('release_repository'):
-        raise ValueError('root image requires its complete --release-repository')
-
-    if a.previous_release_repository:
-        if not a.release_repository:
-            raise ValueError('previous batch requires the current release repository')
-        previous = module.verify(a.previous_release_repository)
-        if previous['product'] != batch['product'] or previous['id'] == batch['id']:
-            raise ValueError('previous batch belongs to another product or duplicates the current batch')
-        shutil.copytree(a.previous_release_repository, out / 'repositories' / previous['id'])
 
     optional_packages = stage_virtualization(a.virtualization_packages, a.virtualization_source, out, rootfs['packages'])
     if a.waydroid_bundle:

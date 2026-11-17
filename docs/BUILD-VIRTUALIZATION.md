@@ -33,7 +33,8 @@ The output contains piano-vm and piano-crosvm arm64 Debian packages plus SHA256S
 
 The network helper is installed root-owned at a fixed path. Device sandbox policy is enabled by default and packaged for the installed crosvm path; the VMM remains an ordinary-user process.
 
-Pass `--virtualization-packages packages --virtualization-source piano-virtualization-source.tar.zst` to `tools/build-release.py`. The matching device-support version must already be in the root image. `tools/package-release-assets.py` carries these files in `packages.zip` under `optional/virtualization/`; ordinary upgrades continue to install only `debs/`. The VM packages are not forced into the default root image.
+Pass `--virtualization-packages packages --virtualization-source piano-virtualization-source.tar.zst` to `tools/build-release.py`. The source archive is included in the tools ZIP. Supply the optional VM packages to the project APT archive. Install a VM package on the tablet with APT.
+
 
 ## Optional Windows assets
 

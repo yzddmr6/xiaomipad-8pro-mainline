@@ -92,7 +92,7 @@ Project: https://github.com/yzddmr6/xiaomipad-8pro-mainline , latest release (th
 
    ```bash
    sha256sum -c SHA256SUMS.assets
-   unzip piano-ubuntu-*-boot.zip && unzip piano-ubuntu-*-tools.zip && unzip piano-ubuntu-*-packages.zip
+   unzip piano-ubuntu-*-boot.zip && unzip piano-ubuntu-*-tools.zip
    mkdir -p rootfs && cat piano-ubuntu-*-rootfs.img.zst.part* | zstd -d > rootfs/root.sparse.img
    sha256sum -c SHA256SUMS
    ```
@@ -101,7 +101,17 @@ Project: https://github.com/yzddmr6/xiaomipad-8pro-mainline , latest release (th
 
 ### Upgrading an existing installation
 
-Open the release notification and select Update. After the download, review the cleanup preview and select Install. Restart when prompted. To restore the previous release, open System Update, select Roll back to previous release, then restart. If the existing notification only offers release notes, use the manual procedure below for this first upgrade. See the [manual upgrade procedure](docs/UPGRADE.en.md).
+Open Software Updater, or run `sudo apt update && sudo apt full-upgrade`. Restart after a kernel update.
+
+On an existing installation, run these commands once on the tablet, then restart.
+
+```sh
+curl -fLO https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/download/apt/piano-archive-keyring_1_all.deb
+sudo apt install ./piano-archive-keyring_1_all.deb
+sudo apt update && sudo apt full-upgrade
+```
+
+If the system fails to boot, reinstall using the [installation guide](docs/INSTALL.en.md).
 
 ### Building from source
 
@@ -181,7 +191,6 @@ Not yet supported: disk hibernation, hardware clock writes (time is set from the
 
 ## Usage and Maintenance
 
-Checks GitHub anonymously once a day for the latest release and notifies you when a newer version is available; this can be disabled in notification settings.
 
 Host commands use the REPO, RELEASE and WORK variables from [INSTALL.en.md "What you need"](docs/INSTALL.en.md#what-you-need) and run in WORK. Details are in [docs/FLASHING.en.md](docs/FLASHING.en.md).
 
@@ -200,7 +209,7 @@ A host write resets slot A's retry counter; the next Ubuntu boot marks the slot 
 
 **Developer mode.** `sudo piano-devmode on` enables SSH over the USB cable; it is off by default. Connect from the host with `python3 "$REPO/tools/piano-devmode-ssh.py" --serial <serial> <user>`, and turn it off afterwards with `sudo piano-devmode off`. See [device/devmode](device/devmode/README.md).
 
-**Upgrades.** See [docs/UPGRADE.en.md](docs/UPGRADE.en.md). Installing a kernel package rebuilds the boot set and rewrites slot A; the previous set is kept for rollback.
+
 
 **Time.** The hardware clock is not writable; the time is set from the network after boot. Without a network, set it with `sudo date -s 'YYYY-MM-DD HH:MM'`.
 

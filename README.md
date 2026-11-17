@@ -92,7 +92,7 @@
 
    ```bash
    sha256sum -c SHA256SUMS.assets
-   unzip piano-ubuntu-*-boot.zip && unzip piano-ubuntu-*-tools.zip && unzip piano-ubuntu-*-packages.zip
+   unzip piano-ubuntu-*-boot.zip && unzip piano-ubuntu-*-tools.zip
    mkdir -p rootfs && cat piano-ubuntu-*-rootfs.img.zst.part* | zstd -d > rootfs/root.sparse.img
    sha256sum -c SHA256SUMS
    ```
@@ -101,7 +101,17 @@
 
 ### 已安装用户升级
 
-打开发布通知，点“更新”，下载完成后检查清理预览，再点“安装”。按提示重启。需要回退时，打开“系统更新”，点“回退到上一版”，完成后重启。 旧版通知只有“查看更新说明”时，首次升级请使用下方手工步骤。 见[手工升级说明](docs/UPGRADE.md)。
+打开 Ubuntu「软件更新器」，或运行 `sudo apt update && sudo apt full-upgrade`。内核更新后重启。
+
+旧版用户首次接入时，在平板上运行下面三行，然后重启。
+
+```sh
+curl -fLO https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/download/apt/piano-archive-keyring_1_all.deb
+sudo apt install ./piano-archive-keyring_1_all.deb
+sudo apt update && sudo apt full-upgrade
+```
+
+如果系统无法启动，按 [安装指南](docs/INSTALL.md)重装。
 
 ### 从源码构建
 
@@ -179,7 +189,6 @@ Firefox 播放部分 HEVC 视频可能有轻微丢帧。Chromium snap 不支持�
 
 ## 使用与维护
 
-每天匿名检查一次 GitHub 上的最新版本，有新版时提示；可在通知设置中关闭。
 
 主机命令按 [INSTALL.md 的「准备」](docs/INSTALL.md#准备)设置 REPO、RELEASE 和 WORK，在 WORK 中执行。详细说明见 [docs/FLASHING.md](docs/FLASHING.md)。
 
@@ -198,7 +207,7 @@ fastboot -s <serial> reboot
 
 **开发者模式。** `sudo piano-devmode on` 开启经 USB 线的 SSH；默认关闭。主机上用 `python3 "$REPO/tools/piano-devmode-ssh.py" --serial <serial> <user>` 连接。装完后用 `sudo piano-devmode off` 关闭。详见 [device/devmode](device/devmode/README.md)。
 
-**升级。** 见 [docs/UPGRADE.md](docs/UPGRADE.md)。内核包安装后会自动重建启动镜像组并改写 A 槽，旧镜像组保留为回退。
+
 
 **时间。** 硬件时钟不可写，启动后联网自动校时；没有网络时用 `sudo date -s 'YYYY-MM-DD HH:MM'` 手动设置。
 

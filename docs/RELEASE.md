@@ -16,7 +16,6 @@ a repackaging of exactly these files (see [Publishing](#publishing)).
 | `boot/manifest.json`, `boot/boot-profile.json`, `boot/piano-boot.dtb`, `boot/maintenance-manifest.json` | inputs and outputs of the set; the boot profile holds only stock-build fields; the DTB the set carries |
 | `rootfs/root.sparse.img` | the 60 GiB `linux_rootfs` ext4 as an Android sparse image, for `fastboot flash linux_rootfs` |
 | `rootfs/manifest.json`, `rootfs/verification.json` | every input hash and package version; the offline checks |
-| `debs/` | release-supplied packages (including rebuilt Ubuntu power-button packages; [inputs and update policy](../ubuntu/README.md)): project packages installed in the image: kernel, device support, firmware, Mesa, desktop defaults, snap graphics provider, MiPPS authentication, sensors |
 | `tools/piano-switch.py`, `tools/piano-switch-ksu-<version>.zip` | host Fastboot switching and recovery; the Android KernelSU switch module |
 | `RELEASE-NOTES.md`, `release-manifest.json`, `SHA256SUMS` | the release notes (also the GitHub release body); identity and checks of every input; every file's hash |
 
@@ -200,7 +199,6 @@ assets by `tools/package-release-assets.py`:
 |---|---|
 | `piano-ubuntu-<version>-boot.zip` | `boot/` (the slot-A set, the RAM check and maintenance images, manifests) and the directory's `SHA256SUMS` |
 | `piano-ubuntu-<version>-tools.zip` | `tools/` (`piano-switch.py`, the KernelSU module) |
-| `piano-ubuntu-<version>-packages.zip` | `debs/` (the upgrade package, see [UPGRADE.en.md](UPGRADE.en.md)) |
 | `piano-ubuntu-<version>-rootfs.img.zst.part0`, `.part1`, … | `rootfs/root.sparse.img`, zstd-compressed and split below 2 GiB |
 | `SHA256SUMS.assets` | hashes of the assets above |
 
@@ -213,7 +211,6 @@ gh release create <version> --title "Ubuntu for Xiaomi Pad 8 Pro <version>" \
 ```
 
 Users restore the directory with the commands in the release notes and verify it with
-`sha256sum -c SHA256SUMS`. Nothing else is uploaded: the packages are inside `packages.zip`, and
-the BusyBox source for the maintenance image is referenced by its Ubuntu source package in the
+`sha256sum -c SHA256SUMS`. Project packages are distributed via APT. The BusyBox source for the maintenance image is referenced by its Ubuntu source package in the
 notes. Tag the kernel repository with the same version at the commit recorded in
 `kernel/source.json`.

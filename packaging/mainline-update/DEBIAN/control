@@ -1,9 +1,7 @@
 Package: mainline-update
-Version: 0.1.0
-Section: gnome
-Priority: optional
+Version: 0.2.0
 Architecture: all
-Depends: python3, python3-gi, gir1.2-gtk-4.0, gir1.2-adw-1 (>= 1.4), polkitd, systemd
-Maintainer: yzddmr6 <yzddmr6@gmail.com>
-Description: One-tap updater for mainline tablet releases
- Download, verify, install, and roll back a complete project release from GNOME.
+Section: admin
+Priority: optional
+Maintainer: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
+Description: Transitional package for the APT update service

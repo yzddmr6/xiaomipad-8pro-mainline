@@ -39,7 +39,7 @@ class DesktopIntegration(unittest.TestCase):
                 self.assertEqual(p.read_bytes(), (REPO / 'device/power/tuned/profiles' /
                                                  p.parent.name / 'tuned.conf').read_bytes())
             self.assertIn('tuned-ppd (>= 2.25.1)', control)
-            self.assertIn('gunyahvm (>= 1.3.0-1)', control)
+            self.assertIn('gunyahvm (= 1.3.0-1)', control)
             self.assertTrue(os.access(root / 'usr/libexec/piano/gunyahvm-favorite', os.X_OK))
             self.assertIn('OnlyShowIn=GNOME;', (root / 'etc/xdg/autostart/piano-gunyahvm-favorite.desktop').read_text())
             dependencies = next(line for line in control.splitlines() if line.startswith('Depends: '))
@@ -81,7 +81,8 @@ class DesktopIntegration(unittest.TestCase):
             d = Path(tmp)
             for name in ('lists/partial', 'empty', 'cache', 'prefs'):
                 (d / name).mkdir(parents=True)
-            (d / 'sources.list').write_text('deb [trusted=yes] https://example.invalid/ubuntu resolute main\n')
+            (d / 'sources.list').write_text('deb [trusted=yes] https://example.invalid/ubuntu resolute main\n'
+                                        'deb [trusted=yes] https://example.invalid/project ./\n')
             versions = {'gnome-settings-daemon': '50.0-1ubuntu1+piano3',
                         'gnome-settings-daemon-common': '50.0-1ubuntu1+piano3',
                         'gnome-control-center': '1:50.3-0ubuntu0.2+piano2',
@@ -94,8 +95,11 @@ class DesktopIntegration(unittest.TestCase):
                 '\n'.join(f'Package: {name}\nArchitecture: arm64\nVersion: 9:99.0-1ubuntu1\n'
                           f'Description: synthetic security update\nFilename: pool/{name}.deb\n'
                           'Size: 1\nSHA256: ' + '0' * 64 + '\n' for name in versions))
-            shutil.copyfile(REPO / 'packaging/piano-ubuntu-desktop/etc/apt/preferences.d/'
-                            'piano-power-button-lock', d / 'prefs/piano')
+            (d / 'lists/example.invalid_project_._Packages').write_text(
+                '\n'.join(f'Package: {name}\nArchitecture: arm64\nVersion: {version}\n'
+                          f'Filename: {name}.deb\nDescription: project build\n' for name, version in versions.items()))
+            (d / 'lists/example.invalid_project_._Release').write_text('Origin: xiaomipad-8pro-mainline\n')
+            shutil.copyfile(REPO / 'packaging/piano-archive-keyring/etc/apt/preferences.d/piano-archive', d / 'prefs/piano')
             options = ['-o', 'APT::Architecture=arm64', '-o', f'Dir::State={d}', '-o',
                        f'Dir::State::status={d}/status', '-o', f'Dir::Cache={d}/cache', '-o',
                        f'Dir::Etc::sourcelist={d}/sources.list', '-o', f'Dir::Etc::sourceparts={d}/empty',
@@ -104,7 +108,7 @@ class DesktopIntegration(unittest.TestCase):
                 policy = subprocess.check_output(['apt-cache', *options, 'policy', name], text=True,
                                                  env=dict(os.environ, LC_ALL='C'))
                 self.assertIn(f'Candidate: {version}', policy)
-                self.assertIn('9:99.0-1ubuntu1 -1', policy)
+                self.assertIn('9:99.0-1ubuntu1 500', policy)
 
     def test_no_download_uses_canonical_local_archive_names(self):
         with tempfile.TemporaryDirectory() as tmp:

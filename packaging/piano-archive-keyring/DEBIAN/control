@@ -1,0 +1,7 @@
+Package: piano-archive-keyring
+Version: 1
+Architecture: all
+Section: admin
+Priority: optional
+Maintainer: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
+Description: Signed APT source for xiaomipad-8pro-mainline

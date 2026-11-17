@@ -208,16 +208,11 @@ python3 tools/package-mesa.py --mesa-build out/host-mesa-build --output out/host
 `QEMU_CPU=max,pauth-impdef=on`。保留 `.buildinfo`、`.changes`、生成的包清单和
 构建环境版本记录。构建产生完整同源二进制，不能只发布运行时包。
 
-`build-rootfs-image.py --release-repository <批次目录>` 将整个本地仓库保留在
-根镜像中。`--deb` 只指定过渡包和所需运行时子集及设备包；APT 自动补齐依赖。
-Ubuntu 输入里被这些显式包替换的同名版本不重复安装。不要把整个 Mesa pool
-当作 `--deb` 列表，否则开发和调试用途的包也会成为默认安装项。
-`build-release.py` 使用同一 `--release-repository`；`package-release-assets.py`
-把完整仓库放进 packages 附件，仓库清单必须与根镜像输入一致。
+用 `./tools/build-archive-debs.sh out/archive-debs` 构建源配置包。构建根镜像时，通过 `--deb` 传入 `out/archive-debs/piano-archive-keyring_1_all.deb` 和所需项目运行时包。
 
-迁移前用 `release-repository.py create` 把上一版发布包与原来安装的 Mesa/libdrm
-依赖精确版本组成上一批仓库。升级工具会拒绝缺少回退包的批次，详见
-[UPGRADE](UPGRADE.md)。运行时守卫为 `tools/check-host-mesa.py`，需要实际图形会话、
+先构建组件，将本版默认安装的项目包版本写入 `packaging/desktop-packages.json`，最后构建桌面元包。
+
+运行时守卫为 `tools/check-host-mesa.py`，需要实际图形会话、
 WebKit 网页进程和正在运行的 GunyahVM virgl 来宾；缺少所需环境会失败。
 检查环境安装 `python3-gi`、`gir1.2-webkit2-4.1`（或 GTK4 的 `gir1.2-webkit-6.0`）
 和 `vulkan-tools`；这些诊断依赖不强加给只使用 Mesa 的系统。
@@ -428,7 +423,6 @@ RAM 硬件检查使用 600 秒。到期后停止显示管理器与用户 slice�
 `build-native-display-initrd.py` 从本仓库更新 helper 和 unit，经 `/run` 带入已安装根系统，
 不依赖根系统预装该修正。调试镜像的构建、硬件检查及恢复操作分开执行。
 
-用 `build-release.py --release-repository <新批次> --previous-release-repository <旧批次>` 将两批完整仓库一同放入升级附件。
 
 ## NPU 运行库和离线演示
 

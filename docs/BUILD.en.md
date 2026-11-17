@@ -222,17 +222,11 @@ Use disk-backed build storage. Prefer native ARM64; qemu-user requires
 and build-environment versions. Deliver all binary packages from the source,
 including development and OpenCL packages; install only the runtime subset.
 
-Pass the complete batch to both `build-rootfs-image.py` and `build-release.py`
-with `--release-repository`. The root retains the local repository, while explicit
-`--deb` arguments select only runtime and device packages. Matching explicit
-packages supersede older Ubuntu inputs. APT resolves other dependencies from the
-local pool. Do not pass the entire Mesa pool as `--deb`. The attachment builder
-includes the complete repository in the packages archive and checks its identity
-against the root-image input.
+Build the archive bootstrap with `./tools/build-archive-debs.sh out/archive-debs`. Pass `out/archive-debs/piano-archive-keyring_1_all.deb` to the root image builder with `--deb` along with the selected project runtime packages.
 
-Create a preceding batch containing all previous release archives and the exact
-installed Mesa/libdrm dependency versions. The transaction tool refuses missing
-rollback packages; see [UPGRADE](UPGRADE.en.md). `tools/check-host-mesa.py` checks a
+Record the selected project package versions in `packaging/desktop-packages.json` before building the desktop metapackage. Build the other components first.
+
+`tools/check-host-mesa.py` checks a
 real graphical session, WebKit web process and running GunyahVM virgl guest;
 missing required environments fail. Install `python3-gi`, `gir1.2-webkit2-4.1`
 (or the GTK4 `gir1.2-webkit-6.0`) and `vulkan-tools` for the check; these diagnostic
@@ -537,7 +531,6 @@ Both must force a bootloader reboot at the 45-second bound; the latter must
 still have a clean journal. `--seconds 60` can shorten these failure fixtures
 without changing the production 600-second budget.
 
-Use `build-release.py --release-repository <current-batch> --previous-release-repository <previous-batch>` to include both complete repositories in the upgrade attachment.
 
 ## NPU runtime and offline demonstration
 

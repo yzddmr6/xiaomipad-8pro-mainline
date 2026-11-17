@@ -46,13 +46,8 @@ def release(tmp_path):
     files = {
         'boot/boot.img': b'boot data' * 100, 'boot/SHA256SUMS': b'boot-local checksums\n',
         'boot/subdir/file with spaces.txt': b'nested metadata',
-        'optional/virtualization/piano-vm.deb': b'optional VM package',
-        'optional/virtualization/piano-vm-windows.deb': b'optional Windows package',
         'optional/virtualization/piano-virtualization-source.tar.zst': b'corresponding source',
-        'repositories/piano-test/pool/libgbm-dev.deb': b'optional same-source package',
-        'repositories/piano-test/Packages': b'local APT index',
-        'repositories/piano-test/SHA256SUMS': b'local repository checksums',
-        'debs/package.deb': b'deb data', 'tools/switch.py': b'#!/usr/bin/python3\n',
+        'tools/switch.py': b'#!/usr/bin/python3\n',
         'rootfs/root.sparse.img': os.urandom(24_000), 'rootfs/manifest.json': b'{}\n',
         'rootfs/verification.json': b'{"passed": true}\n',
         'release-manifest.json': b'{"release_name": "v1.2.3"}\n',
@@ -90,13 +85,8 @@ def test_roundtrip_and_documented_shell_commands(release, tmp_path, part_bytes):
         assert entry['bytes'] == result['sizes'][entry['name']]
         assert entry['sha256'] == tool.sha(assets / entry['name'])
         assert entry['contents'] and entry['restore_command']
-    package_zip = next(x for x in manifest['assets'] if x['name'].endswith('-packages.zip'))
-    assert 'optional/virtualization/piano-vm.deb' in package_zip['contents']
-    assert 'optional/virtualization/piano-vm-windows.deb' in package_zip['contents']
-    assert 'optional/virtualization/piano-virtualization-source.tar.zst' in package_zip['contents']
-    assert 'repositories/piano-test/pool/libgbm-dev.deb' in package_zip['contents']
-    assert 'repositories/piano-test/Packages' in package_zip['contents']
-    assert 'repositories/piano-test/SHA256SUMS' in package_zip['contents']
+    assert [a['name'] for a in manifest['assets'] if a['name'].endswith('.zip')] == [
+        'piano-ubuntu-v1.2.3-boot.zip', 'piano-ubuntu-v1.2.3-tools.zip']
     parts = manifest['rootfs_parts']
     assert all((assets / n).stat().st_size == part_bytes for n in parts[:-1])
     # Exercise exactly the user-facing shell recipe as well as the Python CLI.
@@ -129,7 +119,8 @@ def test_packaged_notes_preserve_body_without_size_tables(release, tmp_path):
     write_sums(release)
     result = tool.package(release, tmp_path / 'assets')
     body = (tmp_path / 'assets/RELEASE-NOTES.md').read_text()
-    assert body == notes and body.count(update) == 2
+    assert body == notes
+    assert update in body and update.replace('**: ', '**：') in body
     assert body.index('## 更新') < body.index('## 获取、安装与升级')
     assert body.index('## Changes') < body.index('## Get, install and upgrade')
     for size in result['sizes'].values():

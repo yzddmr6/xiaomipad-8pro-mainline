@@ -1,0 +1,4 @@
+Types: deb
+URIs: https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/download/apt/
+Suites: ./
+Signed-By: /usr/share/keyrings/piano-archive-keyring.gpg

@@ -1,0 +1,3 @@
+Package: *
+Pin: release o=xiaomipad-8pro-mainline
+Pin-Priority: 1001

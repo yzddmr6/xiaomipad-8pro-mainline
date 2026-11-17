@@ -354,11 +354,9 @@ def main():
     shutil.copytree(repo / 'packaging/piano-ubuntu-desktop', desktop, ignore=untracked)
     tree(repo / 'packaging/piano-ubuntu-desktop', desktop, '.')
     stage_app_center(desktop / 'usr/share/tablet-app-center')
-    shutil.copytree(repo / 'packaging/release-notifier', desktop, dirs_exist_ok=True, ignore=untracked)
     release_file = desktop / 'usr/share/mainline-release/version'
     release_file.parent.mkdir(parents=True, exist_ok=True)
     release_file.write_text((a.release_version or a.version) + '\n')
-    tree(repo / 'packaging/release-notifier', desktop, '.')
     shutil.copytree(repo / 'packaging/firefox-snap-migration', desktop, dirs_exist_ok=True, ignore=untracked)
     tree(repo / 'packaging/firefox-snap-migration', desktop, '.')
     copy(repo / 'device/keyboard/README.md', desktop,
@@ -380,7 +378,9 @@ def main():
          'usr/share/pipewire/client.conf.d/50-piano-speaker-upmix.conf')
     (desktop / 'usr/libexec/piano/gunyahvm-favorite').chmod(0o755)
     # fake-hwclock: the RTC cannot be set; it restores the time saved at shutdown or hourly.
-    package('piano-ubuntu-desktop', desktop, 'mainline-update (>= 0.1.0), qcom-npu-runtime, qcom-npu-demo-model, piano-npu-firmware, gunyahvm (>= 1.3.0-1), resources (= 1.10.2-0ubuntu3.1+piano2), gir1.2-mutter-18 (= 50.1-0ubuntu2.5+sm8750.1), libmutter-18-0 (= 50.1-0ubuntu2.5+sm8750.1), mutter-common (= 50.1-0ubuntu2.5+sm8750.1), mutter-common-bin (= 50.1-0ubuntu2.5+sm8750.1), wireplumber (>= 0.5.13-1ubuntu1.1), gnome-settings-daemon (= 50.0-1ubuntu1+piano3), gnome-settings-daemon-common (= 50.0-1ubuntu1+piano3), gnome-control-center (= 1:50.3-0ubuntu0.2+piano2), gnome-control-center-data (= 1:50.3-0ubuntu0.2+piano2), piano-mesa, piano-iris-vaapi (>= 0.1.0+git.f587b14-0piano4), gdm3, gnome-shell (>= 50), colord, colord-data, python3-gi, fake-hwclock, python3, console-setup, snapd, init-system-helpers, tuned-ppd (>= 2.25.1), showtime, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, gstreamer1.0-plugins-bad, gstreamer1.0-libav',
+    cohort = json.loads((repo / 'packaging/desktop-packages.json').read_text())
+    depends = ', '.join(f'{name} (= {version})' for name, version in cohort.items())
+    package('piano-ubuntu-desktop', desktop, depends + ', wireplumber (>= 0.5.13-1ubuntu1.1), gdm3, gnome-shell (>= 50), colord, colord-data, python3-gi, fake-hwclock, python3, console-setup, snapd, init-system-helpers, tuned-ppd (>= 2.25.1), showtime, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, gstreamer1.0-plugins-bad, gstreamer1.0-libav',
             'Piano Ubuntu desktop defaults: graphics, clock without RTC, speaker up-mix and UCM, '
             'GNOME Shell 50 on-screen keyboard guard',
             '#!/bin/sh\nset -e\nif [ "$1" = configure ]; then\n'
@@ -391,23 +391,25 @@ def main():
             '  sed -i -e \'$a\\\' /etc/machine-info\n'
             '  printf "CHASSIS=convertible\\n" >> /etc/machine-info\n'
             ' fi\n'
+            ' systemd-tmpfiles --create piano-kernel-retention.conf\n'
             ' deb-systemd-helper enable tablet-app-center-install.service >/dev/null\n'
             ' deb-systemd-helper enable piano-firefox-snap-remove.service >/dev/null\n'
             ' deb-systemd-helper --user enable piano-panel-srgb.service >/dev/null\n deb-systemd-helper --user enable piano-speaker-rotation.service >/dev/null\n'
-            ' deb-systemd-helper --user enable mainline-release-notifier.timer >/dev/null\nfi\n',
+            'fi\n',
             prerm='#!/bin/sh\nset -e\nif [ "$1" = remove ]; then\n'
                   ' deb-systemd-helper disable tablet-app-center-install.service >/dev/null\n'
             ' deb-systemd-helper --user disable piano-panel-srgb.service >/dev/null\n deb-systemd-helper --user disable piano-speaker-rotation.service >/dev/null\n'
-                  ' deb-systemd-helper --user disable mainline-release-notifier.timer >/dev/null\nfi\n',
+                  'fi\n',
             postrm='#!/bin/sh\nset -e\nif [ "$1" = purge ]; then\n'
                    ' if [ -f /etc/machine-info ]; then\n'
                    '  sed -i \'/^CHASSIS=convertible$/d\' /etc/machine-info\n'
                    '  if [ ! -s /etc/machine-info ]; then rm -f /etc/machine-info; fi\n'
                    ' fi\n'
+                   ' rm -f /etc/apt/apt.conf.d/90-piano-kernel-retention\n'
                    ' deb-systemd-helper purge tablet-app-center-install.service >/dev/null\n'
             ' deb-systemd-helper --user purge piano-panel-srgb.service >/dev/null\n deb-systemd-helper --user purge piano-speaker-rotation.service >/dev/null\n'
-                   ' deb-systemd-helper --user purge mainline-release-notifier.timer >/dev/null\nfi\n',
-            conffiles=['/etc/apt/preferences.d/piano-resources', '/etc/apt/preferences.d/piano-power-button-lock', '/etc/tuned/piano-ppd.conf',
+                   'fi\n',
+            conffiles=['/etc/tuned/piano-ppd.conf',
                        '/etc/xdg/mimeapps.list'],
             third_party=[(('usr/share/alsa/ucm2/*',),
                           '2026 bluseliu50 and piano mainline contributors; '
