@@ -501,8 +501,12 @@ class Check:
         candidates = []
         for line in text.splitlines():
             sid = line.split()[0]
-            _, props = self.run(['loginctl', 'show-session', sid, '-p', 'User', '-p', 'Active', '-p', 'Seat',
-                                  '-p', 'Type'], 'session')
+            code, props = self.run(['loginctl', 'show-session', sid, '-p', 'User', '-p', 'Active', '-p', 'Seat',
+                                     '-p', 'Type'], 'session', required=False)
+            if code and 'No session' in props:
+                continue  # it ended between list-sessions and show-session
+            if code:
+                raise RuntimeError(f'session exited {code}: {props[-1000:]}')
             values = dict(line.split('=', 1) for line in props.splitlines() if '=' in line)
             if values.get('Active') == 'yes' and values.get('Seat') == 'seat0' and values.get('Type') in ('wayland', 'x11'):
                 candidates.append(values)

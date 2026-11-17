@@ -653,8 +653,13 @@ class Check:
         sessions = []
         for row in self.command(['loginctl', 'list-sessions', '--no-legend', '--no-pager']).splitlines():
             sid = row.split()[0]
-            props = self.command(['loginctl', 'show-session', sid, '-p', 'Seat', '-p', 'Active',
-                                  '-p', 'Class', '-p', 'Type', '-p', 'User', '-p', 'LockedHint'])
+            try:
+                props = self.command(['loginctl', 'show-session', sid, '-p', 'Seat', '-p', 'Active',
+                                      '-p', 'Class', '-p', 'Type', '-p', 'User', '-p', 'LockedHint'])
+            except RuntimeError as e:
+                if 'No session' in str(e):
+                    continue  # it ended between list-sessions and show-session
+                raise
             data = dict(line.split('=', 1) for line in props.splitlines() if '=' in line)
             if all(data.get(k) == v for k, v in [('Seat', 'seat0'), ('Active', 'yes'),
                                                ('Class', 'user'), ('Type', 'wayland')]):
