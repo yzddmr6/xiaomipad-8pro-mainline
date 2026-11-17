@@ -126,6 +126,7 @@ sudo apt update && sudo apt full-upgrade
 
 | 功能 | 器件 / 实现 | 状态 | 说明 |
 |---|---|---|---|
+| 系统更新 | 签名 APT 源 | ✅ | 可用 Ubuntu 软件更新器或 APT 安装项目更新。 |
 | SoC / CPU | 高通骁龙 8 至尊版（SM8750P） | ✅ 可用 | 八个核心均可调频 |
 | Android / Linux 双系统 | A 槽镜像组轮换 | ✅ 可用 | Ubuntu 内一条命令、Android 内 KernelSU 模块、主机 Fastboot 三种切换方式都已验证 |
 | 内置存储 | 铠侠 UFS / ext4 | ✅ 可用 | 60 GiB 根分区，512 GB 机型约 201 GiB `/home`；启用 UFS 多队列 |
