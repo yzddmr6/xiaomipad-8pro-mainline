@@ -210,7 +210,7 @@ python3 tools/package-mesa.py --mesa-build out/host-mesa-build --output out/host
 
 用 `./tools/build-archive-debs.sh out/archive-debs` 构建源配置包。构建根镜像时，通过 `--deb` 传入 `out/archive-debs/piano-archive-keyring_1.1_all.deb` 和所需项目运行时包。
 
-先构建组件，将本版默认安装的项目包版本写入 `packaging/desktop-packages.json`，最后构建桌面元包。
+先构建组件，将本版默认安装的项目包版本写入 `packaging/desktop-packages.json`，最后构建桌面元包。 GunyahVM 和两个 Casilda 包填写最低版本（`>=`），支持单独更新。其余项目包填写精确版本。
 
 运行时守卫为 `tools/check-host-mesa.py`，需要实际图形会话、
 WebKit 网页进程和正在运行的 GunyahVM virgl 来宾；缺少所需环境会失败。

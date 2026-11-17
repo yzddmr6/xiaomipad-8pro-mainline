@@ -41,9 +41,9 @@ results do not establish support for other models, capacities or accessories.
 
 ### v1.6.0
 
-项目更新通过签名 APT 源分发，新安装的系统预装签名密钥。
+项目更新通过签名 APT 源分发，新安装的系统预装签名密钥。GunyahVM 可独立更新。
 
-Fresh installations include the archive keyring for project updates through APT.
+Fresh installations include the archive keyring for project updates through APT. GunyahVM can update independently.
 
 ⟦DRAFT:内核与 GunyahVM 最终候选验收⟧
 

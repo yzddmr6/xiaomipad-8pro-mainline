@@ -379,7 +379,8 @@ def main():
     (desktop / 'usr/libexec/piano/gunyahvm-favorite').chmod(0o755)
     # fake-hwclock: the RTC cannot be set; it restores the time saved at shutdown or hourly.
     cohort = json.loads((repo / 'packaging/desktop-packages.json').read_text())
-    depends = ', '.join(f'{name} (= {version})' for name, version in cohort.items())
+    depends = ', '.join(f"{name} ({version if version.startswith('>= ') else '= ' + version})"
+                        for name, version in cohort.items())
     retire_pins = ('dpkg-maintscript-helper rm_conffile /etc/apt/preferences.d/piano-resources '
                    '1.6.0-2~ piano-ubuntu-desktop -- "$@"\n'
                    'dpkg-maintscript-helper rm_conffile /etc/apt/preferences.d/piano-power-button-lock '
