@@ -17,7 +17,7 @@
   "piano-archive-keyring": "1.1",
   "piano-camera-loopback-7.4.0-rc2-piano102": "0.1+20261014.4",
   "piano-camerad": "0.1+20261113.2",
-  "piano-device-support": "1.5.0-1",
+  "piano-device-support": "1.6.1-1",
   "piano-iio-sensor-proxy": "3.9+piano20261112.1",
   "piano-iris-vaapi": "0.2.0-0piano1",
   "piano-local-firmware": "0.7+os3.0.303.0",
