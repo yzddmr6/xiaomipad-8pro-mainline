@@ -211,6 +211,10 @@ if [ -s "$T/etc/machine-id" ]; then
 	: >"$T/etc/machine-id"
 fi
 rm -f "$T/var/lib/systemd/random-seed" "$T/var/lib/systemd/credential.secret"
+# Package scripts expanded the kernel retention rule (tmpfiles.d piano-kernel-retention.conf)
+# with this build machine's kernel release; systemd-tmpfiles-setup writes it at the first boot
+# from the kernel that actually runs.
+rm -f "$T/etc/apt/apt.conf.d/90-piano-kernel-retention"
 rm -f "$T"/var/cache/apt/*.bin "$T"/var/cache/apt/archives/*.deb
 # The base's package indexes are those of the build machine's mirror
 # (archive.ubuntu.com), not of the Ports sources installed above; without
