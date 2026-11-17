@@ -84,7 +84,8 @@ class Release(unittest.TestCase):
                                {'package': 'a-package-not-for-the-notes', 'version': '1'}]}
         notes = render_notes(rootfs, 'OS3.0.303.0.WPYCNXM', '1234567' + '0' * 33,
                              {'url': 'https://example.org/kernel', 'commit': 'abcdef0' + '1' * 33}, changes_document(changes))
-        self.assertEqual(notes.count(changes), 2)
+        self.assertIn(changes, notes)
+        self.assertIn(changes.replace('**：', '**: '), notes)
         rc = '7.4.0-rc2-piano81'
         rc_notes = render_notes(dict(rootfs, kernel_release=rc,
                                      packages=[{'package': 'linux-image-' + rc}]),
@@ -165,17 +166,19 @@ class Release(unittest.TestCase):
             subprocess.run([sys.executable, str(TOOL), '--rootfs-build', str(build),
                             '--maintenance', str(maintenance), '--output', str(output),
                             '--changes', str(d / 'changes.md')], check=True, capture_output=True)
-            self.assertEqual((output / 'RELEASE-NOTES.md').read_text().count(changes), 2)
+            body = (output / 'RELEASE-NOTES.md').read_text()
+            self.assertIn(changes, body)
+            self.assertIn(changes.replace('**: ', '**：'), body)
             self.assertEqual(json.loads((output / 'release-manifest.json').read_text())['packages'], packages)
             subprocess.run(['sha256sum', '-c', 'SHA256SUMS'], cwd=output, check=True, capture_output=True)
-            self.assertEqual((output / 'debs' / patched.name).read_bytes(), patched.read_bytes())
-            patched.write_bytes(b'changed after image construction')
+            self.assertFalse(list(output.rglob('*.deb')))
+            (build / 'root.sparse.img').write_bytes(b'changed after image construction')
             failed = subprocess.run([sys.executable, str(TOOL), '--rootfs-build', str(build),
                                      '--maintenance', str(maintenance), '--output', str(d / 'tampered'),
                                      '--changes', str(d / 'changes.md')],
                                     capture_output=True, text=True)
             self.assertNotEqual(failed.returncode, 0)
-            self.assertIn('changed after the image build', failed.stderr)
+            self.assertIn('root.sparse.img differs from its build manifest', failed.stderr)
 
 
 if __name__ == '__main__':
