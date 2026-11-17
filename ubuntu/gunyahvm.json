@@ -9,7 +9,7 @@
       "architecture": "arm64",
       "file": "gunyahvm_1.4.0-1_arm64.deb",
       "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.4.0/gunyahvm_1.4.0-1_arm64.deb",
-      "sha256": "b077a0e19c5345fc17ab185e70e3f9218f976bd347c958a20d2f3bd001499055"
+      "sha256": "394d1864ced4daecaeaf9ce13ebc1c67a2be022bd1eec46cdeac4894c25e1699"
     }
   ],
   "release_url": "https://github.com/yzddmr6/GunyahVM/releases/tag/v1.4.0",
