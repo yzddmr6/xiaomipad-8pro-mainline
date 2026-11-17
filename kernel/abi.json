@@ -459,6 +459,12 @@
       "kernel_commit": "1c21cb9895d69c1c5e83ceae68952fedf522644a",
       "config_sha256": "35b798ebe0cc087b3d473de9fb9cace7f051ed42259455ab011c78ba90ff6385",
       "upload": 1
+    },
+    {
+      "kernel_release": "7.4.0-rc2-piano101",
+      "kernel_commit": "fe4e21aecb0b04afce8282215655b4b0fab4e69a",
+      "config_sha256": "25540ccb0e097d79f2f339bb1e7b334df9c72335247f0e93e0286fbe85ecee57",
+      "upload": 1
     }
   ]
 }
