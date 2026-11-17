@@ -17,6 +17,12 @@ from lib.app_center_input import stage_app_center
 
 PROJECT = '2026 yzddmr6 (adapted sources: NOTICE in this directory)'
 # Licences whose full text Debian ships in /usr/share/common-licenses; the others are included.
+# Root imports the private modules in /usr/lib/piano/boot (piano_bootslot, initramfs_archive, gki)
+# and writes their byte code beside them. Package files all carry mtime 0, so a module that changes
+# but keeps its size would still match its old .pyc after an upgrade. As Debian does for private
+# module directories, drop the byte code on configure and before removal or an upgrade.
+BOOT_PYCACHE = (' find "$DPKG_ROOT/usr/lib/piano/boot" -depth -type d -name __pycache__'
+                ' -exec rm -rf -- {} + 2>/dev/null || true\n')
 COMMON_LICENSES = {'GPL-2.0-only': 'GPL-2', 'GPL-2.0-or-later': 'GPL-2', 'Apache-2.0': 'Apache-2.0'}
 
 
@@ -306,7 +312,7 @@ def main():
                 'python3, python3-gi, python3-pyudev, libsystemd0, ir-keytable, openssl, device-tree-compiler, dracut, kmod, init-system-helpers, udev, systemd, libpam-modules, pkexec, polkitd, '
                 'piano-local-firmware (>= 0.7+os3.0.303.0)',
                 'Piano platform, touchscreen and persistent boot integration',
-                '#!/bin/sh\nset -e\nif [ "$1" = configure ]; then\n'
+                '#!/bin/sh\nset -e\nif [ "$1" = configure ]; then\n' + BOOT_PYCACHE +
                 ' systemd-sysusers /usr/lib/sysusers.d/piano-gunyah.conf /usr/lib/sysusers.d/piano-pen.conf\n'
                 ' if [ -d /run/udev ] && [ "$(stat -Lc %d:%i /)" = "$(stat -Lc %d:%i /proc/1/root 2>/dev/null || true)" ]; then\n'
                 '  udevadm control --reload-rules\n'
@@ -325,7 +331,8 @@ def main():
                 ' if [ -d /run/systemd/system ]; then systemctl --system daemon-reload >/dev/null || true; fi\n'
                 ' if [ -d /run/systemd/system ]; then deb-systemd-invoke start tablet-charge-sample.timer tablet-charge-events.service >/dev/null || true; fi\n'
                 'fi\n',
-                prerm='#!/bin/sh\nset -e\nif [ "$1" = remove ]; then\n'
+                prerm='#!/bin/sh\nset -e\ncase "$1" in remove|upgrade|deconfigure)\n' + BOOT_PYCACHE + ';;\nesac\n'
+                      'if [ "$1" = remove ]; then\n'
                       ' deb-systemd-invoke stop piano-emergency-android.service piano-pen-radio.service tablet-charge-sample.timer tablet-charge-events.service >/dev/null || true\n'
                       ' deb-systemd-helper disable piano-emergency-android.service piano-pen-radio.service tablet-charge-sample.timer tablet-charge-events.service >/dev/null\nfi\n',
                 postrm='#!/bin/sh\nset -e\nif [ "$1" = purge ]; then\n'
