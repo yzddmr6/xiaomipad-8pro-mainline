@@ -115,7 +115,7 @@ def main():
     packages = []
     module_name = 'piano-camera-loopback-' + release
     for name, depends, files in [
-        ('piano-camerad', 'libc6 (>= 2.38), python3, python3-numpy, python3-gi, python3-gst-1.0, gir1.2-gtk-4.0, gir1.2-gdkpixbuf-2.0, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, v4l-utils, procps, kmod, init-system-helpers, piano-camera-loopback', {
+        ('piano-camerad', 'libc6 (>= 2.38), python3, python3-numpy, python3-gi, python3-gst-1.0, gir1.2-gtk-4.0, gir1.2-gdkpixbuf-2.0, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, v4l-utils, procps, kmod, init-system-helpers', {
             'usr/lib/piano/piano-camerad': (out / 'piano-camerad', 0o755),
             'usr/bin/piano-camera-ctl': (out / 'piano-camera-ctl', 0o755),
             'usr/bin/piano-camera': (source / 'piano-camera.py', 0o755),
@@ -136,7 +136,10 @@ def main():
     ]:
         if a.loopback_only and name == 'piano-camerad':
             continue
-        version = '0.1+20261113.1' if name == 'piano-camerad' else '0.1+20261014.3'
+        # The desktop metapackage depends on the loopback built for its kernel ABI. A dependency on
+        # a virtual name every ABI's loopback provides would keep all of them, and their kernels,
+        # from apt autoremove.
+        version = '0.1+20261113.2' if name == 'piano-camerad' else '0.1+20261014.4'
         stage = out / (name + '.stage')
         stage.mkdir()
         for target, (path, mode) in files.items():
@@ -175,8 +178,6 @@ def main():
                 dest.write_text(contents)
                 dest.chmod(0o755)
         if name == module_name:
-            with (control / 'control').open('a') as f:
-                f.write('Provides: piano-camera-loopback\n')
             for script in ['postinst', 'postrm']:
                 dest = control / script
                 dest.write_text('#!/bin/sh\nset -eu\n'
