@@ -128,6 +128,7 @@ Current support and improvements by release are in [docs/STATUS.md](docs/STATUS.
 
 | Function | Hardware / implementation | Status | Notes |
 |---|---|---|---|
+| System updates | Signed APT repository | ✅ | Install project updates with Software Updater or APT. |
 | SoC / CPU | Qualcomm Snapdragon 8 Elite (SM8750P) | ✅ works | All eight cores with frequency scaling |
 | Android / Linux dual boot | Slot-A image-set rotation | ✅ works | Switching from Ubuntu (one command), from Android (KernelSU module) and from the host (Fastboot) all verified |
 | Internal storage | KIOXIA UFS / ext4 | ✅ works | 60 GiB root, about 201 GiB `/home` on the 512 GB model; UFS multi-circular queues enabled |
