@@ -5,7 +5,7 @@
 ## Where to send changes
 
 - Integration, device userspace, packaging, installer tools and documentation: this repository, [xiaomipad-8pro-mainline](https://github.com/yzddmr6/xiaomipad-8pro-mainline), targeting `main`.
-- Kernel drivers, device trees and kernel configuration: [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano), targeting `piano/dev`.
+- Kernel drivers, device trees and kernel configuration: [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano), targeting `sm8750/v7.4-dev` (the current development line). The kernel revision this repository builds is recorded in [kernel/source.json](kernel/source.json).
 - When both need changes, open one PR in each, link them to each other and state the merge order.
 - Open an issue first before changing release-related files or project policy.
 
