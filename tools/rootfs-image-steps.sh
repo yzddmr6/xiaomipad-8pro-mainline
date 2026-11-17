@@ -158,9 +158,11 @@ step install piano kernel
 cp "$IN"/kernel/*.deb "$T/var/cache/piano-install/"
 in_target /usr/bin/env SYSTEMD_OFFLINE=1 DEBIAN_FRONTEND=noninteractive \
 	/bin/sh -c 'dpkg --install /var/cache/piano-install/*.deb' </dev/null
-audit=$(in_target dpkg --audit)
-[ -z "$audit" ] || fail "dpkg --audit after the kernel: $audit"
 in_target apt-mark auto "linux-image-$RELEASE" "piano-camera-loopback-$RELEASE"
+in_target /usr/bin/env SYSTEMD_OFFLINE=1 DEBIAN_FRONTEND=noninteractive \
+    apt-get --yes autoremove --purge </dev/null
+audit=$(in_target dpkg --audit)
+[ -z "$audit" ] || fail "dpkg --audit after the kernel and autoremove: $audit"
 rm -r "$T/var/cache/piano-install"
 
 

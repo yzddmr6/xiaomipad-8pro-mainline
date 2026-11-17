@@ -106,8 +106,8 @@ Open Software Updater, or run `sudo apt update && sudo apt full-upgrade`. Restar
 On an existing installation, run these commands once on the tablet, then restart.
 
 ```sh
-curl -fLO https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/download/apt/piano-archive-keyring_1_all.deb
-sudo apt install ./piano-archive-keyring_1_all.deb
+wget -O piano-archive-keyring_1.1_all.deb https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/download/apt/piano-archive-keyring_1.1_all.deb
+sudo apt install ./piano-archive-keyring_1.1_all.deb
 sudo apt update && sudo apt full-upgrade
 ```
 

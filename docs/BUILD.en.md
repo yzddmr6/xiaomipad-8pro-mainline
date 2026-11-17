@@ -222,7 +222,7 @@ Use disk-backed build storage. Prefer native ARM64; qemu-user requires
 and build-environment versions. Deliver all binary packages from the source,
 including development and OpenCL packages; install only the runtime subset.
 
-Build the archive bootstrap with `./tools/build-archive-debs.sh out/archive-debs`. Pass `out/archive-debs/piano-archive-keyring_1_all.deb` to the root image builder with `--deb` along with the selected project runtime packages.
+Build the archive bootstrap with `./tools/build-archive-debs.sh out/archive-debs`. Pass `out/archive-debs/piano-archive-keyring_1.1_all.deb` to the root image builder with `--deb` along with the selected project runtime packages.
 
 Record the selected project package versions in `packaging/desktop-packages.json` before building the desktop metapackage. Build the other components first.
 

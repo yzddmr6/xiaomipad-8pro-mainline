@@ -1,9 +1,8 @@
 #!/bin/sh
 set -eu
 [ "$1" = configure ] && [ -z "${2:-}" ] || exit 0
-for path in /etc/apt/preferences.d/piano-host-mesa /etc/apt/preferences.d/piano-resources /etc/apt/preferences.d/piano-power-button-lock /etc/apt/sources.list.d/piano-release.list; do
-    if [ -f "$path" ]; then mv --backup=numbered "$path" "$path.disabled"; fi
-done
+rm -f /etc/apt/sources.list.d/piano-release.list
+rm -rf /var/lib/piano/releases
 # Older images installed the versioned payloads explicitly.
 for pattern in 'linux-image-*-piano[0-9]*' 'piano-camera-loopback-*'; do
     packages=$(dpkg-query -W -f='${db:Status-Status} ${Package}\n' "$pattern" 2>/dev/null | awk '$1 == "installed" {print $2}')

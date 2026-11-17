@@ -34,7 +34,7 @@ def build_transition(output, version, source, lock, records):
         'Description: Matched Ubuntu graphics packages for supported SM8750 tablets\n'
         ' Transition from the former private Mesa prefix to standard system packages.\n')
     legacy = ('/etc/ld.so.conf.d/00-piano-mesa.conf', '/etc/piano-mesa-prefix',
-              '/etc/piano-mesa.json', '/etc/piano-mesa.sha256')
+              '/etc/piano-mesa.json', '/etc/piano-mesa.sha256', '/etc/apt/preferences.d/piano-host-mesa')
     for phase in ('preinst', 'postinst', 'postrm'):
         script = '#!/bin/sh\nset -e\n' + (REPO / 'mesa/ubuntu/conffile-migration.sh').read_text() + '\n'
         if phase == 'preinst':

@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+# Let dpkg remove an ordinary payload file during unpack.
+dpkg-query -W -f='${Conffiles}\n' mainline-update 2>/dev/null |
+    grep -Fq ' /etc/xdg/autostart/mainline-update-notice.desktop ' || exit 0
+dpkg-maintscript-helper rm_conffile /etc/xdg/autostart/mainline-update-notice.desktop 0.2.1~ mainline-update -- "$@"

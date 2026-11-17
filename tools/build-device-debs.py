@@ -138,7 +138,7 @@ def main():
                 licences.setdefault(root, {})[str(Path(dest) / p.relative_to(src))] = spdx(p)
 
     def package(name, root, depends, description, postinst=None, recommends=None, third_party=(),
-                prerm=None, postrm=None, conffiles=(), conflicts=None):
+                prerm=None, postrm=None, conffiles=(), conflicts=None, preinst=None):
         """third_party: (files, copyright, licence, comment) paragraphs for files not from this repository;
         every other regular file is attributed to this repository under its SPDX header or MIT."""
         docs = root / 'usr/share/doc' / name
@@ -167,7 +167,7 @@ def main():
                 if not (root / path.lstrip('/')).is_file():
                     raise ValueError(f'Missing conffile: {path}')
             (control / 'conffiles').write_text(''.join(path + '\n' for path in conffiles))
-        for name_script, body in (('postinst', postinst), ('prerm', prerm), ('postrm', postrm)):
+        for name_script, body in (('preinst', preinst), ('postinst', postinst), ('prerm', prerm), ('postrm', postrm)):
             if body:
                 (control / name_script).write_text(body)
                 (control / name_script).chmod(0o755)
@@ -380,10 +380,14 @@ def main():
     # fake-hwclock: the RTC cannot be set; it restores the time saved at shutdown or hourly.
     cohort = json.loads((repo / 'packaging/desktop-packages.json').read_text())
     depends = ', '.join(f'{name} (= {version})' for name, version in cohort.items())
+    retire_pins = ('dpkg-maintscript-helper rm_conffile /etc/apt/preferences.d/piano-resources '
+                   '1.6.0-2~ piano-ubuntu-desktop -- "$@"\n'
+                   'dpkg-maintscript-helper rm_conffile /etc/apt/preferences.d/piano-power-button-lock '
+                   '1.6.0-2~ piano-ubuntu-desktop -- "$@"\n')
     package('piano-ubuntu-desktop', desktop, depends + ', wireplumber (>= 0.5.13-1ubuntu1.1), gdm3, gnome-shell (>= 50), colord, colord-data, python3-gi, fake-hwclock, python3, console-setup, snapd, init-system-helpers, tuned-ppd (>= 2.25.1), showtime, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, gstreamer1.0-plugins-bad, gstreamer1.0-libav',
             'Piano Ubuntu desktop defaults: graphics, clock without RTC, speaker up-mix and UCM, '
             'GNOME Shell 50 on-screen keyboard guard',
-            '#!/bin/sh\nset -e\nif [ "$1" = configure ]; then\n'
+            '#!/bin/sh\nset -e\n' + retire_pins + 'if [ "$1" = configure ]; then\n'
             ' if ! grep -q "^CHASSIS=" /etc/machine-info 2>/dev/null; then\n'
             '  if [ ! -e /etc/machine-info ]; then\n'
             '   install -m 0644 /dev/null /etc/machine-info\n'
@@ -391,16 +395,18 @@ def main():
             '  sed -i -e \'$a\\\' /etc/machine-info\n'
             '  printf "CHASSIS=convertible\\n" >> /etc/machine-info\n'
             ' fi\n'
+            ' deb-systemd-helper --user purge mainline-release-notifier.timer >/dev/null\n'
             ' systemd-tmpfiles --create piano-kernel-retention.conf\n'
             ' deb-systemd-helper enable tablet-app-center-install.service >/dev/null\n'
             ' deb-systemd-helper enable piano-firefox-snap-remove.service >/dev/null\n'
             ' deb-systemd-helper --user enable piano-panel-srgb.service >/dev/null\n deb-systemd-helper --user enable piano-speaker-rotation.service >/dev/null\n'
             'fi\n',
+            preinst='#!/bin/sh\nset -e\n' + retire_pins,
             prerm='#!/bin/sh\nset -e\nif [ "$1" = remove ]; then\n'
                   ' deb-systemd-helper disable tablet-app-center-install.service >/dev/null\n'
             ' deb-systemd-helper --user disable piano-panel-srgb.service >/dev/null\n deb-systemd-helper --user disable piano-speaker-rotation.service >/dev/null\n'
                   'fi\n',
-            postrm='#!/bin/sh\nset -e\nif [ "$1" = purge ]; then\n'
+            postrm='#!/bin/sh\nset -e\n' + retire_pins + 'if [ "$1" = purge ]; then\n'
                    ' if [ -f /etc/machine-info ]; then\n'
                    '  sed -i \'/^CHASSIS=convertible$/d\' /etc/machine-info\n'
                    '  if [ ! -s /etc/machine-info ]; then rm -f /etc/machine-info; fi\n'

@@ -208,7 +208,7 @@ python3 tools/package-mesa.py --mesa-build out/host-mesa-build --output out/host
 `QEMU_CPU=max,pauth-impdef=on`。保留 `.buildinfo`、`.changes`、生成的包清单和
 构建环境版本记录。构建产生完整同源二进制，不能只发布运行时包。
 
-用 `./tools/build-archive-debs.sh out/archive-debs` 构建源配置包。构建根镜像时，通过 `--deb` 传入 `out/archive-debs/piano-archive-keyring_1_all.deb` 和所需项目运行时包。
+用 `./tools/build-archive-debs.sh out/archive-debs` 构建源配置包。构建根镜像时，通过 `--deb` 传入 `out/archive-debs/piano-archive-keyring_1.1_all.deb` 和所需项目运行时包。
 
 先构建组件，将本版默认安装的项目包版本写入 `packaging/desktop-packages.json`，最后构建桌面元包。
 
