@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 """Offline package contracts and APT's real PPD provider replacement."""
 import importlib.util
+import json
 import os
 import shutil
 from pathlib import Path
@@ -39,7 +40,9 @@ class DesktopIntegration(unittest.TestCase):
                 self.assertEqual(p.read_bytes(), (REPO / 'device/power/tuned/profiles' /
                                                  p.parent.name / 'tuned.conf').read_bytes())
             self.assertIn('tuned-ppd (>= 2.25.1)', control)
-            self.assertIn('gunyahvm (= 1.3.0-1)', control)
+            # The desktop set pulls the GunyahVM release this tree locks, not an older one.
+            locked = json.loads((REPO / 'ubuntu/gunyahvm.json').read_text())['version']
+            self.assertIn(f'gunyahvm (>= {locked})', control)
             self.assertTrue(os.access(root / 'usr/libexec/piano/gunyahvm-favorite', os.X_OK))
             self.assertIn('OnlyShowIn=GNOME;', (root / 'etc/xdg/autostart/piano-gunyahvm-favorite.desktop').read_text())
             dependencies = next(line for line in control.splitlines() if line.startswith('Depends: '))
