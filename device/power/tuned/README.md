@@ -10,10 +10,11 @@ Balanced is the default. All three profiles use schedutil.
 | balanced | piano-balanced | 1785600 / 3532800 | 1689600 / 4320000 | 1 | 160000000 / 1100000000 |
 | performance | piano-performance | 2918400 / 3532800 | 2841600 / 4320000 | 1 | 160000000 / 1100000000 |
 
-- **Balanced** allows the whole hardware range, the prime cores' 4204800 and
-  4320000 kHz boost points included. A busy core does not run below about
-  1.7 GHz, so scrolling and animations do not wait for the governor to ramp
-  up from the lowest points; idle cores still sleep.
+- **Balanced** caps no frequency; the prime cores' 4204800 and 4320000 kHz
+  boost points stay enabled, although the governor currently asks for at most
+  4089600 kHz. A busy core does not run below about 1.7 GHz, so scrolling
+  and animations do not wait for the governor to ramp up from the lowest
+  points; idle cores still sleep.
 - **Performance** keeps the same range and raises the lowest frequency a busy
   core runs at to about 2.9 GHz. Short bursts (opening an app, scrolling, the
   thread that feeds the GPU) then start fast instead of waiting for the
