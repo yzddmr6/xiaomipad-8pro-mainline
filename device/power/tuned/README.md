@@ -2,21 +2,30 @@
 
 MIT-licensed board profiles for Ubuntu TuneD 2.25.1. Select Power Saver,
 Balanced or Performance in GNOME's quick settings or Settings → Power.
-Balanced is the default. All three profiles use schedutil, preserve CPU
-minimum frequencies and keep the GPU minimum at 160 MHz.
+Balanced is the default. All three profiles use schedutil.
 
-| PPD profile | TuneD profile | policy0 maximum (kHz) | policy6 maximum (kHz) | CPU boost | GPU minimum / maximum (Hz) |
+| PPD profile | TuneD profile | policy0 min / max (kHz) | policy6 min / max (kHz) | CPU boost | GPU min / max (Hz) |
 |---|---|---:|---:|---:|---:|
-| power-saver | piano-power-saver | 1785600 | 1958400 | 0 | 160000000 / 342000000 |
-| balanced | piano-balanced | 3532800 | 4089600 | 0 | 160000000 / 1100000000 |
-| performance | piano-performance | 3532800 | 4320000 | 1 | 160000000 / 1100000000 |
+| power-saver | piano-power-saver | 384000 / 1785600 | 1017600 / 1958400 | 0 | 160000000 / 342000000 |
+| balanced | piano-balanced | 1785600 / 3532800 | 1689600 / 4320000 | 1 | 160000000 / 1100000000 |
+| performance | piano-performance | 2918400 / 3532800 | 2841600 / 4320000 | 1 | 160000000 / 1100000000 |
 
+- **Balanced** allows the whole hardware range, the prime cores' 4204800 and
+  4320000 kHz boost points included. A busy core does not run below about
+  1.7 GHz, so scrolling and animations do not wait for the governor to ramp
+  up from the lowest points; idle cores still sleep.
+- **Performance** keeps the same range and raises the lowest frequency a busy
+  core runs at to about 2.9 GHz. Short bursts (opening an app, scrolling, the
+  thread that feeds the GPU) then start fast instead of waiting for the
+  governor to ramp up. Idle cores still sleep.
+- **Power Saver** caps the CPU and GPU, and caps utilization floors at 320
+  (`kernel.sched_util_clamp_min`), which is what the six smaller cores deliver
+  at their capped frequency. A larger floor, such as the one a virtual machine
+  asks for, would otherwise count as fitting no capped core and be crowded
+  onto the two prime cores.
 
-These limits and GNOME switching have been checked on the device. The v0.5.0
-packaged profiles and service configuration have also been checked:
-all three modes match their CPU/GPU limits, and Power Saver persists across a
-cold boot. Performance permits CPU boost; it does not promise sustained
-all-core performance.
+In every mode, real-time threads (audio, the compositor) get no utilization
+floor by default (`/usr/lib/sysctl.d/50-piano-uclamp.conf`).
 
 ## Package ownership
 

@@ -43,6 +43,14 @@ class DesktopIntegration(unittest.TestCase):
             # The desktop set pulls the GunyahVM release this tree locks, not an older one.
             locked = json.loads((REPO / 'ubuntu/gunyahvm.json').read_text())['version']
             self.assertIn(f'gunyahvm (>= {locked})', control)
+            performance = (root / 'usr/lib/tuned/profiles/piano-performance/tuned.conf').read_text()
+            self.assertIn('/sys/devices/system/cpu/cpufreq/policy0/scaling_min_freq=2918400', performance.splitlines())
+            self.assertIn('/sys/devices/system/cpu/cpufreq/policy6/scaling_min_freq=2841600', performance.splitlines())
+            balanced = (root / 'usr/lib/tuned/profiles/piano-balanced/tuned.conf').read_text()
+            self.assertIn('/sys/devices/system/cpu/cpufreq/policy0/scaling_min_freq=1785600', balanced.splitlines())
+            self.assertIn('/sys/devices/system/cpu/cpufreq/policy6/scaling_min_freq=1689600', balanced.splitlines())
+            self.assertIn('-kernel.sched_util_clamp_min_rt_default = 0',
+                          (root / 'usr/lib/sysctl.d/50-piano-uclamp.conf').read_text().splitlines())
             self.assertTrue(os.access(root / 'usr/libexec/piano/gunyahvm-favorite', os.X_OK))
             self.assertIn('OnlyShowIn=GNOME;', (root / 'etc/xdg/autostart/piano-gunyahvm-favorite.desktop').read_text())
             dependencies = next(line for line in control.splitlines() if line.startswith('Depends: '))
