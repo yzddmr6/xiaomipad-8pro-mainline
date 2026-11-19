@@ -1,6 +1,6 @@
 # Release history and current support
 
-Current release: **v1.6.1**. See the [README](../README.en.md#hardware-support) or
+Current release: **v1.6.2**. See the [README](../README.en.md#hardware-support) or
 [中文 README](../README.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
@@ -38,6 +38,12 @@ verified on this unit; later versions were tested on the installed system. These
 results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
+
+### v1.6.2
+
+电源模式重做：平衡模式下忙碌的处理器核心最低保持约 1.7 GHz，网页滑动和动画更跟手；性能模式优先响应；省电模式下带处理器下限的任务不再挤到两个大核上；音频、合成器这类实时线程不再被默认拉到最高频率。GunyahVM 给虚拟机线程设的处理器下限从这一版起生效，新装系统预装 GunyahVM 1.5.0。内核打开 UFS 内联加密引擎，挂起时驱动卡住会在约一分钟后自动重启，读取存储更省处理器。
+
+Power modes reworked: in Balanced, busy CPU cores stay at about 1.7 GHz or above, so web scrolling and animations keep up; Performance puts responsiveness first; in Power Saver, tasks with a CPU floor are no longer crowded onto the two prime cores; real-time threads such as audio and the compositor are no longer pushed to the highest frequency by default. The CPU floor GunyahVM sets for virtual-machine threads takes effect from this release, and fresh installations include GunyahVM 1.5.0. The kernel enables the UFS inline encryption engine, restarts the tablet after about a minute when a driver hangs during suspend, and spends less CPU on storage reads.
 
 ### v1.6.1
 
