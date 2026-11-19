@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "purpose": "1.6.1 on Linux 7.4-rc2",
+  "purpose": "1.6.2 on Linux 7.4-rc2",
   "upstream_url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
   "upstream_tag": "v7.4-rc2",
   "upstream_commit": "7475ea8b58616b33c04afb976cf0fbaad9dd63fb",
   "url": "https://github.com/yzddmr6/linux-sm8750-piano",
-  "commit": "da4b783e34bd05d7451a6f904fbf567af1215f99",
+  "commit": "658c139dd9f3f51acd019545febb65f7a7956be2",
   "branch": "sm8750/v7.4-dev",
   "config": "arch/arm64/configs/piano-diagnostic.config",
   "release_config_fragments": [
@@ -14,11 +14,12 @@
     "arch/arm64/configs/sm8750-waydroid.config",
     "arch/arm64/configs/sm8750-snap.config",
     "arch/arm64/configs/sm8750-virt.config",
+    "arch/arm64/configs/sm8750-desktop.config",
     "arch/arm64/configs/piano-diagnostic.config",
     "arch/arm64/configs/piano-desktop-diag.config",
     "arch/arm64/configs/piano-persistent.config",
     "arch/arm64/configs/piano-release.config"
   ],
   "note": "The kernel release fragments remain in the kernel source and are merged in order. tools/build-kernel.sh then applies kernel_release to CONFIG_LOCALVERSION for package ABI allocation without a kernel-only release commit; all other configuration remains unchanged. kernel/abi.json binds the final commit and .config.",
-  "kernel_release": "7.4.0-rc2-piano102"
+  "kernel_release": "7.4.0-rc2-piano103"
 }
