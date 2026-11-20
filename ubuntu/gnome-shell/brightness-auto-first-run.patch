@@ -1,0 +1,94 @@
+From: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
+Subject: brightnessManager: start a new monitor at a neutral bias under auto brightness
+
+With the saved brightnesses backported from 51, a monitor that has no
+saved value yet still takes its scale from the backlight, an absolute
+level. Under auto brightness the scale is a bias around the target
+(0.5 is neutral), so the first session after an upgrade or a fresh
+install carried that level over as a lasting offset: a backlight left
+at 5% became -45 points, one left at 100% became +50 points, and the
+offset was then saved.
+
+When auto brightness takes over a monitor whose scale still comes from
+the backlight and that the user has not touched, start it at 0.5. The
+login screen keeps the 50.x behaviour (it follows the backlight it
+finds and saves nothing), so it shows the brightness the last session
+ended with.
+Forwarded: no
+
+--- a/js/misc/brightnessManager.js
++++ b/js/misc/brightnessManager.js
+@@ -149,8 +149,26 @@
+     }
+ 
+     set autoBrightnessTarget(target) {
++        // A monitor without a saved brightness took its scale from the backlight,
++        // which is an absolute level. Once auto brightness drives the monitor the
++        // scale is a bias around the target, so start it at the neutral 0.5
++        // instead of carrying that level over as an offset.
++        const neutral = target >= 0.0 && this._abTarget < 0.0;
+         this._abTarget = target;
+-        this._sync();
++        if (neutral) {
++            this._inhibitUpdates = true;
++            for (const scale of this._monitorScales.values()) {
++                if (!scale._fromBacklight)
++                    continue;
++                scale._fromBacklight = false;
++                scale.value = 0.5;
++                scale._scaleChanged = true;
++            }
++            this._inhibitUpdates = false;
++            this._sync({showOSD: false});
++        } else {
++            this._sync();
++        }
+     }
+ 
+     get globalScale() {
+@@ -214,7 +232,9 @@
+ 
+     _getSavedBrightnesses(monitors) {
+         const map = new Map();
+-        const saved = this._getState();
++        // The login screen keeps following the backlight it finds, as before, so
++        // it shows the brightness the last session ended with.
++        const saved = Main.sessionMode.isGreeter ? [] : this._getState();
+ 
+         for (const logicalMonitor of monitors) {
+             const mId = MonitorId.fromMonitor(logicalMonitor);
+@@ -229,6 +249,9 @@
+     }
+ 
+     _saveBrightnesses() {
++        if (Main.sessionMode.isGreeter)
++            return;
++
+         if (this._saveBrightnessId) {
+             GLib.source_remove(this._saveBrightnessId);
+             this._saveBrightnessId = 0;
+@@ -273,6 +296,7 @@
+                 'notify::value',  () => {
+                     if (this._inhibitUpdates)
+                         return;
++                    scale._fromBacklight = false;
+                     scale._scaleChanged = true;
+                     this._sync();
+                     this.emit('user-update');
+@@ -293,6 +317,8 @@
+             this._globalScale.connect('notify::value', () => {
+                 if (this._inhibitUpdates)
+                     return;
++                for (const scale of this._monitorScales.values())
++                    scale._fromBacklight = false;
+                 this._globalScaleChanged = true;
+                 this._sync();
+                 this.emit('user-update');
+@@ -479,6 +505,7 @@
+         this._monitor = monitor;
+         this._currentBacklightBrightness = -1;
+         this._scaleFactor = 1.0;
++        this._fromBacklight = initialValue < 0;
+ 
+         if (initialValue >= 0)
+             this.setBacklight(initialValue);

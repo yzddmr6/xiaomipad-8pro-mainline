@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "base_version": "50.1-0ubuntu1",
-  "local_version": "50.1-0ubuntu1+piano1",
+  "base_version": "50.1-0ubuntu1.5",
+  "local_version": "50.1-0ubuntu1.5+piano1",
   "files": [
     {
       "file": "gnome-shell_50.1.orig.tar.xz",
@@ -10,24 +10,24 @@
       "bytes": 2325080
     },
     {
-      "file": "gnome-shell_50.1-0ubuntu1.debian.tar.xz",
-      "url": "https://snapshot.ubuntu.com/ubuntu/20261113T000000Z/pool/main/g/gnome-shell/gnome-shell_50.1-0ubuntu1.debian.tar.xz",
-      "sha256": "dd2ce482a193885481a59703fd1f14aa6a303d89cde814c9ff1079738f8cc0db",
-      "bytes": 155536
+      "file": "gnome-shell_50.1-0ubuntu1.5.debian.tar.xz",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261113T000000Z/pool/main/g/gnome-shell/gnome-shell_50.1-0ubuntu1.5.debian.tar.xz",
+      "sha256": "a2f9896dd3e440a7cefe10df9d40ca4fd2023a04b9a9ab824ccbb7cacc2a7bd7",
+      "bytes": 159168
     },
     {
-      "file": "gnome-shell_50.1-0ubuntu1.dsc",
-      "url": "https://snapshot.ubuntu.com/ubuntu/20261113T000000Z/pool/main/g/gnome-shell/gnome-shell_50.1-0ubuntu1.dsc",
-      "sha256": "6eba99b45036252a6f4aa247dc48109e53a7057233d566a46cfcebe839bc53d4",
-      "bytes": 4152
+      "file": "gnome-shell_50.1-0ubuntu1.5.dsc",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261113T000000Z/pool/main/g/gnome-shell/gnome-shell_50.1-0ubuntu1.5.dsc",
+      "sha256": "414cba88e963b20ecbb7cf6d3e317888aec95f14588b68e2dae04b4e1e3d57fc",
+      "bytes": 4164
     }
   ],
   "authentication": {
     "chain": "Ubuntu Archive InRelease -> Sources SHA256 -> DSC/orig/debian archives SHA256",
-    "inrelease_url": "https://snapshot.ubuntu.com/ubuntu/20261113T000000Z/dists/resolute/InRelease",
-    "inrelease_sha256": "45f95ce276cdba3e41870516a130e03c58b8b7a79e9546b0efe9e526d255740c",
-    "sources_url": "https://snapshot.ubuntu.com/ubuntu/20261113T000000Z/dists/resolute/main/source/Sources.xz",
-    "sources_sha256": "dce0fc8e2a473b26f729b1204fd4c12ae068428f743f96761392a059ab7bbfcd",
+    "inrelease_url": "https://snapshot.ubuntu.com/ubuntu/20261113T000000Z/dists/resolute-updates/InRelease",
+    "inrelease_sha256": "8ff67b04c340fca2f70fb591bc0683afb61ce3cd6aa27a7663dafeeaf1576a3f",
+    "sources_url": "https://snapshot.ubuntu.com/ubuntu/20261113T000000Z/dists/resolute-updates/main/source/Sources.xz",
+    "sources_sha256": "65ceb3886408dc6b361946e2d3b318075628b851fd44cd4a328406ace91223fe",
     "archive_key_fingerprint": "F6ECB3762474EDA9D21B7022871920D1991BC93C",
     "keyring_sha256": "80a36b0a6de2f69f49d2df75ef473ccde121e9e190b9ea01d20a4f63778d5c31",
     "dsc_maintainer_signature": "Not separately verified"
@@ -39,8 +39,13 @@
       "sha256": "f01dca47f34e9f43334a415f3c9150efd9a936c79934d2767c3a2eeb6c408145",
       "license": "GPL-2.0-or-later",
       "upstream": "https://gitlab.gnome.org/GNOME/gnome-shell/-/commit/29c61c40370cbfbeec1684ebf003104b20374bb4"
+    },
+    {
+      "file": "brightness-auto-first-run.patch",
+      "sha256": "937407f7b2167b9f2b1794233a7ffeaa2dfef72753a707ec195fe8c6208dcf52",
+      "license": "GPL-2.0-or-later"
     }
   ],
-  "changelog_entry_sha256": "338fe843126edb4b4c52085f9ea19544a33aee0acf1eb775b95546ea5e4936dc",
-  "exit_condition": "Drop when Ubuntu moves to gnome-shell 51, or upstream backports 29c61c40 to 50.x and Ubuntu ships it; then check that the brightness slider survives logout and reboot on both tablets."
+  "changelog_entry_sha256": "2eeb0dc0f1e29011a3dd0aed96d56a5e0da05428ea3510441e689092387184c1",
+  "exit_condition": "Drop brightness-persist.patch when Ubuntu moves to gnome-shell 51 or later, or backports MR !4006 to 50.x. Drop brightness-auto-first-run.patch once upstream handles where automatic brightness starts on a monitor without a saved value. Until then, rebuild on every Ubuntu gnome-shell update and repeat the logout, login and reboot brightness check on both tablets."
 }
