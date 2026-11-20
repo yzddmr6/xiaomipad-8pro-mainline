@@ -1,0 +1,257 @@
+From 29c61c40370cbfbeec1684ebf003104b20374bb4 Mon Sep 17 00:00:00 2001
+From: Sebastian Wick <sebastian.wick@redhat.com>
+Date: Wed, 17 Dec 2025 00:25:14 +0100
+Subject: [PATCH] brightnessManager: Save and restore the monitor brightnesses
+
+So far we relied on the backlights to somehow magically remember their
+state, and for sysfs based backlights this somewhat worked. The
+backlight however is a low-level concept that sometimes diverges from
+the higher level "user set the slider to X%" concept that the shell has.
+
+For example, if we are dimming the screen for power saving reasons, this
+sysfs backlight might remember the dimmed state.
+
+Then there is the reference white based software backlight, which only
+exists inside mutter. Nothing is persisted here.
+
+In the future we will have fused backlights where the sysfs and
+reference white are adjusted on demand to create a brightness level with
+the right amount of HDR headroom. There the backlight and shell monitor
+brightness concepts diverge even more.
+
+Finally, even if a backlight were to persist its own state, we have
+multiple color modes (HDR, SDR, ...) where a different brightness value
+might be required.
+
+This commit takes care of all of this by simply persisting the
+user/shell brightness target of the monitors in their color mode.
+
+We use the vendor/product/serial triple to identify monitors, but for
+bad EDIDs we fall back on matching the connector as well.
+
+Part-of: <https://gitlab.gnome.org/GNOME/gnome-shell/-/merge_requests/4006>
+
+[Backport to 50.1: mutter 50 has no meta_monitor_get_color_mode_string(),
+ so the color mode field of the monitor key is stored empty.]
+Origin: upstream, https://gitlab.gnome.org/GNOME/gnome-shell/-/commit/29c61c40370cbfbeec1684ebf003104b20374bb4
+---
+ js/misc/brightnessManager.js | 139 ++++++++++++++++++++++++++++++++++-
+ 1 file changed, 136 insertions(+), 3 deletions(-)
+
+diff --git a/js/misc/brightnessManager.js b/js/misc/brightnessManager.js
+index feb38ecab44..6e2f25564d4 100644
+--- a/js/misc/brightnessManager.js
++++ b/js/misc/brightnessManager.js
+@@ -1,4 +1,5 @@
+ import Gio from 'gi://Gio';
++import GLib from 'gi://GLib';
+ import GObject from 'gi://GObject';
+ import Meta from 'gi://Meta';
+ import Shell from 'gi://Shell';
+@@ -11,6 +12,59 @@ const SCALE_VALUE_CHANGE_EPSILON = 0.001;
+ const KEYBINDING_SCHEMA = 'org.gnome.shell.keybindings';
+ const POWER_SCHEMA = 'org.gnome.settings-daemon.plugins.power';
+ 
++class MonitorId {
++    constructor(options) {
++        this._vendor = options.vendor;
++        this._product = options.product;
++        this._serial = options.serial;
++        this._colorMode = options.colorMode;
++        this._connector = options.connector;
++    }
++
++    static fromMonitor(logicalMonitor) {
++        const monitor = logicalMonitor.get_monitors()[0];
++        return new MonitorId({
++            vendor: monitor.get_vendor(),
++            product: monitor.get_product(),
++            serial: monitor.get_serial(),
++            colorMode: '',
++            connector: monitor.get_connector(),
++        });
++    }
++
++    equals(other) {
++        return this._vendor === other._vendor &&
++               this._product === other._product &&
++               this._serial === other._serial &&
++               this._colorMode === other._colorMode;
++    }
++
++    equalsExact(other) {
++        return this.equals(other) &&
++               this._connector === other._connector;
++    }
++
++    toTuple() {
++        return [
++            this._vendor,
++            this._product,
++            this._serial,
++            this._colorMode,
++            this._connector,
++        ];
++    }
++
++    static fromTuple(tuple) {
++        return new MonitorId({
++            vendor: tuple[0],
++            product: tuple[1],
++            serial: tuple[2],
++            colorMode: tuple[3],
++            connector: tuple[4],
++        });
++    }
++}
++
+ export const BrightnessManager = GObject.registerClass({
+     Signals: {
+         'changed': {},
+@@ -29,6 +83,8 @@ export const BrightnessManager = GObject.registerClass({
+         this._dimmingTarget = powerSettings.get_int('idle-brightness') / 100;
+         this._dimmingEnabled = false;
+ 
++        this._loadBrightnesses();
++
+         this._abTarget = -1.0;
+ 
+         Main.wm.addKeybinding(
+@@ -132,6 +188,68 @@ export const BrightnessManager = GObject.registerClass({
+         this._monitorScales.get(monitor)?.cycleUp();
+     }
+ 
++    _loadBrightnesses() {
++        const monitors = [...this._monitorScales.values()].map(s => s.monitor);
++        const brightnesses = this._getSavedBrightnesses(monitors);
++
++        for (const scale of this._monitorScales.values())
++            scale.value = brightnesses.get(scale.monitor);
++    }
++
++    _getState() {
++        return global.get_persistent_state('a(sssssd)', 'brightnesses')
++            ?.deepUnpack().map(tuple => {
++                const brightness = tuple.pop();
++                return {id: MonitorId.fromTuple(tuple), brightness};
++            }) ?? [];
++    }
++
++    _setState(values) {
++        const tuple = new GLib.Variant('a(sssssd)', [...values].map(value => {
++            const {id, brightness} = value;
++            return [...id.toTuple(), brightness];
++        }));
++        global.set_persistent_state('brightnesses', tuple);
++    }
++
++    _getSavedBrightnesses(monitors) {
++        const map = new Map();
++        const saved = this._getState();
++
++        for (const logicalMonitor of monitors) {
++            const mId = MonitorId.fromMonitor(logicalMonitor);
++            const {brightness} = saved.find(s => s.id.equalsExact(mId)) ??
++                saved.find(s => s.id.equals(mId)) ??
++                {brightness: -1.0};
++
++            map.set(logicalMonitor, brightness);
++        }
++
++        return map;
++    }
++
++    _saveBrightnesses() {
++        if (this._saveBrightnessId) {
++            GLib.source_remove(this._saveBrightnessId);
++            this._saveBrightnessId = 0;
++        }
++
++        this._saveBrightnessId = GLib.timeout_add_once(GLib.PRIORITY_DEFAULT, 300, () => {
++            this._saveBrightnessId = 0;
++
++            let values = this._getState();
++
++            for (const scale of this._monitorScales.values()) {
++                const mId = MonitorId.fromMonitor(scale.monitor);
++
++                values = values.filter(v => !v.id.equalsExact(mId));
++                values.push({id: mId, brightness: scale.value});
++            }
++
++            this._setState(values);
++        });
++    }
++
+     _monitorsChanged() {
+         const monitors = global.backend
+             .get_monitor_manager()
+@@ -143,8 +261,11 @@ export const BrightnessManager = GObject.registerClass({
+ 
+         this._monitorScales.clear();
+ 
++        const brightnesses = this._getSavedBrightnesses(monitors);
++
+         for (const monitor of monitors) {
+-            const scale = new MonitorBrightnessScale(monitor, 1.0);
++            const initialValue = brightnesses.get(monitor);
++            const scale = new MonitorBrightnessScale(monitor, initialValue);
+             scale._scaleChanged = true;
+ 
+             scale.connectObject(
+@@ -206,6 +327,8 @@ export const BrightnessManager = GObject.registerClass({
+             return c;
+         });
+ 
++        let scalesUpdated = true;
++
+         if (changedScales.length > 0) {
+             // update the factors of all the scales when a scale changes
+ 
+@@ -237,6 +360,8 @@ export const BrightnessManager = GObject.registerClass({
+ 
+             if (showOSD)
+                 this._showOSD(this._monitorScales.values());
++        } else {
++            scalesUpdated = false;
+         }
+ 
+         // Update the actual backlight according to the new monitor brightnesses
+@@ -258,6 +383,9 @@ export const BrightnessManager = GObject.registerClass({
+             scale.setBacklight(brightness);
+         }
+ 
++        if (scalesUpdated)
++            this._saveBrightnesses();
++
+         this._inhibitUpdates = false;
+     }
+ 
+@@ -334,7 +462,7 @@ const MonitorBrightnessScale = GObject.registerClass({
+         'backlights-changed': {},
+     },
+ }, class MonitorBrightnessScale extends BrightnessScale {
+-    constructor(monitor, value = 1.0) {
++    constructor(monitor, initialValue = -1.0) {
+         const name = monitor.get_monitors()[0].get_display_name();
+ 
+         // Handle backlights with just a few steps
+@@ -346,12 +474,17 @@ const MonitorBrightnessScale = GObject.registerClass({
+             }));
+         const nSteps = Math.min(maxSteps, SCALE_VALUE_N_STEPS);
+ 
+-        super(name, value, nSteps);
++        super(name, initialValue >= 0 ? initialValue : 1.0, nSteps);
+ 
+         this._monitor = monitor;
+         this._currentBacklightBrightness = -1;
+         this._scaleFactor = 1.0;
+ 
++        if (initialValue >= 0)
++            this.setBacklight(initialValue);
++        else
++            this.syncWithBacklight();
++
+         for (const backlight of this._getBacklights()) {
+             backlight.connectObject('notify::brightness', () => {
+                 this.emit('backlights-changed');

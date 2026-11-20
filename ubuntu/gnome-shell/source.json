@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "base_version": "50.1-0ubuntu1",
+  "local_version": "50.1-0ubuntu1+piano1",
+  "files": [
+    {
+      "file": "gnome-shell_50.1.orig.tar.xz",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261113T000000Z/pool/main/g/gnome-shell/gnome-shell_50.1.orig.tar.xz",
+      "sha256": "1b47760172c14f3f4edd1c9aff365f4de45583517bf0f80df4d3acbd4e4cb294",
+      "bytes": 2325080
+    },
+    {
+      "file": "gnome-shell_50.1-0ubuntu1.debian.tar.xz",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261113T000000Z/pool/main/g/gnome-shell/gnome-shell_50.1-0ubuntu1.debian.tar.xz",
+      "sha256": "dd2ce482a193885481a59703fd1f14aa6a303d89cde814c9ff1079738f8cc0db",
+      "bytes": 155536
+    },
+    {
+      "file": "gnome-shell_50.1-0ubuntu1.dsc",
+      "url": "https://snapshot.ubuntu.com/ubuntu/20261113T000000Z/pool/main/g/gnome-shell/gnome-shell_50.1-0ubuntu1.dsc",
+      "sha256": "6eba99b45036252a6f4aa247dc48109e53a7057233d566a46cfcebe839bc53d4",
+      "bytes": 4152
+    }
+  ],
+  "authentication": {
+    "chain": "Ubuntu Archive InRelease -> Sources SHA256 -> DSC/orig/debian archives SHA256",
+    "inrelease_url": "https://snapshot.ubuntu.com/ubuntu/20261113T000000Z/dists/resolute/InRelease",
+    "inrelease_sha256": "45f95ce276cdba3e41870516a130e03c58b8b7a79e9546b0efe9e526d255740c",
+    "sources_url": "https://snapshot.ubuntu.com/ubuntu/20261113T000000Z/dists/resolute/main/source/Sources.xz",
+    "sources_sha256": "dce0fc8e2a473b26f729b1204fd4c12ae068428f743f96761392a059ab7bbfcd",
+    "archive_key_fingerprint": "F6ECB3762474EDA9D21B7022871920D1991BC93C",
+    "keyring_sha256": "80a36b0a6de2f69f49d2df75ef473ccde121e9e190b9ea01d20a4f63778d5c31",
+    "dsc_maintainer_signature": "Not separately verified"
+  },
+  "state": "AUTHENTICATED_PATCHED_SOURCE",
+  "patches": [
+    {
+      "file": "brightness-persist.patch",
+      "sha256": "f01dca47f34e9f43334a415f3c9150efd9a936c79934d2767c3a2eeb6c408145",
+      "license": "GPL-2.0-or-later",
+      "upstream": "https://gitlab.gnome.org/GNOME/gnome-shell/-/commit/29c61c40370cbfbeec1684ebf003104b20374bb4"
+    }
+  ],
+  "changelog_entry_sha256": "338fe843126edb4b4c52085f9ea19544a33aee0acf1eb775b95546ea5e4936dc",
+  "exit_condition": "Drop when Ubuntu moves to gnome-shell 51, or upstream backports 29c61c40 to 50.x and Ubuntu ships it; then check that the brightness slider survives logout and reboot on both tablets."
+}

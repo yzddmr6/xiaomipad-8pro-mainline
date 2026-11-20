@@ -1,0 +1,10 @@
+gnome-shell (50.1-0ubuntu1+piano1) resolute; urgency=medium
+
+  * brightnessManager: save and restore the monitor brightnesses
+    (upstream 29c61c40, MR !4006). The slider is no longer re-read from the
+    backlight at every login, so automatic brightness no longer drifts by
+    the difference between its target and the middle of the slider. The
+    color mode field of the saved monitor key stays empty: mutter 50 has no
+    meta_monitor_get_color_mode_string().
+
+ -- yzddmr6 <46088090+yzddmr6@users.noreply.github.com>  Fri, 20 Nov 2026 10:05:00 +0800
