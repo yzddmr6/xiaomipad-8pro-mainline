@@ -386,13 +386,20 @@ def main():
     (desktop / 'usr/libexec/piano/gunyahvm-favorite').chmod(0o755)
     # fake-hwclock: the RTC cannot be set; it restores the time saved at shutdown or hourly.
     cohort = json.loads((repo / 'packaging/desktop-packages.json').read_text())
-    depends = ', '.join(f"{name} ({version if version.startswith('>= ') else '= ' + version})"
-                        for name, version in cohort.items())
+    depends = [f"{name} ({version if version.startswith('>= ') else '= ' + version})"
+               for name, version in cohort.items()]
+    # A package the desktop set pins exactly (gnome-shell while the brightness backport is carried)
+    # takes the pin in place of the floor below; the floor returns when the pin leaves the set.
+    floors = ['wireplumber (>= 0.5.13-1ubuntu1.1)', 'gdm3', 'gnome-shell (>= 50)', 'colord', 'colord-data',
+              'python3-gi', 'fake-hwclock', 'python3', 'console-setup', 'snapd', 'init-system-helpers',
+              'tuned-ppd (>= 2.25.1)', 'showtime', 'gstreamer1.0-plugins-base', 'gstreamer1.0-plugins-good',
+              'gstreamer1.0-plugins-bad', 'gstreamer1.0-libav']
+    depends = ', '.join(depends + [floor for floor in floors if floor.split()[0] not in cohort])
     retire_pins = ('dpkg-maintscript-helper rm_conffile /etc/apt/preferences.d/piano-resources '
                    '1.6.0-2~ piano-ubuntu-desktop -- "$@"\n'
                    'dpkg-maintscript-helper rm_conffile /etc/apt/preferences.d/piano-power-button-lock '
                    '1.6.0-2~ piano-ubuntu-desktop -- "$@"\n')
-    package('piano-ubuntu-desktop', desktop, depends + ', wireplumber (>= 0.5.13-1ubuntu1.1), gdm3, gnome-shell (>= 50), colord, colord-data, python3-gi, fake-hwclock, python3, console-setup, snapd, init-system-helpers, tuned-ppd (>= 2.25.1), showtime, gstreamer1.0-plugins-base, gstreamer1.0-plugins-good, gstreamer1.0-plugins-bad, gstreamer1.0-libav',
+    package('piano-ubuntu-desktop', desktop, depends,
             'Piano Ubuntu desktop defaults: graphics, clock without RTC, speaker up-mix and UCM, '
             'GNOME Shell 50 on-screen keyboard guard',
             '#!/bin/sh\nset -e\n' + retire_pins + 'if [ "$1" = configure ]; then\n'
