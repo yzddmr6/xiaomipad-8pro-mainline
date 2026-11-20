@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "base_version": "50.1-0ubuntu1.5",
-  "local_version": "50.1-0ubuntu1.5+piano1",
+  "local_version": "50.1-0ubuntu1.5+piano2",
   "files": [
     {
       "file": "gnome-shell_50.1.orig.tar.xz",
@@ -44,8 +44,13 @@
       "file": "brightness-auto-first-run.patch",
       "sha256": "937407f7b2167b9f2b1794233a7ffeaa2dfef72753a707ec195fe8c6208dcf52",
       "license": "GPL-2.0-or-later"
+    },
+    {
+      "file": "brightness-no-edid.patch",
+      "sha256": "420d8e23d28971a7f6bd71682a6add22bf065366edd3cc2fb97e905fb4417a0a",
+      "license": "GPL-2.0-or-later"
     }
   ],
-  "changelog_entry_sha256": "2eeb0dc0f1e29011a3dd0aed96d56a5e0da05428ea3510441e689092387184c1",
-  "exit_condition": "Drop brightness-persist.patch when Ubuntu moves to gnome-shell 51 or later, or backports MR !4006 to 50.x. Drop brightness-auto-first-run.patch once upstream handles where automatic brightness starts on a monitor without a saved value. Until then, rebuild on every Ubuntu gnome-shell update and repeat the logout, login and reboot brightness check on both tablets."
+  "changelog_entry_sha256": "9050a97b8790302f4065bf5629acc0174ce70f32c030cc84a96296b2a2431b6f",
+  "exit_condition": "Drop brightness-persist.patch when Ubuntu moves to gnome-shell 51 or later, or backports MR !4006 to 50.x. Drop brightness-auto-first-run.patch once upstream handles where automatic brightness starts on a monitor without a saved value, and brightness-no-edid.patch once upstream saves the brightness of a panel without an EDID. Until then, rebuild on every Ubuntu gnome-shell update and repeat the logout, login and reboot brightness check on both tablets."
 }

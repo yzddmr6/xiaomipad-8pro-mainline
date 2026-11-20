@@ -40,16 +40,17 @@ locked-screen wake, suspend/resume and lock-failure behavior. Then retire the pr
 
 [gnome-shell](gnome-shell/README.zh-CN.md) carries upstream `29c61c40` so that the brightness
 slider survives logout and reboot instead of being read back from the backlight at every login,
-and a project patch that starts a monitor without a saved value at the neutral middle of the slider
-when automatic brightness takes it over.
+and two project patches: one starts a monitor without a saved value at the neutral middle of the
+slider when automatic brightness takes it over, the other lets the brightness of a panel without
+an EDID (no vendor, product or serial) be saved at all.
 Build it from its source lock as for GSD. The two runtime binaries are pinned by
 [gnome-shell/SHA256SUMS](gnome-shell/SHA256SUMS) and the desktop package depends on their exact
 version; `gnome-shell-extension-prefs` of the same build is published in the signed APT source for
 systems that have it installed. As with the four packages above, Ubuntu's gnome-shell updates are
 held back by the exact dependency: rebuild on each Ubuntu update and repeat the logout, login and
 reboot brightness check. Drop the backport once Ubuntu ships gnome-shell 51 or a 50.x with MR !4006,
-and the project patch once upstream handles where automatic brightness starts on a monitor without
-a saved value.
+and each project patch once upstream handles the same case: where automatic brightness starts on a
+monitor without a saved value, and saving the brightness of a panel without an EDID.
 
 ## 宿主 Mesa 与发布批次
 

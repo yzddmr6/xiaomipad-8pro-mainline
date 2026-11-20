@@ -1,0 +1,32 @@
+From: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
+Subject: brightnessManager: save the brightness of a panel without an EDID
+
+Mutter has no vendor, product or serial for a panel without an EDID,
+such as the DSI panels of these tablets, and returns null for them. A
+GVariant string cannot be null, so every save threw "Argument string may
+not be null" and no brightness was ever saved. Store a missing string
+as an empty one; the connector still tells such panels apart.
+Forwarded: no
+
+--- a/js/misc/brightnessManager.js
++++ b/js/misc/brightnessManager.js
+@@ -23,12 +23,15 @@
+ 
+     static fromMonitor(logicalMonitor) {
+         const monitor = logicalMonitor.get_monitors()[0];
++        // Mutter returns null for a string it does not have, such as the
++        // vendor, product and serial of a panel without an EDID (a DSI panel),
++        // and a GVariant string cannot be null.
+         return new MonitorId({
+-            vendor: monitor.get_vendor(),
+-            product: monitor.get_product(),
+-            serial: monitor.get_serial(),
++            vendor: monitor.get_vendor() ?? '',
++            product: monitor.get_product() ?? '',
++            serial: monitor.get_serial() ?? '',
+             colorMode: '',
+-            connector: monitor.get_connector(),
++            connector: monitor.get_connector() ?? '',
+         });
+     }
+ 

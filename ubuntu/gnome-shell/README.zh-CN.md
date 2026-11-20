@@ -1,7 +1,7 @@
 # gnome-shell：按显示器保存和恢复亮度滑块
 
 固定 Ubuntu 26.04 源包 `50.1-0ubuntu1.5`（resolute-updates / resolute-security 的当前版本，含
-CVE-2026-91786 的安全修复；已发布的系统经 apt 升级后装的就是它），本地版本 `50.1-0ubuntu1.5+piano1`。
+CVE-2026-91786 的安全修复；已发布的系统经 apt 升级后装的就是它），本地版本 `50.1-0ubuntu1.5+piano2`。
 源包已认证；按 Ubuntu 发行版流程构建 ARM64 软件包。补丁按原文件 GPL-2.0-or-later 分发，许可见
 [COPYING](COPYING)，不适用集成仓的 MIT 许可。
 
@@ -23,8 +23,13 @@ Shell 的持久状态 `~/.local/share/gnome-shell/brightnesses`，登录时恢�
 0.5，不把那个背光当成偏移存下来（否则升级后第一次登录，停在 5% 的背光会变成一直偏暗 45 个百分点）。
 登录界面照 50.x 的做法跟着当时的背光走，不存也不恢复。
 
+[brightness-no-edid.patch](brightness-no-edid.patch) 也是本项目的补丁：没有 EDID 的屏（两台平板的 DSI 屏）
+没有厂商、型号和序列号，mutter 给的是 null，而 GVariant 的字符串不能是 null，存值时报错，什么都存不下来；
+缺的字段按空串存，接口名照样能把屏区分开。
+
 退出条件：Ubuntu 换到 gnome-shell 51 或以上，或者 Ubuntu 把 MR !4006 回移到 50.x 时，删掉回移补丁；本项目的
-补丁等上游对“没存过值时自动亮度从哪里开始”有了等价处理再删。两个都删掉以后，撤掉本包和桌面集合里的精确依赖。
+补丁分别等上游对“没存过值时自动亮度从哪里开始”有了等价处理、能存没有 EDID 的屏的亮度时再删。都删掉以后，撤掉本包
+和桌面集合里的精确依赖。
 在此之前，精确依赖会挡住 Ubuntu 后续的 gnome-shell 更新：Ubuntu 每发布一个 gnome-shell 更新，就在它上面重编
 本包，并在两台平板上复测一次注销、登录和重启后的亮度。
 
@@ -72,7 +77,7 @@ VERIFY
 ```sh
 dpkg-source -x gnome-shell_50.1-0ubuntu1.5.dsc gnome-shell
 cd gnome-shell
-for p in brightness-persist brightness-auto-first-run; do
+for p in brightness-persist brightness-auto-first-run brightness-no-edid; do
   cp "$assets/$p.patch" debian/patches/piano-$p.patch
   echo piano-$p.patch >> debian/patches/series
 done
