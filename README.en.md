@@ -164,7 +164,7 @@ Not yet supported: fingerprint.
 | Video encoding | Qualcomm Iris / V4L2 | ✅ works | H.264/H.265 at 1080p and 4K verified |
 | Cameras | Rear S5KJN1SQ03, front OV32D40 | ✅ works | Front and rear cameras available in camera apps; rear autofocus and manual focus, manual exposure and white balance, and a shared camera activity light |
 | Rear torch | Qualcomm PMIC LED | 🟡 partial | Torch and exposure-synchronised rear flash; camera applications need to integrate their own flash controls |
-| Accelerometer, gyro, light, proximity | SSC / hexagonrpcd / libssc | ✅ works | SensorProxy reports orientation and ambient light. Enable Automatic Brightness in Settings → Power Brightness follows the tablet’s own curve and is retained across restarts. |
+| Accelerometer, gyro, light, proximity | SSC / hexagonrpcd / libssc | ✅ works | SensorProxy reports orientation and ambient light. Enable Automatic Brightness in Settings → Power. Automatic brightness follows the stock curve, and the brightness you set is kept across logout and restart. |
 | Auto-rotation | SensorProxy / Mutter | ✅ works | Rotates with the keyboard detached; locked by GNOME's rule while the keyboard is attached |
 
 Some HEVC videos may drop a small number of frames in Firefox. Chromium snap is not covered by this acceleration integration.
@@ -225,7 +225,7 @@ A host write resets slot A's retry counter; the next Ubuntu boot marks the slot 
 | Repository | Content |
 |---|---|
 | xiaomipad-8pro-mainline | Device userspace, Ubuntu integration, build/packaging/switching tools, firmware, documentation |
-| [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano) | Linux kernel: drivers, devicetree and configuration maintained on top of upstream Linux 7.2 stable, release commit pinned in the input lock |
+| [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano) | Linux kernel: drivers, devicetree and configuration maintained on top of upstream Linux; the upstream base and release commit are pinned in the input lock |
 
 See [docs/BUILD.en.md](docs/BUILD.en.md) to build the kernel, Mesa, device packages and images; [kernel/source.json](kernel/source.json) pins the kernel commit and configuration fragments.
 

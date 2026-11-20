@@ -162,7 +162,7 @@ sudo apt update && sudo apt full-upgrade
 | 视频硬编 | 高通 Iris / V4L2 | ✅ 可用 | H.264/H.265 1080p、4K 编码已验证 |
 | 摄像头 | 后摄 S5KJN1SQ03、前摄 OV32D40 | ✅ 可用 | 前后摄像头可在相机应用中使用；后摄支持自动和手动对焦，两摄均支持手动曝光、白平衡和隐私指示灯 |
 | 后置补光灯 | Qualcomm PMIC LED | 🟡 部分支持 | 支持常亮和后摄曝光同步闪光；相机应用中的闪光按钮需要由应用接入 |
-| 加速度、陀螺、光感、距离 | SSC / hexagonrpcd / libssc | ✅ 可用 | SensorProxy 提供方向和环境光读数，可在“设置 → 电源”中开启自动亮度 自动亮度采用本机曲线，重启保留亮度。 |
+| 加速度、陀螺、光感、距离 | SSC / hexagonrpcd / libssc | ✅ 可用 | SensorProxy 提供方向和环境光读数，可在“设置 → 电源”中开启自动亮度。自动亮度采用原厂曲线，手动调过的亮度在注销和重启后保留。 |
 | 自动旋转 | SensorProxy / Mutter | ✅ 可用 | 拆下键盘后自动旋转；装着键盘时按 GNOME 规则锁定 |
 
 Firefox 播放部分 HEVC 视频可能有轻微丢帧。Chromium snap 不支持此硬解集成。
@@ -223,7 +223,7 @@ fastboot -s <serial> reboot
 | 仓库 | 内容 |
 |---|---|
 | xiaomipad-8pro-mainline | 设备用户态、Ubuntu 集成、构建/打包/切换工具、固件、文档 |
-| [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano) | Linux 内核：在上游 Linux 7.2 stable 之上维护驱动、设备树与配置；发布提交见输入锁 |
+| [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano) | Linux 内核：在上游 Linux 之上维护驱动、设备树与配置；上游基线与发布提交见输入锁 |
 
 构建内核、Mesa、设备软件包与镜像见 [docs/BUILD.md](docs/BUILD.md)；[kernel/source.json](kernel/source.json) 锁定内核提交与配置片段。
 
