@@ -41,9 +41,9 @@ results do not establish support for other models, capacities or accessories.
 
 ### v1.6.2
 
-电源模式重做：平衡模式下忙碌的处理器核心最低保持约 1.7 GHz，网页滑动和动画更跟手；性能模式优先响应；省电模式下带处理器下限的任务不再挤到两个大核上；音频、合成器这类实时线程不再被默认拉到最高频率。GunyahVM 给虚拟机线程设的处理器下限从这一版起生效，新装系统预装 GunyahVM 1.5.0。内核打开 UFS 内联加密引擎，挂起时驱动卡住会在约一分钟后自动重启，读取存储更省处理器。
+电源模式重做：平衡模式下忙碌的处理器核心最低保持约 1.7 GHz，网页滑动和动画更跟手；性能模式优先响应；省电模式下带处理器下限的任务不再挤到两个大核上；音频、合成器这类实时线程不再被默认拉到最高频率。GunyahVM 给虚拟机线程设的处理器下限从这一版起生效，新装系统预装 GunyahVM 1.5.0。自动亮度改用 HyperOS 在这台平板上实际使用的曲线，并照原厂驱动的换算写进背光芯片。内核打开 UFS 内联加密引擎，挂起时驱动卡住会在约一分钟后自动重启，读取存储更省处理器。
 
-Power modes reworked: in Balanced, busy CPU cores stay at about 1.7 GHz or above, so web scrolling and animations keep up; Performance puts responsiveness first; in Power Saver, tasks with a CPU floor are no longer crowded onto the two prime cores; real-time threads such as audio and the compositor are no longer pushed to the highest frequency by default. The CPU floor GunyahVM sets for virtual-machine threads takes effect from this release, and fresh installations include GunyahVM 1.5.0. The kernel enables the UFS inline encryption engine, restarts the tablet after about a minute when a driver hangs during suspend, and spends less CPU on storage reads.
+Power modes reworked: in Balanced, busy CPU cores stay at about 1.7 GHz or above, so web scrolling and animations keep up; Performance puts responsiveness first; in Power Saver, tasks with a CPU floor are no longer crowded onto the two prime cores; real-time threads such as audio and the compositor are no longer pushed to the highest frequency by default. The CPU floor GunyahVM sets for virtual-machine threads takes effect from this release, and fresh installations include GunyahVM 1.5.0. Automatic brightness follows the curve HyperOS actually uses on this tablet, converted to backlight chip values the way the stock driver does. The kernel enables the UFS inline encryption engine, restarts the tablet after about a minute when a driver hangs during suspend, and spends less CPU on storage reads.
 
 ### v1.6.1
 
