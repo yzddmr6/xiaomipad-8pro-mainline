@@ -14,6 +14,12 @@ the backlight and that the user has not touched, start it at 0.5. The
 login screen keeps the 50.x behaviour (it follows the backlight it
 finds and saves nothing), so it shows the brightness the last session
 ended with.
+
+A scale still taken from the backlight is not saved either. It is not
+the user's choice, and a first session without auto brightness (the
+light sensor not found yet, or the setting off) would otherwise save
+that level, which the next session with auto brightness then applies as
+an offset.
 Forwarded: no
 
 --- a/js/misc/brightnessManager.js
@@ -67,7 +73,20 @@ Forwarded: no
          if (this._saveBrightnessId) {
              GLib.source_remove(this._saveBrightnessId);
              this._saveBrightnessId = 0;
-@@ -273,6 +296,7 @@
+@@ -240,6 +263,12 @@
+             let values = this._getState();
+ 
+             for (const scale of this._monitorScales.values()) {
++                // A scale still taken from the backlight is not the user's
++                // choice: saving it would make that level an offset as soon
++                // as auto brightness drives the monitor in a later session.
++                if (scale._fromBacklight)
++                    continue;
++
+                 const mId = MonitorId.fromMonitor(scale.monitor);
+ 
+                 values = values.filter(v => !v.id.equalsExact(mId));
+@@ -273,6 +302,7 @@
                  'notify::value',  () => {
                      if (this._inhibitUpdates)
                          return;
@@ -75,7 +94,7 @@ Forwarded: no
                      scale._scaleChanged = true;
                      this._sync();
                      this.emit('user-update');
-@@ -293,6 +317,8 @@
+@@ -293,6 +323,8 @@
              this._globalScale.connect('notify::value', () => {
                  if (this._inhibitUpdates)
                      return;
@@ -84,7 +103,7 @@ Forwarded: no
                  this._globalScaleChanged = true;
                  this._sync();
                  this.emit('user-update');
-@@ -479,6 +505,7 @@
+@@ -479,6 +511,7 @@
          this._monitor = monitor;
          this._currentBacklightBrightness = -1;
          this._scaleFactor = 1.0;

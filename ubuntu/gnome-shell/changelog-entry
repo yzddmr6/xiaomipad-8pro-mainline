@@ -1,4 +1,4 @@
-gnome-shell (50.1-0ubuntu1.5+piano2) resolute; urgency=medium
+gnome-shell (50.1-0ubuntu1.5+piano3) resolute; urgency=medium
 
   * brightnessManager: save and restore the monitor brightnesses
     (upstream 29c61c40, MR !4006). The slider is no longer re-read from the
@@ -10,10 +10,12 @@ gnome-shell (50.1-0ubuntu1.5+piano2) resolute; urgency=medium
     has no saved value and that the user has not adjusted, start its slider
     at the neutral middle instead of the backlight level it found, so the
     first session after an upgrade does not keep that level as an offset.
+    A slider still taken from the backlight is not saved, so a first session
+    without automatic brightness does not leave that offset behind either.
     The login screen follows the backlight it finds, as in 50.x, and saves
     nothing.
   * brightnessManager: store the vendor, product and serial that a panel
     without an EDID does not have as empty strings, so that its brightness
     can be saved at all.
 
- -- yzddmr6 <46088090+yzddmr6@users.noreply.github.com>  Fri, 20 Nov 2026 12:00:00 +0800
+ -- yzddmr6 <46088090+yzddmr6@users.noreply.github.com>  Fri, 20 Nov 2026 12:49:00 +0800

@@ -1,7 +1,7 @@
 # gnome-shell：按显示器保存和恢复亮度滑块
 
 固定 Ubuntu 26.04 源包 `50.1-0ubuntu1.5`（resolute-updates / resolute-security 的当前版本，含
-CVE-2026-91786 的安全修复；已发布的系统经 apt 升级后装的就是它），本地版本 `50.1-0ubuntu1.5+piano2`。
+CVE-2026-91786 的安全修复；已发布的系统经 apt 升级后装的就是它），本地版本 `50.1-0ubuntu1.5+piano3`。
 源包已认证；按 Ubuntu 发行版流程构建 ARM64 软件包。补丁按原文件 GPL-2.0-or-later 分发，许可见
 [COPYING](COPYING)，不适用集成仓的 MIT 许可。
 
@@ -20,7 +20,8 @@ Shell 的持久状态 `~/.local/share/gnome-shell/brightnesses`，登录时恢�
 
 [brightness-auto-first-run.patch](brightness-auto-first-run.patch) 是本项目的补丁，跟在回移后面：
 一块屏还没有存值、用户也没拖过滑块时，滑块取的是当时的绝对背光；自动亮度接管这块屏时，把滑块放到中点
-0.5，不把那个背光当成偏移存下来（否则升级后第一次登录，停在 5% 的背光会变成一直偏暗 45 个百分点）。
+0.5，不把那个背光当成偏移存下来（否则升级后第一次登录，停在 5% 的背光会变成一直偏暗 45 个百分点）；
+还取自背光的滑块值也不存，这样第一次会话没有自动亮度（光感还没找到，或者设置关着）时，也不会留下这个偏移。
 登录界面照 50.x 的做法跟着当时的背光走，不存也不恢复。
 
 [brightness-no-edid.patch](brightness-no-edid.patch) 也是本项目的补丁：没有 EDID 的屏（两台平板的 DSI 屏）

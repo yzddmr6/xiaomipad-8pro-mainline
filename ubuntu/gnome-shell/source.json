@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "base_version": "50.1-0ubuntu1.5",
-  "local_version": "50.1-0ubuntu1.5+piano2",
+  "local_version": "50.1-0ubuntu1.5+piano3",
   "files": [
     {
       "file": "gnome-shell_50.1.orig.tar.xz",
@@ -42,7 +42,7 @@
     },
     {
       "file": "brightness-auto-first-run.patch",
-      "sha256": "937407f7b2167b9f2b1794233a7ffeaa2dfef72753a707ec195fe8c6208dcf52",
+      "sha256": "e494869a2daa7136554937b5443371780c380f956d17f0db650fe8b06cd56575",
       "license": "GPL-2.0-or-later"
     },
     {
@@ -51,6 +51,6 @@
       "license": "GPL-2.0-or-later"
     }
   ],
-  "changelog_entry_sha256": "9050a97b8790302f4065bf5629acc0174ce70f32c030cc84a96296b2a2431b6f",
+  "changelog_entry_sha256": "34fa546221f868b262084d7da3e65d4c7e76679ec2109be658c3083f3fe76bf0",
   "exit_condition": "Drop brightness-persist.patch when Ubuntu moves to gnome-shell 51 or later, or backports MR !4006 to 50.x. Drop brightness-auto-first-run.patch once upstream handles where automatic brightness starts on a monitor without a saved value, and brightness-no-edid.patch once upstream saves the brightness of a panel without an EDID. Until then, rebuild on every Ubuntu gnome-shell update and repeat the logout, login and reboot brightness check on both tablets."
 }
