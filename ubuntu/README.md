@@ -36,6 +36,17 @@ After upstream merges the functionality or Ubuntu ships an equivalent version,
 verify enum/schema and control-center compatibility and device short/long press,
 locked-screen wake, suspend/resume and lock-failure behavior. Then retire the project builds and their exact desktop dependencies together.
 
+## Brightness slider (gnome-shell)
+
+[gnome-shell](gnome-shell/README.zh-CN.md) carries upstream `29c61c40` so that the brightness
+slider survives logout and reboot instead of being read back from the backlight at every login.
+Build it from its source lock as for GSD. The two runtime binaries are pinned by
+[gnome-shell/SHA256SUMS](gnome-shell/SHA256SUMS) and the desktop package depends on their exact
+version; `gnome-shell-extension-prefs` of the same build is published in the signed APT source for
+systems that have it installed. As with the four packages above, Ubuntu's gnome-shell updates are
+held back by the exact dependency: rebase the patch on each Ubuntu update, and retire the package
+once Ubuntu ships gnome-shell 51 or a 50.x with the upstream change.
+
 ## 宿主 Mesa 与发布批次
 
 宿主 Mesa 的发行版打包基线、快照和认证链见
