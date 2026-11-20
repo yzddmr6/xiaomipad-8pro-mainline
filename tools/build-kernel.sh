@@ -164,6 +164,14 @@ fi
 [[ $(git -C "$src" rev-parse HEAD) == "$head" && -z $(git -C "$src" status --porcelain --untracked-files=no) ]] || {
 	echo 'Source changed during build; output must not be used.' >&2; exit 1;
 }
+# The image and modules must not name this host's paths (the user and the directory layout; Rust
+# panic locations did until the remaps above): fail instead of packaging them.
+host_paths=(-e "$src/" -e "$out/" -e "${RUST_LIB_SRC%/}/")
+[[ $HOME == /home/?* ]] && host_paths+=(-e "${HOME%/}/")
+host_files=("$out/arch/arm64/boot/Image")
+[[ $modules == 0 ]] || mapfile -t -O 1 host_files < <(sed "s/\\.o\$/.ko/; s|^|$out/|" "$out/modules.order")
+leaks=$(grep -laF "${host_paths[@]}" -- "${host_files[@]}" || true)
+[[ -z $leaks ]] || { printf 'Build host paths in the kernel output:\n%s\n' "$leaks" >&2; exit 1; }
 python3 - "$out" "$head" "$toolchain" "$src" "$modules" "${fragments[@]}" <<'PY'
 import hashlib, json, pathlib, subprocess, sys
 out, head, compiler, src = pathlib.Path(sys.argv[1]), sys.argv[2], sys.argv[3], pathlib.Path(sys.argv[4])
