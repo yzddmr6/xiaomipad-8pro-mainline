@@ -1,6 +1,6 @@
 id=piano-switch
 name=Piano: switch to Ubuntu
-version=v0.2.1
-versionCode=3
+version=v0.2.2
+versionCode=4
 author=yzddmr6
-description=Action writes the Ubuntu boot set stored on linux_rootfs into slot A (init_boot_a, vendor_boot_a, boot_a), verifies it and reboots. No images bundled.
+description=Action writes the Ubuntu boot set stored on linux_rootfs into slot A (init_boot_a, vendor_boot_a, boot_a), verifies it and reboots. No images bundled. © 2026 yzddmr6 · https://github.com/yzddmr6/xiaomipad-8pro-mainline

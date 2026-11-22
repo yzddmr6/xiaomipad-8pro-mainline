@@ -1,5 +1,7 @@
 #!/system/bin/sh
 # SPDX-License-Identifier: MIT
+# Copyright (c) 2026 yzddmr6
+# https://github.com/yzddmr6/xiaomipad-8pro-mainline
 # Switch piano from Android to Ubuntu: write the stored Ubuntu boot set into
 # active slot A (init_boot_a, vendor_boot_a, boot_a), read every partition
 # back, then reboot. POSIX sh and toybox only; no images are bundled.
@@ -162,6 +164,7 @@ for arg in "$@"; do
 	esac
 done
 
+printf '%s\n' '© 2026 yzddmr6 · https://github.com/yzddmr6/xiaomipad-8pro-mainline'
 mkdir -p "$PIANO_STATE" || exit 1
 trap cleanup 0
 log "start: $([ "$CHECK" = 1 ] && echo check || echo switch), uid $(id -u)"

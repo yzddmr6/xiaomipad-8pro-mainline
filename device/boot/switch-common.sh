@@ -1,5 +1,7 @@
 #!/bin/sh
 # SPDX-License-Identifier: MIT
+# Copyright (c) 2026 yzddmr6
+# https://github.com/yzddmr6/xiaomipad-8pro-mainline
 # Shared source: xiaomipad-8pro-mainline/device/boot/switch-common.sh.
 # Vendor this file unchanged; callers supply log(), PROG and STORE.
 
