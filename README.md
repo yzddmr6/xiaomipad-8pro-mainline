@@ -149,8 +149,8 @@ sudo apt update && sudo apt full-upgrade
 | Wi-Fi | 高通 WCN7860 / ath12k | ✅ 可用 | 2.4 GHz 与 5 GHz 80 MHz 连接稳定。Wi-Fi 冷启动时先校准 WCN7860，再应用 22 dBm 的板级发射功率上限。实际功率受固件和监管域约束。 |
 | 蓝牙 | 高通 WCN7860 / `hci_qca` | ✅ 可用 | 配对、文件传输和蓝牙音频可用 |
 | USB 设备模式 | USB 3 / 5 Gbit/s 网络（NCM） | ✅ 可用 | 开发者模式下经 USB 线 SSH 登录，默认关闭 |
-| USB 主机 / OTG | Type-C 角色切换 / USB 3 / 5 Gbit/s | 🟡 部分支持 | U 盘、键鼠、扩展坞可用，正反插 5 Gbit/s；拔出 OTG 设备后直接重插转接头可能不被识别 可用 USB 光驱读取 ISO 9660、Joliet 和 UDF。 |
-| USB-C 外接显示 | DisplayPort Alt Mode | ✅ 可用 | 正反插、热插拔，实测 4K 60 Hz，扩展桌面 |
+| USB 主机 / OTG | Type-C 角色切换 / USB 3 / 5 Gbit/s | 🟡 部分支持 | U 盘、键鼠、扩展坞可用，正反插 5 Gbit/s；拔出 OTG 设备后直接重插转接头可能不被识别；可用 USB 光驱读取 ISO 9660、Joliet 和 UDF。 |
+| USB-C 外接显示 | DisplayPort Alt Mode | ✅ 可用 | 正反插、热插拔，实测 4K 60 Hz，扩展桌面；显示器自带的触摸屏和 USB 口可用（四条通道都给画面时是 USB 2.0 速度） |
 
 ### 音视频与传感器
 

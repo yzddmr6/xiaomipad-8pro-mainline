@@ -1,6 +1,6 @@
 # Release history and current support
 
-Current release: **v1.6.2**. See the [README](../README.en.md#hardware-support) or
+Current release: **v1.6.3**. See the [README](../README.en.md#hardware-support) or
 [中文 README](../README.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
@@ -11,7 +11,8 @@ selection, Night Light, touch input, magnetic keyboard, Wi-Fi, Bluetooth pairing
 audio, speaker playback, microphone recording, front and rear cameras, sensors,
 auto-rotation, 5 Gbit/s USB host / OTG with docks, USB storage, keyboards and mice,
 USB-C external displays (DisplayPort Alt Mode, tested at 4K 60 Hz as an extended
-desktop), charging and system suspend. The power button locks the screen by default and
+desktop) and the touch screen and USB ports built into such a monitor, charging and
+system suspend. The power button locks the screen by default and
 GNOME offers Power Saver, Balanced and Performance modes. Optional command-line virtual
 machines run Ubuntu and Windows 11 ARM guests; see the [VM guide](VIRTUALIZATION.md).
 Waydroid can use Adreno 830 hardware rendering. The M80p stylus supports pressure, hover and both barrel buttons.
@@ -38,6 +39,12 @@ verified on this unit; later versions were tested on the installed system. These
 results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
+
+### v1.6.3
+
+1.1.1 到 1.6.2 的 USB 主机模式修好了：接鼠标、键盘、U 盘和扩展坞上的 USB 设备重新有反应，原因是 USB-C 驱动认错了接口节点；1.6.2 的扩展坞唤醒修复也从这一版起才真正起作用。显示器或扩展坞把四条 USB 3 高速通道都用来传画面时，它上面的触摸屏和 USB 口也能用，这时是 USB 2.0 速度，这项修复上游已经收下。KernelSU 切换模块 v0.2.2 写明作者和项目地址；新装系统预装 GunyahVM 1.5.1。
+
+USB host mode from 1.1.1 through 1.6.2 is fixed: mice, keyboards, USB sticks and the USB devices on docks respond again; the USB-C driver had taken the wrong device-tree node for the port, and the 1.6.2 dock resume fix only takes effect from this release. When a monitor or dock uses all four SuperSpeed (USB 3) lanes for the picture, its touch screen and USB ports now work too, at USB 2.0 speed; the fix has been accepted upstream. The KernelSU switch module v0.2.2 names the author and the project URL, and new installations include GunyahVM 1.5.1.
 
 ### v1.6.2
 
@@ -266,7 +273,6 @@ Preinstalled GunyahVM graphical virtual-machine management.
 
 - Some HEVC videos may drop a small number of frames in Firefox.
 - After an OTG device is unplugged, a plain OTG adapter plugged in next may not be detected; plug a charger or computer cable in and out once, or use a dock.
-- The rear camera has no autofocus; nearby subjects may be out of focus.
 
 Installation and maintenance instructions are in [INSTALL.en.md](INSTALL.en.md),
 [UPGRADE.en.md](UPGRADE.en.md) and [FLASHING.en.md](FLASHING.en.md).
