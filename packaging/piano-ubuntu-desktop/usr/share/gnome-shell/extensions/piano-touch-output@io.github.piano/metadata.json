@@ -1,0 +1,7 @@
+{
+  "uuid": "piano-touch-output@io.github.piano",
+  "name": "Piano external touchscreen output",
+  "description": "Maps external (USB or Bluetooth) touchscreens to the external monitor, as Android does, instead of Mutter's built-in panel fallback.",
+  "shell-version": ["50"],
+  "session-modes": ["user", "unlock-dialog", "gdm", "initial-setup"]
+}

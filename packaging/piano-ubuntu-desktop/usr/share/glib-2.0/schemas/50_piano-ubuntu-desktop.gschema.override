@@ -1,11 +1,13 @@
-# Enable the GNOME Shell 50 on-screen keyboard guard for every account,
-# including the GDM and initial-setup sessions, whose dconf profiles read
-# these vendor defaults. The lock screen (unlock-dialog mode) loads only
-# extensions listed here, not the Ubuntu session's mode extensions.
-# Remove with the extension once gnome-shell >= 51 or an Ubuntu gnome-shell
-# that guards maybeHandleEvent() is installed.
+# Enable the Piano GNOME Shell extensions for every account, including the
+# GDM and initial-setup sessions, whose dconf profiles read these vendor
+# defaults. The lock screen (unlock-dialog mode) loads only extensions listed
+# here, not the Ubuntu session's mode extensions.
+# - piano-osk-guard: remove once gnome-shell >= 51 or an Ubuntu gnome-shell
+#   that guards maybeHandleEvent() is installed.
+# - piano-touch-output: maps external touchscreens to the external monitor;
+#   remove once Mutter does so itself.
 [org.gnome.shell]
-enabled-extensions=['piano-osk-guard@io.github.piano']
+enabled-extensions=['piano-osk-guard@io.github.piano', 'piano-touch-output@io.github.piano']
 
 [org.gnome.settings-daemon.plugins.power]
 power-button-action='lock'
