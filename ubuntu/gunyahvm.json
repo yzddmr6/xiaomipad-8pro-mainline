@@ -1,18 +1,18 @@
 {
   "schema": 1,
-  "version": "1.5.1-1",
+  "version": "1.5.2-1",
   "desktop_id": "io.github.yzddmr6.GunyahVM.desktop",
   "packages": [
     {
       "package": "gunyahvm",
-      "version": "1.5.1-1",
+      "version": "1.5.2-1",
       "architecture": "arm64",
-      "file": "gunyahvm_1.5.1-1_arm64.deb",
-      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.5.1/gunyahvm_1.5.1-1_arm64.deb",
-      "sha256": "c8c2b899cb4682e8da805d0acf879f54066b924c4330ef1b4e305f058d167a34"
+      "file": "gunyahvm_1.5.2-1_arm64.deb",
+      "url": "https://github.com/yzddmr6/GunyahVM/releases/download/v1.5.2/gunyahvm_1.5.2-1_arm64.deb",
+      "sha256": "b5589669e005f8901f7f603113c41ce906b6216f4ab6acf1eaf34c14316c2794"
     }
   ],
-  "release_url": "https://github.com/yzddmr6/GunyahVM/releases/tag/v1.5.1",
+  "release_url": "https://github.com/yzddmr6/GunyahVM/releases/tag/v1.5.2",
   "dependencies": [
     {
       "package": "gir1.2-casilda-1.0",

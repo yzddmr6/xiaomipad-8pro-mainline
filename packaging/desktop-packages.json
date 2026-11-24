@@ -8,7 +8,7 @@
   "gnome-shell": "50.1-0ubuntu1.5+piano4",
   "gnome-shell-common": "50.1-0ubuntu1.5+piano4",
   "gstreamer1.0-libcamera": "0.7.0-1ubuntu2+sm8750.1",
-  "gunyahvm": ">= 1.5.1-1",
+  "gunyahvm": ">= 1.5.2-1",
   "libcamera-ipa": "0.7.0-1ubuntu2+sm8750.1",
   "libcamera0.7": "0.7.0-1ubuntu2+sm8750.1",
   "libcasilda-1.0": ">= 1.4.0-1+gunyahvm2",
