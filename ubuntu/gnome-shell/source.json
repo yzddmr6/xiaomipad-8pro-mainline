@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "base_version": "50.1-0ubuntu1.5",
-  "local_version": "50.1-0ubuntu1.5+piano3",
+  "local_version": "50.1-0ubuntu1.5+piano4",
   "files": [
     {
       "file": "gnome-shell_50.1.orig.tar.xz",
@@ -49,8 +49,13 @@
       "file": "brightness-no-edid.patch",
       "sha256": "420d8e23d28971a7f6bd71682a6add22bf065366edd3cc2fb97e905fb4417a0a",
       "license": "GPL-2.0-or-later"
+    },
+    {
+      "file": "screenshield-lock-before-sleep.patch",
+      "sha256": "a871aea37ad944b6bd635045e7f2d584f9237371da6aec86f9673aba90b27039",
+      "license": "GPL-2.0-or-later"
     }
   ],
-  "changelog_entry_sha256": "34fa546221f868b262084d7da3e65d4c7e76679ec2109be658c3083f3fe76bf0",
-  "exit_condition": "Drop brightness-persist.patch when Ubuntu moves to gnome-shell 51 or later, or backports MR !4006 to 50.x. Drop brightness-auto-first-run.patch once upstream handles where automatic brightness starts on a monitor without a saved value, and brightness-no-edid.patch once upstream saves the brightness of a panel without an EDID. Until then, rebuild on every Ubuntu gnome-shell update and repeat the logout, login and reboot brightness check on both tablets."
+  "changelog_entry_sha256": "239f56efc957142cb7fb75922359bcd0acd4b3128b4b63c3fc20e7a149de9fb4",
+  "exit_condition": "Drop brightness-persist.patch when Ubuntu moves to gnome-shell 51 or later, or backports MR !4006 to 50.x. Drop brightness-auto-first-run.patch once upstream handles where automatic brightness starts on a monitor without a saved value, and brightness-no-edid.patch once upstream saves the brightness of a panel without an EDID. Until then, rebuild on every Ubuntu gnome-shell update and repeat the logout, login and reboot brightness check on both tablets. Drop screenshield-lock-before-sleep.patch once upstream releases the sleep inhibitor without waiting for lock animations."
 }

@@ -1,7 +1,7 @@
 # gnome-shell：按显示器保存和恢复亮度滑块
 
 固定 Ubuntu 26.04 源包 `50.1-0ubuntu1.5`（resolute-updates / resolute-security 的当前版本，含
-CVE-2026-91786 的安全修复；已发布的系统经 apt 升级后装的就是它），本地版本 `50.1-0ubuntu1.5+piano3`。
+CVE-2026-91786 的安全修复；已发布的系统经 apt 升级后装的就是它），本地版本 `50.1-0ubuntu1.5+piano4`。
 源包已认证；按 Ubuntu 发行版流程构建 ARM64 软件包。补丁按原文件 GPL-2.0-or-later 分发，许可见
 [COPYING](COPYING)，不适用集成仓的 MIT 许可。
 
@@ -28,8 +28,14 @@ Shell 的持久状态 `~/.local/share/gnome-shell/brightnesses`，登录时恢�
 没有厂商、型号和序列号，mutter 给的是 null，而 GVariant 的字符串不能是 null，存值时报错，什么都存不下来；
 缺的字段按空串存，接口名照样能把屏区分开。
 
+[screenshield-lock-before-sleep.patch](screenshield-lock-before-sleep.patch) 是本项目的补丁：锁屏持有的睡眠延迟锁
+要等锁屏动画播完、shield 变成 active 才释放；准备睡眠时 gnome-settings-daemon 同时关掉显示器，动画随之停住，按电源键
+锁屏后随即合盖时，正在播的锁屏动画也一样停住。锁不放，系统就停在挂起准备阶段直到 logind 的时限，期间屏幕不亮、开盖和
+电源键无响应。补丁让准备睡眠时不带动画锁屏，并把正在播或被用户操作打断的锁屏直接做完，延迟锁随即释放。上游 main 的这段
+逻辑相同。
+
 退出条件：Ubuntu 换到 gnome-shell 51 或以上，或者 Ubuntu 把 MR !4006 回移到 50.x 时，删掉回移补丁；本项目的
-补丁分别等上游对“没存过值时自动亮度从哪里开始”有了等价处理、能存没有 EDID 的屏的亮度时再删。都删掉以后，撤掉本包
+补丁分别等上游对“没存过值时自动亮度从哪里开始”有了等价处理、能存没有 EDID 的屏的亮度、准备睡眠时不再等锁屏动画时再删。都删掉以后，撤掉本包
 和桌面集合里的精确依赖。
 在此之前，精确依赖会挡住 Ubuntu 后续的 gnome-shell 更新：Ubuntu 每发布一个 gnome-shell 更新，就在它上面重编
 本包，并在两台平板上复测一次注销、登录和重启后的亮度。
@@ -78,7 +84,7 @@ VERIFY
 ```sh
 dpkg-source -x gnome-shell_50.1-0ubuntu1.5.dsc gnome-shell
 cd gnome-shell
-for p in brightness-persist brightness-auto-first-run brightness-no-edid; do
+for p in brightness-persist brightness-auto-first-run brightness-no-edid screenshield-lock-before-sleep; do
   cp "$assets/$p.patch" debian/patches/piano-$p.patch
   echo piano-$p.patch >> debian/patches/series
 done

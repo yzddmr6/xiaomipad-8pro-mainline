@@ -1,4 +1,4 @@
-gnome-shell (50.1-0ubuntu1.5+piano3) resolute; urgency=medium
+gnome-shell (50.1-0ubuntu1.5+piano4) resolute; urgency=medium
 
   * brightnessManager: save and restore the monitor brightnesses
     (upstream 29c61c40, MR !4006). The slider is no longer re-read from the
@@ -17,5 +17,10 @@ gnome-shell (50.1-0ubuntu1.5+piano3) resolute; urgency=medium
   * brightnessManager: store the vendor, product and serial that a panel
     without an EDID does not have as empty strings, so that its brightness
     can be saved at all.
+  * screenShield: lock without animation when the system prepares to sleep,
+    and finish a lock that is under way or whose fade user activity turned
+    off. Such a shield never became active, so its sleep inhibitor held
+    suspend until logind's timeout with the screen dark and the lid and
+    power key ignored.
 
- -- yzddmr6 <46088090+yzddmr6@users.noreply.github.com>  Fri, 20 Nov 2026 12:49:00 +0800
+ -- yzddmr6 <46088090+yzddmr6@users.noreply.github.com>  Tue, 24 Nov 2026 23:30:00 +0800

@@ -1,0 +1,67 @@
+From 4bd64dcfa00f25531cd8a252a6c07f7fe32e4777 Mon Sep 17 00:00:00 2001
+From: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
+Date: Tue, 24 Nov 2026 23:38:29 +0800
+Subject: [PATCH] screenShield: Finish the lock before sleep instead of waiting
+ for animations
+
+logind waits for the shield's sleep delay inhibitor, which is released
+only when the shield becomes active, and the shield becomes active only
+when the lock screen's slide and fade complete. On PrepareForSleep the
+shield started an animated lock, while gnome-settings-daemon turned the
+monitors off for the same signal, which stops the animations. A lock
+still animating from just before (the power button locks with
+animation, and closing the lid follows within a second or two) ends the
+same way, as does a fade that user activity turned off: later lock
+requests return early because the lock screen is already shown, so the
+shield never becomes active. In each case the system stays in sleep
+preparation until logind's inhibitor timeout, with the screen dark and
+the lid and power key ignored.
+
+Nothing animated is seen while the system goes to sleep. Lock without
+animation, and finish a lock that is under way or that lost its fade, so
+that the inhibitor is released as soon as sleep is prepared.
+---
+ js/ui/screenShield.js | 22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/js/ui/screenShield.js b/js/ui/screenShield.js
+index cfee34a..e829a5d 100644
+--- a/js/ui/screenShield.js
++++ b/js/ui/screenShield.js
+@@ -277,12 +277,32 @@ export class ScreenShield extends Signals.EventEmitter {
+         if (aboutToSuspend) {
+             this._dialog?.cancel();
+             if (this._settings.get_boolean(SUSPEND_LOCK_ENABLED_KEY))
+-                this.lock(true);
++                this._lockForSleep();
+         } else {
+             this._wakeUpScreen();
+         }
+     }
+ 
++    _lockForSleep() {
++        // logind waits for our sleep inhibitor, which is released only once
++        // the shield is active, and the shield becomes active only when the
++        // lock animations complete. gnome-settings-daemon turns the monitors
++        // off on the same PrepareForSleep, and animations stop with them,
++        // so an animated lock started here, or one still running from just
++        // before (the power button locks with animation), would keep the
++        // system awake with the screen dark and the lid ignored until
++        // logind's inhibitor timeout. Nothing animated is seen while the
++        // system goes to sleep: lock without animation and finish a lock
++        // that is under way or whose fade user activity turned off.
++        this.lock(false);
++        if (!this._isLocked || this._isActive)
++            return;
++
++        this._lockDialogGroup.remove_all_transitions();
++        this._lockDialogGroup.translation_y = 0;
++        this._lockScreenShown({fadeToBlack: true, animateFade: false});
++    }
++
+     _onStatusChanged(status) {
+         if (status !== GnomeSession.PresenceStatus.IDLE)
+             return;
+-- 
+2.43.0
+
