@@ -28,14 +28,21 @@ Shell 的持久状态 `~/.local/share/gnome-shell/brightnesses`，登录时恢�
 没有厂商、型号和序列号，mutter 给的是 null，而 GVariant 的字符串不能是 null，存值时报错，什么都存不下来；
 缺的字段按空串存，接口名照样能把屏区分开。
 
+[lock-reply-when-shown.patch](lock-reply-when-shown.patch) 是上游提交
+[`671460fa`](https://gitlab.gnome.org/GNOME/gnome-shell/-/commit/671460fa22fae6b9aa01910362e582162a403eca)
+（Johan Walles，MR !4511，GNOME Shell 51）的回移：锁屏界面已经显示时，ScreenSaver 的 Lock 调用立即返回。此前它要等
+一个不会再来的信号，调用方阻塞到 D-Bus 超时；gnome-settings-daemon 合盖锁屏时就是同步调用。
+
 [screenshield-lock-before-sleep.patch](screenshield-lock-before-sleep.patch) 是本项目的补丁：锁屏持有的睡眠延迟锁
-要等锁屏动画播完、shield 变成 active 才释放；准备睡眠时 gnome-settings-daemon 同时关掉显示器，动画随之停住，按电源键
-锁屏后随即合盖时，正在播的锁屏动画也一样停住。锁不放，系统就停在挂起准备阶段直到 logind 的时限，期间屏幕不亮、开盖和
-电源键无响应。补丁让准备睡眠时不带动画锁屏，并把正在播或被用户操作打断的锁屏直接做完，延迟锁随即释放。上游 main 的这段
+要等 shield 变成 active 才释放，而 active 要等锁屏界面滑入、遮罩淡入都完成。淡入期间有用户输入，遮罩就被撤掉，之后的
+锁屏请求又因为锁屏界面已显示而直接返回，shield 一直锁着却不 active，此后每次挂起都要等到 logind 的时限，期间屏幕不亮、
+开盖和电源键无响应（按电源键锁屏后随即合盖就会碰上）。补丁让准备睡眠时不带动画锁屏，并把正在进行或被打断的锁屏直接
+做完；挂起前取消还没开始的淡入，免得唤醒后把锁屏界面又淡成黑屏。另外，延迟锁原来在 `lock-enabled` 打开时也会持有，
+但只有 `ubuntu-lock-on-suspend` 会让 shell 在睡眠前锁屏，关掉它时每次挂起都等到时限；改为只看后者。上游 main 的这段
 逻辑相同。
 
 退出条件：Ubuntu 换到 gnome-shell 51 或以上，或者 Ubuntu 把 MR !4006 回移到 50.x 时，删掉回移补丁；本项目的
-补丁分别等上游对“没存过值时自动亮度从哪里开始”有了等价处理、能存没有 EDID 的屏的亮度、准备睡眠时不再等锁屏动画时再删。都删掉以后，撤掉本包
+补丁分别等上游对“没存过值时自动亮度从哪里开始”有了等价处理、能存没有 EDID 的屏的亮度、准备睡眠时不再等遮罩淡入时再删；回移的 Lock 补丁随 gnome-shell 51 删掉。都删掉以后，撤掉本包
 和桌面集合里的精确依赖。
 在此之前，精确依赖会挡住 Ubuntu 后续的 gnome-shell 更新：Ubuntu 每发布一个 gnome-shell 更新，就在它上面重编
 本包，并在两台平板上复测一次注销、登录和重启后的亮度。
@@ -84,7 +91,7 @@ VERIFY
 ```sh
 dpkg-source -x gnome-shell_50.1-0ubuntu1.5.dsc gnome-shell
 cd gnome-shell
-for p in brightness-persist brightness-auto-first-run brightness-no-edid screenshield-lock-before-sleep; do
+for p in brightness-persist brightness-auto-first-run brightness-no-edid lock-reply-when-shown screenshield-lock-before-sleep; do
   cp "$assets/$p.patch" debian/patches/piano-$p.patch
   echo piano-$p.patch >> debian/patches/series
 done

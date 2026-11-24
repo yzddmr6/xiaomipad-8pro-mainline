@@ -51,11 +51,17 @@
       "license": "GPL-2.0-or-later"
     },
     {
+      "file": "lock-reply-when-shown.patch",
+      "sha256": "562c7585a48c329f0914b0f4d9fe761b7d465fd2405fddb2fff520fc197fbcc7",
+      "license": "GPL-2.0-or-later",
+      "upstream": "https://gitlab.gnome.org/GNOME/gnome-shell/-/commit/671460fa22fae6b9aa01910362e582162a403eca"
+    },
+    {
       "file": "screenshield-lock-before-sleep.patch",
-      "sha256": "a871aea37ad944b6bd635045e7f2d584f9237371da6aec86f9673aba90b27039",
+      "sha256": "b601def2b7de0186f449f3aa50a8715de824a07c4a6a133e14fb0bc2f068d1f2",
       "license": "GPL-2.0-or-later"
     }
   ],
-  "changelog_entry_sha256": "239f56efc957142cb7fb75922359bcd0acd4b3128b4b63c3fc20e7a149de9fb4",
-  "exit_condition": "Drop brightness-persist.patch when Ubuntu moves to gnome-shell 51 or later, or backports MR !4006 to 50.x. Drop brightness-auto-first-run.patch once upstream handles where automatic brightness starts on a monitor without a saved value, and brightness-no-edid.patch once upstream saves the brightness of a panel without an EDID. Until then, rebuild on every Ubuntu gnome-shell update and repeat the logout, login and reboot brightness check on both tablets. Drop screenshield-lock-before-sleep.patch once upstream releases the sleep inhibitor without waiting for lock animations."
+  "changelog_entry_sha256": "185f1ce67d2dca3da72abc554d556fe973cf3669e6c9c3321e13816d1666a9a1",
+  "exit_condition": "Drop brightness-persist.patch when Ubuntu moves to gnome-shell 51 or later, or backports MR !4006 to 50.x. Drop brightness-auto-first-run.patch once upstream handles where automatic brightness starts on a monitor without a saved value, and brightness-no-edid.patch once upstream saves the brightness of a panel without an EDID. Until then, rebuild on every Ubuntu gnome-shell update and repeat the logout, login and reboot brightness check on both tablets. Drop lock-reply-when-shown.patch with gnome-shell 51, and screenshield-lock-before-sleep.patch once upstream finishes the lock for sleep without waiting for the fade."
 }

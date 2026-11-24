@@ -1,0 +1,67 @@
+From aa8df94f567842d6ac35e6a5d931dde49b113b96 Mon Sep 17 00:00:00 2001
+From: Johan Walles <johan.walles@gmail.com>
+Date: Thu, 22 Oct 2026 21:13:57 +0200
+Subject: [PATCH 1/2] shellDBus: Reply to Lock when the lock screen is already
+ shown
+
+LockAsync() replies once the screen shield emits ::lock-screen-shown.
+However _resetLockScreen() returns early unless the lock screen is
+hidden, so the signal is not emitted again when the lock screen is
+already shown. Calling Lock on an already locked session therefore
+never gets a reply, and the caller blocks until the D-Bus call times
+out. Each such call also leaves a signal handler connected until the
+lock screen is shown the next time.
+
+Reply right away in that case. Still call lock(), as the shield may
+be shown without being locked yet, for example during the lock delay
+after the screen was blanked.
+
+Check the lock screen state rather than the shield's active state:
+with animated fades, the shield only becomes active once the lightbox
+has faded in, which never happens if user input interrupts the fade.
+
+Fixes: a757ce48a ("ScreenShield: don't reset the lock screen animation if it's already happening")
+Closes: https://gitlab.gnome.org/GNOME/gnome-shell/-/work_items/9500
+Part-of: <https://gitlab.gnome.org/GNOME/gnome-shell/-/merge_requests/4511>
+---
+ js/ui/screenShield.js | 4 ++++
+ js/ui/shellDBus.js    | 8 ++++++++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/js/ui/screenShield.js b/js/ui/screenShield.js
+index cfee34a..f3c599f 100644
+--- a/js/ui/screenShield.js
++++ b/js/ui/screenShield.js
+@@ -553,6 +553,10 @@ export class ScreenShield extends Signals.EventEmitter {
+         return this._isActive;
+     }
+ 
++    get lockScreenShown() {
++        return this._lockScreenState === MessageTray.State.SHOWN;
++    }
++
+     get activationTime() {
+         return this._activationTime;
+     }
+diff --git a/js/ui/shellDBus.js b/js/ui/shellDBus.js
+index cfc7e79..4f25c46 100644
+--- a/js/ui/shellDBus.js
++++ b/js/ui/shellDBus.js
+@@ -537,6 +537,14 @@ export class ScreenSaverDBus {
+     }
+ 
+     LockAsync(parameters, invocation) {
++        // lock() won't show the lock screen again if it is already
++        // shown, so there will be no ::lock-screen-shown to wait for
++        if (this._screenShield.lockScreenShown) {
++            this._screenShield.lock(true);
++            invocation.return_value(null);
++            return;
++        }
++
+         const tmpId = this._screenShield.connect('lock-screen-shown', () => {
+             this._screenShield.disconnect(tmpId);
+ 
+-- 
+2.43.0
+

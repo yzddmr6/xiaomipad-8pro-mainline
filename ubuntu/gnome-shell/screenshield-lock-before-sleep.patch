@@ -1,34 +1,55 @@
-From 4bd64dcfa00f25531cd8a252a6c07f7fe32e4777 Mon Sep 17 00:00:00 2001
+From 557591e321d74db7734f25c49fbe541afdbd13a5 Mon Sep 17 00:00:00 2001
 From: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
-Date: Tue, 24 Nov 2026 23:38:29 +0800
-Subject: [PATCH] screenShield: Finish the lock before sleep instead of waiting
- for animations
+Date: Wed, 25 Nov 2026 00:04:37 +0800
+Subject: [PATCH 2/2] screenShield: Finish the lock when preparing for sleep
 
-logind waits for the shield's sleep delay inhibitor, which is released
-only when the shield becomes active, and the shield becomes active only
-when the lock screen's slide and fade complete. On PrepareForSleep the
-shield started an animated lock, while gnome-settings-daemon turned the
-monitors off for the same signal, which stops the animations. A lock
-still animating from just before (the power button locks with
-animation, and closing the lid follows within a second or two) ends the
-same way, as does a fade that user activity turned off: later lock
-requests return early because the lock screen is already shown, so the
-shield never becomes active. In each case the system stays in sleep
-preparation until logind's inhibitor timeout, with the screen dark and
-the lid and power key ignored.
+logind holds sleep until the shield's inhibitor is released, which
+happens only once the shield is active, that is after the lock screen
+has slid in and the lightbox has faded in. User input during that fade
+turns the lightbox off; later lock requests return early because the
+lock screen is already shown, so the shield stays locked but never
+becomes active. Locking with the power button and closing the cover
+right after is enough. Every following suspend then waits for logind's
+inhibitor timeout with the screen dark and the lid and power button
+ignored.
 
 Nothing animated is seen while the system goes to sleep. Lock without
-animation, and finish a lock that is under way or that lost its fade, so
-that the inhibitor is released as soon as sleep is prepared.
+animation when preparing for sleep, and finish a lock that is under way
+or whose fade was cancelled. Remove a pending fade so that it does not
+blank the lock screen after resume.
+
+The inhibitor followed lock-enabled as well as ubuntu-lock-on-suspend,
+but only the latter makes the shell lock for sleep; with lock on suspend
+turned off, every suspend waited for the timeout. Follow that key only.
 ---
- js/ui/screenShield.js | 22 +++++++++++++++++++++-
- 1 file changed, 21 insertions(+), 1 deletion(-)
+ js/ui/screenShield.js | 46 ++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 41 insertions(+), 5 deletions(-)
 
 diff --git a/js/ui/screenShield.js b/js/ui/screenShield.js
-index cfee34a..e829a5d 100644
+index f3c599f..fb50313 100644
 --- a/js/ui/screenShield.js
 +++ b/js/ui/screenShield.js
-@@ -277,12 +277,32 @@ export class ScreenShield extends Signals.EventEmitter {
+@@ -139,6 +139,7 @@ export class ScreenShield extends Signals.EventEmitter {
+         this._activationTime = 0;
+         this._becameActiveId = 0;
+         this._lockTimeoutId = 0;
++        this._fadeTimeoutId = 0;
+ 
+         // The "long" lightbox is used for the longer (20 seconds) fade from session
+         // to idle status, the "short" is used for quickly fading to black when locking
+@@ -243,8 +244,9 @@ export class ScreenShield extends Signals.EventEmitter {
+     }
+ 
+     async _syncInhibitor() {
+-        const lockEnabled = this._settings.get_boolean(LOCK_ENABLED_KEY) ||
+-                            this._settings.get_boolean(SUSPEND_LOCK_ENABLED_KEY);
++        // The inhibitor gives _prepareForSleep() time to lock; it locks only
++        // when locking on suspend is enabled.
++        const lockEnabled = this._settings.get_boolean(SUSPEND_LOCK_ENABLED_KEY);
+         const lockLocked = this._lockSettings.get_boolean(DISABLE_LOCK_KEY);
+         const inhibit = !!this._loginSession && this._loginSession.Active &&
+                          !this._isActive && lockEnabled && !lockLocked &&
+@@ -277,12 +279,40 @@ export class ScreenShield extends Signals.EventEmitter {
          if (aboutToSuspend) {
              this._dialog?.cancel();
              if (this._settings.get_boolean(SUSPEND_LOCK_ENABLED_KEY))
@@ -40,28 +61,62 @@ index cfee34a..e829a5d 100644
      }
  
 +    _lockForSleep() {
-+        // logind waits for our sleep inhibitor, which is released only once
-+        // the shield is active, and the shield becomes active only when the
-+        // lock animations complete. gnome-settings-daemon turns the monitors
-+        // off on the same PrepareForSleep, and animations stop with them,
-+        // so an animated lock started here, or one still running from just
-+        // before (the power button locks with animation), would keep the
-+        // system awake with the screen dark and the lid ignored until
-+        // logind's inhibitor timeout. Nothing animated is seen while the
-+        // system goes to sleep: lock without animation and finish a lock
-+        // that is under way or whose fade user activity turned off.
++        // logind holds sleep until our inhibitor is released, which happens
++        // only once the shield is active, after the lock screen has slid in
++        // and the lightbox has faded in. Nothing animated is seen while the
++        // system goes to sleep, so lock without animation. A lock already
++        // under way is finished here: user input during the fade turns the
++        // lightbox off, and later lock requests return early because the
++        // lock screen is shown, so such a shield never becomes active on its
++        // own and sleep would wait for logind's inhibitor timeout.
 +        this.lock(false);
-+        if (!this._isLocked || this._isActive)
++        if (this._lockScreenState === MessageTray.State.HIDDEN || this._isActive)
 +            return;
 +
-+        this._lockDialogGroup.remove_all_transitions();
-+        this._lockDialogGroup.translation_y = 0;
-+        this._lockScreenShown({fadeToBlack: true, animateFade: false});
++        if (this._fadeTimeoutId) {
++            GLib.source_remove(this._fadeTimeoutId);
++            this._fadeTimeoutId = 0;
++        }
++
++        if (this.lockScreenShown) {
++            this._activateFade(this._shortLightbox, 0);
++            this._setActive(true);
++        } else {
++            this._lockDialogGroup.remove_all_transitions();
++            this._lockDialogGroup.translation_y = 0;
++            this._lockScreenShown({fadeToBlack: true, animateFade: false});
++        }
 +    }
 +
      _onStatusChanged(status) {
          if (status !== GnomeSession.PresenceStatus.IDLE)
              return;
+@@ -524,10 +554,11 @@ export class ScreenShield extends Signals.EventEmitter {
+         if (params.fadeToBlack && params.animateFade) {
+             // Take a beat
+ 
+-            const id = GLib.timeout_add_once(GLib.PRIORITY_DEFAULT, MANUAL_FADE_TIME, () => {
++            this._fadeTimeoutId = GLib.timeout_add_once(GLib.PRIORITY_DEFAULT, MANUAL_FADE_TIME, () => {
++                this._fadeTimeoutId = 0;
+                 this._activateFade(this._shortLightbox, MANUAL_FADE_TIME);
+             });
+-            GLib.Source.set_name_by_id(id, '[gnome-shell] this._activateFade');
++            GLib.Source.set_name_by_id(this._fadeTimeoutId, '[gnome-shell] this._activateFade');
+         } else {
+             if (params.fadeToBlack)
+                 this._activateFade(this._shortLightbox, 0);
+@@ -626,6 +657,11 @@ export class ScreenShield extends Signals.EventEmitter {
+             this._lockTimeoutId = 0;
+         }
+ 
++        if (this._fadeTimeoutId) {
++            GLib.source_remove(this._fadeTimeoutId);
++            this._fadeTimeoutId = 0;
++        }
++
+         this._activationTime = 0;
+         this._setActive(false);
+         this._setLocked(false);
 -- 
 2.43.0
 
