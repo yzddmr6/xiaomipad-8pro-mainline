@@ -32,7 +32,7 @@ sh tools/fetch-busybox-arm64.sh        # expect ".../usr/bin/busybox: OK"
 
 | Input | Pin |
 |---|---|
-| Kernel | [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano), branch `sm8750/v7.4-dev`; commit and configuration fragments in [kernel/source.json](../kernel/source.json), releases in [kernel/abi.json](../kernel/abi.json) |
+| Kernel | [linux-sm8750](https://github.com/yzddmr6/linux-sm8750), branch `main`; commit and configuration fragments in [kernel/source.json](../kernel/source.json), releases in [kernel/abi.json](../kernel/abi.json) |
 | Firmware | [firmware/](../firmware/README.md), locked by `firmware/piano-*.json` |
 | Mesa | 26.2.6 and `mesa/piano-fixes.patch`, [mesa/source.json](../mesa/source.json) |
 | Ubuntu | 26.04 Desktop ARM64 ISO, SHA-256 `c2afd538d66fdd77377d03f1ed2ac76a34f1c116baecc9a8170d68f833121f57`; [ubuntu/26.04.sources](../ubuntu/26.04.sources); packages from a dated [snapshot](https://snapshot.ubuntu.com/) |
@@ -57,7 +57,7 @@ Linux 7.4 builds `gen_init_cpio` under `scripts/`, rather than `usr/`.
 ## 1. Kernel
 
 ```bash
-git clone --branch sm8750/v7.4-dev https://github.com/yzddmr6/linux-sm8750-piano ../linux
+git clone --branch main https://github.com/yzddmr6/linux-sm8750 ../linux
 git -C ../linux checkout "$(python3 -c 'import json; print(json.load(open("kernel/source.json"))["commit"])')"
 BUILD_MODULES=1 KERNEL_SOURCE=../linux OUT_DIR="$PWD/out/kernel-release" bash tools/build-kernel.sh
 # expect "Piano kernel build complete: .../out/kernel-release/build-result.json (boot packaging is separate)"

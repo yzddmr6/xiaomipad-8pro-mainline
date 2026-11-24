@@ -225,7 +225,7 @@ A host write resets slot A's retry counter; the next Ubuntu boot marks the slot 
 | Repository | Content |
 |---|---|
 | xiaomipad-8pro-mainline | Device userspace, Ubuntu integration, build/packaging/switching tools, firmware, documentation |
-| [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano) | Linux kernel: drivers, devicetree and configuration maintained on top of upstream Linux; the upstream base and release commit are pinned in the input lock |
+| [linux-sm8750](https://github.com/yzddmr6/linux-sm8750) | Linux kernel: drivers, devicetree and configuration maintained on top of upstream Linux; the upstream base and release commit are pinned in the input lock |
 
 See [docs/BUILD.en.md](docs/BUILD.en.md) to build the kernel, Mesa, device packages and images; [kernel/source.json](kernel/source.json) pins the kernel commit and configuration fragments.
 

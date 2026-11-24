@@ -26,7 +26,7 @@
 | 输入 | 位置 | 锁定 |
 |---|---|---|
 | 集成 | 本仓库 | 当前检出的提交 |
-| 内核 | `https://github.com/yzddmr6/linux-sm8750-piano`，分支 `sm8750/v7.4-dev` | [`kernel/source.json`](../kernel/source.json)（`commit`、`config`、`release_config_fragments`）、[`kernel/abi.json`](../kernel/abi.json) |
+| 内核 | `https://github.com/yzddmr6/linux-sm8750`，分支 `main` | [`kernel/source.json`](../kernel/source.json)（`commit`、`config`、`release_config_fragments`）、[`kernel/abi.json`](../kernel/abi.json) |
 | 固件 | [`firmware/`](../firmware/README.md)：原厂 OS3.0.303.0.WPYCNXM 文件，按 `/usr/lib/firmware` 布局 | 身份锁 `firmware/piano-*.json`（文件名、大小、SHA-256） |
 | Mesa | 上游 Mesa 26.2.0 | [`mesa/source.json`](../mesa/source.json)、`mesa/piano-fixes.patch` |
 | Ubuntu | 26.04 Desktop ARM64 ISO | SHA-256 `c2afd538d66fdd77377d03f1ed2ac76a34f1c116baecc9a8170d68f833121f57`；`ubuntu/26.04.sources` |
@@ -36,7 +36,7 @@
 
 ```bash
 git rev-parse HEAD                                          # 集成提交，记录下来
-git clone --branch sm8750/v7.4-dev https://github.com/yzddmr6/linux-sm8750-piano ../linux
+git clone --branch main https://github.com/yzddmr6/linux-sm8750 ../linux
 git -C ../linux checkout "$(python3 -c 'import json; print(json.load(open("kernel/source.json"))["commit"])')"
 python3 -c 'import json; print(json.load(open("kernel/source.json"))["commit"])'
 git -C ../linux rev-parse HEAD                              # 预期与上一行相同

@@ -32,7 +32,7 @@ sh tools/fetch-busybox-arm64.sh        # 预期 ".../usr/bin/busybox: OK"
 
 | 输入 | 版本与身份锁 |
 |---|---|
-| 内核 | [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano)，分支 `sm8750/v7.4-dev`；提交和配置片段见 [kernel/source.json](../kernel/source.json)，release 见 [kernel/abi.json](../kernel/abi.json) |
+| 内核 | [linux-sm8750](https://github.com/yzddmr6/linux-sm8750)，分支 `main`；提交和配置片段见 [kernel/source.json](../kernel/source.json)，release 见 [kernel/abi.json](../kernel/abi.json) |
 | 固件 | [firmware/](../firmware/README.md)，由 `firmware/piano-*.json` 锁定 |
 | Mesa | 26.2.6 与 `mesa/piano-fixes.patch`，见 [mesa/source.json](../mesa/source.json) |
 | Ubuntu | 26.04 Desktop ARM64 ISO，SHA-256 `c2afd538d66fdd77377d03f1ed2ac76a34f1c116baecc9a8170d68f833121f57`；[ubuntu/26.04.sources](../ubuntu/26.04.sources)；软件包取自指定日期的[快照](https://snapshot.ubuntu.com/) |
@@ -55,7 +55,7 @@ sh tools/fetch-busybox-arm64.sh        # 预期 ".../usr/bin/busybox: OK"
 ## 1. 内核
 
 ```bash
-git clone --branch sm8750/v7.4-dev https://github.com/yzddmr6/linux-sm8750-piano ../linux
+git clone --branch main https://github.com/yzddmr6/linux-sm8750 ../linux
 git -C ../linux checkout "$(python3 -c 'import json; print(json.load(open("kernel/source.json"))["commit"])')"
 BUILD_MODULES=1 KERNEL_SOURCE=../linux OUT_DIR="$PWD/out/kernel-release" bash tools/build-kernel.sh
 # 预期 "Piano kernel build complete: .../out/kernel-release/build-result.json (boot packaging is separate)"

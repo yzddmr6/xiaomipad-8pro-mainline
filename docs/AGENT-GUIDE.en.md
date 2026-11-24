@@ -29,7 +29,7 @@ before an unattended cold boot.
 | Input | Location | Pin |
 |---|---|---|
 | Integration | this repository | the checked-out commit |
-| Kernel | `https://github.com/yzddmr6/linux-sm8750-piano`, branch `sm8750/v7.4-dev` | [`kernel/source.json`](../kernel/source.json) (`commit`, `config`, `release_config_fragments`), [`kernel/abi.json`](../kernel/abi.json) |
+| Kernel | `https://github.com/yzddmr6/linux-sm8750`, branch `main` | [`kernel/source.json`](../kernel/source.json) (`commit`, `config`, `release_config_fragments`), [`kernel/abi.json`](../kernel/abi.json) |
 | Firmware | [`firmware/`](../firmware/README.md): stock OS3.0.303.0.WPYCNXM files in `/usr/lib/firmware` layout | identity locks `firmware/piano-*.json` (names, sizes, SHA-256) |
 | Mesa | upstream Mesa 26.2.0 | [`mesa/source.json`](../mesa/source.json), `mesa/piano-fixes.patch` |
 | Ubuntu | 26.04 Desktop ARM64 ISO | SHA-256 `c2afd538d66fdd77377d03f1ed2ac76a34f1c116baecc9a8170d68f833121f57`; `ubuntu/26.04.sources` |
@@ -39,7 +39,7 @@ before an unattended cold boot.
 
 ```bash
 git rev-parse HEAD                                          # integration commit, record it
-git clone --branch sm8750/v7.4-dev https://github.com/yzddmr6/linux-sm8750-piano ../linux
+git clone --branch main https://github.com/yzddmr6/linux-sm8750 ../linux
 git -C ../linux checkout "$(python3 -c 'import json; print(json.load(open("kernel/source.json"))["commit"])')"
 python3 -c 'import json; print(json.load(open("kernel/source.json"))["commit"])'
 git -C ../linux rev-parse HEAD                              # expect the same commit

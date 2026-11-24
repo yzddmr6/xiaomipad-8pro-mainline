@@ -223,7 +223,7 @@ fastboot -s <serial> reboot
 | 仓库 | 内容 |
 |---|---|
 | xiaomipad-8pro-mainline | 设备用户态、Ubuntu 集成、构建/打包/切换工具、固件、文档 |
-| [linux-sm8750-piano](https://github.com/yzddmr6/linux-sm8750-piano) | Linux 内核：在上游 Linux 之上维护驱动、设备树与配置；上游基线与发布提交见输入锁 |
+| [linux-sm8750](https://github.com/yzddmr6/linux-sm8750) | Linux 内核：在上游 Linux 之上维护驱动、设备树与配置；上游基线与发布提交见输入锁 |
 
 构建内核、Mesa、设备软件包与镜像见 [docs/BUILD.md](docs/BUILD.md)；[kernel/source.json](kernel/source.json) 锁定内核提交与配置片段。
 
