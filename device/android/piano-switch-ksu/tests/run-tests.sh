@@ -244,7 +244,8 @@ refused "$CASE" 1 'android/SHA256SUMS'
 end
 
 begin "refuses an unknown slot occupant with the import-android hint"
-setup; mkroot; printf 'X' | dd of="$W/boot_a" bs=1 seek=10 conv=notrunc 2>/dev/null; cp "$W/boot_a" "$W/boot_a.before"; run -- --check
+# Invert byte 10 so that the image always changes, whatever the random content.
+setup; mkroot; b=$(od -An -tu1 -j10 -N1 "$W/boot_a"); printf "\\$(printf '%03o' $((b ^ 255)))" | dd of="$W/boot_a" bs=1 seek=10 conv=notrunc 2>/dev/null; cp "$W/boot_a" "$W/boot_a.before"; run -- --check
 check "rc 1" [ "$RC" = 1 ]
 check "hint" has "import-android"
 check "no writes" no_writes
