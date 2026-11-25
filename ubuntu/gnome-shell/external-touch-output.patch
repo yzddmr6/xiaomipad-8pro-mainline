@@ -1,0 +1,174 @@
+From e03a48967d7f06cb0a99be4c5fdc613b7f6dec4d Mon Sep 17 00:00:00 2001
+From: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
+Date: Wed, 25 Nov 2026 20:24:34 +0800
+Subject: [PATCH] Map external touchscreens to the external monitor
+
+Mutter maps a touchscreen to the monitor whose EDID vendor appears in the
+device name or whose physical size matches the device; with neither, the
+touchscreen goes to the built-in panel. The touch layer of a USB-C
+portable monitor usually matches neither, so its touches land on the
+tablet's own panel. Android maps external touchscreens to the external
+display (TouchInputMapper, associatedDisplayIsExternal).
+
+While exactly one monitor other than the built-in panel is connected,
+give every USB or Bluetooth touchscreen that monitor as its configured
+output, and reset the setting otherwise. This replaces an extension
+that the user's extension settings could turn off; it runs in every
+session mode, including the login and lock screens.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ js/js-resources.gresource.xml |  1 +
+ js/ui/main.js                 |  3 ++
+ js/ui/touchOutput.js          | 99 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 103 insertions(+)
+ create mode 100644 js/ui/touchOutput.js
+
+diff --git a/js/js-resources.gresource.xml b/js/js-resources.gresource.xml
+index 3d9dc32..a18cc4e 100644
+--- a/js/js-resources.gresource.xml
++++ b/js/js-resources.gresource.xml
+@@ -126,6 +126,7 @@
+     <file>ui/swipeTracker.js</file>
+     <file>ui/switcherPopup.js</file>
+     <file>ui/switchMonitor.js</file>
++    <file>ui/touchOutput.js</file>
+     <file>ui/unlockDialog.js</file>
+     <file>ui/userWidget.js</file>
+     <file>ui/welcomeDialog.js</file>
+diff --git a/js/ui/main.js b/js/ui/main.js
+index 37d42fd..9305eb9 100644
+--- a/js/ui/main.js
++++ b/js/ui/main.js
+@@ -35,6 +35,7 @@ import * as NotificationDaemon from './notificationDaemon.js';
+ import * as WindowAttentionHandler from './windowAttentionHandler.js';
+ import * as Screenshot from './screenshot.js';
+ import * as ScreenShield from './screenShield.js';
++import * as TouchOutput from './touchOutput.js';
+ import * as SessionMode from './sessionMode.js';
+ import * as ShellDBus from './shellDBus.js';
+ import * as ShellMountOperation from './shellMountOperation.js';
+@@ -86,6 +87,7 @@ export let uiGroup = null;
+ export let magnifier = null;
+ export let xdndHandler = null;
+ export let keyboard = null;
++export let touchOutput = null;
+ export let layoutManager = null;
+ export let kbdA11yDialog = null;
+ export let inputMethod = null;
+@@ -262,6 +264,7 @@ async function _initializeUI() {
+     messageTray = new MessageTray.MessageTray();
+     panel = new Panel.Panel();
+     keyboard = new Keyboard.KeyboardManager();
++    touchOutput = new TouchOutput.TouchOutputManager();
+     notificationDaemon = new NotificationDaemon.NotificationDaemon();
+     windowAttentionHandler = new WindowAttentionHandler.WindowAttentionHandler();
+     componentManager = new Components.ComponentManager();
+diff --git a/js/ui/touchOutput.js b/js/ui/touchOutput.js
+new file mode 100644
+index 0000000..79f16f3
+--- /dev/null
++++ b/js/ui/touchOutput.js
+@@ -0,0 +1,99 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++//
++// Mutter maps a touchscreen to the monitor whose EDID vendor appears in the
++// device name or whose physical size matches the device; with neither, a
++// touchscreen goes to the built-in panel (meta-input-mapper.c,
++// guess_candidates()). The touch layer of a USB-C portable monitor usually
++// matches neither, so its touches land on the built-in panel. Android maps
++// external touchscreens to the external display instead (TouchInputMapper,
++// associatedDisplayIsExternal).
++//
++// While exactly one monitor other than the built-in panel is connected, every
++// external (USB or Bluetooth) touchscreen gets it as its configured output,
++// which Mutter applies at once; otherwise the setting is reset and Mutter's
++// own matching applies again. This runs in every session mode (login screen,
++// lock screen, user session), independent of the user's extension settings.
++
++import Clutter from 'gi://Clutter';
++import Gio from 'gi://Gio';
++import GLib from 'gi://GLib';
++
++import * as Main from './main.js';
++
++const EXTERNAL_BUSES = new Set([0x03 /* BUS_USB */, 0x05 /* BUS_BLUETOOTH */]);
++
++function isExternalTouchscreen(device) {
++    if (device.get_device_type() !== Clutter.InputDeviceType.TOUCHSCREEN_DEVICE)
++        return false;
++    const node = device.get_device_node();
++    if (!node)
++        return false;
++    try {
++        const [, bytes] = GLib.file_get_contents(
++            `/sys/class/input/${GLib.path_get_basename(node)}/device/id/bustype`);
++        return EXTERNAL_BUSES.has(parseInt(new TextDecoder().decode(bytes), 16));
++    } catch {
++        return false;
++    }
++}
++
++function outputSettings(device) {
++    const id = v => v.toString(16).padStart(4, '0');
++    return new Gio.Settings({
++        schema_id: 'org.gnome.desktop.peripherals.touchscreen',
++        path: `/org/gnome/desktop/peripherals/touchscreens/${id(device.get_vendor_id())}:${id(device.get_product_id())}/`,
++    });
++}
++
++export class TouchOutputManager {
++    constructor() {
++        this._seat = global.stage.context.get_backend().get_default_seat();
++        this._external = null;
++        this._query = 0;
++        this._seat.connect('device-added', (_seat, device) => this._apply(device));
++        global.backend.get_monitor_manager().connect('monitors-changed',
++            () => this._refresh());
++        // DisplayConfig may not answer before the shell has started.
++        Main.layoutManager.connect('startup-complete', () => this._refresh());
++        this._refresh();
++    }
++
++    _refresh() {
++        // DisplayConfig is served by this process: call it asynchronously.
++        const query = ++this._query;
++        Gio.DBus.session.call('org.gnome.Mutter.DisplayConfig', '/org/gnome/Mutter/DisplayConfig',
++            'org.gnome.Mutter.DisplayConfig', 'GetCurrentState', null, null,
++            Gio.DBusCallFlags.NONE, -1, null, (connection, result) => {
++                let monitors;
++                try {
++                    [, monitors] = connection.call_finish(result).recursiveUnpack();
++                } catch (e) {
++                    logError(e, 'TouchOutputManager: GetCurrentState');
++                    return;
++                }
++                if (query !== this._query)
++                    return;
++                const external = monitors.filter(([, , props]) => !props['is-builtin']);
++                this._external = external.length === 1 ? external[0][0] : null;
++                for (const device of this._seat.list_devices())
++                    this._apply(device);
++            });
++    }
++
++    _apply(device) {
++        if (!isExternalTouchscreen(device))
++            return;
++        const settings = outputSettings(device);
++        if (this._external) {
++            const [connector, vendor, product, serial] = this._external;
++            const output = [vendor, product, serial, connector];
++            if (settings.get_strv('output').join('\n') !== output.join('\n')) {
++                settings.set_strv('output', output);
++                console.log(`TouchOutputManager: ${device.get_device_name()} -> ${connector}`);
++            }
++        } else if (settings.get_user_value('output') !== null) {
++            settings.reset('output');
++            console.log(`TouchOutputManager: ${device.get_device_name()} -> automatic`);
++        }
++    }
++}
+-- 
+2.43.0
+

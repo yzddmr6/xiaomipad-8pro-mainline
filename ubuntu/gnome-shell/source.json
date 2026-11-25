@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "base_version": "50.1-0ubuntu1.5",
-  "local_version": "50.1-0ubuntu1.5+piano4",
+  "local_version": "50.1-0ubuntu1.5+piano5",
   "files": [
     {
       "file": "gnome-shell_50.1.orig.tar.xz",
@@ -60,8 +60,18 @@
       "file": "screenshield-lock-before-sleep.patch",
       "sha256": "b601def2b7de0186f449f3aa50a8715de824a07c4a6a133e14fb0bc2f068d1f2",
       "license": "GPL-2.0-or-later"
+    },
+    {
+      "file": "osk-null-event-actor.patch",
+      "sha256": "510452fd0d0e6b01267e898a12cf7c5f76f9e189708e8ca4bd3fe863b4dabeef",
+      "license": "GPL-2.0-or-later"
+    },
+    {
+      "file": "external-touch-output.patch",
+      "sha256": "d82f1c5e538c49719ed590254a1b6776cfe881c0bfd5d77042fd107001d123b1",
+      "license": "GPL-2.0-or-later"
     }
   ],
-  "changelog_entry_sha256": "185f1ce67d2dca3da72abc554d556fe973cf3669e6c9c3321e13816d1666a9a1",
-  "exit_condition": "Drop brightness-persist.patch when Ubuntu moves to gnome-shell 51 or later, or backports MR !4006 to 50.x. Drop brightness-auto-first-run.patch once upstream handles where automatic brightness starts on a monitor without a saved value, and brightness-no-edid.patch once upstream saves the brightness of a panel without an EDID. Until then, rebuild on every Ubuntu gnome-shell update and repeat the logout, login and reboot brightness check on both tablets. Drop lock-reply-when-shown.patch with gnome-shell 51, and screenshield-lock-before-sleep.patch once upstream finishes the lock for sleep without waiting for the fade."
+  "changelog_entry_sha256": "c33ea50f2e98c9ce5b087c6ec76352d7102106665bef3316e206172afe785210",
+  "exit_condition": "Drop brightness-persist.patch when Ubuntu moves to gnome-shell 51 or later, or backports MR !4006 to 50.x. Drop brightness-auto-first-run.patch once upstream handles where automatic brightness starts on a monitor without a saved value, and brightness-no-edid.patch once upstream saves the brightness of a panel without an EDID. Until then, rebuild on every Ubuntu gnome-shell update and repeat the logout, login and reboot brightness check on both tablets. Drop lock-reply-when-shown.patch with gnome-shell 51, and screenshield-lock-before-sleep.patch once upstream finishes the lock for sleep without waiting for the fade. Drop osk-null-event-actor.patch with gnome-shell 51 (upstream 5e5b0f49d35a removed maybeHandleEvent()), and external-touch-output.patch once Mutter maps an unmatched external touchscreen to the external monitor."
 }

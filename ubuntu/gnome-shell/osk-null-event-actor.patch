@@ -1,0 +1,38 @@
+From d4d0d715eb932626682b8a75613150d758ab6510 Mon Sep 17 00:00:00 2001
+From: yzddmr6 <46088090+yzddmr6@users.noreply.github.com>
+Date: Wed, 25 Nov 2026 20:23:51 +0800
+Subject: [PATCH] keyboard: Ignore events without an actor in
+ maybeHandleEvent()
+
+When a touch sequence ends, Clutter clears the sprite's current actor
+before it emits the LEAVE crossing event. The unlock dialog, modal
+dialogs and popup menus call maybeHandleEvent() from their captured-event
+handlers, so every touch release under a grab threw "Argument descendant
+may not be null" from keyboardBox.contains(). With no actor there is
+nothing to forward to the on-screen keyboard.
+
+GNOME Shell 51 removed maybeHandleEvent() (5e5b0f49d35a).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ js/ui/keyboard.js | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/js/ui/keyboard.js b/js/ui/keyboard.js
+index e2d12a1..1b84f8a 100644
+--- a/js/ui/keyboard.js
++++ b/js/ui/keyboard.js
+@@ -1155,6 +1155,10 @@ export class KeyboardManager extends Signals.EventEmitter {
+             return false;
+ 
+         const actor = global.stage.get_event_actor(event);
++        // A touch sequence's LEAVE crossing event arrives after Clutter
++        // cleared the sprite's actor; nothing to forward then.
++        if (!actor)
++            return false;
+ 
+         if (Main.layoutManager.keyboardBox.contains(actor) ||
+             !!actor._extendedKeys || !!actor.extendedKey) {
+-- 
+2.43.0
+

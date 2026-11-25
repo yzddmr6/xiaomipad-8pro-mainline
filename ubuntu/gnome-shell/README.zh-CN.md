@@ -1,7 +1,7 @@
 # gnome-shell：按显示器保存和恢复亮度滑块
 
 固定 Ubuntu 26.04 源包 `50.1-0ubuntu1.5`（resolute-updates / resolute-security 的当前版本，含
-CVE-2026-91786 的安全修复；已发布的系统经 apt 升级后装的就是它），本地版本 `50.1-0ubuntu1.5+piano4`。
+CVE-2026-91786 的安全修复；已发布的系统经 apt 升级后装的就是它），本地版本 `50.1-0ubuntu1.5+piano5`。
 源包已认证；按 Ubuntu 发行版流程构建 ARM64 软件包。补丁按原文件 GPL-2.0-or-later 分发，许可见
 [COPYING](COPYING)，不适用集成仓的 MIT 许可。
 
@@ -41,8 +41,19 @@ Shell 的持久状态 `~/.local/share/gnome-shell/brightnesses`，登录时恢�
 但只有 `ubuntu-lock-on-suspend` 会让 shell 在睡眠前锁屏，关掉它时每次挂起都等到时限；改为只看后者。上游 main 的这段
 逻辑相同。
 
+[osk-null-event-actor.patch](osk-null-event-actor.patch) 是本项目的补丁：一次触摸结束时，Clutter 先清掉当前 actor，再发离开事件；
+锁屏、登录界面、菜单和弹窗在有抓取时把事件交给屏幕键盘的 `maybeHandleEvent()`，它不检查空 actor，每次松手都抛异常。
+没有 actor 就没有可转给屏幕键盘的东西，直接返回。GNOME Shell 51 删掉了这个方法（`5e5b0f49d35a`）。
+
+[external-touch-output.patch](external-touch-output.patch) 是本项目的补丁：Mutter 只在设备名里有显示器 EDID 厂商、或物理尺寸对得上时
+把触摸屏映射到那台显示器，都对不上就映射到内置屏；USB-C 便携显示器的触摸层通常都对不上，触摸落在平板屏上。补丁照 Android
+的做法：只接一台内置屏以外的显示器时，把每块 USB 或蓝牙触摸屏的输出设成它，否则恢复 Mutter 自己的匹配。
+
+这两项原来是扩展，系统默认启用；用户关掉“用户扩展”或者有自己的扩展列表时，扩展不会加载，所以改为直接做进 Shell，
+登录界面、锁屏和桌面里都生效。
+
 退出条件：Ubuntu 换到 gnome-shell 51 或以上，或者 Ubuntu 把 MR !4006 回移到 50.x 时，删掉回移补丁；本项目的
-补丁分别等上游对“没存过值时自动亮度从哪里开始”有了等价处理、能存没有 EDID 的屏的亮度、准备睡眠时不再等遮罩淡入时再删；回移的 Lock 补丁随 gnome-shell 51 删掉。都删掉以后，撤掉本包
+补丁分别等上游对“没存过值时自动亮度从哪里开始”有了等价处理、能存没有 EDID 的屏的亮度、准备睡眠时不再等遮罩淡入时再删；回移的 Lock 补丁和屏幕键盘补丁随 gnome-shell 51 删掉，外接触摸屏补丁等 Mutter 自己把对不上的外接触摸屏映射到外接显示器时删掉。都删掉以后，撤掉本包
 和桌面集合里的精确依赖。
 在此之前，精确依赖会挡住 Ubuntu 后续的 gnome-shell 更新：Ubuntu 每发布一个 gnome-shell 更新，就在它上面重编
 本包，并在两台平板上复测一次注销、登录和重启后的亮度。
