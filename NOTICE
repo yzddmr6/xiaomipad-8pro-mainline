@@ -319,14 +319,6 @@ https://github.com/systemd/systemd
 src/udev/udev-manager.c, GPL-2.0-or-later; LICENSES/systemd-GPL-2.0-or-later.txt.
 Pinned source and hashes: ubuntu/systemd/source.json.
 
-Files: packaging/piano-ubuntu-desktop/usr/share/gnome-shell/extensions/piano-osk-guard@io.github.piano/.
-Project GPL-2.0-or-later extension wrapping, without copying, GNOME Shell 50
-js/ui/keyboard.js KeyboardManager.maybeHandleEvent() (50.1, Ubuntu
-50.1-0ubuntu1.3). Change: call the original only when the event has an actor.
-GNOME Shell 51 removed the method in 5e5b0f49d35ae2c1626eb2ee386befb608a8d5e4.
-tools/test-gnome-osk-guard.py uses caller-supplied verified source;
-GPL-2.0-or-later, LICENSES/GPL-2.0-only.txt with the per-file "or later" grant.
-
 Files: ubuntu/gnome-settings-daemon/ and ubuntu/gnome-control-center/ patches.
 Pinned Ubuntu GNOME 50 source versions, archive and patch hashes: source.json
 in each directory. GPL-2.0-or-later, original per-file copyrights and COPYING.
