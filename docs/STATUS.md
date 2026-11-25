@@ -1,6 +1,6 @@
 # Release history and current support
 
-Current release: **v1.6.3**. See the [README](../README.en.md#hardware-support) or
+Current release: **v1.6.4**. See the [README](../README.en.md#hardware-support) or
 [中文 README](../README.md#硬件支持) for the hardware support tables and usage instructions.
 
 ## Current support
@@ -39,6 +39,12 @@ verified on this unit; later versions were tested on the installed system. These
 results do not establish support for other models, capacities or accessories.
 
 ## Completed work by release
+
+### v1.6.4
+
+1.6.3 中 USB-C 外接显示器没有画面、拔插后平板可能重启的问题修好了；外接触摸屏的触摸落在外接显示器上，登录界面也一样。按电源键锁屏后马上合盖，系统不再停在挂起准备阶段长达 5 分钟，开盖恰逢进入挂起时会中止这次挂起。GunyahVM 虚拟机运行时合盖只锁屏熄屏，虚拟机继续运行；新装系统预装 GunyahVM 1.5.2。
+
+The 1.6.3 regression in which a USB-C external display showed no picture and re-plugging it could restart the tablet is fixed, and touches on an external touch screen land on the external display, on the login screen as well. Locking with the power button and then closing the lid no longer leaves the system in suspend preparation for up to five minutes, and opening the lid just as the system enters suspend aborts the suspend. While a GunyahVM virtual machine runs, closing the lid locks the screen and turns it off and the virtual machine keeps running; new installations include GunyahVM 1.5.2.
 
 ### v1.6.3
 
