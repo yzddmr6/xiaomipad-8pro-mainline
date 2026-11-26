@@ -42,9 +42,9 @@ results do not establish support for other models, capacities or accessories.
 
 ### v1.6.4
 
-1.6.3 中 USB-C 外接显示器没有画面、拔插后平板可能重启的问题修好了；外接触摸屏的触摸落在外接显示器上，登录界面也一样。按电源键锁屏后马上合盖，系统不再停在挂起准备阶段长达 5 分钟，开盖恰逢进入挂起时会中止这次挂起。GunyahVM 虚拟机运行时合盖只锁屏熄屏，虚拟机继续运行；新装系统预装 GunyahVM 1.6.0。
+1.6.3 中 USB-C 外接显示器没有画面、拔插后平板可能重启的问题修好了，拔下显示器或扩展坞后 USB-C 口回到 USB 3；外接触摸屏的触摸落在外接显示器上，登录界面也一样。按电源键锁屏后马上合盖，系统不再停在挂起准备阶段长达 5 分钟，开盖恰逢进入挂起时会中止这次挂起。GunyahVM 虚拟机运行时合盖只锁屏熄屏，虚拟机继续运行；新装系统预装 GunyahVM 1.6.0。
 
-The 1.6.3 regression in which a USB-C external display showed no picture and re-plugging it could restart the tablet is fixed, and touches on an external touch screen land on the external display, on the login screen as well. Locking with the power button and then closing the lid no longer leaves the system in suspend preparation for up to five minutes, and opening the lid just as the system enters suspend aborts the suspend. While a GunyahVM virtual machine runs, closing the lid locks the screen and turns it off and the virtual machine keeps running; new installations include GunyahVM 1.6.0.
+The 1.6.3 regression in which a USB-C external display showed no picture and re-plugging it could restart the tablet is fixed, the USB-C port returns to USB 3 after a display or dock is unplugged, and touches on an external touch screen land on the external display, on the login screen as well. Locking with the power button and then closing the lid no longer leaves the system in suspend preparation for up to five minutes, and opening the lid just as the system enters suspend aborts the suspend. While a GunyahVM virtual machine runs, closing the lid locks the screen and turns it off and the virtual machine keeps running; new installations include GunyahVM 1.6.0.
 
 ### v1.6.3
 
