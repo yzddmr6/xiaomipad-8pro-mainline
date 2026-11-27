@@ -1,6 +1,6 @@
 # Ubuntu for Xiaomi Pad 8 Pro
 
-在小米平板 8 Pro（代号 `piano`，骁龙 8 至尊版）上原生运行 Ubuntu 26.04 LTS GNOME 桌面，与 Android 双系统共存，内核基于上游 Linux 适配。不是容器，不是远程桌面。[English](README.en.md)
+在小米平板 8 Pro（代号 `piano`，骁龙 8 至尊版）上原生运行 Ubuntu 26.04 LTS GNOME 桌面，可以与 Android 双系统共存，也可以只用 Linux，内核基于上游 Linux 适配。不是容器，不是远程桌面。[English](README.en.md)
 
 **最新版本见 [Releases](https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/latest)。官方发布只在本仓库 Releases，免费提供。** 支持状态见[硬件支持](#硬件支持)。
 
@@ -59,19 +59,32 @@
 - **只在一台机器上验证过：** 型号 25091RP04C（国行），16 GB 内存，512 GB 存储。其他型号和容量未验证。
 - **恢复方法：** 无画面或无响应时，长按电源 + 音量下进入 Fastboot，用 `tools/piano-switch.py` 写回 Android，见[使用与维护](#使用与维护)。
 
-分区布局：512 GB 机型把原 `userdata` 的范围拆成 `userdata`（200 GiB，Android）、`linux_rootfs`（60 GiB，Ubuntu `/`）和 `linux_data`（约 201 GiB，`/home`）；256 GB 机型 `userdata` 为 110 GiB，`linux_data` 约 61 GiB。其他分区不变。
+分区布局：原 `userdata` 的范围拆成 `userdata`（Android）、`linux_rootfs`（60 GiB，Ubuntu `/`）和 `linux_data`（其余，`/home`），各分区的大小见下面的[双系统或只用 Linux](#双系统或只用-linux)。其他分区不变。
 **不要刷写 `vbmeta`，不要写入或激活 B 槽。** 标定和设备专属配置必须取自你自己的平板，不能用别人的。
 
 ## 🚀 安装
 
 你需要一台 Linux x86_64 主机、一根 USB 数据线，以及坐在平板旁边的一个多小时。
 
+### 双系统或只用 Linux
+
+安装前选一种分区布局：
+
+| 布局 | Android（`userdata`） | Ubuntu `/`（`linux_rootfs`） | Ubuntu `/home`（`linux_data`） |
+|---|---|---|---|
+| 双系统 | 200 GiB（256 GB 机型 110 GiB） | 60 GiB | 其余，约 201 GiB（256 GB 机型约 61 GiB） |
+| 只用 Linux | 16 GiB | 60 GiB | 其余，约 385 GiB（256 GB 机型约 155 GiB） |
+
+- 两种布局只差[安装指南第 5 步](docs/INSTALL.md#5-生成新分区表主机)里的一个数，其余步骤相同。
+- 双系统下，两个系统随时可以互相切换，见[使用与维护](#使用与维护)。
+- 只用 Linux 时，Android 不能减到 0：Bootloader、Fastboot 和原厂恢复都按名字使用 `userdata` 分区。留下的 16 GiB Android 能正常开机，可以救急，也可以按[恢复原厂](docs/RESTORE-STOCK.md)整机回去。
+
 ### 推荐：让 AI 帮你安装
 
 安装步骤多、顺序严格，最省力的方式是交给能执行命令的 AI 编程助手（Claude Code、Codex CLI、Gemini CLI 等）。在 Linux 主机上启动助手，把下面这段完整复制给它。它会读文档、检查环境、做备份，每一步写入前先向你确认；你只负责在平板上按键和做选择。
 
 ```text
-我要在小米平板 8 Pro（代号 piano）上安装 Ubuntu，与 Android 双系统共存。请你作为操作助手，按下面的规则帮我完成。
+我要在小米平板 8 Pro（代号 piano）上安装 Ubuntu，分区布局用「双系统」（只用 Linux 就把这里改成「只用 Linux」，两种布局见 README「双系统或只用 Linux」）。请你作为操作助手，按下面的规则帮我完成。
 
 项目：https://github.com/yzddmr6/xiaomipad-8pro-mainline ，使用最新发布版本（https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/latest 上标为 Latest 的版本）。
 

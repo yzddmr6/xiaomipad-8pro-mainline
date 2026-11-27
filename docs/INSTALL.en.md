@@ -2,7 +2,7 @@
 
 [中文](INSTALL.md) | [Project overview](../README.en.md) | [Fastboot, switching and recovery](FLASHING.en.md)
 
-This guide installs the release next to Android on a Xiaomi Pad 8 Pro (`piano`). There is no graphical installer yet: follow this guide yourself, or hand it to an AI assistant as described on the [project page](../README.en.md#recommended-let-an-ai-assistant-install-it). The new partition table ([step 6](#6-write-the-partition-table-on-the-tablet)) is written from the maintenance RAM image of the release directory. Read the whole guide before starting. This procedure was carried out once in full on the test unit with v0.2.0.
+This guide installs the release on a Xiaomi Pad 8 Pro (`piano`), either as a dual boot next to Android or as a Linux-only installation; [step 4](#4-partition-layout) describes both layouts, and every other step is the same. There is no graphical installer yet: follow this guide yourself, or hand it to an AI assistant as described on the [project page](../README.en.md#recommended-let-an-ai-assistant-install-it). The new partition table ([step 6](#6-write-the-partition-table-on-the-tablet)) is written from the maintenance RAM image of the release directory. Read the whole guide before starting. This procedure was carried out once in full on the test unit with v0.2.0.
 
 Every release uses this installation procedure. Existing installations should follow [the upgrade guide](UPGRADE.en.md), without repartitioning or flashing the root image.
 
@@ -224,6 +224,23 @@ is 262,144 blocks. The 256 GB column was measured on a 256 GB unit: `userdata` 2
 The release finds its partitions by name: the names must be exactly `linux_rootfs` and
 `linux_data`. Their GUIDs can be any new values.
 
+### Linux only
+
+If you do not plan to use Android, shrink `userdata` to 16 GiB (4,194,304 blocks) and give the
+rest to Linux:
+
+| Entry | Name | 512 GB unit | 256 GB unit |
+|---|---|---|---|
+| 34 | `userdata` | 16 GiB | 16 GiB |
+| 35 | `linux_rootfs` | 60 GiB | 60 GiB |
+| 36 | `linux_data` | the remainder, about 385.27 GiB | the remainder, about 154.93 GiB |
+
+Only `A` in step 5 changes, to `4194304`; every other step is the same as for a dual boot.
+`userdata` cannot be removed: the bootloader, Fastboot and stock recovery use this partition by
+name. The remaining Android still boots, so you can switch to it later in an emergency, and the
+[return to stock](RESTORE-STOCK.en.md) procedure applies as before. The root partition is fixed at
+the 60 GiB of the release image; all the extra space goes to `/home`.
+
 ## 5. Build the new partition table (host)
 
 *Manual.* Work on a copy of LUN 0's table, never on the tablet. LUN 0 has 4096-byte blocks
@@ -242,7 +259,7 @@ sudo sfdisk --json "$LOOP" > gpt-before.json
 
 S=<first sector of userdata>      # 3632128 on the test unit
 U=<unique GUID of userdata>; T=<type GUID of userdata>
-A=52428800                        # userdata blocks: 200 GiB x 262144 on 512 GB units; 28835840 (110 GiB) on 256 GB units
+A=52428800                        # userdata blocks: 200 GiB x 262144 on 512 GB units; 28835840 (110 GiB) on 256 GB units; 4194304 (16 GiB) on both for Linux only
 R=15728640                        # linux_rootfs blocks: 60 GiB x 262144
 L=0FC63DAF-8483-4772-8E79-3D69D8477DE4      # Linux filesystem
 sudo sgdisk --set-alignment=256 --delete=34 \
@@ -256,7 +273,8 @@ sudo sfdisk --json "$LOOP" > gpt-after.json
 
 Compare `gpt-before.json` and `gpt-after.json`: only entries 34–36 may differ, starting at `S`,
 `S + A` and `S + A + R`. `linux_data` takes the rest up to the last usable LBA, `LAST - S - A - R + 1`
-blocks (52,762,619 on the 512 GB test unit, 15,971,323 on the 256 GB unit). The disk GUID, first and
+blocks (52,762,619 on the 512 GB test unit, 15,971,323 on the 256 GB unit; 100,997,115 and 40,612,859
+for Linux only). The disk GUID, first and
 last usable LBA and table length must not change. If `userdata` had non-zero attributes, copy them
 with `--attributes=34:=:<hex>`.
 
@@ -337,15 +355,16 @@ session. Stop the host's `http.server` afterwards.
 Check the new partitions, then create the `/home` image for your `linux_data` size:
 
 ```bash
-fastboot -s <SERIAL> getvar partition-size:userdata       # expect "3200000000" (hex, printed without 0x); 102 GiB on 256 GB units
+fastboot -s <SERIAL> getvar partition-size:userdata       # expect "3200000000" (hex, printed without 0x); 102 GiB on 256 GB units; "400000000" (16 GiB) for Linux only
 fastboot -s <SERIAL> getvar partition-size:linux_rootfs   # expect "0xF00000000"
-fastboot -s <SERIAL> getvar partition-size:linux_data     # linux_data blocks x 4096 in hex: "0x32517FB000" on the 512 GB unit
+fastboot -s <SERIAL> getvar partition-size:linux_data     # linux_data blocks x 4096 in hex: "0x32517FB000" on the 512 GB unit, "0x60517FB000" for Linux only
 truncate -s $((0x<linux_data size>)) data.ext4
 mkfs.ext4 -L linux_data data.ext4 && img2simg -s data.ext4 data.sparse.img     # about 6 MB
 ```
 
 On 256 GB units ABL reports `userdata` as 102 GiB (`1980000000`), 8 GiB less than the 110 GiB GPT
-entry. This is normal: stock Android's `/data` is 8 GiB smaller than its partition as well.
+entry. This is normal: stock Android's `/data` is 8 GiB smaller than its partition as well. For
+Linux only, a 256 GB unit may likewise report 8 GiB less than 16 GiB.
 
 Erase Android's data and write both filesystems:
 
@@ -555,7 +574,8 @@ the host ([FLASHING.en.md](FLASHING.en.md#from-the-host-piano-switchpy)).
 - **Switching and recovery:** [FLASHING.en.md](FLASHING.en.md).
 - **Packages:** run `sudo apt update` before the first `apt install`; the image ships without package indexes. Only the project kernel is installed, without Ubuntu's generic kernel and the C library headers: install `build-essential` before compiling software.
 - **Kernel updates:** see [UPGRADE.en.md](UPGRADE.en.md).
-- **Android:** the first Android boot re-creates its data and takes several minutes. Reinstall the
+- **Android:** the first Android boot re-creates its data and takes several minutes. With Linux only,
+  Android has 16 GiB and is kept for emergencies; you do not need to switch to it. Reinstall the
   root manager app if you need root; the root-patched `init_boot_a` is unchanged. After changing the
   root patch in slot A, refresh the stored Android set ([FLASHING.en.md](FLASHING.en.md#image-sets)).
 - **Known issues and support status:** [README](../README.en.md#hardware-support), the release's

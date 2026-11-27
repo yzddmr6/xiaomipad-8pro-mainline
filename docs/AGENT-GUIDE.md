@@ -396,7 +396,7 @@ mkfs.ext4 -U "$DATA_UUID" out/install/data.ext4 && img2simg -s out/install/data.
 
 ### 4.5 新的 LUN 0 GPT（主机，手工步骤）
 
-34 号条目 `userdata` 保留起点、类型 GUID、唯一 GUID 和属性，缩小到 200 GiB（256 GB 机型为 110 GiB）；
+34 号条目 `userdata` 保留起点、类型 GUID、唯一 GUID 和属性，缩小到 200 GiB（256 GB 机型为 110 GiB；用户选只用 Linux 时两种机型都是 16 GiB，不能删除这个条目）；
 35 号 `linux_rootfs`（60 GiB）和 36 号 `linux_data`（其余空间）为新条目。其他条目和 LUN 不变。
 LUN 0 在 512 GB 机型有 124,552,192 个 4096 字节块，256 GB 机型有 64,167,936 个（§4.2 的 `size / 8`；
 1 GiB 为 262,144 块）。一台 256 GB 机器实测 `userdata` 28,835,840 块、`linux_rootfs` 15,728,640 块、
@@ -414,7 +414,7 @@ sudo sfdisk --json "$LOOP" > gpt-before.json
 
 S=<first sector of userdata>      # 测试机为 3632128
 U=<unique GUID of userdata>; T=<type GUID of userdata>
-A=52428800                        # userdata 块数：512 GB 机型 200 GiB x 262144；256 GB 机型 28835840（110 GiB）
+A=52428800                        # userdata 块数：512 GB 机型 200 GiB x 262144；256 GB 机型 28835840（110 GiB）；只用 Linux 时都是 4194304（16 GiB）
 R=15728640                        # linux_rootfs 块数：60 GiB x 262144
 L=0FC63DAF-8483-4772-8E79-3D69D8477DE4      # Linux 文件系统
 sudo sgdisk --set-alignment=256 --delete=34 \
@@ -944,6 +944,6 @@ python3 tools/check-piano-flash.py --torch 64 # 写入 torch 值、核对读回�
 ## 9. 证据与文档
 
 提交归属、`Fixes:` / `Link:` / `Reported-by:` 和人工签署要求见
-[CONTRIBUTING.md](../CONTRIBUTING.md#commits-and-attribution)，其中也规定代理代签的限制。
+[CONTRIBUTING.md](../CONTRIBUTING.md#提交前逐项核对) 第 7 条，其中也规定代理代签的限制。
 按同一文件的[证据要求](../CONTRIBUTING.md#evidence)记录结果。
 公开硬件状态维护在 [README 支持矩阵](../README.md#硬件支持) 和 [STATUS.md](STATUS.md)。

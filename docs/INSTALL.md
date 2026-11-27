@@ -2,7 +2,7 @@
 
 [English](INSTALL.en.md) ｜ [项目首页](../README.md) ｜ [Fastboot、切换与恢复](FLASHING.md)
 
-本指南把发布版本安装到小米平板 8 Pro（`piano`）的 Android 旁边。目前没有图形安装器：可以自己按本文操作，也可以按[项目首页](../README.md#推荐让-ai-帮你安装)把它交给 AI 助手执行。写入新分区表（[第 6 步](#6-写入分区表平板上)）在发布目录的维护 RAM 镜像中进行。开始前请通读全文。本流程已在测试机上按 v0.2.0 完整执行过一次。
+本指南把发布版本安装到小米平板 8 Pro（`piano`）上：可以和 Android 双系统共存，也可以只用 Linux，两种布局见[第 4 步](#4-分区布局)，其余步骤相同。目前没有图形安装器：可以自己按本文操作，也可以按[项目首页](../README.md#推荐让-ai-帮你安装)把它交给 AI 助手执行。写入新分区表（[第 6 步](#6-写入分区表平板上)）在发布目录的维护 RAM 镜像中进行。开始前请通读全文。本流程已在测试机上按 v0.2.0 完整执行过一次。
 
 每个版本都沿用此安装流程。已经安装过的系统请按[升级指南](UPGRADE.md)升级，不要重新分区或刷根镜像。
 
@@ -208,6 +208,18 @@ LUN 0 上原 `userdata` 的范围拆成三个分区，其他分区和 LUN 不变
 
 发布版按名称查找分区，名称必须严格为 `linux_rootfs` 和 `linux_data`；两者的 GUID 可以是任意新值。
 
+### 只用 Linux
+
+不打算用 Android 时，把 `userdata` 缩到 16 GiB（4,194,304 块），其余空间都给 Linux：
+
+| 条目 | 名称 | 512 GB 机型 | 256 GB 机型 |
+|---|---|---|---|
+| 34 | `userdata` | 16 GiB | 16 GiB |
+| 35 | `linux_rootfs` | 60 GiB | 60 GiB |
+| 36 | `linux_data` | 余下约 385.27 GiB | 余下约 154.93 GiB |
+
+只在第 5 步把 `A` 换成 `4194304`，其余步骤和双系统完全相同。`userdata` 不能删掉：Bootloader、Fastboot 和原厂恢复都按名字使用这个分区。留下的 Android 能正常开机，可以在以后切回去救急，[回到原厂](RESTORE-STOCK.md)的流程也照常适用。根分区固定为发布镜像的 60 GiB，多出的空间都在 `/home`。
+
 ## 5. 生成新分区表（主机）
 
 *手工。* 只在 LUN 0 分区表的副本上操作，不要直接对平板操作。LUN 0 块大小为 4096 字节
@@ -226,7 +238,7 @@ sudo sfdisk --json "$LOOP" > gpt-before.json
 
 S=<userdata 起始扇区>             # 测试机为 3632128
 U=<userdata 唯一 GUID>; T=<userdata 类型 GUID>
-A=52428800                        # userdata 块数：512 GB 机型 200 GiB x 262144；256 GB 机型 28835840（110 GiB）
+A=52428800                        # userdata 块数：512 GB 机型 200 GiB x 262144；256 GB 机型 28835840（110 GiB）；只用 Linux 时两种机型都是 4194304（16 GiB）
 R=15728640                        # linux_rootfs 块数：60 GiB x 262144
 L=0FC63DAF-8483-4772-8E79-3D69D8477DE4      # Linux filesystem
 sudo sgdisk --set-alignment=256 --delete=34 \
@@ -240,7 +252,7 @@ sudo sfdisk --json "$LOOP" > gpt-after.json
 
 比较 `gpt-before.json` 与 `gpt-after.json`：只允许条目 34–36 不同，起点分别为 `S`、`S + A`、
 `S + A + R`。`linux_data` 占用其余空间直到最后一个可用 LBA，共 `LAST - S - A - R + 1` 块
-（512 GB 测试机 52,762,619 块，256 GB 机器 15,971,323 块）。磁盘 GUID、首末可用 LBA 和表长度不得改变。
+（512 GB 测试机 52,762,619 块，256 GB 机器 15,971,323 块；只用 Linux 时分别为 100,997,115 块和 40,612,859 块）。磁盘 GUID、首末可用 LBA 和表长度不得改变。
 若 `userdata` 原有非零属性，用 `--attributes=34:=:<hex>` 复制。
 
 取出两段分区表区域（首个可用 LBA 为 6；最后可用 LBA 在 512 GB 机型为 124552186，256 GB 机型为
@@ -310,15 +322,15 @@ piano-maint fastboot                                    # 重启进入 Fastboot
 核对新分区，再按 `linux_data` 的大小生成 `/home` 镜像：
 
 ```bash
-fastboot -s <SERIAL> getvar partition-size:userdata       # 预期 "3200000000"（十六进制，不带 0x）；256 GB 机型为 102 GiB
+fastboot -s <SERIAL> getvar partition-size:userdata       # 预期 "3200000000"（十六进制，不带 0x）；256 GB 机型为 102 GiB；只用 Linux 时为 "400000000"（16 GiB）
 fastboot -s <SERIAL> getvar partition-size:linux_rootfs   # 预期 "0xF00000000"
-fastboot -s <SERIAL> getvar partition-size:linux_data     # linux_data 块数 x 4096 的十六进制：512 GB 机型为 "0x32517FB000"
+fastboot -s <SERIAL> getvar partition-size:linux_data     # linux_data 块数 x 4096 的十六进制：512 GB 机型为 "0x32517FB000"，只用 Linux 时为 "0x60517FB000"
 truncate -s $((0x<linux_data 大小>)) data.ext4
 mkfs.ext4 -L linux_data data.ext4 && img2simg -s data.ext4 data.sparse.img     # 约 6 MB
 ```
 
 256 GB 机型上 ABL 报告的 `userdata` 为 102 GiB（`1980000000`），比 GPT 中的 110 GiB 小 8 GiB。
-这是正常现象，与原厂一致：原厂 Android 的 `/data` 同样比分区小 8 GiB。
+这是正常现象，与原厂一致：原厂 Android 的 `/data` 同样比分区小 8 GiB。只用 Linux 时，256 GB 机型报告的值也可能比 16 GiB 小 8 GiB。
 
 擦除 Android 数据并写入两个文件系统：
 
@@ -507,7 +519,7 @@ piano-devmode status       # 预期 "developer mode: disabled, inactive"
 - **切换与恢复：**[FLASHING.md](FLASHING.md)。
 - **软件包：**第一次 `apt install` 之前先运行 `sudo apt update`，镜像不带软件源索引。镜像只装项目内核，没有 Ubuntu 通用内核和 C 库头文件；编译软件前先安装 `build-essential`。
 - **内核更新：**见 [UPGRADE.md](UPGRADE.md)。
-- **Android：**首次启动 Android 会重建数据，需要几分钟。如需 root，请重新安装 root 管理器应用；
+- **Android：**首次启动 Android 会重建数据，需要几分钟。只用 Linux 时 Android 只有 16 GiB，留作救急，平时不用切过去。如需 root，请重新安装 root 管理器应用；
   A 槽中已打补丁的 `init_boot_a` 不变。更换 A 槽的 root 补丁后，要刷新存储的 Android 镜像组（[FLASHING.md](FLASHING.md#镜像组)）。
 - **已知问题与支持状态：**[README](../README.md#硬件支持)及发布目录中的 `RELEASE-NOTES.md`。
 

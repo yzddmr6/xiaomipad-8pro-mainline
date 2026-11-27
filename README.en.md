@@ -1,6 +1,6 @@
 # Ubuntu for Xiaomi Pad 8 Pro
 
-Native Ubuntu 26.04 LTS with the GNOME desktop on the Xiaomi Pad 8 Pro (codename `piano`, Snapdragon 8 Elite), dual-booting with Android, on a device-adapted kernel based on upstream Linux. Not a container, not a remote desktop. [中文](README.md)
+Native Ubuntu 26.04 LTS with the GNOME desktop on the Xiaomi Pad 8 Pro (codename `piano`, Snapdragon 8 Elite), either dual-booting with Android or as the only system, on a device-adapted kernel based on upstream Linux. Not a container, not a remote desktop. [中文](README.md)
 
 **Latest release: see [Releases](https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/latest). Official builds are published only in this repository's Releases, free of charge.** What works is in [Hardware Support](#hardware-support).
 
@@ -59,19 +59,32 @@ Long-form technical articles, write-ups and progress updates are published on th
 - **Verified on one unit only:** model 25091RP04C (China), 16 GB RAM, 512 GB storage. Other models and capacities are unverified.
 - **Recovery:** with no picture or no response, hold Power + Volume Down for Fastboot and write Android back with `tools/piano-switch.py`, see [Usage and Maintenance](#usage-and-maintenance).
 
-Partition layout: on the 512 GB model the original `userdata` range becomes `userdata` (200 GiB, Android), `linux_rootfs` (60 GiB, Ubuntu `/`) and `linux_data` (about 201 GiB, `/home`); on the 256 GB model `userdata` is 110 GiB and `linux_data` about 61 GiB. Nothing else changes.
+Partition layout: the original `userdata` range becomes `userdata` (Android), `linux_rootfs` (60 GiB, Ubuntu `/`) and `linux_data` (the rest, `/home`); see [Dual boot or Linux only](#dual-boot-or-linux-only) below for the sizes. Nothing else changes.
 **Never flash `vbmeta`, never write or activate slot B.** Calibration and per-unit configuration must come from your own tablet.
 
 ## 🚀 Installation
 
 You need a Linux x86_64 host, a USB data cable, and an hour or two next to the tablet.
 
+### Dual boot or Linux only
+
+Choose a partition layout before installing:
+
+| Layout | Android (`userdata`) | Ubuntu `/` (`linux_rootfs`) | Ubuntu `/home` (`linux_data`) |
+|---|---|---|---|
+| Dual boot | 200 GiB (110 GiB on the 256 GB model) | 60 GiB | the rest, about 201 GiB (about 61 GiB on the 256 GB model) |
+| Linux only | 16 GiB | 60 GiB | the rest, about 385 GiB (about 155 GiB on the 256 GB model) |
+
+- The two layouts differ by one number in [step 5 of the installation guide](docs/INSTALL.en.md#5-build-the-new-partition-table-host); every other step is the same.
+- With a dual boot you can switch between the two systems at any time, see [Usage and Maintenance](#usage-and-maintenance).
+- With Linux only, Android cannot be reduced to zero: the bootloader, Fastboot and stock recovery use the `userdata` partition by name. The remaining 16 GiB Android boots normally, serves for emergencies, and lets you [return to stock](docs/RESTORE-STOCK.en.md) as a whole.
+
 ### Recommended: let an AI assistant install it
 
 The procedure is long and order-sensitive. The easiest way is to hand it to an AI coding assistant that can run commands (Claude Code, Codex CLI, Gemini CLI, …). Start the assistant on the Linux host and paste the block below in full. It reads the documentation, checks the environment, makes the backup and asks for your confirmation before every write; you only press buttons on the tablet and make the choices.
 
 ```text
-I want to install Ubuntu on a Xiaomi Pad 8 Pro (codename piano), dual-booting with Android. Act as my operator and follow these rules.
+I want to install Ubuntu on a Xiaomi Pad 8 Pro (codename piano) with the "dual boot" partition layout (for Linux only, replace this with "Linux only"; README "Dual boot or Linux only" describes both). Act as my operator and follow these rules.
 
 Project: https://github.com/yzddmr6/xiaomipad-8pro-mainline , latest release (the one marked Latest at https://github.com/yzddmr6/xiaomipad-8pro-mainline/releases/latest).
 

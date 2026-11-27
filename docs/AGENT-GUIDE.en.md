@@ -428,7 +428,8 @@ build of the release root: 10.14 GB written without it, 8.73 GB with it).
 ### 4.5 New LUN 0 GPT (host, manual steps)
 
 Entry 34 `userdata` keeps its start, type GUID, unique GUID and attributes and shrinks to 200 GiB
-(110 GiB on 256 GB units); entries 35 `linux_rootfs` (60 GiB) and 36 `linux_data` (the remainder) are
+(110 GiB on 256 GB units; 16 GiB on both when the user chooses Linux only, and the entry is never
+removed); entries 35 `linux_rootfs` (60 GiB) and 36 `linux_data` (the remainder) are
 new. All other entries and LUNs stay unchanged. LUN 0 has 124,552,192 blocks of 4096 bytes on the
 512 GB unit and 64,167,936 on 256 GB units (`size / 8` from §4.2; one GiB is 262,144 blocks). A
 256 GB unit measured `userdata` 28,835,840, `linux_rootfs` 15,728,640 and `linux_data` 15,971,323
@@ -446,7 +447,7 @@ sudo sfdisk --json "$LOOP" > gpt-before.json
 
 S=<first sector of userdata>      # 3632128 on the test unit
 U=<unique GUID of userdata>; T=<type GUID of userdata>
-A=52428800                        # userdata blocks: 200 GiB x 262144 on 512 GB units; 28835840 (110 GiB) on 256 GB units
+A=52428800                        # userdata blocks: 200 GiB x 262144 on 512 GB units; 28835840 (110 GiB) on 256 GB units; 4194304 (16 GiB) on both for Linux only
 R=15728640                        # linux_rootfs blocks: 60 GiB x 262144
 L=0FC63DAF-8483-4772-8E79-3D69D8477DE4      # Linux filesystem
 sudo sgdisk --set-alignment=256 --delete=34 \
@@ -1032,7 +1033,7 @@ it does not measure optical output.
 
 ## 9. Evidence and documentation
 
-Follow [CONTRIBUTING.md](../CONTRIBUTING.md#commits-and-attribution) for attribution,
+Follow item 7 of [CONTRIBUTING.en.md](../CONTRIBUTING.en.md#checklist-before-you-open-a-pr) for attribution,
 `Fixes:` / `Link:` / `Reported-by:` and the restrictions on assistants adding human attestations.
 Record results using its
 [evidence requirements](../CONTRIBUTING.md#evidence).
